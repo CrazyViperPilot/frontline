@@ -6,6 +6,7 @@ import { WEATHER_SETTINGS } from '../game/weather.js';
 import { MOOD_SETTINGS } from '../render/mood.js';
 import { SOUND_KEY, loadLevel, saveLevel } from '../audio/sound.js';
 import { KEYS } from './helptext.js';
+import { NAME_MAX } from './saves.js';
 
 const DIFFS = [
   ['easy', 'Leicht'],
@@ -53,6 +54,46 @@ function fmtTime(s) {
   return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
 }
 
+/** Datum und Uhrzeit auf Deutsch (Ortszeit), z. B. „12.11.26, 09:05“. */
+const fmtWhen = (ms) => new Date(ms).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+const DIFF_LABEL = Object.fromEntries(DIFFS);
+
+/** Eine Zeile der Spielstand-Liste (SP3): Name, Fakten, Hinweise und Knöpfe; editing = { id, value?, err? } beim Umbenennen. */
+function saveItem(e, editing) {
+  const m = e.meta;
+  const id = esc(m.id);
+  if (editing?.id === m.id) {
+    return `<li class="save" data-id="${id}">
+      <div class="save-edit">
+        <input type="text" maxlength="${NAME_MAX}" value="${esc(editing.value ?? m.name)}" data-rename-input aria-label="Neuer Name">
+        <div class="save-acts"><button type="button" data-sact="renamesave">Speichern</button><button type="button" data-sact="cancel">Abbrechen</button></div>
+      </div>
+      ${editing.err ? `<p class="bad small">${esc(editing.err)}</p>` : ''}
+    </li>`;
+  }
+  const notes = [];
+  if (m.ended) notes.push('beendet');
+  else if (!e.loadable) notes.push('andere Version, nicht ladbar');
+  if (e.inLocal && !e.inRemote) notes.push('nur auf diesem Gerät');
+  const canLoad = !m.ended && e.loadable;
+  return `<li class="save" data-id="${id}">
+    <div class="save-head"><b class="save-name">${esc(m.name)}</b>${notes.map((n) => `<span class="save-note">${n}</span>`).join('')}</div>
+    <dl class="save-facts">
+      <dt>Version</dt><dd>${esc(m.version)}</dd>
+      <dt>Erstellt</dt><dd>${fmtWhen(m.createdAt)}</dd>
+      <dt>Gespeichert</dt><dd>${fmtWhen(m.updatedAt)}</dd>
+      <dt>Spielzeit</dt><dd>${fmtTime(m.gameTime)}</dd>
+      <dt>Punkte</dt><dd>${m.points[0]} : ${m.points[1]} von ${m.winPoints}</dd>
+      <dt>Schwierigkeit</dt><dd>${esc(DIFF_LABEL[m.difficulty] ?? m.difficulty)}</dd>
+    </dl>
+    <div class="save-acts">
+      ${canLoad ? '<button type="button" data-sact="load">Laden</button>' : ''}
+      <button type="button" data-sact="rename">Umbenennen</button>
+      <button type="button" data-sact="delete">Löschen</button>
+    </div>
+  </li>`;
+}
+
 function show(root, kind, html) {
   root.innerHTML = html;
   root.dataset.kind = kind;
@@ -62,6 +103,7 @@ function show(root, kind, html) {
 export function hideOverlay(root) {
   root.onclick = null;
   root.oninput = null;
+  root.onkeydown = null;
   root.innerHTML = '';
   delete root.dataset.kind;
   root.hidden = true;
@@ -145,6 +187,10 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
     `<section class="menu start">
       <h1 class="logo">FRONTLINE</h1>
       <div class="resume" data-resume hidden></div>
+      <section class="saves" data-saves hidden>
+        <h3>Spielstände</h3>
+        <ul class="save-list" data-savelist></ul>
+      </section>
       <p class="tag">Echtzeit-Strategie · Einheiten an die Front bringen, versorgen und die Konfliktzone halten</p>
       <div class="field">
         <span class="flabel">Schwierigkeit</span>
@@ -210,6 +256,7 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
         <li>Baufahrzeug (R): Mörser, Flak, Phalanx (Nahbereichsschutz gegen Hubschrauber und Mörsergranaten, Reichweite halber FOB-Radius, 2 min Bauzeit, frisst Munition und Geld), Bohrer und – falls oben an – einen Sendemast: steht er fertig 30 Minuten, ist die Partie gewonnen. Soldaten bauen aus wenig getragenem Baumaterial Mauern und Tore (ein Tor ist 2 Felder breit).</li>
         <li>Ist oben Fluss an, liegt vor jeder Startecke ein Fluss: über drei Brücken oder langsam durch zwei Furten. Brücken lassen sich sprengen (A, dann Brücke anklicken) und von Baufahrzeugen wieder aufbauen.</li>
         <li>Förderung, Werke, Wohnen und Gewerbe liegen an Straßen. Rohstoffe fahren zum nächsten Werk, Produkte zum Lager der Hauptstadt; ohne Straße keine Lieferung. Straßen können voll werden (Stau: gelb, rot), dann kommen Waren und Pendler langsamer. Fahrzeuge, Reparaturen und Munition brauchen Stahl; Gewerbe braucht Baumaterial vom Lager. F-16 tanken Kerosin am Kerosintank des Fliegerhorsts, Hubschrauber gelandet auf ihrem Heliport (ein Hubschrauber je Heliport, Kerosintank und Munitionslager in der Nähe).</li>
+        <li>Spielstände: Die Liste oben zeigt alle Partien (Spielzeit, Punkte, Schwierigkeit, Version); je Zeile laden, umbenennen oder löschen. Beendete Partien bleiben zum Ansehen in der Liste.</li>
         <li>Konfliktzone halten: jede deiner Einheiten dort bringt Geld (0,4/s, in der Hot Zone 0,8/s), alle 30 s ein Punkt. Fällt deine Hauptstadt, ist die Runde verloren.</li>
       </ol>
       <p class="muted small center" data-wallet></p>
@@ -222,19 +269,83 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
     if (el) el.innerHTML = `Kasse: <b>${wallet()}</b> Geld (bleibt von Runde zu Runde) · <button type="button" class="btn-sm" data-act="resetWallet">zurücksetzen</button>`;
   };
   showWallet();
-  if (resume) {
+  // Schnellknopf „Fortsetzen“ (neuester nicht beendeter Stand) und die Liste der Spielstände (SP3)
+  let editing = null; // { id, value?, err? } während des Umbenennens
+  let list = [];
+  const saveBox = root.querySelector('[data-saves]');
+  const listBox = root.querySelector('[data-savelist]');
+  const drawSaves = () => {
+    if (!listBox) return;
+    saveBox.hidden = list.length === 0;
+    listBox.innerHTML = list.map((e) => saveItem(e, editing)).join('');
+  };
+  const loadSaves = () => {
+    if (!resume?.list) return;
+    resume
+      .list()
+      .then((l) => {
+        if (root.dataset.kind !== 'start') return;
+        list = l;
+        drawSaves();
+      })
+      .catch(() => {});
+  };
+  const loadQuick = () => {
+    if (!resume) return;
     const box = root.querySelector('[data-resume]');
     resume
       .find()
       .then((info) => {
-        if (!info || root.dataset.kind !== 'start') return;
+        if (root.dataset.kind !== 'start') return;
+        box.hidden = !info;
+        if (!info) return;
         box.innerHTML = `<p><b>Gespeicherte Partie</b><br>${esc(info.text)}</p>
           <div class="stack"><button type="button" class="primary" data-act="resume">Fortsetzen</button>
           <button type="button" class="btn-sm" data-act="discardSave">Spielstand löschen</button></div>`;
-        box.hidden = false;
       })
       .catch(() => {});
-  }
+  };
+  const changed = () => {
+    editing = null;
+    loadSaves();
+    loadQuick();
+  };
+  /** Knöpfe der Liste: laden, umbenennen (Eingabefeld), löschen (mit Rückfrage). */
+  const saveAct = (b) => {
+    const li = b.closest('.save');
+    const id = li.dataset.id;
+    const entry = list.find((x) => x.meta.id === id);
+    if (!entry) return;
+    const act = b.dataset.sact;
+    if (act === 'load') {
+      hideOverlay(root);
+      resume.load(id);
+    } else if (act === 'rename') {
+      editing = { id };
+      drawSaves();
+      listBox.querySelector('[data-rename-input]')?.select();
+    } else if (act === 'cancel') {
+      editing = null;
+      drawSaves();
+    } else if (act === 'renamesave') {
+      const value = li.querySelector('[data-rename-input]').value;
+      resume
+        .rename(id, value)
+        .then(() => changed())
+        .catch((err) => {
+          editing = { id, value, err: err.message ?? String(err) };
+          drawSaves();
+        });
+    } else if (act === 'delete') {
+      if (!confirm(`„${entry.meta.name}“ wirklich löschen?`)) return;
+      resume
+        .remove(id)
+        .then(() => changed())
+        .catch(() => changed());
+    }
+  };
+  loadQuick();
+  loadSaves();
   const mark = () => {
     root.querySelectorAll('[data-diff]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.diff === difficulty)));
     root.querySelectorAll('[data-pts]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.pts) === winPoints)));
@@ -306,7 +417,15 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
     saveLevel(r.dataset.vol, v);
     root.querySelector(`[data-volout="${r.dataset.vol}"]`).textContent = `${r.value} %`;
   };
+  root.onkeydown = (e) => {
+    if (e.key === 'Enter' && e.target.matches?.('[data-rename-input]')) {
+      e.preventDefault();
+      listBox.querySelector('[data-sact="renamesave"]')?.click();
+    }
+  };
   root.onclick = (e) => {
+    const sb = e.target.closest('[data-sact]');
+    if (sb) return saveAct(sb);
     const b = e.target.closest('button');
     if (!b) return;
     if (b.dataset.mapmode === 'random') {
@@ -393,9 +512,10 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
 
 /**
  * Pausenmenü: onResume() bei „Weiter“, onQuit() bei „Zum Startmenü“. `audio` (seit v5.68, optional): { get(kind) → 0–1, set(kind, v) }
- * für die Regler Geräusche und Musik, die sofort wirken (kind 'sfx' | 'music').
+ * für die Regler Geräusche und Musik, die sofort wirken (kind 'sfx' | 'music'). `saveAs` (seit SP3, optional): { name() → Name
+ * des laufenden Stands oder null, suggest() → Vorschlag für die Kopie, copy(name) → Promise<Text> } für „Speichern unter …“.
  */
-export function showPause(root, onResume, onQuit, onSave = null, audio = null) {
+export function showPause(root, onResume, onQuit, onSave = null, audio = null, saveAs = null) {
   show(
     root,
     'pause',
@@ -403,8 +523,16 @@ export function showPause(root, onResume, onQuit, onSave = null, audio = null) {
       <h2>Pause</h2>
       <div class="stack">
         <button type="button" class="primary" data-act="resume">Weiter (P)</button>
+        ${saveAs ? '<button type="button" data-pact="copy">Speichern unter …</button>' : ''}
         <button type="button" data-act="quit">Speichern und zum Startmenü</button>
       </div>
+      ${saveAs ? `<p class="small center">Stand: <b data-curname></b></p>
+      <div class="copybox" data-copybox hidden>
+        <span class="flabel">Name der Kopie</span>
+        <input type="text" maxlength="${NAME_MAX}" data-copyname aria-label="Name der Kopie">
+        <div class="row2"><button type="button" class="primary" data-pact="copygo">Speichern</button><button type="button" data-pact="copycancel">Abbrechen</button></div>
+        <p class="bad small" data-copyerr></p>
+      </div>` : ''}
       ${audio ? `<div class="field"><span class="flabel">Geräusche</span>${volRow('sfx', audio.get('sfx'))}</div>
       <div class="field"><span class="flabel">Musik</span>${volRow('music', audio.get('music'))}</div>` : ''}
       <div class="field" data-fsbox hidden>
@@ -414,11 +542,55 @@ export function showPause(root, onResume, onQuit, onSave = null, audio = null) {
       <p class="muted small center" data-savestate></p>
     </section>`,
   );
+  const setName = () => {
+    const el = root.querySelector('[data-curname]');
+    if (el && saveAs) el.textContent = saveAs.name() ?? 'noch kein Stand (ab 20 s Spielzeit)';
+  };
+  setName();
   onSave?.((t) => {
     const el = root.querySelector('[data-savestate]');
     if (el) el.textContent = t;
-  });
+  }, setName);
   markFullscreen(root);
+  /** „Speichern unter …“: Eingabe zeigen, mit Vorschlag; „Speichern“ legt die Kopie an, das Pausenmenü bleibt offen. */
+  const copyAct = (act) => {
+    const box = root.querySelector('[data-copybox]');
+    const input = root.querySelector('[data-copyname]');
+    const err = root.querySelector('[data-copyerr]');
+    const go = root.querySelector('[data-pact="copygo"]');
+    if (!box || root.dataset.kind !== 'pause') return;
+    if (act === 'copy') {
+      box.hidden = false;
+      err.textContent = '';
+      input.value = saveAs.suggest();
+      input.focus();
+      input.select();
+    } else if (act === 'copycancel') {
+      box.hidden = true;
+    } else if (act === 'copygo' && !go.disabled) {
+      const name = input.value.trim();
+      if (![...name].length || [...name].length > NAME_MAX) {
+        err.textContent = `Name muss 1 bis ${NAME_MAX} Zeichen haben`;
+        return;
+      }
+      err.textContent = '';
+      go.disabled = true;
+      saveAs
+        .copy(name)
+        .then((t) => {
+          if (root.dataset.kind !== 'pause') return;
+          box.hidden = true;
+          root.querySelector('[data-savestate]').textContent = t;
+          setName();
+        })
+        .catch((e) => {
+          if (root.dataset.kind === 'pause') err.textContent = e.message ?? String(e);
+        })
+        .finally(() => {
+          go.disabled = false;
+        });
+    }
+  };
   if (audio) {
     root.oninput = (e) => {
       const r = e.target.closest?.('[data-vol]');
@@ -427,9 +599,17 @@ export function showPause(root, onResume, onQuit, onSave = null, audio = null) {
       root.querySelector(`[data-volout="${r.dataset.vol}"]`).textContent = `${r.value} %`;
     };
   }
+  root.onkeydown = (e) => {
+    if (e.key === 'Enter' && e.target.matches?.('[data-copyname]')) {
+      e.preventDefault();
+      copyAct('copygo');
+    }
+  };
   root.onclick = (e) => {
     const f = e.target.closest('[data-fs]');
     if (f) return setFullscreen(f.dataset.fs === '1');
+    const p = e.target.closest('[data-pact]');
+    if (p) return copyAct(p.dataset.pact);
     const b = e.target.closest('[data-act]');
     if (!b) return;
     hideOverlay(root);

@@ -41,6 +41,28 @@ jobs:
           # beim Auslösen durch den Testlauf genau den getesteten Stand hochladen
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
+      # Datenbank-Zugang für api/save.php (MySQL). Werte per PHP var_export gequotet, nicht per Shell-Interpolation.
+      - name: Datenbank-Zugang schreiben (api/config.php)
+        env:
+          DB_SERVER: ${{ secrets.DB_SERVER }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: |
+          for v in DB_SERVER DB_PORT DB_NAME DB_USER DB_PASSWORD; do
+            if [ -z "${!v}" ]; then echo "::error::Secret $v fehlt (Settings → Secrets and variables → Actions)."; exit 1; fi
+          done
+          if ! [[ "$DB_PORT" =~ ^[0-9]+$ ]]; then echo "::error::Secret DB_PORT ist keine Zahl."; exit 1; fi
+          php -r '
+            $c = ["host" => getenv("DB_SERVER"), "port" => (int) getenv("DB_PORT"), "name" => getenv("DB_NAME"),
+                  "user" => getenv("DB_USER"), "password" => getenv("DB_PASSWORD")];
+            $src = "<?php\n// Vom Deploy (.github/workflows/deploy.yml) aus den Secrets DB_* geschrieben. Nicht im Repo.\nreturn " . var_export($c, true) . ";\n";
+            @mkdir("secret");
+            if (file_put_contents("secret/config.php", $src) === false) { fwrite(STDERR, "secret/config.php nicht schreibbar\n"); exit(1); }
+          '
+          php -l secret/config.php
+
       # lftp statt einer Node-FTP-Action: kommt mit FTPS-Servern zurecht, die TLS-Session-Reuse auf der Datenverbindung verlangen.
       - name: Hochladen per FTP
         env:
@@ -69,11 +91,40 @@ jobs:
           bye
           LFTP
 
-      - name: Erreichbarkeit prüfen
+      # Der Datenbank-Zugang geht erst hoch, wenn der Webspace PHP wirklich ausführt: sonst läge das Passwort lesbar im Netz.
+      - name: PHP prüfen, dann Datenbank-Zugang hochladen
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_DIR: ${{ vars.FTP_DIR || './' }}
+          FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftps' }}
+          FTP_SECURITY: ${{ vars.FTP_SECURITY || 'strict' }}
         run: |
           sleep 5
           code=$(curl -s -o /dev/null -w '%{http_code}' https://frontline.phpexpert.de/)
           echo "Startseite: HTTP $code"
-          api=$(curl -s https://frontline.phpexpert.de/api/save.php?meta=1 || true)
-          echo "Spielstand-API: $api"
-          [ "$code" = "200" ] || { echo "::warning::https://frontline.phpexpert.de/ antwortet mit HTTP $code (Zielordner FTP_DIR prüfen)."; }
+          [ "$code" = "200" ] || echo "::warning::https://frontline.phpexpert.de/ antwortet mit HTTP $code (Zielordner FTP_DIR prüfen)."
+          head=$(curl -s https://frontline.phpexpert.de/api/save.php | head -c 200 || true)
+          echo "Spielstand-API (Anfang): $head"
+          case "$head" in
+            *"<?php"*|"")
+              echo "::error::Der Webspace führt PHP unter frontline.phpexpert.de nicht aus (save.php kommt als Quelltext oder gar nicht). PHP für die Domain im Kundenbereich einschalten; der Datenbank-Zugang wurde NICHT hochgeladen."
+              exit 1 ;;
+          esac
+          ssl=$([ "$FTP_PROTOCOL" = "ftp" ] && echo false || echo true)
+          verify=$([ "$FTP_SECURITY" = "loose" ] && echo no || echo yes)
+          lftp --env-password -u "$FTP_USER" "$FTP_SERVER" <<LFTP
+          set ftp:ssl-force $ssl
+          set ftp:ssl-protect-data $ssl
+          set ssl:verify-certificate $verify
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 2
+          put secret/config.php -o ${FTP_DIR}api/config.php
+          bye
+          LFTP
+          sleep 2
+          echo "Spielstand-API: $(curl -s https://frontline.phpexpert.de/api/save.php | head -c 300)"
+          leak=$(curl -s https://frontline.phpexpert.de/api/config.php | head -c 100)
+          case "$leak" in *password*) echo "::error::api/config.php ist lesbar!"; exit 1 ;; esac

@@ -13,6 +13,7 @@ const HERE = (p) => fileURLToPath(new URL(`../${p}`, import.meta.url));
 export const CHANGES_DIR = HERE('docs/changes/');
 const CHANGELOG = HERE('docs/changelog.md');
 const SW = HERE('sw.js');
+const VERSION_JS = HERE('js/version.js');
 
 /** Einträge in docs/changes/ (ohne README.md), älteste zuerst (Dateizeit, dann Name). */
 export function pendingChanges(dir = CHANGES_DIR) {
@@ -39,6 +40,11 @@ export function topVersion(log) {
   return [Number(m[1]), Number(m[2])];
 }
 
+/** Inhalt von js/version.js für die oberste Version (Spielversion, seit SP1 in Spielstände geschrieben). */
+export function versionSource(version) {
+  return `export const GAME_VERSION = '${version}';\n`;
+}
+
 /** Neuer Änderungsverlauf und neues sw.js für die Einträge (rein, ohne Dateizugriff). */
 export function applyRelease(log, sw, changes) {
   let [major, minor] = topVersion(log);
@@ -52,7 +58,8 @@ export function applyRelease(log, sw, changes) {
   const i = log.search(/^- v\d+\.\d+/m);
   const newLog = log.slice(0, i) + lines.reverse().join('\n') + '\n' + log.slice(i);
   const newSw = sw.replace(m[0], `const CACHE_VERSION = 'frontline-v${cache}';`);
-  return { newLog, newSw, versions: lines.map((l) => l.slice(2, l.indexOf(':'))).reverse(), cache };
+  const versions = lines.map((l) => l.slice(2, l.indexOf(':'))).reverse();
+  return { newLog, newSw, versions, cache, top: versions[versions.length - 1] };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
@@ -67,12 +74,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     for (const [n, e] of bad) console.error(`docs/changes/${n}: ${e}`);
     process.exit(1);
   }
-  const { newLog, newSw, versions, cache } = applyRelease(readFileSync(CHANGELOG, 'utf8'), readFileSync(SW, 'utf8'), changes);
+  const { newLog, newSw, versions, cache, top } = applyRelease(readFileSync(CHANGELOG, 'utf8'), readFileSync(SW, 'utf8'), changes);
   changes.forEach((c, k) => console.log(`${versions[k]}  ← docs/changes/${c.name}`));
-  console.log(`CACHE_VERSION → frontline-v${cache}`);
+  console.log(`CACHE_VERSION → frontline-v${cache}, js/version.js → ${top}`);
   if (dry) process.exit(0);
   writeFileSync(CHANGELOG, newLog);
   writeFileSync(SW, newSw);
+  writeFileSync(VERSION_JS, versionSource(top));
   for (const c of changes) unlinkSync(c.file);
   console.log('Eingetragen. Jetzt npm test, committen, nach main pushen.');
 }

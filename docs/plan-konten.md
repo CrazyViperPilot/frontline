@@ -21,7 +21,7 @@ dem Konto. Umsetzung mit Haiku, ein Paket je Sitzung, auf eigenem Branch `konten
 |---|---|---|
 | KO1 | Backend Konten: `api/auth.php` (register, verify, login, logout, me, forgot, reset), Tabellen `users`, `tokens`, `sessions`, `attempts`; SMTP-Versand `api/lib/mail.php`; Deploy schreibt SMTP-Werte in `config.php` | gebaut (Doku: [docs/prd/konto.md](prd/konto.md)) |
 | KO2 | Spielstände ans Konto: `api/save.php` nur mit Sitzung, Spalte `user_id`, nur eigene Stände; Client `js/ui/saves.js` nutzt den Webspace nur angemeldet (`credentials: 'include'`) | gebaut (Doku: [docs/prd/konto.md](prd/konto.md), Abschnitt „Spielstände am Konto“) |
-| KO3 | Oberfläche: Konto-Bereich im Startmenü (Registrieren, Anmelden, Abmelden, Passwort vergessen, angemeldet als …, Konto-Art), Seiten-Rückkehr nach Bestätigungs- und Rücksetzlink (`/?verified=1`, `/?reset=<token>`) | offen |
+| KO3 | Oberfläche: Konto-Bereich im Startmenü (Registrieren, Anmelden, Abmelden, Passwort vergessen, angemeldet als …, Konto-Art), Seiten-Rückkehr nach Bestätigungs- und Rücksetzlink (`/?verified=1`, `/?reset=<token>`) | gebaut (Doku: [docs/prd/konto.md](prd/konto.md), Abschnitt „Oberfläche“) |
 
 ### KO1 – Datenmodell und API
 - `users`: `id BIGINT AUTO_INCREMENT`, `email VARCHAR(254) UNIQUE` (klein geschrieben), `pass_hash VARCHAR(255)`, `verified_at BIGINT NULL`,

@@ -1,7 +1,7 @@
 # Konten (§17)
 
 Benutzersteuerung als Grundlage für späteres Vermarkten (Premium-Konten u. a.). Plan mit allen Paketen: [docs/plan-konten.md](../plan-konten.md).
-**Stand:** KO1 (Backend) und KO2 (Spielstände ans Konto) gebaut. KO3 (Oberfläche im Startmenü, Rücksprung von den Mail-Links) steht aus.
+**Stand:** KO1 (Backend), KO2 (Spielstände ans Konto) und KO3 (Oberfläche im Startmenü, Rücksprung von den Mail-Links) gebaut.
 
 ## Ziel und Regeln
 
@@ -95,6 +95,25 @@ abgelehnte Adresse), steht im Protokoll der Grund, im Browser nur „Die E-Mail 
 - `api/lib/db.php`: Zugang aus `api/config.php`, Verbindung und Tabellen (gemeinsam mit `api/save.php`).
 - `api/lib/mail.php`: SMTP-Versand.
 - `api/lib/.htaccess` und `api/.htaccess` sperren den Code und `config.php` gegen direkten Zugriff. `api/config.php` steht nicht im Repo.
+
+## Oberfläche (KO3, Startmenü)
+
+- **Ort:** Bereich „Konto“ direkt unter dem Titel im Startmenü (`js/ui/menu.js`, Stil in `css/style.css`, Klasse `.account`).
+  Die Anfragen laufen über `accountRequest`, `accountUser`, `setRemoteEnabled` aus `js/ui/saves.js`.
+- **Abgemeldet:** Hinweis „Spielstände nur auf diesem Gerät“, drei Knöpfe: Anmelden, Registrieren, Passwort vergessen. Der Knopf
+  öffnet das Formular darunter, ein zweiter Druck schließt es. Registrieren verlangt die Wiederholung des Passworts; Passwörter unter
+  8 Zeichen weist schon das Formular ab. Nach dem Registrieren steht die Antwort der API darunter (Hinweis auf die Bestätigungsmail).
+- **Fehler:** Die Meldung kommt wörtlich aus der API (`error`), z. B. „E-Mail oder Passwort falsch.“ oder „Zu viele Anmeldeversuche.“
+  Ohne Antwort des Servers steht dort „Keine Verbindung zum Server. Bitte später erneut versuchen.“
+- **Angemeldet:** „Angemeldet als <E-Mail> · Konto: Kostenlos“ bzw. „Premium (bis TT.MM.JJJJ)“ und Abmelden. Nach dem Anmelden
+  schaltet das Spiel den Webspace ein (`setRemoteEnabled(true)`, lokale Stände gehen ins Konto) und lädt die Spielstand-Liste neu;
+  nach dem Abmelden schaltet es ihn aus und lädt neu. Abmelden bei Netzfehler bleibt angemeldet und zeigt den Fehler.
+- **Beim Start:** `accountUser()` fragt `me` ab. Antwortet der Server nicht, zeigt der Bereich „abgemeldet“; der Gerätebetrieb bleibt.
+- **Rücksprung von den Mail-Links:** `?verified=1` zeigt „E-Mail bestätigt, du kannst dich jetzt anmelden.“, `?verified=0` zeigt
+  „Link ungültig oder abgelaufen.“ (beides mit Anmelde-Formular). `?reset=<token>` öffnet „Neues Passwort“ (zweimal); Erfolg führt
+  zurück zum Anmelden. Ein Token, der nicht wie ein Link aussieht (64 Hex-Zeichen), gilt als ungültig. Die Parameter nimmt das
+  Startmenü beim ersten Anzeigen aus der Adresszeile (`history.replaceState`).
+- **Keine Aussagen über Adressen:** Die Oberfläche zeigt nur die Antworten der API; ob eine Adresse existiert, erfährt sie nicht.
 
 ## Tests
 

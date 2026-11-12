@@ -327,6 +327,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   z-index: 20;
   display: grid;
   place-items: center;
+  grid-template-columns: minmax(0, 1fr); /* die Spalte folgt dem Bildschirm, nicht der breitesten Zeile (Handy, SP3) */
   padding: 16px;
   overflow: auto;
   background: radial-gradient(ellipse at center, #141814d9, #0a0c0af5);
@@ -342,6 +343,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   box-shadow: 0 20px 60px #000a;
 }
 .menu h2 { margin: 0 0 14px; font-size: 22px; text-align: center; }
+@media (max-width: 560px) { .menu { box-sizing: border-box; } } /* Handy: Polsterung innerhalb der Breite (SP3) */
 .logo {
   margin: 0;
   font-size: 44px;
@@ -403,6 +405,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 }
 .menu .primary:hover { background: #d8b130; border: 0; }
 .menu .seg button { height: 38px; }
+.menu .seg { flex-wrap: wrap; } /* Reihen mit fünf oder sechs Knöpfen (Wetter, Licht) brechen auf Handy-Breite um */
 .menu .small { font-size: 12px; }
 
 .keys { width: 100%; border-collapse: collapse; font-size: 13px; }

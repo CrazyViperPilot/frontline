@@ -3,7 +3,7 @@
 Echtzeit-Strategie im Browser: FOBs bauen, Nachschub organisieren, die Konfliktzone in der Mitte halten.
 Spieler (Blau) gegen Computer (Rot). Vanilla JS, Canvas 2D und WebGL, kein Build-Schritt, offline spielbar (PWA).
 
-**Spielen:** <https://frontline.phpexpert.de/> (wird nach jedem Push auf `main` mit grünen Tests per GitHub Actions über FTP hochgeladen, siehe `.github/workflows/deploy.yml`).
+**Spielen:** <https://phpexpert.de/frontline/> (wird nach jedem Push auf `main` mit grünen Tests per GitHub Actions über FTP hochgeladen, siehe `.github/workflows/deploy.yml`).
 
 | Datei | Inhalt |
 |---|---|

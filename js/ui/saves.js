@@ -1,5 +1,5 @@
 // Spielstände speichern und fortsetzen (seit SP2: beliebig viele Stände, je mit id). Lokal in IndexedDB (Store `saves`,
-// läuft offline) und zusätzlich auf Daniels Webspace (PHP `api/save.php` in diesem Repo, MySQL, frontline.phpexpert.de).
+// läuft offline) und zusätzlich auf Daniels Webspace (PHP `api/save.php` in diesem Repo, MySQL, phpexpert.de/frontline).
 // Die Liste ist die Vereinigung beider Seiten; je id gewinnt der neuere `updatedAt`. Ohne Netz bleibt es beim Gerät;
 // `syncUp()` schickt neuere lokale Stände später nach. Gelöscht wird auf beiden Seiten; ist der Webspace dabei nicht
 // erreichbar, merkt sich das Gerät die Löschung (localStorage) und holt sie bei der nächsten Synchronisierung nach.
@@ -8,7 +8,9 @@
 // schickt die lokalen Stände ins Konto (`syncUp`).
 import { toB64, fromB64 } from '../core/snapshot.js';
 
-export const REMOTE_URL = 'https://frontline.phpexpert.de/api/save.php';
+// Basis der Spiel-Adresse (Wurzel dieses Repos, z. B. https://phpexpert.de/frontline/): die API liegt daneben unter api/.
+const DEPLOY_BASE = new URL('../../', import.meta.url);
+export const REMOTE_URL = new URL('api/save.php', DEPLOY_BASE).href;
 export const NAME_MAX = 60;
 const DB = 'frontline-save';
 const DB_VERSION = 2; // 1: ein Stand unter `current` im Store `save`; 2: Store `saves` nach id
@@ -18,7 +20,7 @@ const OLD_KEY = 'current';
 const TOMB_KEY = 'frontline-spielstand-loeschen'; // ids, die auf dem Webspace noch gelöscht werden müssen
 const RENAME_KEY = 'frontline-spielstand-umbenannt'; // { id: name }: Umbenennungen, die der Webspace noch nicht bestätigt hat
 const TIMEOUT = 15000;
-export const ACCOUNT_URL = 'https://frontline.phpexpert.de/api/auth.php'; // Konten (KO1), Sitzung über das Cookie fl_session
+export const ACCOUNT_URL = new URL('api/auth.php', DEPLOY_BASE).href; // Konten (KO1), Sitzung über das Cookie fl_session
 let remoteOn = true; // false: nicht angemeldet (401 vom Webspace oder setRemoteEnabled(false)); dann kein Webspace-Zugriff
 
 /**

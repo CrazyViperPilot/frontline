@@ -13,9 +13,9 @@ function fl_origin() {
     return isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
 }
 
-// Erlaubt sind das Spiel auf frontline.phpexpert.de und die lokale Entwicklung (localhost, 127.0.0.1).
+// Erlaubt sind das Spiel auf phpexpert.de/frontline und die lokale Entwicklung (localhost, 127.0.0.1).
 function fl_origin_allowed($origin) {
-    return $origin === 'https://frontline.phpexpert.de' || preg_match('#^http://(localhost|127\.0\.0\.1)(:\d+)?$#', $origin) === 1;
+    return $origin === 'https://phpexpert.de' || preg_match('#^http://(localhost|127\.0\.0\.1)(:\d+)?$#', $origin) === 1;
 }
 
 // Kopfzeilen jeder Antwort. Die Vorabfrage OPTIONS endet hier mit 204.

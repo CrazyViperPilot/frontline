@@ -16,7 +16,7 @@
 //       difficulty, ended (bool), size (Bytes des gepackten Stands, vom Server gesetzt).
 // Fehler: JSON {"error": "…"} mit HTTP-Code (400 Anfrage, 401 nicht angemeldet, 403 Stand gehört einem anderen Konto,
 //         404 nicht gefunden, 413 zu groß, 500 Server/Datenbank).
-// Das Spiel (frontline.phpexpert.de, gleiche Herkunft) schreibt; Browser anderer Seiten dürfen nicht schreiben.
+// Das Spiel (phpexpert.de/frontline, gleiche Herkunft) schreibt; Browser anderer Seiten dürfen nicht schreiben.
 
 require_once __DIR__ . '/lib/http.php';
 require_once __DIR__ . '/lib/db.php';

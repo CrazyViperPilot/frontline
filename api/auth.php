@@ -1,11 +1,11 @@
 <?php
 // Frontline Konten-API (KO1, Regeln: docs/prd/konto.md). Aktion im JSON-Feld action, Antwort immer JSON:
 //   POST auth.php {"action":"register","email":"…","password":"…"}  → {"ok":true,"message":"…"}; Mail mit Bestätigungslink
-//   GET  auth.php?verify=<token>                                    → 302 auf /?verified=1 oder /?verified=0 (Link aus der Mail)
+//   GET  auth.php?verify=<token>                                    → 302 auf /frontline/?verified=1 oder …=0 (Link aus der Mail)
 //   POST auth.php {"action":"login","email":"…","password":"…"}     → {"ok":true,"user":{…}}; setzt Cookie fl_session
 //   POST auth.php {"action":"logout"}                               → {"ok":true}; löscht die Sitzung
 //   POST auth.php {"action":"me"}                                   → {"user":{…}} oder {"user":null}
-//   POST auth.php {"action":"forgot","email":"…"}                   → {"ok":true,"message":"…"}; Mail mit Link /?reset=<token>
+//   POST auth.php {"action":"forgot","email":"…"}                   → {"ok":true,"message":"…"}; Mail mit Link /frontline/?reset=<token>
 //   POST auth.php {"action":"reset","token":"…","password":"…"}     → {"ok":true}; setzt das Passwort, meldet alle Sitzungen ab
 // user nach außen: {email, plan, premiumUntil, createdAt}, nie Hash oder id.
 // Fehler: {"error": "…"} mit HTTP-Code: 400 Anfrage, 401 Anmeldung falsch, 403 nicht bestätigt, 405 Methode,
@@ -18,7 +18,8 @@ require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/mail.php';
 require_once __DIR__ . '/lib/konto.php';
 
-const FL_SITE = 'https://frontline.phpexpert.de';  // Ziel der Links in den Mails
+const FL_SITE = 'https://phpexpert.de/frontline';  // Adresse des Spiels: Ziel der Links in den Mails
+const FL_PATH = '/frontline/';                      // Pfad des Spiels auf dem Webspace (Weiterleitung, Cookie)
 const FL_SESSION_DAYS = 30;     // Sitzung (Cookie fl_session, Pfad /)
 const FL_VERIFY_HOURS = 48;     // Bestätigungslink, einmal gültig
 const FL_RESET_HOURS = 1;       // Link „Passwort zurücksetzen“, einmal gültig
@@ -191,7 +192,7 @@ function fl_verify_link($raw) {
         }
     }
     header_remove('Content-Type');
-    header('Location: /?verified=' . ($ok ? '1' : '0'), true, 302);
+    header('Location: ' . FL_PATH . '?verified=' . ($ok ? '1' : '0'), true, 302);
     exit;
 }
 
@@ -298,7 +299,7 @@ function fl_user_out(array $u) {
 
 function fl_set_cookie($value, $expires) {
     setcookie('fl_session', $value, [
-        'expires' => $expires, 'path' => '/', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax',
+        'expires' => $expires, 'path' => FL_PATH, 'secure' => true, 'httponly' => true, 'samesite' => 'Lax',
     ]);
 }
 

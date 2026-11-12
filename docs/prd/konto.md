@@ -27,11 +27,11 @@ kommen aus dem Datenbankpasswort (`api/config.php`), IPs und Adressen lassen sic
 | Aufruf | Antwort | Wirkung |
 |---|---|---|
 | `POST {"action":"register","email","password"}` | `{ok, message}` | legt ein Konto an oder schickt bei unbestätigtem Konto einen neuen Link; Mail mit `…/api/auth.php?verify=<token>` (48 h) |
-| `GET auth.php?verify=<token>` | 302 auf `/?verified=1` bzw. `/?verified=0` | bestätigt das Konto, Link wird verbraucht |
+| `GET auth.php?verify=<token>` | 302 auf `/frontline/?verified=1` bzw. `…=0` | bestätigt das Konto, Link wird verbraucht |
 | `POST {"action":"login","email","password"}` | `{ok, user}` + Cookie | nur bestätigte Konten; setzt `fl_session` |
 | `POST {"action":"logout"}` | `{ok}` | beendet die Sitzung, löscht das Cookie |
 | `POST {"action":"me"}` | `{user}` oder `{user:null}` | ohne Cookie ohne Datenbankzugriff |
-| `POST {"action":"forgot","email"}` | `{ok, message}` | nur für bestätigte Konten: Mail mit `/?reset=<token>` (1 h) |
+| `POST {"action":"forgot","email"}` | `{ok, message}` | nur für bestätigte Konten: Mail mit `/frontline/?reset=<token>` (1 h) |
 | `POST {"action":"reset","token","password"}` | `{ok}` | setzt das Passwort, beendet alle Sitzungen des Kontos |
 
 `user` nach außen: `{email, plan, premiumUntil, createdAt}`, nie Hash oder id.

@@ -1,4 +1,4 @@
-# Lädt das Spiel per FTP auf Daniels Webspace (https://frontline.phpexpert.de/), sobald die Tests auf main grün sind.
+# Lädt das Spiel per FTP auf Daniels Webspace (${SITE_URL}), sobald die Tests auf main grün sind.
 # Von Hand: Actions → Deploy → Run workflow (lädt ohne Test-Abwarten hoch).
 #
 # Secrets (Settings → Secrets and variables → Actions):
@@ -21,6 +21,9 @@ on:
   workflow_dispatch:
 
 concurrency: deploy
+
+env:
+  SITE_URL: ${{ vars.SITE_URL || 'https://phpexpert.de/frontline/' }}
 
 permissions:
   contents: read
@@ -124,14 +127,14 @@ jobs:
           FTP_SECURITY: ${{ vars.FTP_SECURITY || 'strict' }}
         run: |
           sleep 5
-          code=$(curl -s -o /dev/null -w '%{http_code}' https://frontline.phpexpert.de/)
+          code=$(curl -s -o /dev/null -w '%{http_code}' ${SITE_URL})
           echo "Startseite: HTTP $code"
-          [ "$code" = "200" ] || echo "::warning::https://frontline.phpexpert.de/ antwortet mit HTTP $code (Zielordner FTP_DIR prüfen)."
-          head=$(curl -s https://frontline.phpexpert.de/api/save.php | head -c 200 || true)
+          [ "$code" = "200" ] || echo "::warning::${SITE_URL} antwortet mit HTTP $code (Zielordner FTP_DIR prüfen)."
+          head=$(curl -s ${SITE_URL}api/save.php | head -c 200 || true)
           echo "Spielstand-API (Anfang): $head"
           case "$head" in
             *"<?php"*|"")
-              echo "::error::Der Webspace führt PHP unter frontline.phpexpert.de nicht aus (save.php kommt als Quelltext oder gar nicht). PHP für die Domain im Kundenbereich einschalten; der Datenbank-Zugang wurde NICHT hochgeladen."
+              echo "::error::Der Webspace führt PHP unter ${SITE_URL} nicht aus (save.php kommt als Quelltext oder gar nicht). PHP für die Domain im Kundenbereich einschalten; der Datenbank-Zugang wurde NICHT hochgeladen."
               exit 1 ;;
           esac
           ssl=$([ "$FTP_PROTOCOL" = "ftp" ] && echo false || echo true)
@@ -147,6 +150,6 @@ jobs:
           bye
           LFTP
           sleep 2
-          echo "Spielstand-API: $(curl -s https://frontline.phpexpert.de/api/save.php | head -c 300)"
-          leak=$(curl -s https://frontline.phpexpert.de/api/config.php | head -c 100)
+          echo "Spielstand-API: $(curl -s ${SITE_URL}api/save.php | head -c 300)"
+          leak=$(curl -s ${SITE_URL}api/config.php | head -c 100)
           case "$leak" in *password*) echo "::error::api/config.php ist lesbar!"; exit 1 ;; esac

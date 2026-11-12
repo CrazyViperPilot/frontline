@@ -1,0 +1,1 @@
+**Spielstand-Backend auf MySQL** (nur Server, `api/save.php`): beliebig viele Stände je id in MySQL, die Spielversion steht in `js/version.js` (`npm run release` setzt sie); der Client folgt mit der Spielstand-Liste.

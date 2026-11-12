@@ -285,3 +285,4 @@ Wo jedes Feature liegt. „KI“ = Konstanten-Präfix in `js/data/ai.js`, Logik 
 | Spielstand speichern und laden (IndexedDB und Webspace, Format `SAVE_FORMAT`) | §16 | `SAVE_FORMAT` (`savegame.js`) | `savegame.js`, `snapshot.js` | – | `js/ui/saves.js` | `save.test.js`, `saves.test.js` |
 | Lichtstimmung (nur Optik, Menü „Licht“) | §7 „Wetter und Jahreszeiten“ | `MOOD_SETTINGS`, `MOODS` (`js/render/mood.js`) | – | – | `js/render/mood.js` | `mood.test.js` |
 | Offline, Installation | §11 | – | – | – | `sw.js`, `manifest.json`, `icons/` | `assets.test.js` |
+| Benutzerkonten (Backend KO1: Registrieren, Bestätigung, Anmelden per Cookie, Passwort vergessen, SMTP) | §17 | Fristen und Bremsen oben in `api/auth.php`; SMTP-Zugang in `api/config.php` (Deploy) | `api/auth.php`, `api/lib/db.php`, `api/lib/mail.php` (PHP, kein Spielcode) | – | – | von Hand (siehe §17) |

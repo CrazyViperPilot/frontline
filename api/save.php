@@ -1,6 +1,7 @@
 <?php
 // Frontline Spielstand-API (seit SP1 MySQL 8 per PDO): beliebig viele Stände, je mit id (UUID, vom Client erzeugt).
 // Zugang in api/config.php (nicht im Repo; der Deploy schreibt sie aus den Secrets DB_*). Die Tabelle legt sich selbst an.
+// Gemeinsamer Code (CORS, JSON-Fehler, Datenbankzugang) liegt in api/lib/.
 //
 //   GET  save.php             → {"saves": [meta, …]}            neueste zuerst, ohne data
 //   GET  save.php?id=…        → {"meta": {…}, "data": "<base64 gzip>"}
@@ -12,65 +13,21 @@
 // Fehler: JSON {"error": "…"} mit HTTP-Code (400 Anfrage, 404 nicht gefunden, 413 zu groß, 500 Server/Datenbank).
 // Das Spiel (frontline.phpexpert.de, gleiche Herkunft) schreibt; Browser anderer Seiten dürfen nicht schreiben.
 
+require_once __DIR__ . '/lib/http.php';
+require_once __DIR__ . '/lib/db.php';
+
 const FL_MAX_BYTES = 12 * 1024 * 1024; // gepackter Stand, normal < 1 MB
 const FL_UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
 // Spalten der Liste (ohne data); Reihenfolge wie in meta_out()
 const FL_META_COLS = 'id, name, version, format, created_at, updated_at, game_time, points_blue, points_red, win_points, difficulty, ended, size';
 
-$origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '';
-$allowed = $origin === 'https://frontline.phpexpert.de' || preg_match('#^http://(localhost|127\.0\.0\.1)(:\d+)?$#', $origin);
-if ($allowed) {
-    header('Access-Control-Allow-Origin: ' . $origin);
-    header('Vary: Origin');
-}
-header('Access-Control-Allow-Headers: Content-Type');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Content-Type: application/json; charset=utf-8');
-header('Cache-Control: no-store');
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
+fl_cors();
+fl_exception_handler('Serverfehler beim Spielstand');
+fl_check_origin();
 
-function fail($code, $message) {
-    http_response_code($code);
-    echo json_encode(['error' => $message], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-function out($value) {
-    echo json_encode($value, JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-// Unerwartete Fehler (z. B. Datenbank mitten in einer Anfrage) als JSON mit 500, Details nur ins Protokoll.
-set_exception_handler(function ($e) {
-    error_log('frontline save.php: ' . $e->getMessage());
-    fail(500, 'Serverfehler beim Spielstand');
-});
-
-// Browser anderer Seiten dürfen nicht schreiben.
-if ($origin !== '' && !$allowed) fail(403, 'Herkunft nicht erlaubt');
-
-// Zugang aus api/config.php (vom Deploy geschrieben). Fehlt sie, ist die Datenbank nicht eingerichtet.
-$cfgFile = __DIR__ . '/config.php';
-if (!is_file($cfgFile)) fail(500, 'Datenbank nicht eingerichtet: api/config.php fehlt (der Deploy schreibt sie aus den Secrets DB_*)');
-$cfg = require $cfgFile;
-foreach (['host', 'port', 'name', 'user', 'password'] as $k) {
-    if (!is_array($cfg) || !array_key_exists($k, $cfg)) fail(500, "api/config.php unvollständig: '$k' fehlt");
-}
-
-// Verbindung und Tabelle. Fehlertexte der Datenbank gehen ins Protokoll, nicht an den Browser.
-try {
-    $pdo = new PDO(
-        'mysql:host=' . $cfg['host'] . ';port=' . (int) $cfg['port'] . ';dbname=' . $cfg['name'] . ';charset=utf8mb4',
-        (string) $cfg['user'],
-        (string) $cfg['password'],
-        [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_EMULATE_PREPARES => false,
-            PDO::MYSQL_ATTR_FOUND_ROWS => true, // rowCount() = gefundene Zeilen (Umbenennen ohne Änderung zählt als Treffer)
-        ]
-    );
-    $pdo->exec(
-        'CREATE TABLE IF NOT EXISTS saves (
+// Verbindung und Tabelle (Fehler der Datenbank gehen ins Protokoll, nicht an den Browser).
+$pdo = fl_db([
+    'CREATE TABLE IF NOT EXISTS saves (
             id CHAR(36) NOT NULL PRIMARY KEY,
             name VARCHAR(60) NOT NULL,
             version VARCHAR(16) NOT NULL,
@@ -86,12 +43,8 @@ try {
             size INT NOT NULL,
             data MEDIUMBLOB NOT NULL,
             INDEX idx_updated (updated_at)
-        ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
-    );
-} catch (PDOException $e) {
-    error_log('frontline save.php: ' . $e->getMessage());
-    fail(500, 'Datenbank nicht erreichbar');
-}
+        ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+]);
 
 // Eine Zeile der Liste als Meta-Objekt (camelCase, wie der Client sie schickt).
 function meta_out(array $r) {

@@ -3,6 +3,10 @@
 #
 # Secrets (Settings → Secrets and variables → Actions):
 #   FTP_SERVER, FTP_USER, FTP_PASSWORD   Zugang zum Webspace
+#   DB_SERVER, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD   MySQL für api/save.php und api/auth.php (Pflicht; sonst Abbruch)
+#   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, MAIL_FROM   Postfach für die Konto-Mails (Bestätigung, Passwort vergessen).
+#     Fehlen sie, gibt es nur eine Warnung; die API meldet dann beim Mailversand „E-Mail-Versand … nicht eingerichtet“.
+#     Port 465 = TLS von Anfang an, sonst STARTTLS (z. B. 587). MAIL_FROM z. B. „Frontline <spiel@beispiel.de>“.
 # Optionale Variablen (gleiche Seite, Reiter „Variables“):
 #   FTP_DIR       Zielordner relativ zum FTP-Login, mit Schrägstrich am Ende (Standard ./ = Startordner des Logins)
 #   FTP_PROTOCOL  ftps (Standard) oder ftp
@@ -41,22 +45,40 @@ jobs:
           # beim Auslösen durch den Testlauf genau den getesteten Stand hochladen
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
-      # Datenbank-Zugang für api/save.php (MySQL). Werte per PHP var_export gequotet, nicht per Shell-Interpolation.
-      - name: Datenbank-Zugang schreiben (api/config.php)
+      # Datenbank- und Mail-Zugang für api/save.php und api/auth.php. Werte per PHP var_export gequotet, nicht per Shell-Interpolation.
+      # Die SMTP-Werte sind optional: fehlen sie, nur eine Warnung (die Konto-Mails melden dann einen Fehler).
+      - name: Datenbank- und Mail-Zugang schreiben (api/config.php)
         env:
           DB_SERVER: ${{ secrets.DB_SERVER }}
           DB_PORT: ${{ secrets.DB_PORT }}
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
         run: |
           for v in DB_SERVER DB_PORT DB_NAME DB_USER DB_PASSWORD; do
             if [ -z "${!v}" ]; then echo "::error::Secret $v fehlt (Settings → Secrets and variables → Actions)."; exit 1; fi
           done
           if ! [[ "$DB_PORT" =~ ^[0-9]+$ ]]; then echo "::error::Secret DB_PORT ist keine Zahl."; exit 1; fi
+          missing=""
+          for v in SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD MAIL_FROM; do
+            if [ -z "${!v}" ]; then missing="$missing $v"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::warning::Secrets fehlen für den Konto-Mailversand:$missing. Bestätigung und Passwort vergessen gehen nicht raus (die API meldet das)."
+          elif ! [[ "$SMTP_PORT" =~ ^[0-9]+$ ]]; then
+            echo "::warning::Secret SMTP_PORT ist keine Zahl: Mailversand nicht eingerichtet."
+          fi
           php -r '
             $c = ["host" => getenv("DB_SERVER"), "port" => (int) getenv("DB_PORT"), "name" => getenv("DB_NAME"),
-                  "user" => getenv("DB_USER"), "password" => getenv("DB_PASSWORD")];
+                  "user" => getenv("DB_USER"), "password" => getenv("DB_PASSWORD"),
+                  "smtp_host" => (string) getenv("SMTP_HOST"), "smtp_port" => (int) getenv("SMTP_PORT"),
+                  "smtp_user" => (string) getenv("SMTP_USER"), "smtp_password" => (string) getenv("SMTP_PASSWORD"),
+                  "mail_from" => (string) getenv("MAIL_FROM")];
             $src = "<?php\n// Vom Deploy (.github/workflows/deploy.yml) aus den Secrets DB_* geschrieben. Nicht im Repo.\nreturn " . var_export($c, true) . ";\n";
             @mkdir("secret");
             if (file_put_contents("secret/config.php", $src) === false) { fwrite(STDERR, "secret/config.php nicht schreibbar\n"); exit(1); }

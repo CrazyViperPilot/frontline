@@ -1,3 +1,4 @@
 .smoke/
 .preview/
 api/config.php
+secret/

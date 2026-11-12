@@ -1,7 +1,7 @@
 // Spielstände (SP2): reine Logik von js/ui/saves.js ohne Browser. Abgleich Gerät/Webspace, Namen, Ids, Übernahme des alten Stands.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeSaves, syncPush, defaultName, cleanName, newSaveId, fromLegacy, describe, NAME_MAX } from '../js/ui/saves.js';
+import { mergeSaves, syncPush, defaultName, cleanName, copyName, newSaveId, fromLegacy, describe, NAME_MAX } from '../js/ui/saves.js';
 
 const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const meta = (id, updatedAt, extra = {}) => ({ id, name: `Stand ${id}`, version: 'v5.143', format: 5, createdAt: 1, updatedAt, gameTime: 60, points: [0, 0], winPoints: 100, difficulty: 'normal', ended: false, size: 10, ...extra });
@@ -84,4 +84,14 @@ test('Anzeige: Spielzeit, Punkte, Version und Quelle', () => {
   const t = describe(meta('a', 0, { gameTime: 65.4, points: [12, 7] }), 'Webspace');
   assert.match(t, /^Spielzeit 01:05 · Punkte 12 : 7 von 100 · normal · v5\.143 · gespeichert /);
   assert.match(t, /\(Webspace\)$/);
+});
+
+test('Kopie: „<Name> (Kopie)“, auf NAME_MAX Zeichen gekürzt', () => {
+  assert.equal(copyName('Nordfront'), 'Nordfront (Kopie)');
+  assert.equal(copyName('  Nordfront  '), 'Nordfront (Kopie)');
+  assert.equal(copyName(''), '(Kopie)');
+  const long = copyName('ä'.repeat(NAME_MAX));
+  assert.equal([...long].length, NAME_MAX, 'Zeichen, nicht Bytes');
+  assert.ok(long.endsWith(' (Kopie)'));
+  assert.doesNotThrow(() => cleanName(long));
 });

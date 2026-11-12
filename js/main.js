@@ -135,12 +135,17 @@ const MIN_SAVE_TIME = 20; // erst ab dieser Spielzeit (s) lohnt ein Stand
 /**
  * Stand der laufenden Partie packen. Liefert null, wenn es nichts zu speichern gibt (Ende ohne `ended`, zu früh, Debug).
  * Der Endstand (ended = true) wird einmal nach dem Spielende geschrieben. Die erste Speicherung legt die Partie als Stand an
- * (id, Name „Partie TT.MM.JJJJ HH:MM“, createdAt); danach schreibt jede Speicherung in diesen Stand.
+ * (id, Name „Partie TT.MM.JJJJ HH:MM“, createdAt); danach schreibt jede Speicherung in diesen Stand. copyName (seit SP3,
+ * „Speichern unter …“): legt stattdessen einen neuen Stand mit neuer id und diesem Namen an, in den die Partie weiterschreibt.
  */
-async function captureSave(s, ended = false) {
+async function captureSave(s, ended = false, copyName = null) {
   const g = s.game;
   if (DEBUG || (!ended && (s.ended || g.winner !== null || g.time < MIN_SAVE_TIME))) return null;
-  if (!s.saveId) {
+  if (copyName !== null) {
+    s.saveId = saves.newSaveId();
+    s.saveName = copyName;
+    s.createdAt = Date.now();
+  } else if (!s.saveId) {
     s.saveId = saves.newSaveId();
     s.saveName = saves.defaultName(new Date());
     s.createdAt = Date.now();
@@ -174,28 +179,50 @@ async function captureSave(s, ended = false) {
  * Speichert die laufende Partie. Speicherungen laufen nacheinander (eine Warteschlange je Partie). Liefert einen Text für
  * die Anzeige (oder null, wenn nichts gespeichert wurde).
  */
-function saveNow(s, ended = false) {
+function saveNow(s, ended = false, copyName = null) {
   s.pendingSaves = (s.pendingSaves ?? 0) + 1;
-  const job = (s.saveChain ?? Promise.resolve()).then(() => doSave(s, ended)).finally(() => {
+  const job = (s.saveChain ?? Promise.resolve()).then(() => doSave(s, ended, copyName)).finally(() => {
     s.pendingSaves -= 1;
   });
   s.saveChain = job.catch(() => {});
   return job;
 }
 
-async function doSave(s, ended) {
+async function doSave(s, ended, copyName = null) {
   try {
-    const rec = await captureSave(s, ended);
+    const rec = await captureSave(s, ended, copyName);
     if (!rec) return null;
     s.lastSave = performance.now();
     const where = await saves.storeSave(rec);
-    return where === 'beide' ? 'Gespeichert (Gerät und Webspace)' : 'Gespeichert (nur Gerät, Webspace nicht erreichbar)';
+    const place = where === 'beide' ? 'Gerät und Webspace' : 'nur Gerät, Webspace nicht erreichbar';
+    return copyName !== null ? `Kopie „${copyName}“ angelegt (${place})` : `Gespeichert (${place})`;
   } catch (err) {
     return `Speichern fehlgeschlagen: ${err.message ?? err}`;
   }
 }
 
-/** Angebot im Startmenü: der neueste nicht beendete Stand (Gerät oder Webspace). Die volle Liste baut SP3. */
+/** „Speichern unter …“ im Pausenmenü: neuer Stand mit diesem Namen, die Partie spielt darin weiter. Liefert einen Text. */
+function saveCopy(s, name) {
+  let clean;
+  try {
+    clean = saves.cleanName(name);
+  } catch (err) {
+    return Promise.reject(err);
+  }
+  if (session !== s || s.ended) return Promise.resolve('Keine laufende Partie');
+  return saveNow(s, false, clean).then((t) => t ?? 'Noch zu kurz zum Speichern (ab 20 s Spielzeit)');
+}
+
+/** „Speichern unter …“ und der Name im Pausenmenü (für showPause): Name des Stands, Vorschlag, Kopie anlegen. */
+function pauseSaveAs(s) {
+  return {
+    name: () => s.saveName ?? null,
+    suggest: () => saves.copyName(s.saveName ?? saves.defaultName(new Date())),
+    copy: (name) => saveCopy(s, name),
+  };
+}
+
+/** Angebot im Startmenü: der neueste nicht beendete Stand (Gerät oder Webspace), dazu die Liste (ui/menu.js). */
 let offeredId = null;
 const resumeOffer = {
   async find() {
@@ -208,24 +235,41 @@ const resumeOffer = {
     return { text: saves.describe(best.meta, best.source) };
   },
   onResume() {
-    const id = offeredId;
-    if (!id) return;
-    saves
-      .loadSave(id)
-      .then((rec) => {
-        if (!rec) throw new Error('Stand nicht gefunden');
-        return resumeGame(rec);
-      })
-      .catch((err) => {
-        showStartMenu(overlay, startGame, { wallet: loadWallet, resetWallet, resume: resumeOffer });
-        alert(`Spielstand lässt sich nicht laden: ${err.message ?? err}`);
-      });
+    if (offeredId) loadStand(offeredId);
   },
   onDiscard() {
     if (offeredId) saves.deleteSave(offeredId).catch(() => {});
     offeredId = null;
   },
+  /** Liste der Stände fürs Startmenü; loadable = Format passt (sonst nicht fortsetzbar). */
+  async list() {
+    if (DEBUG) return [];
+    return (await saves.listSaves()).map((e) => ({ ...e, loadable: e.meta.format === SAVE_FORMAT }));
+  },
+  load: (id) => loadStand(id),
+  /** Umbenennen (Name wird geprüft: 1 bis 60 Zeichen). Ist es die laufende Partie, zieht ihr Name nach. */
+  async rename(id, name) {
+    const clean = saves.cleanName(name);
+    const where = await saves.renameSave(id, clean);
+    if (session?.saveId === id) session.saveName = clean;
+    return where;
+  },
+  remove: (id) => saves.deleteSave(id),
 };
+
+/** Einen Stand laden und fortsetzen; bei Fehler zurück ins Startmenü mit Meldung. */
+function loadStand(id) {
+  saves
+    .loadSave(id)
+    .then((rec) => {
+      if (!rec) throw new Error('Stand nicht gefunden');
+      return resumeGame(rec);
+    })
+    .catch((err) => {
+      showStartMenu(overlay, startGame, { wallet: loadWallet, resetWallet, resume: resumeOffer });
+      alert(`Spielstand lässt sich nicht laden: ${err.message ?? err}`);
+    });
+}
 
 async function resumeGame(rec) {
   const body = await unpack(rec.bytes);
@@ -239,7 +283,7 @@ async function resumeGame(rec) {
   Object.assign(session, { saveId: rec.meta.id, saveName: rec.meta.name, createdAt: rec.meta.createdAt });
   // Beim Fortsetzen erst pausiert: Zeit zum Umsehen
   session.loop.paused = true;
-  showPause(overlay, resume, quitToMenu, () => {}, levelCtl);
+  showPause(overlay, resume, quitToMenu, () => {}, levelCtl, pauseSaveAs(session));
 }
 
 async function quitAndSave() {
@@ -273,9 +317,12 @@ const app = {
     } else {
       s.loop.paused = true;
       const s2 = s;
-      showPause(overlay, resume, quitAndSave, (setText) => {
-        saveNow(s2).then((t) => t && setText(t));
-      }, levelCtl);
+      showPause(overlay, resume, quitAndSave, (setText, setName) => {
+        saveNow(s2).then((t) => {
+          if (t) setText(t);
+          setName();
+        });
+      }, levelCtl, pauseSaveAs(s2));
     }
   },
   toggleView() {

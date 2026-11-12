@@ -13,6 +13,7 @@ const STORE = 'saves';
 const OLD_STORE = 'save';
 const OLD_KEY = 'current';
 const TOMB_KEY = 'frontline-spielstand-loeschen'; // ids, die auf dem Webspace noch gelöscht werden müssen
+const RENAME_KEY = 'frontline-spielstand-umbenannt'; // { id: name }: Umbenennungen, die der Webspace noch nicht bestätigt hat
 const TIMEOUT = 15000;
 
 /**
@@ -89,6 +90,31 @@ function saveTombs(list) {
   }
 }
 
+/** Umbenennungen, die der Webspace noch nicht bestätigt hat ({ id: name }). */
+function loadRenames() {
+  try {
+    const o = JSON.parse(localStorage.getItem(RENAME_KEY) ?? '{}');
+    if (!o || typeof o !== 'object' || Array.isArray(o)) return {};
+    return Object.fromEntries(Object.entries(o).filter(([, v]) => typeof v === 'string'));
+  } catch {
+    return {};
+  }
+}
+
+function saveRenames(o) {
+  try {
+    localStorage.setItem(RENAME_KEY, JSON.stringify(o));
+  } catch {
+    /* kein Speicher: der Name gilt dann nur auf diesem Gerät für diese Sitzung */
+  }
+}
+
+/** Den vorgemerkten Namen auf eine Meta-Zeile legen (das updatedAt bleibt unberührt). */
+function withPendingName(meta) {
+  const name = loadRenames()[meta.id];
+  return name ? { ...meta, name } : meta;
+}
+
 // ---- Webspace ------------------------------------------------------------------------------------------------------
 
 async function remote(method, query = '', body = null) {
@@ -163,6 +189,13 @@ export function defaultName(date = new Date()) {
   return `Partie ${p(date.getDate())}.${p(date.getMonth() + 1)}.${date.getFullYear()} ${p(date.getHours())}:${p(date.getMinutes())}`;
 }
 
+/** Name der Kopie „<Name> (Kopie)“, auf NAME_MAX Zeichen gekürzt. */
+export function copyName(name) {
+  const suffix = ' (Kopie)';
+  const base = [...String(name ?? '').trim()].slice(0, NAME_MAX - suffix.length).join('');
+  return `${base}${suffix}`.trim();
+}
+
 /** Name prüfen wie der Server: getrimmt, 1 bis 60 Zeichen. Wirft bei Verstoß. */
 export function cleanName(name) {
   const t = String(name ?? '').trim();
@@ -229,7 +262,7 @@ export async function listSaves() {
     local.map((r) => r.meta),
     remoteMetas,
     loadTombs(),
-  );
+  ).map((e) => ({ ...e, meta: withPendingName(e.meta) }));
 }
 
 /**
@@ -247,9 +280,9 @@ export async function loadSave(id) {
   }
   if (rm && (!local || rm.meta.updatedAt > local.meta.updatedAt)) {
     await queue(() => writeLocal(rm)).catch(() => {});
-    return rm;
+    return { ...rm, meta: withPendingName(rm.meta) };
   }
-  return local;
+  return local && { ...local, meta: withPendingName(local.meta) };
 }
 
 /**
@@ -270,9 +303,10 @@ export function storeSave(rec) {
 }
 
 /**
- * Umbenennen (Name 1 bis 60 Zeichen). Das Umbenennen auf dem Webspace ändert dort nicht den Zeitstempel. Gelingt es nicht,
- * bekommt der lokale Stand einen neuen updatedAt und wird beim nächsten syncUp mit dem ganzen Stand hochgeschickt.
- * Liefert 'beide' | 'lokal'. Wirft, wenn der Stand weder lokal noch auf dem Webspace existiert.
+ * Umbenennen (Name 1 bis 60 Zeichen). Der Zeitstempel (updatedAt) bleibt überall unverändert: ein veralteter Stand darf
+ * keinen neueren überschreiben. Gelingt das Umbenennen auf dem Webspace nicht, merkt sich das Gerät den Namen
+ * (RENAME_KEY) und schickt ihn beim nächsten syncUp nach. Liefert 'beide' | 'lokal'. Wirft, wenn der Stand weder
+ * lokal noch auf dem Webspace existiert.
  */
 export function renameSave(id, name) {
   const clean = cleanName(name);
@@ -287,9 +321,12 @@ export function renameSave(id, name) {
     }
     if (rec) {
       rec.meta.name = clean;
-      if (!remoteOk) rec.meta.updatedAt = Date.now();
       await writeLocal(rec);
     }
+    const pending = loadRenames();
+    if (remoteOk) delete pending[id];
+    else pending[id] = clean;
+    saveRenames(pending);
     return remoteOk ? 'beide' : 'lokal';
   });
 }
@@ -298,6 +335,11 @@ export function renameSave(id, name) {
 export function deleteSave(id) {
   return queue(async () => {
     await deleteLocal(id).catch(() => {});
+    const pending = loadRenames();
+    if (id in pending) {
+      delete pending[id];
+      saveRenames(pending);
+    }
     try {
       await remoteDelete(id);
     } catch {
@@ -317,6 +359,16 @@ export function syncUp() {
       remoteMetas = await remoteList();
     } catch {
       return 0;
+    }
+    for (const [id, name] of Object.entries(loadRenames())) {
+      try {
+        await remoteRename(id, name);
+      } catch (err) {
+        if (err?.status !== 404) continue; // beim nächsten Mal; 404: der Stand ist dort nicht (mehr)
+      }
+      const pending = loadRenames();
+      delete pending[id];
+      saveRenames(pending);
     }
     const tombs = loadTombs();
     for (const id of tombs) {

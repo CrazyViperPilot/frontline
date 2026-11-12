@@ -735,3 +735,33 @@ body.flow-open .flow-fab { background: #2e372e; }
 /* Gespeicherte Partie im Startmenü (ui/saves.js) */
 .resume { margin: 8px 0 14px; padding: 10px 12px; border: 1px solid var(--muted); border-radius: 8px; text-align: center; font-size: 14px; }
 .resume p { margin: 0 0 6px; }
+
+/* Spielstand-Liste im Startmenü und „Speichern unter …“ im Pausenmenü (SP3) */
+.saves { margin: 0 0 14px; }
+.saves h3 { margin: 0 0 8px; font-size: 11.5px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; font-weight: 600; }
+.save-list { list-style: none; margin: 0; padding: 0 4px 0 0; display: grid; gap: 8px; max-height: min(44vh, 380px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.save { padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel-2); font-size: 13px; }
+.save-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.save-name { font-size: 15px; overflow-wrap: anywhere; }
+.save-note { font-size: 11px; color: var(--muted); border: 1px solid var(--line-2); border-radius: 4px; padding: 0 5px; }
+.save-facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 6px 0 8px; font-size: 12px; }
+.save-facts dt { color: var(--muted); }
+.save-facts dd { margin: 0; color: var(--text); }
+.menu .save-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+.menu .save-acts button { height: 32px; padding: 0 12px; font-size: 13px; border-radius: 8px; }
+.menu .save-edit input, .copybox input {
+  width: 100%;
+  height: 40px;
+  margin: 4px 0 8px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  box-sizing: border-box;
+}
+.menu .save-edit { display: grid; gap: 4px; }
+.copybox { margin-top: 12px; }
+.row2 { display: flex; gap: 8px; margin-top: 4px; }
+.menu .row2 button { flex: 1; }

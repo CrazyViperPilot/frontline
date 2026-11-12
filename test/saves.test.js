@@ -1,7 +1,10 @@
 // Spielstände (SP2): reine Logik von js/ui/saves.js ohne Browser. Abgleich Gerät/Webspace, Namen, Ids, Übernahme des alten Stands.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeSaves, syncPush, defaultName, cleanName, copyName, newSaveId, fromLegacy, describe, NAME_MAX } from '../js/ui/saves.js';
+import {
+  mergeSaves, syncPush, defaultName, cleanName, copyName, newSaveId, fromLegacy, describe, NAME_MAX,
+  listSaves, setRemoteEnabled, remoteEnabled, accountUser,
+} from '../js/ui/saves.js';
 
 const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const meta = (id, updatedAt, extra = {}) => ({ id, name: `Stand ${id}`, version: 'v5.143', format: 5, createdAt: 1, updatedAt, gameTime: 60, points: [0, 0], winPoints: 100, difficulty: 'normal', ended: false, size: 10, ...extra });
@@ -94,4 +97,74 @@ test('Kopie: „<Name> (Kopie)“, auf NAME_MAX Zeichen gekürzt', () => {
   assert.equal([...long].length, NAME_MAX, 'Zeichen, nicht Bytes');
   assert.ok(long.endsWith(' (Kopie)'));
   assert.doesNotThrow(() => cleanName(long));
+});
+
+/** fetch-Attrappe für die Tests: zeichnet jeden Aufruf auf und antwortet mit `reply(url)`. */
+function fakeFetch(reply) {
+  const calls = [];
+  globalThis.fetch = async (url, opts) => {
+    calls.push({ url, opts });
+    const r = reply(url);
+    return { ok: r.status === undefined || r.status < 400, status: r.status ?? 200, json: async () => r.body };
+  };
+  return calls;
+}
+
+test('Webspace ohne Anmeldung (401): nur das Gerät, ohne Fehler, ohne weitere Aufrufe', async () => {
+  const realFetch = globalThis.fetch;
+  try {
+    const calls = fakeFetch(() => ({ status: 401, body: { error: 'Nicht angemeldet' } }));
+    assert.equal(remoteEnabled(), true, 'Standard: an, bis der Webspace etwas anderes sagt');
+    assert.deepEqual(await listSaves(), [], 'ohne Gerät- und Webspace-Stände leer, kein Fehler');
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].opts.credentials, 'include', 'Sitzungs-Cookie geht mit');
+    assert.equal(remoteEnabled(), false, '401 schaltet den Webspace aus');
+    await listSaves();
+    await listSaves();
+    assert.equal(calls.length, 1, 'ohne Anmeldung kein weiterer Webspace-Aufruf');
+    assert.equal(await setRemoteEnabled(false), 0, 'ausschalten ist ohne Aufruf');
+    assert.equal(calls.length, 1);
+  } finally {
+    globalThis.fetch = realFetch;
+    setRemoteEnabled(true);
+  }
+});
+
+test('Anmelden: setRemoteEnabled(true) schaltet den Webspace ein und stößt syncUp an', async () => {
+  const realFetch = globalThis.fetch;
+  try {
+    const calls = fakeFetch(() => ({ status: 401, body: { error: 'Nicht angemeldet' } }));
+    await listSaves(); // schaltet aus
+    assert.equal(remoteEnabled(), false);
+    const sent = await setRemoteEnabled(true); // syncUp: Liste holen, 401 wieder: 0 hochgeschickt, kein Fehler
+    assert.equal(sent, 0);
+    assert.equal(calls.length, 2, 'der Abgleich versucht den Webspace einmal');
+    assert.equal(remoteEnabled(), false, 'wieder 401: wieder aus');
+  } finally {
+    globalThis.fetch = realFetch;
+    setRemoteEnabled(true);
+  }
+});
+
+test('Konto abfragen: accountUser stellt den Webspace nach der Antwort von auth.php ein', async () => {
+  const realFetch = globalThis.fetch;
+  try {
+    const calls = fakeFetch((url) => (url.endsWith('/api/auth.php')
+      ? { body: { user: null } }
+      : { body: { saves: [] } }));
+    setRemoteEnabled(false);
+    assert.equal(await accountUser(), null);
+    assert.equal(remoteEnabled(), false);
+    assert.match(calls[0].url, /\/api\/auth\.php$/);
+    assert.equal(calls[0].opts.credentials, 'include');
+    assert.equal(JSON.parse(calls[0].opts.body).action, 'me');
+
+    fakeFetch(() => ({ body: { user: { email: 'anna@example.test', plan: 'free', premiumUntil: null, createdAt: 1 } } }));
+    const user = await accountUser();
+    assert.equal(user.email, 'anna@example.test');
+    assert.equal(remoteEnabled(), true);
+  } finally {
+    globalThis.fetch = realFetch;
+    setRemoteEnabled(true);
+  }
 });

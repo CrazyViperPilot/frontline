@@ -1,0 +1,1 @@
+**Benutzerkonten: Spielstände am Konto** (§17 „Konto“, §16 „Spielstand speichern“): Der Webspace nimmt Spielstände nur noch mit Anmeldung an (ohne Sitzung 401); jeder Stand gehört einem Konto, andere Konten sehen ihn nicht und können ihn nicht überschreiben. Ohne Anmeldung arbeitet das Spiel wie bisher nur auf dem Gerät. Nach dem Anmelden gehen die lokalen Stände ins Konto.

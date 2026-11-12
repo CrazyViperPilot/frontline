@@ -6,7 +6,7 @@ import { WEATHER_SETTINGS } from '../game/weather.js';
 import { MOOD_SETTINGS } from '../render/mood.js';
 import { SOUND_KEY, loadLevel, saveLevel } from '../audio/sound.js';
 import { KEYS } from './helptext.js';
-import { NAME_MAX } from './saves.js';
+import { NAME_MAX, accountRequest, accountUser, setRemoteEnabled } from './saves.js';
 
 const DIFFS = [
   ['easy', 'Leicht'],
@@ -104,6 +104,7 @@ export function hideOverlay(root) {
   root.onclick = null;
   root.oninput = null;
   root.onkeydown = null;
+  root.onsubmit = null;
   root.innerHTML = '';
   delete root.dataset.kind;
   root.hidden = true;
@@ -164,6 +165,90 @@ function writeMapSel(v) {
   }
 }
 
+// ---- Konto (KO3, docs/prd/konto.md): Bereich im Startmenü -----------------------------------------------------------
+
+const ACC_PASS_MIN = 8; // wie api/auth.php (FL_PASS_MIN)
+const TOKEN_RE = /^[0-9a-f]{64}$/; // Link-Token aus der Mail (64 Hex-Zeichen, wie fl_is_token)
+const ACC_OFFLINE = 'Keine Verbindung zum Server. Bitte später erneut versuchen.';
+const ACC_TABS = [
+  ['login', 'Anmelden'],
+  ['register', 'Registrieren'],
+  ['forgot', 'Passwort vergessen'],
+];
+const fmtDay = (ms) => new Date(ms).toLocaleDateString('de-DE');
+
+/** Meldung zu einem Fehler: err.status gesetzt → Satz aus api/auth.php, sonst Netzfehler. */
+const accMsg = (err) => (err?.status ? err.message : ACC_OFFLINE);
+
+/** Konto-Art für die Anzeige: free → Kostenlos, premium → Premium (bis Datum; premiumUntil ist in Sekunden). */
+function planLabel(u) {
+  if (u.plan === 'premium') return u.premiumUntil ? `Premium (bis ${fmtDay(u.premiumUntil * 1000)})` : 'Premium';
+  if (!u.plan || u.plan === 'free') return 'Kostenlos';
+  return esc(u.plan);
+}
+
+/**
+ * Link-Parameter aus der Adresse (Rücksprung von den Mails): ?verified=1|0 und ?reset=<token>. Gelesen wird einmal; danach
+ * stehen sie nicht mehr in der Adresszeile (history.replaceState). Liefert { verified: true | false | null, reset: string | null }.
+ */
+function takeAccountLink() {
+  const p = new URLSearchParams(location.search);
+  const verified = p.get('verified');
+  const reset = p.get('reset');
+  if (verified === null && reset === null) return { verified: null, reset: null };
+  p.delete('verified');
+  p.delete('reset');
+  const query = p.toString();
+  try {
+    history.replaceState(history.state, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
+  } catch {
+    /* ohne History-Zugriff bleibt der Parameter in der Adresse, wirkt dann beim nächsten Laden erneut */
+  }
+  return { verified: verified === null ? null : verified === '1', reset };
+}
+
+/** Eingabefeld eines Konto-Formulars; Passwörter ohne Vorbelegung. */
+const accField = (name, label, type, auto, value = '') =>
+  `<label>${label}<input type="${type}" name="${name}" autocomplete="${auto}" value="${esc(value)}" required></label>`;
+
+/** Formular im Konto-Bereich: login, register, forgot oder reset (neues Passwort aus dem Mail-Link). */
+function accountForm(kind, st) {
+  const email = accField('email', 'E-Mail', 'email', 'email', st.email);
+  const keep = st.keep ?? {}; // Passwörter bleiben bei einer Eingabefehler-Meldung stehen (sonst neu tippen)
+  const newPass = accField('password', kind === 'reset' ? 'Neues Passwort (mind. 8 Zeichen)' : 'Passwort (mind. 8 Zeichen)', 'password', 'new-password', keep.password);
+  const again = accField('password2', 'Passwort wiederholen', 'password', 'new-password', keep.password2);
+  const fields = {
+    login: email + accField('password', 'Passwort', 'password', 'current-password'),
+    register: email + newPass + again,
+    forgot: email,
+    reset: `<p class="acc-title">Neues Passwort</p>${newPass}${again}`,
+  };
+  const go = { login: 'Anmelden', register: 'Registrieren', forgot: 'Link anfordern', reset: 'Neues Passwort speichern' };
+  return `<form class="acc-form" data-acc-form="${kind}">${fields[kind]}
+    <button type="submit" class="acc-go"${st.busy ? ' disabled' : ''}>${go[kind]}</button></form>`;
+}
+
+/**
+ * Konto-Bereich (KO3). st: { user (angemeldet oder null), form (null | 'login' | 'register' | 'forgot' | 'reset'), email,
+ * note ({ ok, text } oder null), busy, keep ({ password, password2 } nach einer Eingabefehler-Meldung, sonst null) }. Abgemeldet: Hinweis, drei Knöpfe, Formular; angemeldet: Konto-Art und Abmelden.
+ */
+function accountHtml(st) {
+  const note = st.note ? `<p class="acc-note ${st.note.ok ? 'good' : 'bad'}" role="status">${esc(st.note.text)}</p>` : '';
+  if (st.user) {
+    return `<span class="flabel">Konto</span>
+      <p class="acc-line">Angemeldet als <b>${esc(st.user.email)}</b> · Konto: ${planLabel(st.user)}</p>
+      ${note}
+      <div class="stack"><button type="button" data-acc="logout"${st.busy ? ' disabled' : ''}>Abmelden</button></div>`;
+  }
+  if (st.form === 'reset') return `<span class="flabel">Konto</span>${note}${accountForm('reset', st)}`;
+  const tabs = ACC_TABS.map(([k, l]) => `<button type="button" data-acc="${k}" aria-pressed="${st.form === k}">${l}</button>`).join('');
+  return `<span class="flabel">Konto</span>
+    <p class="muted small">Spielstände nur auf diesem Gerät. Mit Konto liegen sie auf dem Server.</p>
+    <div class="seg">${tabs}</div>
+    ${note}
+    ${st.form ? accountForm(st.form, st) : ''}`;
+}
+
 /**
  * Startmenü: onStart({difficulty, winPoints, mapId, radio, weather, mood, research, river, buildRules}) (city immer true) beim Klick auf Start (mapId 'random' oder Karten-ID,
  * radio = Sendemast-Sieg, weather = 'off' | 'random' | Jahreszeit, research = Forschungsbaum, river = Flüsse auf Zufallskarten).
@@ -186,6 +271,7 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
     'start',
     `<section class="menu start">
       <h1 class="logo">FRONTLINE</h1>
+      <section class="account" data-account aria-label="Konto"></section>
       <div class="resume" data-resume hidden></div>
       <section class="saves" data-saves hidden>
         <h3>Spielstände</h3>
@@ -257,6 +343,7 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
         <li>Ist oben Fluss an, liegt vor jeder Startecke ein Fluss: über drei Brücken oder langsam durch zwei Furten. Brücken lassen sich sprengen (A, dann Brücke anklicken) und von Baufahrzeugen wieder aufbauen.</li>
         <li>Förderung, Werke, Wohnen und Gewerbe liegen an Straßen. Rohstoffe fahren zum nächsten Werk, Produkte zum Lager der Hauptstadt; ohne Straße keine Lieferung. Straßen können voll werden (Stau: gelb, rot), dann kommen Waren und Pendler langsamer. Fahrzeuge, Reparaturen und Munition brauchen Stahl; Gewerbe braucht Baumaterial vom Lager. F-16 tanken Kerosin am Kerosintank des Fliegerhorsts, Hubschrauber gelandet auf ihrem Heliport (ein Hubschrauber je Heliport, Kerosintank und Munitionslager in der Nähe).</li>
         <li>Spielstände: Die Liste oben zeigt alle Partien (Spielzeit, Punkte, Schwierigkeit, Version); je Zeile laden, umbenennen oder löschen. Beendete Partien bleiben zum Ansehen in der Liste.</li>
+        <li>Konto (oben, optional): Ohne Konto bleiben Spielstände auf diesem Gerät. Mit Konto (E-Mail und Passwort, Bestätigung per Mail) liegen sie auf dem Server und sind nach dem Anmelden auf jedem Gerät da.</li>
         <li>Konfliktzone halten: jede deiner Einheiten dort bringt Geld (0,4/s, in der Hot Zone 0,8/s), alle 30 s ein Punkt. Fällt deine Hauptstadt, ist die Runde verloren.</li>
       </ol>
       <p class="muted small center" data-wallet></p>
@@ -346,6 +433,115 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
   };
   loadQuick();
   loadSaves();
+  // Konto (KO3): Anzeige und Formulare; alle Anfragen gehen an api/auth.php (ui/saves.js), der Webspace wird danach eingestellt
+  const link = takeAccountLink(); // Rücksprung von den Mails, einmal gelesen
+  const acc = { user: null, form: null, email: '', note: null, busy: false, token: null, keep: null };
+  if (link.verified !== null) {
+    acc.form = 'login';
+    acc.note = link.verified
+      ? { ok: true, text: 'E-Mail bestätigt, du kannst dich jetzt anmelden.' }
+      : { ok: false, text: 'Link ungültig oder abgelaufen.' };
+  }
+  if (link.reset !== null) {
+    if (TOKEN_RE.test(link.reset)) {
+      acc.form = 'reset';
+      acc.token = link.reset;
+      acc.note = null;
+    } else {
+      acc.form = 'login';
+      acc.note = { ok: false, text: 'Link ungültig oder abgelaufen.' };
+    }
+  }
+  const accBox = root.querySelector('[data-account]');
+  const drawAccount = () => {
+    if (accBox?.isConnected) accBox.innerHTML = accountHtml(acc);
+  };
+  /** Nach An- oder Abmelden: Anzeige, Webspace-Schalter und Spielstand-Liste neu. */
+  const accountChanged = () => {
+    drawAccount();
+    changed();
+  };
+  /** Gemeinsamer Ablauf eines Konto-Vorgangs: sperren, Anfrage, Fehler als Hinweis im Bereich. */
+  const accountRun = async (job) => {
+    if (acc.busy) return;
+    acc.busy = true;
+    acc.note = null;
+    acc.keep = null;
+    drawAccount();
+    try {
+      await job();
+    } catch (err) {
+      acc.note = { ok: false, text: accMsg(err) };
+    } finally {
+      acc.busy = false;
+      drawAccount();
+    }
+  };
+  /** Formular abschicken (Eingaben prüfen, dann die Anfrage). */
+  const accountSubmit = (kind, f) => {
+    if (acc.busy) return;
+    const val = (n) => f.elements.namedItem(n)?.value ?? '';
+    if (kind !== 'reset') acc.email = val('email').trim();
+    const email = acc.email;
+    const pw = val('password');
+    if (kind === 'register' || kind === 'reset') {
+      const text = [...pw].length < ACC_PASS_MIN
+        ? 'Das Passwort muss mindestens 8 Zeichen haben.'
+        : pw !== val('password2') ? 'Die beiden Passwörter stimmen nicht überein.' : null;
+      if (text) {
+        acc.note = { ok: false, text };
+        acc.keep = { password: pw, password2: val('password2') };
+        return drawAccount();
+      }
+    }
+    return accountRun(async () => {
+      if (kind === 'login') {
+        const d = await accountRequest({ action: 'login', email, password: pw });
+        acc.user = d.user ?? null;
+        acc.form = null;
+        acc.note = null;
+        const synced = setRemoteEnabled(true); // Webspace an, lokale Stände ins Konto
+        accountChanged();
+        await synced;
+        changed();
+      } else if (kind === 'register') {
+        const d = await accountRequest({ action: 'register', email, password: pw });
+        acc.note = { ok: true, text: d.message ?? 'Bitte prüfe dein Postfach.' };
+      } else if (kind === 'forgot') {
+        const d = await accountRequest({ action: 'forgot', email });
+        acc.note = { ok: true, text: d.message ?? 'Bitte prüfe dein Postfach.' };
+      } else if (kind === 'reset') {
+        await accountRequest({ action: 'reset', token: acc.token, password: pw });
+        acc.token = null;
+        acc.form = 'login';
+        acc.note = { ok: true, text: 'Neues Passwort gespeichert. Du kannst dich jetzt anmelden.' };
+      }
+    });
+  };
+  /** Knöpfe im Konto-Bereich: Abmelden, oder ein Formular öffnen (zweiter Druck schließt es). */
+  const accountClick = (act) => {
+    if (act === 'logout') {
+      return accountRun(async () => {
+        await accountRequest({ action: 'logout' }); // Netzfehler: bleibt angemeldet, der Hinweis sagt es
+        acc.user = null;
+        acc.note = { ok: true, text: 'Abgemeldet. Spielstände bleiben auf diesem Gerät.' };
+        setRemoteEnabled(false);
+        accountChanged();
+      });
+    }
+    acc.form = acc.form === act ? null : act;
+    acc.note = null;
+    drawAccount();
+  };
+  drawAccount();
+  accountUser()
+    .then((u) => {
+      if (!accBox?.isConnected) return;
+      acc.user = u;
+      drawAccount();
+      if (u) changed(); // angemeldet: Stände vom Konto nachladen
+    })
+    .catch(() => drawAccount()); // Netzfehler: wie abgemeldet, der Gerätebetrieb bleibt
   const mark = () => {
     root.querySelectorAll('[data-diff]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.diff === difficulty)));
     root.querySelectorAll('[data-pts]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.pts) === winPoints)));
@@ -423,11 +619,18 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
       listBox.querySelector('[data-sact="renamesave"]')?.click();
     }
   };
+  root.onsubmit = (e) => {
+    const f = e.target;
+    if (!f.matches?.('[data-acc-form]')) return;
+    e.preventDefault();
+    accountSubmit(f.dataset.accForm, f);
+  };
   root.onclick = (e) => {
     const sb = e.target.closest('[data-sact]');
     if (sb) return saveAct(sb);
     const b = e.target.closest('button');
     if (!b) return;
+    if (b.dataset.acc) return accountClick(b.dataset.acc);
     if (b.dataset.mapmode === 'random') {
       mapSel = 'random';
       delete root.dataset.showSaved;

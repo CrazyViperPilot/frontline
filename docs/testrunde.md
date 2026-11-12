@@ -3,7 +3,7 @@
 Neu seit v5.65 und noch nie von einem Menschen gespielt. Je Abschnitt: **Weg dorthin**, **worauf achten**, **Fragen**. Zu jedem Punkt
 reicht eine kurze Notiz (passt / stört / Zahl zu hoch oder zu niedrig) oder ein Screenshot; die Werte lassen sich schnell ändern.
 
-**Spiel:** <https://frontline.phpexpert.de/> (nach dem Laden einmal neu laden, falls noch eine alte Version im Cache hängt;
+**Spiel:** <https://phpexpert.de/frontline/> (nach dem Laden einmal neu laden, falls noch eine alte Version im Cache hängt;
 oben in der Hilfe F1 bzw. im Änderungsverlauf steht die Version).
 
 **Abkürzung zum Testen:** an die Adresse `?debug=1` anhängen → Karte aufgedeckt, Taste **M** = +1000 Geld, Tempo bis 10× (Tasten + / −).

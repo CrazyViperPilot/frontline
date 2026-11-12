@@ -19,6 +19,7 @@ Der Änderungsverlauf steht in [docs/changelog.md](docs/changelog.md) (nur bei B
 | 10 | KI-Gegner | [ki.md](docs/prd/ki.md) | Verhalten der Armee-KI (Wellen, Späher, Expansion, Konter-Mix, Luftabwehr), was sie nicht baut, Tabelle „KI-Konstanten“ |
 | 13 | Geparkte Ideen | [ideen.md](docs/prd/ideen.md) | Ideen, die nur festgehalten werden (nicht bauen, Regel 8 in CLAUDE.md) |
 | 14, 16 | Ton, Musik, Spielstand | [ton-speichern.md](docs/prd/ton-speichern.md) | Synthetisierte Geräusche und Musik, Lautstärke; Speichern und Laden |
+| 17 | Benutzerkonten | [konto.md](docs/prd/konto.md) | Gast spielt ohne Konto; Konto mit E-Mail und Passwort, Bestätigungslink, Passwort vergessen, Sitzungs-Cookie, Mailversand per SMTP (Backend, Spielstände am Konto, Oberfläche im Startmenü) |
 | 15 | Stadt (Kern) | [stadt.md](docs/prd/stadt.md) | Zonenstadt: Startviertel, Ausbildung in Kaserne/Fabrikhalle/Heliport, Großbauten, Heilen und Krankenhaus, Universität und Rechenzentrum, Strom, Zufriedenheit, Baugebiet, Bedienung, Wachstum, Einwohner (auch als Truppen), Flucht, Arbeit, Stadtgebäude wählen, Angriff auf die Stadt, Stadt-KI |
 | 15 | Stadt: Wirtschaft | [stadt-wirtschaft.md](docs/prd/stadt-wirtschaft.md) | Rohstoffe und Vorkommen, Werke als 2 × 2-Großbauten, Ertrag, Stahl, Markt, Straßenkosten, Steuern, Ressourcenanzeige |
 | 15 | Stadt: Aussehen | [stadt-aussehen.md](docs/prd/stadt-aussehen.md) | Schilder und Farben, gemalte 1 × 1-Gebäude, Baustellen und Ruinen, Universität als Bild, Darstellung auf der Karte |
@@ -33,7 +34,7 @@ Der Änderungsverlauf steht in [docs/changelog.md](docs/changelog.md) (nur bei B
 | Plattform | Google Chrome (Desktop), Safari auf dem iPad (Air M1), Android-Tablets/-Telefone im Querformat; installierbare PWA. Eingabe über Pointer-Events (Maus, Touch, Stift). |
 | Steuerung | Maus + Tastatur oder Touch (Tippen, Ziehen, Zwei-Finger-Zoom) |
 | Technik | Statische Web-App, Vanilla JS (ES-Module), Canvas 2D; Gelände der Iso-Ansicht mit WebGL (Rückfall ohne WebGL: flach, nur aufgemalt; `?gl=0` erzwingt das), kein Build-Schritt, keine externen Abhängigkeiten |
-| Auslieferung | Eigenes privates Repo `frontline`, per GitHub Actions über FTP auf Daniels Webspace: <https://frontline.phpexpert.de/>; offline spielbar (PWA); immer neueste Version, wenn online |
+| Auslieferung | Eigenes privates Repo `frontline`, per GitHub Actions über FTP auf Daniels Webspace: <https://phpexpert.de/frontline/>; offline spielbar (PWA); immer neueste Version, wenn online |
 | Sprache | Deutsch |
 | Spieler | 1 Mensch gegen 1 KI. Kein Multiplayer. |
 

@@ -735,6 +735,33 @@ body.flow-open .flow-fab { background: #2e372e; }
   .fl-issues { font-size: 13px; }
 }
 
+/* Konto im Startmenü (KO3, ui/menu.js) */
+.account { margin: 0 0 14px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel-2); font-size: 13px; }
+.account > .flabel { margin-bottom: 6px; }
+.account .small { margin: 0 0 8px; }
+.account .seg button { height: 34px; font-size: 13px; }
+.account .stack { margin-top: 10px; }
+.acc-line { margin: 0 0 6px; overflow-wrap: anywhere; }
+.acc-form { display: grid; gap: 6px; margin-top: 10px; }
+.acc-form label { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+.acc-form input {
+  width: 100%;
+  height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line-2);
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+.menu .acc-go { width: 100%; height: 40px; margin-top: 4px; }
+.acc-title { margin: 0 0 2px; font-weight: 600; }
+.acc-note { margin: 8px 0 0; font-size: 12.5px; overflow-wrap: anywhere; }
+.acc-note.good { color: #a8d8a0; }
+.acc-note.bad { color: var(--bad); }
+
 /* Gespeicherte Partie im Startmenü (ui/saves.js) */
 .resume { margin: 8px 0 14px; padding: 10px 12px; border: 1px solid var(--muted); border-radius: 8px; text-align: center; font-size: 14px; }
 .resume p { margin: 0 0 6px; }

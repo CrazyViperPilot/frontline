@@ -1,0 +1,1 @@
+**Benutzerkonten: Oberfläche** (§17 „Konto“, §16 „Spielstand speichern“): Im Startmenü gibt es einen Bereich „Konto“ mit Anmelden, Registrieren und Passwort vergessen; angemeldet zeigt er E-Mail und Konto-Art und bietet Abmelden. Die Links aus den Mails (Bestätigung, neues Passwort) führen zurück ins Startmenü.

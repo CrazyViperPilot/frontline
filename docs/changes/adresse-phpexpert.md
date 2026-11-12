@@ -1,1 +1,0 @@
-**Neue Adresse**: Das Spiel liegt jetzt unter <https://phpexpert.de/frontline/> (vorher frontline.phpexpert.de); die API-Adressen im Spiel sind relativ, Anmelde-Cookie und Mail-Links nutzen den Pfad `/frontline/`.

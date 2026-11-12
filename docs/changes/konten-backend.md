@@ -1,1 +1,0 @@
-**Benutzerkonten: Backend** (§17 „Konto“, nur API, noch ohne Oberfläche): `api/auth.php` mit Registrieren und Bestätigungslink, Anmelden per Sitzungs-Cookie, Abmelden, Passwort vergessen (Mailversand per SMTP über `api/lib/mail.php`), gemeinsamer Code der API in `api/lib/`; der Deploy schreibt die SMTP-Secrets in `api/config.php`.

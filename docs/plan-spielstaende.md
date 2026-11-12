@@ -21,7 +21,7 @@ Heute: genau ein Stand, Datei-Backend `api/save.php`, lokal ein Eintrag in Index
 | Paket | Inhalt | Stand |
 |---|---|---|
 | SP1 | Backend: `api/save.php` auf MySQL (PDO), Tabelle `saves` legt sich selbst an; Deploy schreibt `api/config.php` aus den `DB_*`-Secrets; `js/version.js` + release.mjs | gebaut |
-| SP2 | Client-Speicher `js/ui/saves.js`: viele Stände (IndexedDB-Store `saves`, Remote-API, Abgleich, Übernahme des alten Stands), `main.js` speichert in den aktuellen Stand | offen |
+| SP2 | Client-Speicher `js/ui/saves.js`: viele Stände (IndexedDB-Store `saves`, Remote-API, Abgleich, Übernahme des alten Stands), `main.js` speichert in den aktuellen Stand | gebaut |
 | SP3 | Oberfläche: Startmenü-Liste „Spielstände“ (Name, Version, erstellt, zuletzt gespeichert, Spielzeit, Punkte; Laden, Umbenennen, Löschen), Pause: „Speichern unter …“ (neuer Name) | offen |
 
 ### SP1 – API (JSON, wie bisher CORS nur frontline.phpexpert.de und localhost)

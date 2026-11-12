@@ -1,23 +1,54 @@
-// Spielstand speichern und fortsetzen: lokal in IndexedDB (läuft offline) und zusätzlich auf Daniels Webspace
-// (PHP, `api/save.php` in diesem Repo, auf frontline.phpexpert.de). Es gibt genau einen Stand; der neuere (savedAt) gewinnt.
-// Ohne Netz wird nur lokal gespeichert und beim nächsten Mal nachgeschickt.
+// Spielstände speichern und fortsetzen (seit SP2: beliebig viele Stände, je mit id). Lokal in IndexedDB (Store `saves`,
+// läuft offline) und zusätzlich auf Daniels Webspace (PHP `api/save.php` in diesem Repo, MySQL, frontline.phpexpert.de).
+// Die Liste ist die Vereinigung beider Seiten; je id gewinnt der neuere `updatedAt`. Ohne Netz bleibt es beim Gerät;
+// `syncUp()` schickt neuere lokale Stände später nach. Gelöscht wird auf beiden Seiten; ist der Webspace dabei nicht
+// erreichbar, merkt sich das Gerät die Löschung (localStorage) und holt sie bei der nächsten Synchronisierung nach.
 import { toB64, fromB64 } from '../core/snapshot.js';
 
 export const REMOTE_URL = 'https://frontline.phpexpert.de/api/save.php';
+export const NAME_MAX = 60;
 const DB = 'frontline-save';
-const STORE = 'save';
-const KEY = 'current';
+const DB_VERSION = 2; // 1: ein Stand unter `current` im Store `save`; 2: Store `saves` nach id
+const STORE = 'saves';
+const OLD_STORE = 'save';
+const OLD_KEY = 'current';
+const TOMB_KEY = 'frontline-spielstand-loeschen'; // ids, die auf dem Webspace noch gelöscht werden müssen
 const TIMEOUT = 15000;
 
-/** Meta: { savedAt (ms), format, gameTime, points: [a, b], winPoints, difficulty, size }. Rec: { meta, bytes (gzip) }. */
+/**
+ * Meta: { id, name, version (Spielversion), format (SAVE_FORMAT), createdAt, updatedAt (ms seit 1970), gameTime,
+ *         points: [blau, rot], winPoints, difficulty, ended (bool), size (Bytes gepackt) }.
+ * Rec (lokal und beim Laden): { meta, bytes (gzip) }. Liste (listSaves): { meta, source: 'lokal' | 'Webspace', inLocal, inRemote }.
+ */
+
+// ---- Datenbank lokal ----------------------------------------------------------------------------------------------
 
 function openDb() {
   return new Promise((resolve, reject) => {
-    const r = indexedDB.open(DB, 1);
-    r.onupgradeneeded = () => r.result.createObjectStore(STORE);
+    const r = indexedDB.open(DB, DB_VERSION);
+    r.onupgradeneeded = (e) => upgrade(r.result, r.transaction, e.oldVersion);
     r.onsuccess = () => resolve(r.result);
     r.onerror = () => reject(r.error);
   });
+}
+
+/** Version 1 → 2: der bisherige Einzelstand wird einmal als „Alter Spielstand“ übernommen, danach fällt der alte Store weg. */
+function upgrade(db, tx, oldVersion) {
+  if (oldVersion >= DB_VERSION) return;
+  const store = db.createObjectStore(STORE);
+  if (!db.objectStoreNames.contains(OLD_STORE)) return;
+  const req = tx.objectStore(OLD_STORE).get(OLD_KEY);
+  req.onsuccess = () => {
+    try {
+      if (req.result) {
+        const rec = fromLegacy(req.result);
+        store.put(rec, rec.meta.id);
+      }
+    } catch {
+      /* unlesbarer Altstand: verworfen, der Start darf nicht scheitern */
+    }
+    db.deleteObjectStore(OLD_STORE);
+  };
 }
 
 async function idb(mode, fn) {
@@ -35,9 +66,30 @@ async function idb(mode, fn) {
   }
 }
 
-export const readLocal = () => idb('readonly', (s) => s.get(KEY)).then((r) => r ?? null).catch(() => null);
-export const writeLocal = (rec) => idb('readwrite', (s) => s.put(rec, KEY));
-export const clearLocal = () => idb('readwrite', (s) => s.delete(KEY)).catch(() => {});
+const readAllLocal = () => idb('readonly', (s) => s.getAll()).then((r) => r ?? []);
+const readLocal = (id) => idb('readonly', (s) => s.get(id)).then((r) => r ?? null);
+const writeLocal = (rec) => idb('readwrite', (s) => s.put(rec, rec.meta.id));
+const deleteLocal = (id) => idb('readwrite', (s) => s.delete(id));
+
+/** Löschungen, die der Webspace noch nicht bestätigt hat. */
+function loadTombs() {
+  try {
+    const list = JSON.parse(localStorage.getItem(TOMB_KEY) ?? '[]');
+    return Array.isArray(list) ? list.filter((x) => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveTombs(list) {
+  try {
+    localStorage.setItem(TOMB_KEY, JSON.stringify([...new Set(list)]));
+  } catch {
+    /* kein Speicher: die Löschung gilt dann nur für diese Sitzung */
+  }
+}
+
+// ---- Webspace ------------------------------------------------------------------------------------------------------
 
 async function remote(method, query = '', body = null) {
   const ctrl = new AbortController();
@@ -51,92 +103,254 @@ async function remote(method, query = '', body = null) {
       cache: 'no-store',
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error ?? `Serverfehler ${res.status}`);
+    if (!res.ok) {
+      const err = new Error(data.error ?? `Serverfehler ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
     return data;
   } finally {
     clearTimeout(timer);
   }
 }
 
-/** Meta des Webspace-Stands oder null (leer); wirft bei Netzfehler. */
-export async function remoteMeta() {
-  const d = await remote('GET', '?meta=1');
-  return d.meta ?? null;
-}
+const remoteList = async () => (await remote('GET')).saves ?? [];
+const remoteGet = async (id) => {
+  const d = await remote('GET', `?id=${encodeURIComponent(id)}`);
+  return { meta: d.meta, bytes: fromB64(d.data) };
+};
+const remotePush = (rec) => remote('POST', '', { action: 'save', meta: rec.meta, data: toB64(rec.bytes) });
+const remoteRename = (id, name) => remote('POST', '', { action: 'rename', id, name });
+const remoteDelete = (id) => remote('POST', '', { action: 'delete', id }); // idempotent: unbekannte id ist kein Fehler
 
-export async function pullRemote() {
-  const d = await remote('GET');
-  return d.meta ? { meta: d.meta, bytes: fromB64(d.data) } : null;
-}
+// ---- Reine Logik (ohne Browser, geprüft in test/saves.test.js) ------------------------------------------------------
 
-export const pushRemote = (rec) => remote('POST', '', { action: 'save', meta: rec.meta, data: toB64(rec.bytes) });
-export const clearRemote = () => remote('POST', '', { action: 'delete' });
-
-let pending = Promise.resolve(); // Schreibvorgänge nacheinander
-
-/** Speichert lokal (sicher) und versucht den Webspace. Liefert 'beide' | 'lokal' (Webspace nicht erreichbar). */
-export function saveBoth(rec) {
-  const job = pending.then(async () => {
-    await writeLocal(rec);
-    try {
-      await pushRemote(rec);
-      return 'beide';
-    } catch {
-      return 'lokal';
+/** Vereinigung lokal + Webspace: je id gewinnt der neuere updatedAt (bei Gleichstand das Gerät); Löschungen fallen weg. */
+export function mergeSaves(localMetas, remoteMetas, tombs = []) {
+  const gone = new Set(tombs);
+  const map = new Map();
+  for (const m of localMetas) {
+    if (!gone.has(m.id)) map.set(m.id, { meta: m, source: 'lokal', inLocal: true, inRemote: false });
+  }
+  for (const m of remoteMetas) {
+    if (gone.has(m.id)) continue;
+    const e = map.get(m.id);
+    if (!e) {
+      map.set(m.id, { meta: m, source: 'Webspace', inLocal: false, inRemote: true });
+    } else {
+      e.inRemote = true;
+      if (m.updatedAt > e.meta.updatedAt) {
+        e.meta = m;
+        e.source = 'Webspace';
+      }
     }
-  });
-  pending = job.catch(() => {});
-  return job;
+  }
+  return [...map.values()].sort((a, b) => b.meta.updatedAt - a.meta.updatedAt);
 }
 
-/** Löscht den Stand lokal und, soweit erreichbar, auf dem Webspace. */
-export function discardAll() {
-  const job = pending.then(async () => {
-    await clearLocal();
-    try {
-      await clearRemote();
-    } catch {
-      /* offline: der Webspace-Stand bleibt; gilt dann beim nächsten Start noch */
-    }
-  });
-  pending = job.catch(() => {});
+/** ids, die beim Abgleich zum Webspace hochzuschicken sind: lokal neuer oder dort unbekannt (Löschungen ausgenommen). */
+export function syncPush(localMetas, remoteMetas, tombs = []) {
+  const gone = new Set(tombs);
+  const remoteById = new Map(remoteMetas.map((m) => [m.id, m]));
+  return localMetas
+    .filter((m) => !gone.has(m.id) && (!remoteById.has(m.id) || m.updatedAt > remoteById.get(m.id).updatedAt))
+    .map((m) => m.id);
+}
+
+/** Standardname „Partie TT.MM.JJJJ HH:MM“ (Ortszeit). */
+export function defaultName(date = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `Partie ${p(date.getDate())}.${p(date.getMonth() + 1)}.${date.getFullYear()} ${p(date.getHours())}:${p(date.getMinutes())}`;
+}
+
+/** Name prüfen wie der Server: getrimmt, 1 bis 60 Zeichen. Wirft bei Verstoß. */
+export function cleanName(name) {
+  const t = String(name ?? '').trim();
+  const len = [...t].length;
+  if (len < 1 || len > NAME_MAX) throw new Error(`Name muss 1 bis ${NAME_MAX} Zeichen haben`);
+  return t;
+}
+
+/** Neue UUID (v4) für einen Stand. Ohne crypto.randomUUID (etwa ohne HTTPS) über getRandomValues oder Math.random. */
+export function newSaveId(c = globalThis.crypto) {
+  if (typeof c?.randomUUID === 'function') return c.randomUUID();
+  const b = new Uint8Array(16);
+  if (typeof c?.getRandomValues === 'function') c.getRandomValues(b);
+  else for (let i = 0; i < 16; i++) b[i] = Math.floor(Math.random() * 256);
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+/** Alter Einzelstand (Version 1: meta.savedAt) als neuer Stand. Die Spielversion ist unbekannt. */
+export function fromLegacy(old, id = newSaveId()) {
+  const m = old.meta ?? {};
+  const at = Number.isFinite(m.savedAt) ? m.savedAt : Date.now();
+  const meta = {
+    id,
+    name: 'Alter Spielstand',
+    version: 'unbekannt',
+    format: Number.isFinite(m.format) ? m.format : 0,
+    createdAt: at,
+    updatedAt: at,
+    gameTime: m.gameTime,
+    points: m.points,
+    winPoints: m.winPoints,
+    difficulty: m.difficulty ?? 'normal',
+    ended: false,
+    size: m.size ?? old.bytes.length,
+  };
+  return { meta, bytes: old.bytes };
+}
+
+// ---- Öffentliche Schnittstelle --------------------------------------------------------------------------------------
+
+let chain = Promise.resolve(); // Schreibvorgänge nacheinander
+function queue(fn) {
+  const job = chain.then(fn);
+  chain = job.catch(() => {});
   return job;
 }
 
 /**
- * Neuesten Stand ermitteln: lokal und Webspace vergleichen. Lädt den Webspace-Stand nur, wenn er neuer ist.
- * Schickt einen neueren lokalen Stand nach (nach Offline-Spielen). Liefert { rec, source: 'lokal' | 'Webspace' } oder null.
+ * Alle Stände (lokal und Webspace), neueste zuerst. Ist der Webspace nicht erreichbar, bleibt es bei den lokalen
+ * (inRemote: false). Liefert [{ meta, source, inLocal, inRemote }]; source ist die Quelle der angezeigten Fassung.
  */
-export async function findBest() {
-  const local = await readLocal();
-  let rm = null;
-  let online = true;
+export async function listSaves() {
+  const local = await readAllLocal().catch(() => []);
+  let remoteMetas = [];
   try {
-    rm = await remoteMeta();
+    remoteMetas = await remoteList();
   } catch {
-    online = false;
+    /* offline oder Fehler: nur das Gerät */
   }
-  if (rm && (!local || rm.savedAt > local.meta.savedAt)) {
-    try {
-      const rec = await pullRemote();
-      if (rec) {
-        await writeLocal(rec).catch(() => {});
-        return { rec, source: 'Webspace' };
-      }
-    } catch {
-      /* Netz weg zwischen den Aufrufen: lokalen Stand nehmen */
-    }
-  }
-  if (local) {
-    if (online && (!rm || local.meta.savedAt > rm.savedAt)) pushRemote(local).catch(() => {});
-    return { rec: local, source: 'lokal' };
-  }
-  return null;
+  return mergeSaves(
+    local.map((r) => r.meta),
+    remoteMetas,
+    loadTombs(),
+  );
 }
 
+/**
+ * Einen Stand laden: der neuere von Gerät und Webspace (ein neuerer Webspace-Stand wird lokal übernommen).
+ * Liefert { meta, bytes } oder null (unbekannt oder gelöscht).
+ */
+export async function loadSave(id) {
+  if (loadTombs().includes(id)) return null;
+  const local = await readLocal(id).catch(() => null);
+  let rm = null;
+  try {
+    rm = await remoteGet(id);
+  } catch {
+    /* nicht auf dem Webspace oder offline: der lokale Stand */
+  }
+  if (rm && (!local || rm.meta.updatedAt > local.meta.updatedAt)) {
+    await queue(() => writeLocal(rm)).catch(() => {});
+    return rm;
+  }
+  return local;
+}
+
+/**
+ * Speichert einen Stand (rec = { meta, bytes }) lokal und auf dem Webspace. Liefert 'beide' oder 'lokal'
+ * (Webspace nicht erreichbar oder Fehler: wird nur gemeldet, nicht geworfen). Lokal ist der Stand dann sicher.
+ */
+export function storeSave(rec) {
+  return queue(async () => {
+    await writeLocal(rec);
+    try {
+      await remotePush(rec);
+      return 'beide';
+    } catch (err) {
+      console.warn('Spielstand nur auf dem Gerät gespeichert:', err?.message ?? err);
+      return 'lokal';
+    }
+  });
+}
+
+/**
+ * Umbenennen (Name 1 bis 60 Zeichen). Das Umbenennen auf dem Webspace ändert dort nicht den Zeitstempel. Gelingt es nicht,
+ * bekommt der lokale Stand einen neuen updatedAt und wird beim nächsten syncUp mit dem ganzen Stand hochgeschickt.
+ * Liefert 'beide' | 'lokal'. Wirft, wenn der Stand weder lokal noch auf dem Webspace existiert.
+ */
+export function renameSave(id, name) {
+  const clean = cleanName(name);
+  return queue(async () => {
+    const rec = await readLocal(id).catch(() => null);
+    let remoteOk = true;
+    try {
+      await remoteRename(id, clean);
+    } catch (err) {
+      remoteOk = false;
+      if (!rec) throw new Error(err?.status === 404 ? 'Stand nicht gefunden' : `Umbenennen fehlgeschlagen: ${err.message ?? err}`);
+    }
+    if (rec) {
+      rec.meta.name = clean;
+      if (!remoteOk) rec.meta.updatedAt = Date.now();
+      await writeLocal(rec);
+    }
+    return remoteOk ? 'beide' : 'lokal';
+  });
+}
+
+/** Löscht einen Stand lokal und auf dem Webspace; ist dieser nicht erreichbar, wird die Löschung vorgemerkt (syncUp). */
+export function deleteSave(id) {
+  return queue(async () => {
+    await deleteLocal(id).catch(() => {});
+    try {
+      await remoteDelete(id);
+    } catch {
+      saveTombs([...loadTombs(), id]);
+    }
+  });
+}
+
+/**
+ * Abgleich nach dem Start oder nach Offline-Spielen: vorgemerkte Löschungen nachholen, neuere lokale Stände hochschicken.
+ * Liefert die Zahl der hochgeschickten Stände (0, wenn der Webspace nicht erreichbar ist).
+ */
+export function syncUp() {
+  return queue(async () => {
+    let remoteMetas;
+    try {
+      remoteMetas = await remoteList();
+    } catch {
+      return 0;
+    }
+    const tombs = loadTombs();
+    for (const id of tombs) {
+      try {
+        await remoteDelete(id);
+        saveTombs(loadTombs().filter((x) => x !== id));
+      } catch {
+        /* beim nächsten Mal */
+      }
+    }
+    const local = await readAllLocal();
+    const ids = syncPush(
+      local.map((r) => r.meta),
+      remoteMetas,
+      tombs,
+    );
+    let sent = 0;
+    for (const id of ids) {
+      const rec = local.find((r) => r.meta.id === id);
+      try {
+        await remotePush(rec);
+        sent++;
+      } catch {
+        /* beim nächsten Mal */
+      }
+    }
+    return sent;
+  });
+}
+
+/** Eine Zeile für die Anzeige: Spielzeit, Punkte, Schwierigkeit, Spielversion, Zeitpunkt und Quelle. */
 export function describe(meta, source) {
   const t = Math.floor(meta.gameTime);
   const mm = `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
-  const when = new Date(meta.savedAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
-  return `Spielzeit ${mm} · Punkte ${meta.points[0]} : ${meta.points[1]} von ${meta.winPoints} · ${meta.difficulty} · gespeichert ${when} (${source})`;
+  const when = new Date(meta.updatedAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+  return `Spielzeit ${mm} · Punkte ${meta.points[0]} : ${meta.points[1]} von ${meta.winPoints} · ${meta.difficulty} · ${meta.version} · gespeichert ${when} (${source})`;
 }

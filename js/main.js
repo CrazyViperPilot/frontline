@@ -21,6 +21,7 @@ import { pickMood, MOOD_SETTINGS } from './render/mood.js';
 import { snapshotGame, restoreGame, SAVE_FORMAT } from './game/savegame.js';
 import { pack, unpack } from './core/snapshot.js';
 import * as saves from './ui/saves.js';
+import { GAME_VERSION } from './version.js';
 import { WEATHER_NAMES, WEATHER_SETTINGS } from './game/weather.js';
 
 const params = new URLSearchParams(location.search);
@@ -131,10 +132,19 @@ function quitToMenu() {
 const AUTOSAVE_MS = 90000; // Takt der Autospeicherung (Echtzeit, nur bei laufendem Spiel)
 const MIN_SAVE_TIME = 20; // erst ab dieser Spielzeit (s) lohnt ein Stand
 
-/** Stand der laufenden Partie packen. Liefert null, wenn es nichts zu speichern gibt (Ende, zu früh, Debug). */
-async function captureSave(s) {
+/**
+ * Stand der laufenden Partie packen. Liefert null, wenn es nichts zu speichern gibt (Ende ohne `ended`, zu früh, Debug).
+ * Der Endstand (ended = true) wird einmal nach dem Spielende geschrieben. Die erste Speicherung legt die Partie als Stand an
+ * (id, Name „Partie TT.MM.JJJJ HH:MM“, createdAt); danach schreibt jede Speicherung in diesen Stand.
+ */
+async function captureSave(s, ended = false) {
   const g = s.game;
-  if (DEBUG || s.ended || g.winner !== null || g.time < MIN_SAVE_TIME) return null;
+  if (DEBUG || (!ended && (s.ended || g.winner !== null || g.time < MIN_SAVE_TIME))) return null;
+  if (!s.saveId) {
+    s.saveId = saves.newSaveId();
+    s.saveName = saves.defaultName(new Date());
+    s.createdAt = Date.now();
+  }
   const cam = s.camera;
   const body = {
     format: SAVE_FORMAT,
@@ -144,51 +154,76 @@ async function captureSave(s) {
   };
   const bytes = await pack(body);
   const meta = {
-    savedAt: Date.now(),
+    id: s.saveId,
+    name: s.saveName,
+    version: GAME_VERSION,
     format: SAVE_FORMAT,
+    createdAt: s.createdAt,
+    updatedAt: Date.now(),
     gameTime: g.time,
     points: [g.teams[0].points, g.teams[1].points],
     winPoints: g.winPoints,
     difficulty: s.settings.difficulty ?? 'normal',
+    ended,
     size: bytes.length,
   };
   return { meta, bytes };
 }
 
-/** Speichert die laufende Partie; liefert einen Text für die Anzeige (oder null, wenn nichts gespeichert wurde). */
-async function saveNow(s) {
-  if (s.saving) return null;
-  s.saving = true;
+/**
+ * Speichert die laufende Partie. Speicherungen laufen nacheinander (eine Warteschlange je Partie). Liefert einen Text für
+ * die Anzeige (oder null, wenn nichts gespeichert wurde).
+ */
+function saveNow(s, ended = false) {
+  s.pendingSaves = (s.pendingSaves ?? 0) + 1;
+  const job = (s.saveChain ?? Promise.resolve()).then(() => doSave(s, ended)).finally(() => {
+    s.pendingSaves -= 1;
+  });
+  s.saveChain = job.catch(() => {});
+  return job;
+}
+
+async function doSave(s, ended) {
   try {
-    const rec = await captureSave(s);
+    const rec = await captureSave(s, ended);
     if (!rec) return null;
     s.lastSave = performance.now();
-    const where = await saves.saveBoth(rec);
+    const where = await saves.storeSave(rec);
     return where === 'beide' ? 'Gespeichert (Gerät und Webspace)' : 'Gespeichert (nur Gerät, Webspace nicht erreichbar)';
   } catch (err) {
     return `Speichern fehlgeschlagen: ${err.message ?? err}`;
-  } finally {
-    s.saving = false;
   }
 }
 
-/** Angebot im Startmenü: neuester Stand von Gerät oder Webspace (einmal geladen, dann beim Fortsetzen genutzt). */
-let offered = null;
+/** Angebot im Startmenü: der neueste nicht beendete Stand (Gerät oder Webspace). Die volle Liste baut SP3. */
+let offeredId = null;
 const resumeOffer = {
   async find() {
-    offered = DEBUG ? null : await saves.findBest();
-    if (!offered || offered.rec.meta.format !== SAVE_FORMAT) return (offered = null);
-    return { text: saves.describe(offered.rec.meta, offered.source) };
+    offeredId = null;
+    if (DEBUG) return null;
+    saves.syncUp().catch(() => {}); // nach Offline-Spielen neuere Stände nachschicken
+    const best = (await saves.listSaves()).find((e) => !e.meta.ended && e.meta.format === SAVE_FORMAT);
+    if (!best) return null;
+    offeredId = best.meta.id;
+    return { text: saves.describe(best.meta, best.source) };
   },
   onResume() {
-    if (offered) resumeGame(offered.rec).catch((err) => {
-      showStartMenu(overlay, startGame, { wallet: loadWallet, resetWallet, resume: resumeOffer });
-      alert(`Spielstand lässt sich nicht laden: ${err.message ?? err}`);
-    });
+    const id = offeredId;
+    if (!id) return;
+    saves
+      .loadSave(id)
+      .then((rec) => {
+        if (!rec) throw new Error('Stand nicht gefunden');
+        return resumeGame(rec);
+      })
+      .catch((err) => {
+        showStartMenu(overlay, startGame, { wallet: loadWallet, resetWallet, resume: resumeOffer });
+        alert(`Spielstand lässt sich nicht laden: ${err.message ?? err}`);
+      });
   },
   onDiscard() {
-    offered = null;
-    saves.discardAll();
+    if (offeredId) saves.deleteSave(offeredId).catch(() => {});
+    offeredId = null;
   },
 };
 
@@ -200,6 +235,8 @@ async function resumeGame(rec) {
   hideOverlay(overlay);
   settings = body.settings ?? settings;
   buildSession(game, ai, settings, body.view);
+  // Die Partie schreibt ab jetzt in diesen Stand
+  Object.assign(session, { saveId: rec.meta.id, saveName: rec.meta.name, createdAt: rec.meta.createdAt });
   // Beim Fortsetzen erst pausiert: Zeit zum Umsehen
   session.loop.paused = true;
   showPause(overlay, resume, quitToMenu, () => {}, levelCtl);
@@ -370,7 +407,7 @@ function frame(s) {
   s.market?.update();
   s.research?.update();
   s.flow?.update();
-  if (!s.loop.paused && !s.ended && now - s.lastSave > AUTOSAVE_MS) saveNow(s);
+  if (!s.loop.paused && !s.ended && !s.pendingSaves && now - s.lastSave > AUTOSAVE_MS) saveNow(s);
 
   for (const ev of s.game.drainEvents()) {
     if (ev.type !== 'message' || (ev.team !== HUMAN && ev.team !== -1)) continue;
@@ -388,7 +425,7 @@ function frame(s) {
   if (g.winner !== null && !s.ended) {
     s.ended = true;
     saveWallet(g.teams[HUMAN].res.money);
-    if (!DEBUG) saves.discardAll(); // beendete Partie nicht fortsetzbar
+    if (!DEBUG) saveNow(s, true); // beendete Partie bleibt als Stand (ended, nicht fortsetzbar), wird nicht gelöscht
     sound.end(g.winner === HUMAN);
     showEnd(
       overlay,
@@ -479,7 +516,7 @@ function buildSession(game, ai, opts, view) {
   const research = game.research ? new ResearchPanel(hudRoot.parentElement ?? document.body, game, HUMAN, (t) => hud.pushMessage(t)) : null;
   const flow = game.city ? new FlowPanel(hudRoot.parentElement ?? document.body, game, HUMAN) : null;
   controller.onResearch = () => app.toggleResearch();
-  const s = { game, ai, camera, renderer, minimap, controller, hud, input, cityPanel, market, research, flow, onResize, loop: null, ended: false, last: null, settings: opts, saving: false, lastSave: performance.now() };
+  const s = { game, ai, camera, renderer, minimap, controller, hud, input, cityPanel, market, research, flow, onResize, loop: null, ended: false, last: null, settings: opts, pendingSaves: 0, saveChain: null, lastSave: performance.now() };
   s.loop = createLoop({
     tickRate: BALANCE.tickRate,
     update(dt) {

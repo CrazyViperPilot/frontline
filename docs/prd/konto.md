@@ -1,14 +1,13 @@
 # Konten (§17)
 
 Benutzersteuerung als Grundlage für späteres Vermarkten (Premium-Konten u. a.). Plan mit allen Paketen: [docs/plan-konten.md](../plan-konten.md).
-**Stand:** KO1 (Backend) gebaut. KO2 (Spielstände ans Konto, `api/save.php` nur mit Sitzung) und KO3 (Oberfläche im Startmenü, Rücksprung
-von den Mail-Links) stehen aus.
+**Stand:** KO1 (Backend) und KO2 (Spielstände ans Konto) gebaut. KO3 (Oberfläche im Startmenü, Rücksprung von den Mail-Links) steht aus.
 
 ## Ziel und Regeln
 
 - **Gast:** Spielen geht ohne Konto. Stände liegen dann nur auf dem Gerät (wie bisher, §16).
 - **Konto:** E-Mail-Adresse und Passwort. Bestätigt wird per Link aus der Mail. Mit Konto liegen Stände auf dem Server
-  und gehören dem Konto (KO2).
+  und gehören dem Konto (KO2, Abschnitt unten).
 - Die Felder `plan` und `premium_until` sind schon da, damit Premium später ohne Datenumbau kommt. Heute hat jedes Konto `free`.
 
 ## Datenmodell (MySQL, legen sich selbst an)
@@ -75,9 +74,23 @@ Server nicht eingerichtet (SMTP-Zugang fehlt in api/config.php).“. Schlägt ei
 abgelehnte Adresse), steht im Protokoll der Grund, im Browser nur „Die E-Mail konnte nicht gesendet werden.“ Optional gibt es
 `smtp_secure` (`ssl`, `tls`, `none`); `none` nur für lokale Tests ohne TLS.
 
+## Spielstände am Konto (KO2, `api/save.php`)
+
+- **Nur mit Sitzung:** jede Aktion von `api/save.php` (Liste, Laden, Speichern, Umbenennen, Löschen) braucht das Cookie `fl_session`.
+  Ohne gültige Sitzung: HTTP 401 `{"error":"Nicht angemeldet"}`.
+- **Eigene Stände:** Spalte `saves.user_id` (Index `idx_saves_user`) legt sich beim ersten Aufruf nach (`fl_saves_upgrade`, idempotent).
+  Alle Abfragen filtern nach dem Konto. Ein Speichern mit der id eines anderen Kontos (oder eines Standes ohne Konto) antwortet 403
+  und überschreibt nichts; Umbenennen und Löschen fremder ids treffen nichts (404 bzw. `deleted: 0`).
+- **Stände ohne Konto** (vor KO2, Gaststände) bleiben unsichtbar; sie werden nicht übernommen.
+- **Client** (`js/ui/saves.js`): Anfragen mit `credentials: 'include'`. Antwortet der Webspace mit 401, arbeitet das Spiel nur auf
+  dem Gerät, ohne Fehlermeldungen; `listSaves` markiert dann alles als lokal. `setRemoteEnabled(true)` (nach dem Anmelden, KO3)
+  schaltet den Webspace ein und schickt die lokalen Stände per `syncUp()` ins Konto; `accountUser()` fragt `me` ab.
+
 ## Dateien und Zugriffsschutz
 
 - `api/auth.php`: die Konten-Schnittstelle (oben). Konstanten (Fristen, Bremsen, Passwortlänge) stehen oben in der Datei.
+- `api/save.php`: die Spielstand-Schnittstelle (oben, KO2).
+- `api/lib/konto.php`: Tabellen der Konten (`FL_SCHEMA`), Sitzung aus dem Cookie (`current_user`), gemeinsam mit `api/save.php`.
 - `api/lib/http.php`: CORS, JSON-Antworten, Fehler, Protokoll (gemeinsam mit `api/save.php`).
 - `api/lib/db.php`: Zugang aus `api/config.php`, Verbindung und Tabellen (gemeinsam mit `api/save.php`).
 - `api/lib/mail.php`: SMTP-Versand.
@@ -87,5 +100,6 @@ abgelehnte Adresse), steht im Protokoll der Grund, im Browser nur „Die E-Mail 
 
 Kein automatischer Test im Paket (`npm test` läuft ohne PHP). Geprüft wurde von Hand: `php -l` je Datei; Antworten des PHP-Servers
 ohne `config.php`; Ablauf mit MariaDB und einem SMTP-Fake (Registrieren, Bestätigen, Anmelden, Abmelden, Passwort vergessen und
-Zurücksetzen, Bremsen, Cookie-Attribute, Fehlerpfade); Versand über STARTTLS und implizites TLS. `save.php` antwortet nach dem
-Umbau identisch zur Vorfassung.
+Zurücksetzen, Bremsen, Cookie-Attribute, Fehlerpfade); Versand über STARTTLS und implizites TLS. KO2: `test/saves.test.js`
+(Client ohne Anmeldung: 401 führt zu reinem Gerätebetrieb, Anmelden stößt den Abgleich an) und von Hand gegen MariaDB mit zwei
+Konten: ohne Cookie 401, jeder sieht nur seine Stände, fremde id beim Speichern 403, Migration der Tabelle `saves`, abgelaufene Sitzung 401.

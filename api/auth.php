@@ -16,6 +16,7 @@
 require_once __DIR__ . '/lib/http.php';
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/mail.php';
+require_once __DIR__ . '/lib/konto.php';
 
 const FL_SITE = 'https://frontline.phpexpert.de';  // Ziel der Links in den Mails
 const FL_SESSION_DAYS = 30;     // Sitzung (Cookie fl_session, Pfad /)
@@ -35,42 +36,6 @@ const FL_MSG_FORGOT = 'Wenn zu dieser Adresse ein bestätigtes Konto gehört, ha
     . 'geschickt. Der Link ist 1 Stunde gültig.';
 const FL_MSG_LINK = 'Der Link ist ungültig oder abgelaufen. Bitte die Aktion noch einmal anfordern.';
 const FL_MSG_BUSY = 'Zu viele Anfragen. Bitte später erneut versuchen.';
-
-// Tabellen (legen sich selbst an, idempotent). Zeiten in Sekunden seit 1970.
-const FL_SCHEMA = [
-    'CREATE TABLE IF NOT EXISTS users (
-            id BIGINT AUTO_INCREMENT PRIMARY KEY,
-            email VARCHAR(254) NOT NULL,
-            pass_hash VARCHAR(255) NOT NULL,
-            verified_at BIGINT NULL,
-            plan VARCHAR(16) NOT NULL DEFAULT \'free\',
-            premium_until BIGINT NULL,
-            created_at BIGINT NOT NULL,
-            last_login BIGINT NULL,
-            UNIQUE KEY uq_users_email (email)
-        ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
-    'CREATE TABLE IF NOT EXISTS tokens (
-            hash CHAR(64) NOT NULL PRIMARY KEY,
-            user_id BIGINT NOT NULL,
-            kind ENUM(\'verify\',\'reset\') NOT NULL,
-            expires_at BIGINT NOT NULL,
-            INDEX idx_tokens_user (user_id, kind)
-        ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
-    'CREATE TABLE IF NOT EXISTS sessions (
-            hash CHAR(64) NOT NULL PRIMARY KEY,
-            user_id BIGINT NOT NULL,
-            created_at BIGINT NOT NULL,
-            expires_at BIGINT NOT NULL,
-            INDEX idx_sessions_user (user_id)
-        ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
-    'CREATE TABLE IF NOT EXISTS attempts (
-            id BIGINT AUTO_INCREMENT PRIMARY KEY,
-            who_hash CHAR(64) NOT NULL,
-            kind VARCHAR(16) NOT NULL,
-            created_at BIGINT NOT NULL,
-            INDEX idx_attempts (who_hash, kind, created_at)
-        ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
-];
 
 fl_cors('GET, POST, OPTIONS', true);
 fl_exception_handler('Serverfehler bei der Anmeldung');
@@ -250,10 +215,6 @@ function fl_check_password($pass) {
     return $pass;
 }
 
-function fl_is_token($token) {
-    return is_string($token) && preg_match('/^[0-9a-f]{64}$/', $token) === 1;
-}
-
 // Mailversand eingerichtet? Vor jeder Suche nach dem Konto prüfen: die Antwort ist dann für jede Adresse gleich.
 function fl_mail_ready() {
     try {
@@ -323,14 +284,6 @@ function fl_attempt(PDO $pdo, $kind, $who, $window) {
     return (int) $st->fetchColumn();
 }
 
-// Sitzung zu einem Token (Cookie) → Konto oder null.
-function fl_session_user(PDO $pdo, $token) {
-    $st = $pdo->prepare('SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.hash = :h AND s.expires_at > :now');
-    $st->execute([':h' => hash('sha256', $token), ':now' => time()]);
-    $row = $st->fetch(PDO::FETCH_ASSOC);
-    return $row !== false ? $row : null;
-}
-
 // Nach außen: nur diese Felder, nie Hash oder id.
 function fl_user_out(array $u) {
     return [
@@ -342,12 +295,6 @@ function fl_user_out(array $u) {
 }
 
 // ---- Cookie und Schlüssel für die Bremse ----------------------------------------------------------------
-
-// Sitzungs-Token aus dem Cookie ('' wenn keiner oder kein gültiges Format).
-function fl_session_token() {
-    $raw = isset($_COOKIE['fl_session']) ? (string) $_COOKIE['fl_session'] : '';
-    return fl_is_token($raw) ? $raw : '';
-}
 
 function fl_set_cookie($value, $expires) {
     setcookie('fl_session', $value, [

@@ -3,6 +3,9 @@
 // Die Liste ist die Vereinigung beider Seiten; je id gewinnt der neuere `updatedAt`. Ohne Netz bleibt es beim Gerät;
 // `syncUp()` schickt neuere lokale Stände später nach. Gelöscht wird auf beiden Seiten; ist der Webspace dabei nicht
 // erreichbar, merkt sich das Gerät die Löschung (localStorage) und holt sie bei der nächsten Synchronisierung nach.
+// Seit KO2 gehören die Stände auf dem Webspace einem Konto: ohne Anmeldung (Antwort 401) arbeitet das Spiel nur auf dem
+// Gerät, ohne Fehlermeldungen. `setRemoteEnabled(true)` (nach dem Anmelden, KO3) schaltet den Webspace wieder ein und
+// schickt die lokalen Stände ins Konto (`syncUp`).
 import { toB64, fromB64 } from '../core/snapshot.js';
 
 export const REMOTE_URL = 'https://frontline.phpexpert.de/api/save.php';
@@ -15,6 +18,8 @@ const OLD_KEY = 'current';
 const TOMB_KEY = 'frontline-spielstand-loeschen'; // ids, die auf dem Webspace noch gelöscht werden müssen
 const RENAME_KEY = 'frontline-spielstand-umbenannt'; // { id: name }: Umbenennungen, die der Webspace noch nicht bestätigt hat
 const TIMEOUT = 15000;
+export const ACCOUNT_URL = 'https://frontline.phpexpert.de/api/auth.php'; // Konten (KO1), Sitzung über das Cookie fl_session
+let remoteOn = true; // false: nicht angemeldet (401 vom Webspace oder setRemoteEnabled(false)); dann kein Webspace-Zugriff
 
 /**
  * Meta: { id, name, version (Spielversion), format (SAVE_FORMAT), createdAt, updatedAt (ms seit 1970), gameTime,
@@ -117,7 +122,15 @@ function withPendingName(meta) {
 
 // ---- Webspace ------------------------------------------------------------------------------------------------------
 
+/** Fehler „nicht angemeldet“ (wie vom Webspace mit 401), ohne Netzzugriff. */
+function signedOutError() {
+  const err = new Error('Nicht angemeldet');
+  err.status = 401;
+  return err;
+}
+
 async function remote(method, query = '', body = null) {
+  if (!remoteOn) throw signedOutError();
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT);
   try {
@@ -127,9 +140,11 @@ async function remote(method, query = '', body = null) {
       headers: body ? { 'Content-Type': 'text/plain' } : undefined, // kein Preflight nötig
       signal: ctrl.signal,
       cache: 'no-store',
+      credentials: 'include', // Sitzungs-Cookie fl_session (Konto)
     });
     const data = await res.json();
     if (!res.ok) {
+      if (res.status === 401) remoteOn = false; // nicht angemeldet: ab jetzt nur das Gerät, bis setRemoteEnabled(true)
       const err = new Error(data.error ?? `Serverfehler ${res.status}`);
       err.status = res.status;
       throw err;
@@ -247,6 +262,61 @@ function queue(fn) {
 }
 
 /**
+ * Webspace ein- oder ausschalten (KO3 ruft es nach Anmelden und Abmelden). Ein Wechsel auf „an“ schickt die lokalen
+ * Stände ins Konto (`syncUp`). Liefert das Ergebnis von syncUp (Zahl der hochgeschickten Stände, 0 ohne Netz).
+ * Standard: an. Eine Antwort 401 vom Webspace schaltet es selbst aus.
+ */
+export function setRemoteEnabled(on) {
+  const was = remoteOn;
+  remoteOn = !!on;
+  return remoteOn && !was ? syncUp().catch(() => 0) : Promise.resolve(0);
+}
+
+/** Ist der Webspace eingeschaltet (angemeldet oder noch nicht geprüft)? */
+export function remoteEnabled() {
+  return remoteOn;
+}
+
+/**
+ * Anfrage an api/auth.php (Cookie wird mitgeschickt), z. B. { action: 'me' }. Liefert die JSON-Antwort; Netzfehler und
+ * Fehler mit HTTP-Code werfen (err.status, err.message = Satz aus der API).
+ */
+export async function accountRequest(body) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT);
+  try {
+    const res = await fetch(ACCOUNT_URL, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'text/plain' }, // kein Preflight nötig
+      signal: ctrl.signal,
+      cache: 'no-store',
+      credentials: 'include',
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const err = new Error(data.error ?? `Serverfehler ${res.status}`);
+      err.status = res.status;
+      throw err;
+    }
+    return data;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Wer ist angemeldet? Fragt api/auth.php „me“ und stellt den Webspace entsprechend ein (setRemoteEnabled).
+ * Liefert { email, plan, premiumUntil, createdAt } oder null (nicht angemeldet). Netzfehler werfen.
+ */
+export async function accountUser() {
+  const d = await accountRequest({ action: 'me' });
+  const user = d.user ?? null;
+  setRemoteEnabled(user !== null);
+  return user;
+}
+
+/**
  * Alle Stände (lokal und Webspace), neueste zuerst. Ist der Webspace nicht erreichbar, bleibt es bei den lokalen
  * (inRemote: false). Liefert [{ meta, source, inLocal, inRemote }]; source ist die Quelle der angezeigten Fassung.
  */
@@ -296,7 +366,7 @@ export function storeSave(rec) {
       await remotePush(rec);
       return 'beide';
     } catch (err) {
-      console.warn('Spielstand nur auf dem Gerät gespeichert:', err?.message ?? err);
+      if (remoteOn) console.warn('Spielstand nur auf dem Gerät gespeichert:', err?.message ?? err); // nicht angemeldet: still
       return 'lokal';
     }
   });
@@ -325,7 +395,7 @@ export function renameSave(id, name) {
     }
     const pending = loadRenames();
     if (remoteOk) delete pending[id];
-    else pending[id] = clean;
+    else if (remoteOn) pending[id] = clean; // nicht angemeldet (remoteOn false): nichts vormerken
     saveRenames(pending);
     return remoteOk ? 'beide' : 'lokal';
   });
@@ -343,7 +413,7 @@ export function deleteSave(id) {
     try {
       await remoteDelete(id);
     } catch {
-      saveTombs([...loadTombs(), id]);
+      if (remoteOn) saveTombs([...loadTombs(), id]); // nicht angemeldet: der Webspace hat den Stand nie (für dieses Gerät)
     }
   });
 }

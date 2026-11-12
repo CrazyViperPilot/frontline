@@ -38,12 +38,12 @@ const { srv, port } = await serve();
 const browser = await pw.chromium.launch();
 try {
   const page = await (await browser.newContext({ deviceScaleFactor: 1 })).newPage();
-  await page.goto(`http://127.0.0.1:${port}/frontline/manifest.json`); // gleiche Herkunft für die Modul-Importe
+  await page.goto(`http://127.0.0.1:${port}/manifest.json`); // gleiche Herkunft für die Modul-Importe
   const res = await page.evaluate(
     async ({ types, scale, list }) => {
-      const U = await import('/frontline/js/render/unitpaint.js');
-      const { ISO_K: K } = await import('/frontline/js/render/camera.js');
-      const { UNITS } = await import('/frontline/js/data/units.js');
+      const U = await import('/js/render/unitpaint.js');
+      const { ISO_K: K } = await import('/js/render/camera.js');
+      const { UNITS } = await import('/js/data/units.js');
       const all = U.unitModelTypes();
       if (list) return { list: all };
       const bad = types.filter((t) => !all.includes(t));

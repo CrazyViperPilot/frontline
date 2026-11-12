@@ -1,9 +1,9 @@
 // Spielstand speichern und fortsetzen: lokal in IndexedDB (läuft offline) und zusätzlich auf Daniels Webspace
-// (PHP, `frontline/api.php` im Repo vipervocs). Es gibt genau einen Stand; der neuere (savedAt) gewinnt.
+// (PHP, `api/save.php` in diesem Repo, auf frontline.phpexpert.de). Es gibt genau einen Stand; der neuere (savedAt) gewinnt.
 // Ohne Netz wird nur lokal gespeichert und beim nächsten Mal nachgeschickt.
 import { toB64, fromB64 } from '../core/snapshot.js';
 
-export const REMOTE_URL = 'https://phpexpert.de/vocs/frontline/api.php';
+export const REMOTE_URL = 'https://frontline.phpexpert.de/api/save.php';
 const DB = 'frontline-save';
 const STORE = 'save';
 const KEY = 'current';

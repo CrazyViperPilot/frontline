@@ -3,6 +3,8 @@
 Echtzeit-Strategie im Browser: FOBs bauen, Nachschub organisieren, die Konfliktzone in der Mitte halten.
 Spieler (Blau) gegen Computer (Rot). Vanilla JS, Canvas 2D und WebGL, kein Build-Schritt, offline spielbar (PWA).
 
+**Spielen:** <https://frontline.phpexpert.de/> (wird nach jedem Push auf `main` mit grünen Tests per GitHub Actions über FTP hochgeladen, siehe `.github/workflows/deploy.yml`).
+
 | Datei | Inhalt |
 |---|---|
 | [CLAUDE.md](CLAUDE.md) | Einstieg für Erweiterungen: Regeln, „Wo ändere ich was?“, Rezepte (Feature-Landkarte seit v5.79 in ARCHITEKTUR.md §9) |
@@ -17,11 +19,11 @@ Im Spiel zeigt **F1** oder **?** alle Tasten.
 ## Starten
 
 ```sh
-# im Repo-Wurzelordner (games/)
+# im Repo-Wurzelordner
 python3 -m http.server 8765
 ```
 
-Spiel: `http://localhost:8765/frontline/` · Karteneditor: `http://localhost:8765/frontline/editor.html`
+Spiel: `http://localhost:8765/` · Karteneditor: `http://localhost:8765/editor.html`
 
 ## Debug-Parameter
 

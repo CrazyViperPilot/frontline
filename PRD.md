@@ -33,7 +33,7 @@ Der Änderungsverlauf steht in [docs/changelog.md](docs/changelog.md) (nur bei B
 | Plattform | Google Chrome (Desktop), Safari auf dem iPad (Air M1), Android-Tablets/-Telefone im Querformat; installierbare PWA. Eingabe über Pointer-Events (Maus, Touch, Stift). |
 | Steuerung | Maus + Tastatur oder Touch (Tippen, Ziehen, Zwei-Finger-Zoom) |
 | Technik | Statische Web-App, Vanilla JS (ES-Module), Canvas 2D; Gelände der Iso-Ansicht mit WebGL (Rückfall ohne WebGL: flach, nur aufgemalt; `?gl=0` erzwingt das), kein Build-Schritt, keine externen Abhängigkeiten |
-| Auslieferung | Ordner `frontline/` im Repo `games`, GitHub Pages, offline spielbar (PWA); immer neueste Version, wenn online |
+| Auslieferung | Eigenes privates Repo `frontline`, per GitHub Actions über FTP auf Daniels Webspace: <https://frontline.phpexpert.de/>; offline spielbar (PWA); immer neueste Version, wenn online |
 | Sprache | Deutsch |
 | Spieler | 1 Mensch gegen 1 KI. Kein Multiplayer. |
 

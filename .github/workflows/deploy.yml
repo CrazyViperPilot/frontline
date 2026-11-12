@@ -1,0 +1,79 @@
+# Lädt das Spiel per FTP auf Daniels Webspace (https://frontline.phpexpert.de/), sobald die Tests auf main grün sind.
+# Von Hand: Actions → Deploy → Run workflow (lädt ohne Test-Abwarten hoch).
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   FTP_SERVER, FTP_USER, FTP_PASSWORD   Zugang zum Webspace
+# Optionale Variablen (gleiche Seite, Reiter „Variables“):
+#   FTP_DIR       Zielordner relativ zum FTP-Login, mit Schrägstrich am Ende (Standard ./ = Startordner des Logins)
+#   FTP_PROTOCOL  ftps (Standard) oder ftp
+#   FTP_SECURITY  strict (Standard) oder loose, wenn das FTPS-Zertifikat nicht zum Hostnamen passt
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [Test]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency: deploy
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Secrets prüfen
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          for v in FTP_SERVER FTP_USER FTP_PASSWORD; do
+            if [ -z "${!v}" ]; then echo "::error::Secret $v fehlt (Settings → Secrets and variables → Actions)."; exit 1; fi
+          done
+
+      - uses: actions/checkout@v4
+        with:
+          # beim Auslösen durch den Testlauf genau den getesteten Stand hochladen
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      # lftp statt einer Node-FTP-Action: kommt mit FTPS-Servern zurecht, die TLS-Session-Reuse auf der Datenverbindung verlangen.
+      - name: Hochladen per FTP
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          LFTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_DIR: ${{ vars.FTP_DIR || './' }}
+          FTP_PROTOCOL: ${{ vars.FTP_PROTOCOL || 'ftps' }}
+          FTP_SECURITY: ${{ vars.FTP_SECURITY || 'strict' }}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq lftp > /dev/null
+          # Nur, was der Browser braucht, plus das Spielstand-Backend api/. Kein --delete: api/data/ (Spielstände) bleibt unberührt.
+          mkdir site
+          cp -r index.html editor.html manifest.json sw.js css js icons api site/
+          ssl=$([ "$FTP_PROTOCOL" = "ftp" ] && echo false || echo true)
+          verify=$([ "$FTP_SECURITY" = "loose" ] && echo no || echo yes)
+          lftp --env-password -u "$FTP_USER" "$FTP_SERVER" <<LFTP
+          set ftp:ssl-force $ssl
+          set ftp:ssl-protect-data $ssl
+          set ssl:verify-certificate $verify
+          set ftp:passive-mode true
+          set net:timeout 20
+          set net:max-retries 2
+          mkdir -p -f $FTP_DIR
+          mirror --reverse --no-perms --verbose site/ $FTP_DIR
+          bye
+          LFTP
+
+      - name: Erreichbarkeit prüfen
+        run: |
+          sleep 5
+          code=$(curl -s -o /dev/null -w '%{http_code}' https://frontline.phpexpert.de/)
+          echo "Startseite: HTTP $code"
+          api=$(curl -s https://frontline.phpexpert.de/api/save.php?meta=1 || true)
+          echo "Spielstand-API: $api"
+          [ "$code" = "200" ] || { echo "::warning::https://frontline.phpexpert.de/ antwortet mit HTTP $code (Zielordner FTP_DIR prüfen)."; }

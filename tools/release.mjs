@@ -5,7 +5,7 @@
 //
 // Eintrag (docs/changes/<thema>.md, eine Zeile, Markdown wie im Änderungsverlauf, ohne „- vX.YY:“):
 //   **Staubwolke am Bagger** (§6 „Bagger“, nur Bild): Solange ein Bagger …
-// Aufruf (im Ordner frontline/, auf dem neuesten main):  npm run release        (nur ansehen: npm run release -- --dry)
+// Aufruf (im Repo-Wurzelordner, auf dem neuesten main):  npm run release        (nur ansehen: npm run release -- --dry)
 import { readFileSync, writeFileSync, readdirSync, statSync, unlinkSync, existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 

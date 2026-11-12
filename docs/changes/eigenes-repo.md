@@ -1,0 +1,1 @@
+**Eigenes Repo und eigener Webspace**: Frontline liegt jetzt im privaten Repo `frontline` und wird per GitHub Actions über FTP auf <https://frontline.phpexpert.de/> veröffentlicht (statt GitHub Pages); das Spielstand-Backend ist als `api/save.php` aus dem Repo vipervocs mit umgezogen. Spielstände vom alten Server werden nicht übernommen.

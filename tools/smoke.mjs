@@ -6,7 +6,7 @@
 // und phone (Pixel 7 quer); auf Touch-Geräten tippt der Rundgang auf die Knöpfe der Leiste statt Tasten zu drücken. Dazu misst er
 // je Ansicht (2D, Iso) 10 s lang bei 3× Tempo die Bildrate per requestAnimationFrame (nur Ausgabe, kein Fehler: schwankt je Rechner).
 //
-// Aufruf (im Ordner frontline/):  npm run smoke                      → Fotos in .smoke/desktop/
+// Aufruf (im Repo-Wurzelordner):  npm run smoke                      → Fotos in .smoke/desktop/
 //                                  npm run smoke -- --device phone    → Fotos in .smoke/phone/ (desktop|tablet|phone|all)
 //                                  node tools/smoke.mjs --seed 7 --out /tmp/x --scale 2
 //                                  npm run smoke -- --long 20         langer Lauf: 20 Spielminuten bei 10× Tempo, beide Seiten KI
@@ -23,7 +23,7 @@ import { extname, join, normalize } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 
-const ROOT = fileURLToPath(new URL('../../', import.meta.url)); // Repo-Wurzel (games/): das Spiel lädt nur aus frontline/
+const ROOT = fileURLToPath(new URL('../', import.meta.url)); // Repo-Wurzel: das Spiel liegt direkt hier
 /** Geräteprofile: Playwright-Gerät (Name) oder eigene Werte. Bei benannten Geräten setzt Playwright Bildschirm und Pixeldichte. */
 export const DEVICES = { desktop: null, tablet: 'iPad Pro 11 landscape', phone: 'Pixel 7 landscape' };
 
@@ -80,7 +80,7 @@ export async function openGame({ seed = 3, query = '', scale = 1, out = '.smoke'
     if (m.type() === 'error' && !/ERR_(TUNNEL|NAME|INTERNET|PROXY|CONNECTION)/.test(m.text())) errors.push(`Konsole: ${m.text()}`);
   });
   await mkdir(out, { recursive: true });
-  await page.goto(`http://127.0.0.1:${port}/frontline/?debug=1&seed=${seed}${query ? '&' + query : ''}`);
+  await page.goto(`http://127.0.0.1:${port}/?debug=1&seed=${seed}${query ? '&' + query : ''}`);
   await page.waitForTimeout(1000);
   /** Knopf drücken: auf Touch-Geräten tippen, sonst klicken. */
   const press = (sel) => (touch ? page.tap(sel, { timeout: 15000 }) : page.click(sel, { timeout: 15000 }));
@@ -271,7 +271,7 @@ export async function longRun({ minutes = 20, log = () => {}, ...opts } = {}) {
   try {
     // Blau mit KI (dasselbe Modul wie im Spiel), Bildzähler im Browser, 10× Tempo
     await g.run(async () => {
-      const { AI } = await import('/frontline/js/ai/ai.js');
+      const { AI } = await import('/js/ai/ai.js');
       const s = window.__frontline.session();
       const blue = new AI(s.game, 0, 'normal');
       const step = s.game.update.bind(s.game);

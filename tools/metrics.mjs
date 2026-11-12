@@ -4,7 +4,7 @@
 // Referenz deutlich darüber lag, oder weicht um mehr als die Hälfte ab. Das findet Fehler, die kein Test bemerkt, weil nichts
 // abstürzt (z. B. v5.82: eine KI-Stadt erzeugte keinen Stahl). Kurze Ausgabe, damit Agenten wenig Tokens verbrauchen.
 //
-// Aufruf (im Ordner frontline/):  npm run metrics                 vergleichen (Exit-Code 1 bei Warnungen)
+// Aufruf (im Repo-Wurzelordner):  npm run metrics                 vergleichen (Exit-Code 1 bei Warnungen)
 //                                  npm run metrics -- --update     Referenzwerte neu setzen (nach gewollten Änderungen an KI oder Wirtschaft)
 // Läuft in der CI nach npm test; von Hand bei Paketen, die KI, Stadt-Wirtschaft oder Kampf ändern. Je Seed ein Worker (parallel).
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';

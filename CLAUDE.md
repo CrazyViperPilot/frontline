@@ -21,7 +21,7 @@ die genannten Dateien.
    `CITY.ai` (`js/data/city.js`), alles, was je Schwierigkeit verschieden ist, in `BALANCE.difficulty`.
 4. Zufall in der Simulation nur über `game.rng` bzw. `makeRng(seed)` (`js/core/rng.js`), nie `Math.random()`. Gleicher Seed = gleiche Partie.
    Zufallskarten ohne Fluss müssen je Seed unverändert bleiben (gespeicherte Seeds, Tests).
-5. Imports immer mit Endung (`'./zone.js'`), nie über den Ordner `frontline/` hinaus, keine CDNs oder externen Dateien.
+5. Imports immer mit Endung (`'./zone.js'`), nie über den Repo-Ordner hinaus, keine CDNs oder externen Dateien.
 6. Neue Datei, die der Browser lädt: in `sw.js` unter `ASSETS` eintragen. `CACHE_VERSION` in `sw.js` **nicht** von Hand erhöhen: das macht
    `npm run release` beim Zusammenführen auf `main` (Abschnitt „Zusammenarbeit“).
 7. Regel- oder Feature-Änderung: die passende Themen-Datei unter `docs/prd/` anpassen (Abschnitt laut Übersicht in PRD.md) und den
@@ -42,11 +42,10 @@ die genannten Dateien.
 ## Starten und testen
 
 ```sh
-# im Repo-Wurzelordner (games/)
+# im Repo-Wurzelordner
 python3 -m http.server 8765
-# Spiel:  http://localhost:8765/frontline/          Editor: http://localhost:8765/frontline/editor.html
+# Spiel:  http://localhost:8765/          Editor: http://localhost:8765/editor.html
 
-cd frontline
 npm run test:quick                # Config-Prüfung und PRD-Tabellen, wenige Sekunden
 npm run docs                      # Wertetabellen in docs/prd/ (§6, Forschung) aus js/data/ neu erzeugen
 npm run test:fast                 # alle Tests ohne die langsamen „[langsam]“ (KI-gegen-KI-Läufe): zum Iterieren
@@ -82,7 +81,11 @@ npm run metrics                   # KI-Kennzahlen: 3 Seeds × 15 min KI gegen KI
   tote Datenschlüssel …),
   `test/doctables.test.js` meldet veraltete PRD-Tabellen, `test/docs.test.js` u. a. eine Themen-Datei ohne Eintrag in der Übersicht von
   PRD.md und einen zu großen Einstieg (über 20 000 Zeichen). Alle laufen auch in `npm test`.
-- CI: `.github/workflows/test-frontline.yml` läuft bei jeder Änderung unter `frontline/`.
+- CI: `.github/workflows/test.yml` läuft bei jedem Push und Pull Request (Tests und KI-Kennzahlen).
+- **Veröffentlichung:** `.github/workflows/deploy.yml` lädt das Spiel nach jedem Push auf `main` (nach grünen Tests) per FTP auf Daniels
+  Webspace: <https://frontline.phpexpert.de/>. Secrets `FTP_SERVER`, `FTP_USER`, `FTP_PASSWORD`; optionale Variablen `FTP_DIR` (Zielordner,
+  Standard `./`), `FTP_PROTOCOL` (`ftps` oder `ftp`), `FTP_SECURITY` (`strict` oder `loose`). Hochgeladen werden nur die Dateien, die der
+  Browser braucht, plus `api/` (Spielstand-Backend `api/save.php`, PHP); `api/data/` auf dem Server wird nie überschrieben oder gelöscht.
 
 ## Zusammenarbeit (mehrere Agenten, seit v5.81)
 
@@ -96,7 +99,7 @@ npm run metrics                   # KI-Kennzahlen: 3 Seeds × 15 min KI gegen KI
 
 ## Wo ändere ich was?
 
-Alle Pfade relativ zu `frontline/`. `QUICK` und `BALANCE` = `js/data/balance.js`, `UNITS` = `js/data/units.js`, `BUILDINGS` = `js/data/buildings.js`.
+Alle Pfade relativ zum Repo-Wurzelordner. `QUICK` und `BALANCE` = `js/data/balance.js`, `UNITS` = `js/data/units.js`, `BUILDINGS` = `js/data/buildings.js`.
 **Die häufigsten Werte stehen ganz oben in `js/data/balance.js` im Block `QUICK` (Schnelleinstellungen)**; `BALANCE` liest sie von dort.
 Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 

@@ -218,9 +218,22 @@ abgelehnte Adresse), steht im Protokoll der Grund, im Browser nur „Die E-Mail 
   Startmenü beim ersten Anzeigen aus der Adresszeile (`history.replaceState`).
 - **Keine Aussagen über Adressen:** Die Oberfläche zeigt nur die Antworten der API; ob eine Adresse existiert, erfährt sie nicht.
 
+## Konto im Pausenmenü (seit v5.157)
+
+- **Ort:** Im Pausenmenü (P, Esc) steht unter den Reglern ein kompakter Bereich „Konto“ (`js/ui/menu.js`, `showPause(…, account)`,
+  Klasse `.account`). Er nutzt denselben Konto-Code wie das Startmenü (`wireAccount`), zeigt aber nur das Nötigste.
+- **Abgemeldet:** Anmelden und Registrieren (ohne „Passwort vergessen“), dieselben Formulare. **Angemeldet:** „Angemeldet als <E-Mail>“
+  und Abmelden. Der Anmeldestand kommt ohne Abfrage aus dem Startmenü (`accountEmail()`); beim Anmelden holt das Spiel den Vorrat
+  für gewertete Partien (`matchSync`), der Webspace schaltet sich wie im Startmenü ein oder aus.
+- **Laufende Partie bleibt, wie sie begonnen hat:** An- und Abmelden wirken nur auf künftige Partien. Eine ungewertete Partie wird
+  nicht nachträglich gewertet, ein gewerteter Stand (Token) bleibt unverändert.
+- **Gewertete Partie:** Der Bereich zeigt nur „Angemeldet als …“ und den Hinweis „An- und Abmelden erst nach dem Endstand.“, ohne
+  Knöpfe. Grund: Wer sich mitten in einer gewerteten Partie abmeldet, ließe den Endstand unverbucht, und das Token bliebe im Vorrat.
+- Ohne den Parameter `account` (Tests, alte Aufrufe) zeigt das Pausenmenü keinen Konto-Bereich.
+
 ## Tests
 
-Kein automatischer Test im Paket (`npm test` läuft ohne PHP). Geprüft wurde von Hand: `php -l` je Datei; Antworten des PHP-Servers
+Kein automatischer Test im Paket (`npm test` läuft ohne PHP). Pausenmenü: `test/pausekonto.test.js` (Anzeige je Stand, Anmelden, Abmelden, gewertete Sperre ohne Browser). Geprüft wurde von Hand: `php -l` je Datei; Antworten des PHP-Servers
 ohne `config.php`; Ablauf mit MariaDB und einem SMTP-Fake (Registrieren, Bestätigen, Anmelden, Abmelden, Passwort vergessen und
 Zurücksetzen, Bremsen, Cookie-Attribute, Fehlerpfade); Versand über STARTTLS und implizites TLS. KO2: `test/saves.test.js`
 (Client ohne Anmeldung: 401 führt zu reinem Gerätebetrieb, Anmelden stößt den Abgleich an) und von Hand gegen MariaDB mit zwei

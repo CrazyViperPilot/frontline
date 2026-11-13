@@ -268,7 +268,7 @@ async function resumeGame(rec) {
   Object.assign(session, { saveId: rec.meta.id, saveName: rec.meta.name, createdAt: rec.meta.createdAt });
   // Beim Fortsetzen erst pausiert: Zeit zum Umsehen
   session.loop.paused = true;
-  showPause(overlay, resume, quitToMenu, () => {}, levelCtl, pauseSaveAs(session));
+  showPause(overlay, resume, quitToMenu, () => {}, levelCtl, pauseSaveAs(session), { rated: !!session.match });
 }
 
 async function quitAndSave() {
@@ -307,7 +307,7 @@ const app = {
           if (t) setText(t);
           setName();
         });
-      }, levelCtl, pauseSaveAs(s2));
+      }, levelCtl, pauseSaveAs(s2), { rated: !!s2.match });
     }
   },
   toggleView() {

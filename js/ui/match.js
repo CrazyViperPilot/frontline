@@ -1,8 +1,10 @@
-// Signierter Match-Start (MS1, docs/prd/konto.md „Signierter Match-Start“). Gewertet wird nur eine Partie, die der Server
+// Signierter Match-Start (MS1, MS2, docs/prd/konto.md „Signierter Match-Start“). Gewertet wird nur eine Partie, die der Server
 // begonnen hat: Der Server gibt Tokens auf Vorrat aus (bis 3, je mit der Kasse von damals, w0). Eine gewertete Partie startet
-// mit einem Token (Startgeld = w0) und meldet am Ende ihren Endstand (finish). Ohne Token (Gast, kein Vorrat) läuft die Partie
-// ungewertet. Ohne Netz bleibt der Endstand auf dem Gerät vorgemerkt (frontline-match-ausstehend) und geht beim nächsten Abgleich.
-// Der Server rechnet die Partie nicht nach; er prüft Echtheit, Einmaligkeit und die Start-Kasse. Kein DOM; geprüft in test/match.test.js.
+// mit einem Token (Startgeld = w0) und meldet am Ende ihren Endstand (finish). Das Token bleibt beim Start im Vorrat und wird
+// erst mit dem Endstand verbraucht (MS2): eine abgebrochene Partie verbraucht keins. Der Spielstand merkt sich das Token
+// (meta.match, nur lokal). Ohne Token (Gast, kein Vorrat) läuft die Partie ungewertet. Ohne Netz bleibt der Endstand auf dem
+// Gerät vorgemerkt (frontline-match-ausstehend) und geht beim nächsten Abgleich. Der Server rechnet die Partie nicht nach;
+// er prüft Echtheit, Einmaligkeit und die Start-Kasse. Kein DOM; geprüft in test/match.test.js.
 import { apiRequest, MATCH_URL, accountEmail, accountWallet, noteWallet } from './saves.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -56,24 +58,27 @@ function vorratNow() {
 }
 
 /**
- * Gewertete Partie beginnen: nimmt ein verwendbares Token aus dem Vorrat (es ist danach verbraucht) und liefert { token, w0 };
- * w0 ist das Startgeld. Ohne Konto oder ohne verwendbares Token: null (die Partie ist dann ungewertet). Braucht kein Netz.
+ * Gewertete Partie beginnen: liefert { token, w0 } eines verwendbaren Tokens aus dem Vorrat; w0 ist das Startgeld. Das Token
+ * bleibt im Vorrat: verbraucht wird es erst mit dem Endstand (finishMatch). Ohne Konto oder ohne verwendbares Token: null
+ * (die Partie ist dann ungewertet). Braucht kein Netz.
  */
 export function matchStart() {
-  const email = accountEmail();
-  const kasse = accountWallet();
-  if (email === null || kasse === null) return null;
-  const v = loadVorrat();
-  if (!v || v.email !== email) return null;
-  const now = Math.floor(Date.now() / 1000);
-  const i = v.tokens.findIndex((t) => usable(t, kasse, now));
-  if (i < 0) return null;
-  const [t] = v.tokens.splice(i, 1);
-  save(VORRAT_KEY, v);
-  return { token: t.token, w0: t.w0 };
+  const t = vorratNow()[0];
+  return t ? { token: t.token, w0: t.w0 } : null;
 }
 
-/** Wie viele gewertete Partien sofort möglich sind (Anzeige im Startmenü). */
+/**
+ * Eine gespeicherte gewertete Partie fortsetzen (meta.match des Standes, { token, w0 }): liefert { token, w0 }, wenn das Token
+ * noch im Vorrat und verwendbar ist (gleiche Kasse, nicht abgelaufen; also nicht verbraucht). Sonst null: die Partie läuft
+ * dann ungewertet weiter (anderes Gerät, schon gewertet, veraltete Kasse). Braucht kein Netz.
+ */
+export function matchResume(m) {
+  if (!m || typeof m.token !== 'string') return null;
+  const t = vorratNow().find((x) => x.token === m.token);
+  return t ? { token: t.token, w0: t.w0 } : null;
+}
+
+/** Wie viele gewertete Partien sofort möglich sind (Anzeige im Startmenü). Ein laufendes Spiel zählt sein Token noch mit. */
 export function matchReady() {
   return vorratNow().length;
 }
@@ -148,7 +153,8 @@ export function matchSync() {
 
 /**
  * Gewertete Partie beenden: meldet den Endstand zum Token. Der Server setzt die Kasse. Ohne Netz bleibt die Meldung vorgemerkt.
- * Nach Erfolg wird der Vorrat auf die neue Kasse gebracht (Tokens mit anderer Kasse sind veraltet). Wirft nie.
+ * Verbraucht ist das Token damit: es fällt sofort aus dem Vorrat (auch ohne Netz, die Meldung steht in frontline-match-ausstehend),
+ * und die Antwort des Servers ändert daran nichts mehr. Die neue Kasse macht Tokens mit anderer Kasse veraltet. Wirft nie.
  */
 export function finishMatch(token, wallet) {
   const email = accountEmail();
@@ -158,7 +164,7 @@ export function finishMatch(token, wallet) {
     save(AUSSTEHEND_KEY, [...loadAusstehend(), { email, token, wallet: w }]);
     noteWallet(w); // die Anzeige zeigt den Stand sofort; der Server bestätigt ihn gleich (flushInner)
     const v = loadVorrat();
-    if (v && v.email === email) save(VORRAT_KEY, { email, tokens: v.tokens.filter((t) => t && t.w0 === w) });
+    if (v && v.email === email) save(VORRAT_KEY, { email, tokens: v.tokens.filter((t) => t && t.token !== token && t.w0 === w) });
     await flushInner();
     try {
       await refillInner();

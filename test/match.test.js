@@ -1,11 +1,12 @@
-// Signierter Match-Start, Client-Logik (MS1, docs/prd/konto.md „Signierter Match-Start“), ohne Browser: js/ui/match.js mit
-// einem gefälschten fetch und Speicher. Gast und ohne Token: ungewertet. Angemeldet: Vorrat holen, Token verbrauchen, Endstand
-// melden, ohne Netz vormerken, 409/400/403 verwerfen, 401 behalten, fremdes Konto und veraltete Kasse ausschließen.
+// Signierter Match-Start, Client-Logik (MS1, MS2, docs/prd/konto.md „Signierter Match-Start“), ohne Browser: js/ui/match.js mit
+// einem gefälschten fetch und Speicher. Gast und ohne Token: ungewertet. Angemeldet: Vorrat holen, Start verbraucht nichts
+// (MS2), der Endstand verbraucht das Token, ohne Netz vormerken, 409/400/403 verwerfen, 401 behalten, fremdes Konto und
+// veraltete Kasse ausschließen, gespeicherte Partie mit Token fortsetzen (matchResume).
 // Die Server-Seite (api/match.php) wurde gegen MariaDB und php -S geprüft (docs/prd/konto.md).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setAccount, accountWallet, setRemoteEnabled } from '../js/ui/saves.js';
-import { matchStart, matchReady, matchPending, matchSync, finishMatch } from '../js/ui/match.js';
+import { matchStart, matchResume, matchReady, matchPending, matchSync, finishMatch } from '../js/ui/match.js';
 import { BALANCE } from '../js/data/balance.js';
 
 const VORRAT = 'frontline-match-vorrat';
@@ -97,7 +98,7 @@ test('angemeldet ohne Vorrat: ungewertet, bis der Vorrat geholt ist', async () =
   }
 });
 
-test('gewertete Partie: Start mit w0, Token verbraucht, Endstand gemeldet, Kasse übernommen, neuer Vorrat', async () => {
+test('gewertete Partie: Start mit w0, Endstand verbraucht den Token, Kasse übernommen, neuer Vorrat', async () => {
   const srv = server(800);
   const env = setup(srv.reply);
   try {
@@ -106,15 +107,87 @@ test('gewertete Partie: Start mit w0, Token verbraucht, Endstand gemeldet, Kasse
     const m = matchStart();
     assert.ok(m, 'Token da');
     assert.equal(m.w0, 800, 'Startgeld ist die Kasse zum Ausgeben');
-    assert.equal(matchReady(), 2, 'der Token ist verbraucht');
-    assert.notEqual(matchStart().token, m.token, 'ein zweiter Start nimmt einen anderen Token');
+    assert.equal(matchReady(), 3, 'der Start verbraucht noch nichts');
+    assert.deepEqual(matchStart(), m, 'ein zweiter Start (nach einem Abbruch) nimmt denselben Token');
     await finishMatch(m.token, 1234.7);
+    assert.equal(JSON.parse(env.store.get(VORRAT)).tokens.some((t) => t.token === m.token), false, 'der Token ist aus dem Vorrat weg');
     assert.deepEqual(finishCalls(env.calls).map((c) => c.body), [{ action: 'finish', token: m.token, wallet: 1234 }], 'ganzzahlig gemeldet');
     assert.equal(accountWallet(), 1234, 'die Kasse zeigt den Stand des Servers');
     assert.equal(srv.wallet, 1234);
     assert.equal(matchPending(), 0, 'bestätigt: nichts vorgemerkt');
     assert.equal(matchCalls(env.calls).at(-1).body.action, 'tokens', 'danach frischer Vorrat mit der neuen Kasse');
     assert.equal(matchReady(), 3);
+  } finally {
+    env.restore();
+  }
+});
+
+test('Abbruch verbraucht kein Token: Start ohne Endstand lässt den Vorrat unverändert', async () => {
+  const srv = server(800);
+  const env = setup(srv.reply);
+  try {
+    setAccount(USER);
+    await matchSync();
+    const before = env.store.get(VORRAT);
+    const m = matchStart();
+    assert.ok(m);
+    // Abbruch: kein finishMatch. Ein neuer Start nimmt denselben Token, der Vorrat ist byteweise gleich.
+    assert.deepEqual(matchStart(), m);
+    assert.equal(env.store.get(VORRAT), before, 'Vorrat unverändert');
+    assert.equal(matchReady(), 3);
+    assert.equal(finishCalls(env.calls).length, 0, 'nichts gemeldet');
+    assert.equal(matchPending(), 0);
+  } finally {
+    env.restore();
+  }
+});
+
+test('finish verbraucht den Token auch ohne Netz und wenn die Kasse gleich bleibt', async () => {
+  const srv = server(800);
+  const env = setup(srv.reply);
+  try {
+    setAccount(USER);
+    await matchSync();
+    const m = matchStart();
+    srv.online = false;
+    await finishMatch(m.token, 800); // Kasse unverändert: die anderen beiden Tokens (w0 800) bleiben
+    const left = JSON.parse(env.store.get(VORRAT)).tokens.map((t) => t.token);
+    assert.equal(left.includes(m.token), false, 'der verbrauchte Token ist weg');
+    assert.equal(matchReady(), 2, 'die beiden anderen bleiben nutzbar');
+    assert.notDeepEqual(matchStart(), m, 'der nächste Start nimmt einen anderen Token');
+    assert.equal(matchPending(), 1, 'die Meldung wartet auf das Netz');
+  } finally {
+    env.restore();
+  }
+});
+
+test('matchResume: gespeicherter Token noch im Vorrat = gewertet; verbraucht, fremd oder ohne Konto = null', async () => {
+  const srv = server(800);
+  const env = setup(srv.reply);
+  try {
+    setAccount(USER);
+    await matchSync();
+    const m = matchStart();
+    assert.deepEqual(matchResume(m), m, 'der Token ist noch da');
+    assert.equal(matchResume({ token: 'tok-fremd', w0: 800 }), null, 'unbekannter Token');
+    assert.equal(matchResume(undefined), null, 'Stand ohne match');
+    assert.equal(matchResume({ w0: 800 }), null, 'ohne Token');
+    await finishMatch(m.token, 900);
+    assert.equal(matchResume(m), null, 'nach der Wertung verbraucht');
+    setAccount(null);
+    assert.equal(matchResume(m), null, 'ohne Konto');
+  } finally {
+    env.restore();
+  }
+});
+
+test('matchResume: ein Token aus einer anderen Kasse ist veraltet', async () => {
+  const env = setup(() => ({ body: {} }));
+  try {
+    setAccount({ ...USER, wallet: 1500 });
+    env.store.set(VORRAT, JSON.stringify({ email: USER.email, tokens: [tok('alt', 800)] }));
+    assert.equal(matchResume({ token: 'tok-alt', w0: 800 }), null);
+    assert.equal(matchReady(), 0);
   } finally {
     env.restore();
   }
@@ -246,7 +319,8 @@ test('Token mit veralteter Kasse oder abgelaufener Frist wird nicht gestartet', 
       tokens: [tok('alt', 800), tok('abgelaufen', 1500, now() - 8 * 86400), tok('ok', 1500)],
     }));
     assert.equal(matchStart()?.token, 'tok-ok', 'nur der Token mit der aktuellen Kasse und in der Frist');
-    assert.equal(matchStart(), null, 'die beiden anderen passen nicht');
+    assert.equal(matchStart()?.token, 'tok-ok', 'der Start verbraucht nichts, der Token bleibt');
+    assert.equal(matchReady(), 1, 'die beiden anderen passen nicht');
     assert.equal(BALANCE.match.tokenDays, 7);
   } finally {
     env.restore();

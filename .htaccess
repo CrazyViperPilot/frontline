@@ -1,0 +1,2 @@
+# Startseite des Spiels (der Webspace sucht sonst nur index.php und antwortet auf /frontline/ mit 403).
+DirectoryIndex index.html

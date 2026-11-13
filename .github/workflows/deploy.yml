@@ -1,4 +1,4 @@
-# Lädt das Spiel per FTP auf Daniels Webspace (${SITE_URL}), sobald die Tests auf main grün sind.
+# Lädt das Spiel per FTP auf Daniels Webspace (https://phpexpert.de/frontline/, Variable SITE_URL), sobald die Tests auf main grün sind.
 # Von Hand: Actions → Deploy → Run workflow (lädt ohne Test-Abwarten hoch).
 #
 # Secrets (Settings → Secrets and variables → Actions):
@@ -115,7 +115,7 @@ jobs:
           # Nur, was der Browser braucht, plus das Spielstand-Backend api/ und das Admin-Panel admin/ (nicht im Offline-Cache).
           # Kein --delete: api/data/ (Spielstände) bleibt unberührt.
           mkdir site
-          cp -r index.html editor.html manifest.json sw.js css js icons api admin site/
+          cp -r .htaccess index.html editor.html manifest.json sw.js css js icons api admin site/
           ssl=$([ "$FTP_PROTOCOL" = "ftp" ] && echo false || echo true)
           verify=$([ "$FTP_SECURITY" = "loose" ] && echo no || echo yes)
           lftp --env-password -u "$FTP_USER" "$FTP_SERVER" <<LFTP

@@ -15,7 +15,7 @@ test('Deploy: Secrets ADMIN_USER und ADMIN_PASSWORD, nur Name und Hash in config
   assert.match(wf, /ADMIN_USER: \$\{\{ secrets\.ADMIN_USER \}\}/);
   assert.match(wf, /ADMIN_PASSWORD: \$\{\{ secrets\.ADMIN_PASSWORD \}\}/);
   assert.match(wf, /"admin_pass_hash" => \$adminPass !== "" \? password_hash\(\$adminPass, PASSWORD_DEFAULT\) : ""/);
-  assert.match(wf, /cp -r index\.html editor\.html manifest\.json sw\.js css js icons api admin site\//);
+  assert.match(wf, /cp -r \.htaccess index\.html editor\.html manifest\.json sw\.js css js icons api admin site\//);
   assert.doesNotMatch(wf, /"admin_password"/, 'das Passwort selbst darf nicht in config.php');
 });
 

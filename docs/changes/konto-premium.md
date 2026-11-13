@@ -1,0 +1,1 @@
+**Nickname und Premium-Zeiträume** (§17 „Konten“, Admin-Panel): Die Registrierung verlangt einen eindeutigen Nickname (3 bis 20 Zeichen); Premium ist eine Liste von Zeiträumen (von, bis oder unbefristet), die das Admin-Panel pflegt und die gilt, solange einer läuft; Nickname, E-Mail und Passwort lassen sich dort ändern.

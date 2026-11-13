@@ -1,6 +1,7 @@
 <?php
 // Frontline Konten-API (KO1, Regeln: docs/prd/konto.md). Aktion im JSON-Feld action, Antwort immer JSON:
-//   POST auth.php {"action":"register","email":"…","password":"…"}  → {"ok":true,"message":"…"}; Mail mit Bestätigungslink
+//   POST auth.php {"action":"register","email":"…","nickname":"…","password":"…"} → {"ok":true,"message":"…"}; Mail mit Bestätigungslink
+//                                                                   (seit KN1 mit Nickname; vergeben → 409 „Nickname ist schon vergeben“)
 //   GET  auth.php?verify=<token>                                    → 302 auf /frontline/?verified=1 oder …=0 (Link aus der Mail)
 //   POST auth.php {"action":"login","email":"…","password":"…"}     → {"ok":true,"user":{…}}; setzt Cookie fl_session
 //   POST auth.php {"action":"logout"}                               → {"ok":true}; löscht die Sitzung
@@ -9,9 +10,10 @@
 //   POST auth.php {"action":"reset","token":"…","password":"…"}     → {"ok":true}; setzt das Passwort, meldet alle Sitzungen ab
 //   POST auth.php {"action":"walletreset"}                          → {"ok":true,"wallet":800}; Kasse auf den Startbetrag
 //   Die Kasse meldet seit dem Match-Start nur noch api/match.php (Aktion finish, signierter Token). Aktion wallet entfernt.
-// user nach außen: {email, plan, premiumUntil, createdAt, wallet}, nie Hash oder id.
+// user nach außen: {email, nickname, plan, premiumUntil, createdAt, wallet}, nie Hash oder id. plan und premiumUntil sind seit KN1
+// berechnet (Premium-Zeiträume, fl_premium_state in api/lib/konto.php): plan „premium“ nur, wenn ein Zeitraum jetzt läuft.
 // Fehler: {"error": "…"} mit HTTP-Code: 400 Anfrage, 401 Anmeldung falsch, 403 nicht bestätigt, 405 Methode,
-//         429 zu viele Versuche, 500 Server/Datenbank, 503 Mailversand nicht eingerichtet oder fehlgeschlagen.
+//         409 Nickname vergeben, 429 zu viele Versuche, 500 Server/Datenbank, 503 Mailversand nicht eingerichtet oder fehlgeschlagen.
 // Gesperrte Konten (Admin-Panel, api/admin.php) bekommen beim Anmelden nach richtigem Passwort 403 „Konto gesperrt“.
 // Keine Aussage, ob eine E-Mail-Adresse registriert ist: register und forgot antworten gleich (bei Bremse, Bestätigung
 // und Nichtexistenz). Tokens liegen nur als SHA-256 in der Datenbank, Passwörter als password_hash.
@@ -31,8 +33,6 @@ const FL_LOGIN_WINDOW = 900;    // … in Sekunden (15 min)
 const FL_MAIL_MAX_EMAIL = 5;    // Mails je E-Mail-Adresse …
 const FL_MAIL_MAX_IP = 20;      // Mails je IP (gegen Massenversand an fremde Adressen) …
 const FL_MAIL_WINDOW = 3600;    // … in Sekunden (1 h)
-const FL_PASS_MIN = 8;          // Zeichen
-const FL_PASS_MAX = 72;         // Byte: bcrypt liest nur die ersten 72, darüber würde still gekürzt
 
 const FL_MSG_REGISTER = 'Wenn die Adresse noch nicht bestätigt ist, haben wir eine Mail mit einem Bestätigungslink geschickt. '
     . 'Der Link ist 48 Stunden gültig. Bitte auch den Spam-Ordner prüfen.';
@@ -68,17 +68,21 @@ switch ($body['action']) {
 // ---- Aktionen --------------------------------------------------------------------------------------------
 
 // Konto anlegen (oder bei unbestätigtem Konto den Link erneut schicken). Bestätigtes Konto: nichts passiert, gleiche Antwort.
+// Der Nickname (seit KN1) wird nur für ein neues Konto gespeichert; vergeben ist er → 409, auch vor der Bremse (keine Mail).
 function fl_register(array $body) {
     $email = fl_check_email(fl_field($body, 'email'));
+    $nick = fl_check_nickname(fl_field($body, 'nickname'));
     $pass = fl_check_password(fl_field($body, 'password'));
     fl_mail_ready();
     $pdo = fl_db(FL_SCHEMA);
+    fl_konto_upgrade($pdo);
+    if (fl_nickname_taken($pdo, $nick)) fail(409, FL_MSG_NICK_TAKEN);
     if (fl_attempt($pdo, 'mailip', fl_who_ip(), FL_MAIL_WINDOW) > FL_MAIL_MAX_IP) fail(429, FL_MSG_BUSY);
     if (fl_attempt($pdo, 'mail', fl_who('mail:' . $email), FL_MAIL_WINDOW) > FL_MAIL_MAX_EMAIL) {
         out(['ok' => true, 'message' => FL_MSG_REGISTER]); // stille Bremse: gleiche Antwort, keine Mail
     }
     $user = fl_user_by_email($pdo, $email);
-    if ($user === null) $user = fl_create_user($pdo, $email, $pass);
+    if ($user === null) $user = fl_create_user($pdo, $email, $pass, $nick);
     if ($user !== null && $user['verified_at'] === null) {
         // Das bestehende Passwort bleibt: wer die Adresse kennt, kann es nicht über dieses Formular ändern.
         $token = fl_issue_token($pdo, (int) $user['id'], 'verify', FL_VERIFY_HOURS * 3600);
@@ -118,7 +122,7 @@ function fl_login(array $body) {
     ]);
     $pdo->prepare('UPDATE users SET last_login = :now WHERE id = :id')->execute([':now' => $now, ':id' => (int) $user['id']]);
     fl_set_cookie($token, $now + FL_SESSION_DAYS * 86400);
-    out(['ok' => true, 'user' => fl_user_out($user)]);
+    out(['ok' => true, 'user' => fl_user_out($pdo, $user)]);
 }
 
 function fl_logout() {
@@ -137,7 +141,7 @@ function fl_me() {
     if ($token === '') out(['user' => null]);
     $pdo = fl_db(FL_SCHEMA);
     $user = fl_session_user($pdo, $token);
-    out(['user' => $user !== null ? fl_user_out($user) : null]);
+    out(['user' => $user !== null ? fl_user_out($pdo, $user) : null]);
 }
 
 // Passwort vergessen: nur für bestätigte Konten eine Mail. Gleiche Antwort für jede Adresse.
@@ -212,23 +216,10 @@ function fl_verify_link($raw) {
 }
 
 // ---- Prüfungen ------------------------------------------------------------------------------------------
+// E-Mail, Passwort und Nickname: fl_check_email, fl_check_password, fl_check_nickname in api/lib/konto.php.
 
 function fl_field(array $body, $key) {
     return array_key_exists($key, $body) ? $body[$key] : null;
-}
-
-function fl_check_email($email) {
-    if (!is_string($email)) fail(400, 'E-Mail-Adresse fehlt');
-    $email = strtolower(trim($email));
-    if (strlen($email) > 254 || !filter_var($email, FILTER_VALIDATE_EMAIL)) fail(400, 'E-Mail-Adresse ungültig');
-    return $email;
-}
-
-function fl_check_password($pass) {
-    if (!is_string($pass)) fail(400, 'Passwort fehlt');
-    if (mb_strlen($pass, 'UTF-8') < FL_PASS_MIN) fail(400, 'Das Passwort muss mindestens 8 Zeichen haben.');
-    if (strlen($pass) > FL_PASS_MAX) fail(400, 'Das Passwort darf höchstens 72 Byte lang sein.');
-    return $pass;
 }
 
 // Mailversand eingerichtet? Vor jeder Suche nach dem Konto prüfen: die Antwort ist dann für jede Adresse gleich.
@@ -257,16 +248,19 @@ function fl_user_by_email(PDO $pdo, $email) {
     return $row !== false ? $row : null;
 }
 
-// Neues, unbestätigtes Konto. Gab es es schon (gleichzeitige Anfrage), wird das bestehende Konto geliefert.
-function fl_create_user(PDO $pdo, $email, $pass) {
+// Neues, unbestätigtes Konto. Gab es es schon (gleichzeitige Anfrage), wird das bestehende Konto geliefert. Fehlt es danach, war
+// der Nickname die Dublette (gleichzeitige Anfrage mit demselben Nickname): 409.
+function fl_create_user(PDO $pdo, $email, $pass, $nick) {
     try {
-        $pdo->prepare('INSERT INTO users (email, pass_hash, created_at, plan) VALUES (:e, :h, :t, :p)')->execute([
-            ':e' => $email, ':h' => password_hash($pass, PASSWORD_DEFAULT), ':t' => time(), ':p' => 'free',
+        $pdo->prepare('INSERT INTO users (email, pass_hash, created_at, plan, nickname) VALUES (:e, :h, :t, :p, :n)')->execute([
+            ':e' => $email, ':h' => password_hash($pass, PASSWORD_DEFAULT), ':t' => time(), ':p' => 'free', ':n' => $nick,
         ]);
     } catch (PDOException $e) {
         if ($e->getCode() !== '23000') throw $e; // 23000 = doppelter Schlüssel
     }
-    return fl_user_by_email($pdo, $email);
+    $user = fl_user_by_email($pdo, $email);
+    if ($user === null) fail(409, FL_MSG_NICK_TAKEN);
+    return $user;
 }
 
 // Neuer Link je Art: ein älterer Link derselben Art wird ungültig. Gibt den Klartext-Token zurück (nur in der Mail).
@@ -300,32 +294,24 @@ function fl_attempt(PDO $pdo, $kind, $who, $window) {
     return (int) $st->fetchColumn();
 }
 
-// Nach außen: nur diese Felder, nie Hash oder id.
-function fl_user_out(array $u) {
+// Nach außen: nur diese Felder, nie Hash oder id. plan und premiumUntil kommen aus den Premium-Zeiträumen (seit KN1), nicht
+// mehr aus den alten Spalten users.plan und users.premium_until (die bleiben nur stehen).
+function fl_user_out(PDO $pdo, array $u) {
+    $premium = fl_premium_state($pdo, (int) $u['id']);
     return [
         'email' => $u['email'],
-        'plan' => $u['plan'],
-        'premiumUntil' => $u['premium_until'] === null ? null : (int) $u['premium_until'],
+        'nickname' => $u['nickname'] ?? null,
+        'plan' => $premium['premium'] ? 'premium' : 'free',
+        'premiumUntil' => $premium['premium'] ? $premium['until'] : null,
         'createdAt' => (int) $u['created_at'],
         'wallet' => (int) $u['wallet'],
     ];
 }
 
-// ---- Cookie und Schlüssel für die Bremse ----------------------------------------------------------------
+// ---- Cookie ----------------------------------------------------------------------------------------------
 
 function fl_set_cookie($value, $expires) {
     setcookie('fl_session', $value, [
         'expires' => $expires, 'path' => FL_PATH, 'secure' => true, 'httponly' => true, 'samesite' => 'Lax',
     ]);
-}
-
-// IP für die Bremse: nur REMOTE_ADDR (X-Forwarded-For ließe sich fälschen).
-function fl_who_ip() {
-    return fl_who('ip:' . (isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : ''));
-}
-
-// Hash für die Tabelle attempts: HMAC mit dem Datenbankpasswort als Schlüssel (IPs und Adressen lassen sich so nicht zurückrechnen).
-function fl_who($value) {
-    $cfg = fl_config();
-    return hash_hmac('sha256', $value, $cfg !== null ? (string) $cfg['password'] : '');
 }

@@ -43,7 +43,7 @@
           <table>
             <thead>
               <tr>
-                <th>E-Mail</th><th>Registriert</th><th>Bestätigt</th><th>Letzte Anmeldung</th>
+                <th>E-Mail</th><th>Nickname</th><th>Registriert</th><th>Bestätigt</th><th>Letzte Anmeldung</th>
                 <th>Konto</th><th>Kasse</th><th>Gesperrt</th><th>Spielstände</th><th>Spiele</th><th>Aktionen</th>
               </tr>
             </thead>
@@ -77,6 +77,57 @@
       </div>
     </section>
   </main>
+
+  <dialog id="edit-dialog" class="dlg" aria-labelledby="edit-title">
+    <form id="edit-form" autocomplete="off">
+      <h2 id="edit-title" class="dlg-title">Konto bearbeiten</h2>
+      <p id="edit-who" class="small"></p>
+      <label class="flabel" for="edit-nick">Nickname (3 bis 20 Zeichen)</label>
+      <input id="edit-nick" name="nickname" maxlength="20" autocomplete="off">
+      <label class="flabel" for="edit-email">E-Mail</label>
+      <input id="edit-email" name="email" type="email" maxlength="254" required autocomplete="off">
+      <label class="flabel" for="edit-pass">Neues Passwort (leer lassen = unverändert)</label>
+      <input id="edit-pass" name="password" type="password" autocomplete="new-password">
+      <label class="flabel" for="edit-pass2">Neues Passwort wiederholen</label>
+      <input id="edit-pass2" type="password" autocomplete="new-password">
+      <p class="small">Ein neues Passwort beendet alle Anmeldungen dieses Kontos.</p>
+      <div class="dlg-acts">
+        <button type="submit" class="primary">Speichern</button>
+        <button id="edit-cancel" type="button">Abbrechen</button>
+      </div>
+      <p id="edit-msg" class="msg" role="status"></p>
+    </form>
+  </dialog>
+
+  <dialog id="premium-dialog" class="dlg wide" aria-labelledby="premium-title">
+    <h2 id="premium-title" class="dlg-title">Premium</h2>
+    <p id="premium-who" class="small"></p>
+    <p id="premium-status" class="status" role="status"></p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Premium von</th><th>Premium bis</th><th>Stand</th><th>Aktionen</th></tr>
+        </thead>
+        <tbody id="period-rows"></tbody>
+      </table>
+    </div>
+    <form id="period-form" autocomplete="off">
+      <h3 id="period-form-title" class="sub">Zeitraum hinzufügen</h3>
+      <label class="flabel" for="period-from">Premium von</label>
+      <input id="period-from" type="date" required>
+      <label class="flabel" for="period-to">Premium bis (leer = unbefristet)</label>
+      <input id="period-to" type="date">
+      <div class="dlg-acts">
+        <button id="period-save" type="submit" class="primary">Hinzufügen</button>
+        <button id="period-cancel" type="button" hidden>Abbrechen</button>
+      </div>
+      <p id="period-msg" class="msg" role="status"></p>
+    </form>
+    <div class="dlg-acts dlg-close">
+      <button id="premium-close" type="button">Schließen</button>
+    </div>
+  </dialog>
+
   <script src="admin.js"></script>
 </body>
 </html>

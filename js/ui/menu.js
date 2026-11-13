@@ -169,7 +169,8 @@ function writeMapSel(v) {
 
 // ---- Konto (KO3, docs/prd/konto.md): Bereich im Startmenü -----------------------------------------------------------
 
-const ACC_PASS_MIN = 8; // wie api/auth.php (FL_PASS_MIN)
+const ACC_PASS_MIN = 8; // wie api/lib/konto.php (FL_PASS_MIN)
+const ACC_NICK_MSG = 'Der Nickname muss 3 bis 20 Zeichen lang sein und darf nur Buchstaben, Ziffern, Leerzeichen, _ und - enthalten.';
 const TOKEN_RE = /^[0-9a-f]{64}$/; // Link-Token aus der Mail (64 Hex-Zeichen, wie fl_is_token)
 const ACC_OFFLINE = 'Keine Verbindung zum Server. Bitte später erneut versuchen.';
 const ACC_TABS = [
@@ -178,6 +179,16 @@ const ACC_TABS = [
   ['forgot', 'Passwort vergessen'],
 ];
 const fmtDay = (ms) => new Date(ms).toLocaleDateString('de-DE');
+
+/** Nickname wie api/lib/konto.php (fl_nickname_normalize): Leerzeichen am Rand weg, Folgen zu einem; 3 bis 20 Zeichen; sonst null. */
+const accNick = (v) => {
+  const n = String(v ?? '').replace(/[\p{Z}\s]+/gu, ' ').trim();
+  const len = [...n].length;
+  return len >= 3 && len <= 20 && /^[\p{L}\p{N}_ -]+$/u.test(n) ? n : null;
+};
+
+/** Wer ist angemeldet, für die Zeile „Angemeldet als …“: mit Nickname „Nick (E-Mail)“, sonst die E-Mail (seit KN1). */
+const accountWho = (u) => (u.nickname ? `${esc(u.nickname)} (${esc(u.email)})` : esc(u.email));
 
 /** Meldung zu einem Fehler: err.status gesetzt → Satz aus api/auth.php, sonst Netzfehler. */
 const accMsg = (err) => (err?.status ? err.message : ACC_OFFLINE);
@@ -217,11 +228,12 @@ const accField = (name, label, type, auto, value = '') =>
 function accountForm(kind, st) {
   const email = accField('email', 'E-Mail', 'email', 'email', st.email);
   const keep = st.keep ?? {}; // Passwörter bleiben bei einer Eingabefehler-Meldung stehen (sonst neu tippen)
+  const nick = accField('nickname', 'Nickname (3 bis 20 Zeichen)', 'text', 'nickname', keep.nickname);
   const newPass = accField('password', kind === 'reset' ? 'Neues Passwort (mind. 8 Zeichen)' : 'Passwort (mind. 8 Zeichen)', 'password', 'new-password', keep.password);
   const again = accField('password2', 'Passwort wiederholen', 'password', 'new-password', keep.password2);
   const fields = {
     login: email + accField('password', 'Passwort', 'password', 'current-password'),
-    register: email + newPass + again,
+    register: nick + email + newPass + again,
     forgot: email,
     reset: `<p class="acc-title">Neues Passwort</p>${newPass}${again}`,
   };
@@ -241,13 +253,13 @@ function accountHtml(st, { compact = false, hint = '', locked = null, stats = fa
   const note = st.note ? `<p class="acc-note ${st.note.ok ? 'good' : 'bad'}" role="status">${esc(st.note.text)}</p>` : '';
   const sub = compact && hint ? `<p class="muted small">${esc(hint)}</p>` : '';
   if (locked) {
-    return `<span class="flabel">Konto</span>${st.user ? `<p class="acc-line">Angemeldet als <b>${esc(st.user.email)}</b></p>` : ''}
+    return `<span class="flabel">Konto</span>${st.user ? `<p class="acc-line">Angemeldet als <b>${accountWho(st.user)}</b></p>` : ''}
       <p class="muted small">${esc(locked)}</p>`;
   }
   if (st.user) {
     const line = compact
-      ? `<p class="acc-line">Angemeldet als <b>${esc(st.user.email)}</b></p>`
-      : `<p class="acc-line">Angemeldet als <b>${esc(st.user.email)}</b> · Konto: ${planLabel(st.user)}</p>`;
+      ? `<p class="acc-line">Angemeldet als <b>${accountWho(st.user)}</b></p>`
+      : `<p class="acc-line">Angemeldet als <b>${accountWho(st.user)}</b> · Konto: ${planLabel(st.user)}</p>`;
     const statsBtn = stats ? `<button type="button" data-acc="stats" aria-pressed="${!!st.statsOpen}">Meine Spiele</button>` : '';
     const panel = stats && st.statsOpen ? statsPanel(st) : '';
     return `<span class="flabel">Konto</span>${sub}
@@ -330,13 +342,19 @@ export function wireAccount(box, { compact = false, hint = '', locked = null, st
     if (kind !== 'reset') acc.email = val('email').trim();
     const email = acc.email;
     const pw = val('password');
+    const nick = kind === 'register' ? accNick(val('nickname')) : null; // seit KN1: Nickname bei der Registrierung
+    if (kind === 'register' && nick === null) {
+      acc.note = { ok: false, text: ACC_NICK_MSG };
+      acc.keep = { password: pw, password2: val('password2'), nickname: val('nickname') };
+      return draw();
+    }
     if (kind === 'register' || kind === 'reset') {
       const text = [...pw].length < ACC_PASS_MIN
         ? 'Das Passwort muss mindestens 8 Zeichen haben.'
         : pw !== val('password2') ? 'Die beiden Passwörter stimmen nicht überein.' : null;
       if (text) {
         acc.note = { ok: false, text };
-        acc.keep = { password: pw, password2: val('password2') };
+        acc.keep = { password: pw, password2: val('password2'), nickname: val('nickname') };
         return draw();
       }
     }
@@ -351,7 +369,7 @@ export function wireAccount(box, { compact = false, hint = '', locked = null, st
         await synced;
         onSynced?.(acc.user);
       } else if (kind === 'register') {
-        const d = await accountRequest({ action: 'register', email, password: pw });
+        const d = await accountRequest({ action: 'register', email, nickname: nick, password: pw });
         acc.note = { ok: true, text: d.message ?? 'Bitte prüfe dein Postfach.' };
       } else if (kind === 'forgot') {
         const d = await accountRequest({ action: 'forgot', email });
@@ -503,7 +521,7 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
         <li>Ist oben Fluss an, liegt vor jeder Startecke ein Fluss: über drei Brücken oder langsam durch zwei Furten. Brücken lassen sich sprengen (A, dann Brücke anklicken) und von Baufahrzeugen wieder aufbauen.</li>
         <li>Förderung, Werke, Wohnen und Gewerbe liegen an Straßen. Rohstoffe fahren zum nächsten Werk, Produkte zum Lager der Hauptstadt; ohne Straße keine Lieferung. Straßen können voll werden (Stau: gelb, rot), dann kommen Waren und Pendler langsamer. Fahrzeuge, Reparaturen und Munition brauchen Stahl; Gewerbe braucht Baumaterial vom Lager. F-16 tanken Kerosin am Kerosintank des Fliegerhorsts, Hubschrauber gelandet auf ihrem Heliport (ein Hubschrauber je Heliport, Kerosintank und Munitionslager in der Nähe).</li>
         <li>Spielstände: Die Liste oben zeigt alle Partien (Spielzeit, Punkte, Schwierigkeit, Version); je Zeile laden, umbenennen oder löschen. Beendete Partien bleiben zum Ansehen in der Liste.</li>
-        <li>Konto (oben, optional): Ohne Konto bleiben Spielstände auf diesem Gerät, und jede Partie startet mit dem Startbetrag und zählt nicht für eine Kasse. Anmelden und Abmelden geht auch im Pausenmenü (P): Die laufende Partie bleibt, wie sie begonnen hat; eine gewertete Partie lässt sich dort erst nach dem Endstand wechseln. Mit Konto (E-Mail und Passwort, Bestätigung per Mail) liegen Spielstände und die Kasse (Geld von Runde zu Runde) auf dem Server und sind nach dem Anmelden auf jedem Gerät da. Eine Partie zählt für die Kasse, wenn der Server sie begonnen hat: Er gibt bis zu 3 Tokens auf Vorrat aus, auch für Partien ohne Netz. Ohne Token läuft die Partie ungewertet. Ein Token wird erst mit dem Endstand verbraucht: Eine abgebrochene Partie kostet keins. Ein gespeicherter Stand bleibt auf diesem Gerät gewertet, solange sein Token im Vorrat ist.</li>
+        <li>Konto (oben, optional): Ohne Konto bleiben Spielstände auf diesem Gerät, und jede Partie startet mit dem Startbetrag und zählt nicht für eine Kasse. Anmelden und Abmelden geht auch im Pausenmenü (P): Die laufende Partie bleibt, wie sie begonnen hat; eine gewertete Partie lässt sich dort erst nach dem Endstand wechseln. Mit Konto (Nickname, E-Mail und Passwort, Bestätigung per Mail) liegen Spielstände und die Kasse (Geld von Runde zu Runde) auf dem Server und sind nach dem Anmelden auf jedem Gerät da. Eine Partie zählt für die Kasse, wenn der Server sie begonnen hat: Er gibt bis zu 3 Tokens auf Vorrat aus, auch für Partien ohne Netz. Ohne Token läuft die Partie ungewertet. Ein Token wird erst mit dem Endstand verbraucht: Eine abgebrochene Partie kostet keins. Ein gespeicherter Stand bleibt auf diesem Gerät gewertet, solange sein Token im Vorrat ist.</li>
         <li>Konfliktzone halten: jede deiner Einheiten dort bringt Geld (0,4/s, in der Hot Zone 0,8/s), alle 30 s ein Punkt. Fällt deine Hauptstadt, ist die Runde verloren.</li>
       </ol>
       <p class="muted small center" data-wallet></p>

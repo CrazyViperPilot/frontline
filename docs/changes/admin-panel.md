@@ -1,1 +1,0 @@
-**Admin-Panel: Benutzerverwaltung** (§17 „Konto“, Abschnitt „Admin-Panel“): Unter `/frontline/admin/` meldet sich der Betreiber mit Benutzername und Passwort an (Secrets `ADMIN_USER`, `ADMIN_PASSWORD`) und sieht alle Konten: freigeben, sperren und entsperren, auf Premium oder Kostenlos setzen, löschen (samt Spielständen). Schnittstelle `api/admin.php`, nicht im Offline-Cache.

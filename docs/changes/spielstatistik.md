@@ -1,1 +1,0 @@
-**Spielstatistik** (§17 „Spielstatistik“): Gewertete Partien speichern Ergebnis, Verdienst, Dauer und Punkte; „Meine Spiele“ im Konto-Bereich des Startmenüs zeigt Kennzahlen und die letzten 50 Partien, das Admin-Panel eine Übersicht (aktive Konten, Partien je Spieler, Tagesbalken).

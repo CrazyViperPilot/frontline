@@ -5,7 +5,7 @@
 import { CITY } from '../data/city.js';
 import { BALANCE } from '../data/balance.js';
 import { cellAt, sizeOf, bigAnchorAt } from '../game/city/cells.js';
-import { hasMarket } from '../game/city/query.js';
+import { hasMarket, marketBuyPrice } from '../game/city/query.js';
 import { CITY_KINDS, KIND, KIND_COLOR, KIND_ICON, BUILD_MENU } from '../data/citykinds.js';
 import { GOOD_NAME as GOOD_LONG, GOOD_SHORT, MARKET_GOODS, CITY_STORE_GOODS } from '../data/goods.js';
 
@@ -22,6 +22,8 @@ const GOOD_NAME = GOOD_SHORT;
 /** Werkzeuge in Gruppen: [[Gruppe, [Werkzeug …]] …] (ohne nicht mehr baubare Arten). */
 export const TOOL_GROUPS = BUILD_MENU;
 const fmt = (v, d = 0) => v.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d });
+/** Titel eines Mehrfach-Kaufs (n Lose zum aktuellen Preis, seit Paket „Knappes Geld“ steigt er je Los). */
+const buyTitle = (lot, name, n, total) => `${n} × ${lot} ${name} kaufen (−${fmt(total)}; so viel wie Geld und Lager erlauben)`;
 
 export class CityPanel {
   constructor(parent, game, team, onMessage = () => {}, onShow = null, onTrade = null) {
@@ -188,10 +190,10 @@ export class MarketPanel {
         `<button type="button" class="btn-sm mk-sell" data-trade="${g}" data-dir="sell" title="${M.lot} ${GOOD_LONG[g]} verkaufen">Verkaufen <b>+${M.sell[g]}</b></button>` +
         TIMES.map((n) => `<button type="button" class="btn-sm mk-x" data-trade="${g}" data-dir="sell" data-count="${n}" title="${n} × ${M.lot} ${GOOD_LONG[g]} verkaufen (+${fmt(n * M.sell[g])}; so viel wie vorhanden)">×${n}</button>`).join('') +
         `</span><span class="mk-grp">` +
-        `<button type="button" class="btn-sm mk-buy" data-trade="${g}" data-dir="buy" title="${M.lot} ${GOOD_LONG[g]} kaufen">Kaufen <b>−${M.buy[g]}</b></button>` +
-        TIMES.map((n) => `<button type="button" class="btn-sm mk-x" data-trade="${g}" data-dir="buy" data-count="${n}" title="${n} × ${M.lot} ${GOOD_LONG[g]} kaufen (−${fmt(n * M.buy[g])}; so viel wie Geld und Lager erlauben)">×${n}</button>`).join('') +
+        `<button type="button" class="btn-sm mk-buy" data-trade="${g}" data-dir="buy" title="${M.lot} ${GOOD_LONG[g]} kaufen">Kaufen <b data-mk-price="${g}">−${marketBuyPrice(game, team, g)}</b></button>` +
+        TIMES.map((n) => `<button type="button" class="btn-sm mk-x" data-trade="${g}" data-dir="buy" data-count="${n}" title="${buyTitle(M.lot, GOOD_LONG[g], n, n * marketBuyPrice(game, team, g))}" data-mk-xbuy="${g}">×${n}</button>`).join('') +
         `</span></div>`).join('')}</div>
-      <small class="mk-note">Je ${M.lot} Stück, Preise in Geld; ×10 und ×100 handeln 10 bzw. 100 Lose auf einmal (so viele wie möglich). BM, MUN, TS im Lager der Hauptstadt, Stahl und Kerosin im Stadtlager.</small>`;
+      <small class="mk-note">Je ${M.lot} Stück, Preise in Geld; jeder Kauf verteuert die Ware, der Aufschlag klingt langsam ab; ×10 und ×100 handeln 10 bzw. 100 Lose auf einmal (so viele wie möglich). BM, MUN, TS im Lager der Hauptstadt, Stahl und Kerosin im Stadtlager.</small>`;
     parent.appendChild(root);
     this.root = root;
     root.addEventListener('click', (e) => {
@@ -242,7 +244,10 @@ export class MarketPanel {
       this.root.querySelector(`[data-mk-have="${k}"]`).textContent = main || inCity ? fmt(Math.floor(have)) : '–';
       // ausgegraut, aber antippbar: der Grund kommt dann als Meldung (×10/×100 wie das erste Los: sie handeln so viel wie möglich)
       const noSell = (!main && !inCity) || have < M.lot;
-      const noBuy = (!main && !inCity) || money < M.buy[k] || have + M.lot > (inCity ? L.storeCap : L.capitalCap);
+      const price = marketBuyPrice(g, this.team, k); // aktueller Kaufpreis (steigt je Los, klingt ab)
+      const noBuy = (!main && !inCity) || money < price || have + M.lot > (inCity ? L.storeCap : L.capitalCap);
+      this.root.querySelector(`[data-mk-price="${k}"]`).textContent = `−${price}`;
+      for (const b of this.root.querySelectorAll(`[data-mk-xbuy="${k}"]`)) b.title = buyTitle(M.lot, GOOD_LONG[k], b.dataset.count, b.dataset.count * price);
       for (const b of this.root.querySelectorAll(`[data-trade="${k}"]`)) b.classList.toggle('off', b.dataset.dir === 'sell' ? noSell : noBuy);
     }
   }

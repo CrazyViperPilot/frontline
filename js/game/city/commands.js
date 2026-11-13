@@ -6,7 +6,7 @@ import { KINDS, KIND_ID, KIND_NAME } from '../../data/citykinds.js';
 import { STORED_GOODS, MARKET_GOODS, CITY_STORE_GOODS } from '../../data/goods.js';
 import { isFlat, idx, sizeOf, anchorOf, bigCells, cellsOf, fitBig, releaseCell, hasRoad, canZone, buildAllowed, buildWhy, roadLinkWhy, airLinkWhy, BUILD_BLOCK } from './cells.js';
 import { woodScan, fellTiles, clearableAt, demolish, felledOf } from './clearing.js';
-import { hasMarket } from './query.js';
+import { hasMarket, marketBuyPrice } from './query.js';
 import { zeroGoods, rebuildList, syncEntity, refundQueue, dropEntity } from './state.js';
 
 /** Großbau mit Mitte a abreißen oder überbauen: alle Zellen leer, begehbar, Ziel weg, eigene Ausbildung zurück. */
@@ -107,11 +107,14 @@ function tradeLot(game, team, cmd) {
     t.res.money += M.sell[cmd.good];
     return { ok: true, money: M.sell[cmd.good] };
   }
-  if (t.res.money < M.buy[cmd.good]) return { ok: false, reason: 'Zu wenig Geld' };
+  const price = marketBuyPrice(game, team, cmd.good);
+  if (t.res.money < price) return { ok: false, reason: 'Zu wenig Geld' };
   if (have + M.lot > cap) return { ok: false, reason: 'Lager voll' };
-  t.res.money -= M.buy[cmd.good];
+  t.res.money -= price;
   add(M.lot);
-  return { ok: true, money: -M.buy[cmd.good] };
+  c.marketHeat ??= {}; // Aufschlag dieser Ware steigt um CITY.market.surge (Paket „Knappes Geld“)
+  c.marketHeat[cmd.good] = (1 + (c.marketHeat[cmd.good] ?? 0)) * (1 + M.surge) - 1;
+  return { ok: true, money: -price };
 }
 
 /**

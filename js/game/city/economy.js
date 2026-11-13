@@ -51,6 +51,16 @@ function jobsOf(c, i, k, lv) {
   return table ? CITY[table][lv] : 0;
 }
 
+/** Markt-Aufschläge je Ware klingen ab (CITY.market.calm je s; unter 0,001 fällt der Rest weg). Paket „Knappes Geld“. */
+function calmMarket(c, dt) {
+  const heat = c.marketHeat;
+  if (!heat) return;
+  for (const g of Object.keys(heat)) {
+    heat[g] -= heat[g] * CITY.market.calm * dt;
+    if (heat[g] < 0.001) heat[g] = 0;
+  }
+}
+
 /**
  * Ein Simulationsschritt der Stadt beider Teams. Nach updateEconomy aufrufen. Die Phasen laufen in fester Reihenfolge (seit v5.60
  * zerlegt, Review Q-06; Rechenreihenfolge unverändert): Gebiet und Rückkehr, Ruinen, Treffer, Einwohner, Wachstum, Wirtschaft
@@ -60,6 +70,7 @@ export function updateCity(game, dt) {
   if (!game.city) return;
   game.teams.forEach((team, id) => {
     const c = game.city[id];
+    calmMarket(c, dt);
     refreshClaim(game, c, dt);
     clearRuins(game, c, id);
     logHits(game, c, dt);

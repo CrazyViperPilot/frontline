@@ -16,11 +16,11 @@
 // Baumaterial, Munition und Treibstoff sind zugleich die Sorten der FOB-Lager und LKW (js/game/logistics.js); eine neue Ware dieser
 // Art braucht deutlich mehr (Lager, LKW, HUD) und ist nicht Teil des Rezepts „Neue Ware“ in CLAUDE.md.
 export const GOODS = {
-  bm: { name: 'Baumaterial', short: 'BM', color: '#b58248', store: 'main', sell: 20, buy: 80, yield: 0.1, convert: 1 },
-  mun: { name: 'Munition', short: 'MUN', color: '#d9b600', store: 'main', sell: 30, buy: 120, yield: 0.06, convert: 0.5 },
-  fuel: { name: 'Treibstoff', short: 'TS', color: '#9b7bc4', store: 'main', sell: 30, buy: 120, yield: 0.05, convert: 1 },
-  metal: { name: 'Stahl', short: 'Stahl', color: '#8fb3c9', store: 'city', sell: 40, buy: 160, yield: 0.05, convert: 1, full: 'Mehr Fahrzeuge ausbilden oder am Markt verkaufen.' },
-  kero: { name: 'Kerosin', short: 'Kerosin', color: '#56b3e6', store: 'city', sell: 35, buy: 140, yield: 0.04, convert: 1.2, full: 'Kerosin am Fliegerhorst (Kerosintank) oder bei Hubschraubern verbrauchen oder am Markt verkaufen.' },
+  bm: { name: 'Baumaterial', short: 'BM', color: '#b58248', store: 'main', sell: 20, buy: 200, yield: 0.1, convert: 1 },
+  mun: { name: 'Munition', short: 'MUN', color: '#d9b600', store: 'main', sell: 30, buy: 300, yield: 0.06, convert: 0.5 },
+  fuel: { name: 'Treibstoff', short: 'TS', color: '#9b7bc4', store: 'main', sell: 30, buy: 300, yield: 0.05, convert: 1 },
+  metal: { name: 'Stahl', short: 'Stahl', color: '#8fb3c9', store: 'city', sell: 40, buy: 400, yield: 0.05, convert: 1, full: 'Mehr Fahrzeuge ausbilden oder am Markt verkaufen.' },
+  kero: { name: 'Kerosin', short: 'Kerosin', color: '#56b3e6', store: 'city', sell: 35, buy: 350, yield: 0.04, convert: 1.2, full: 'Kerosin am Fliegerhorst (Kerosintank) oder bei Hubschraubern verbrauchen oder am Markt verkaufen.' },
   iron: { name: 'Roheisen', short: 'Roheisen', color: '#b9a48a', store: null, yield: 0.06, convert: 2 }, // Zwischenprodukt (seit v5.20): Hütte → Stahlwerk
 };
 

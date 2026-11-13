@@ -126,6 +126,15 @@ export function forEnemyCity(game, team, x, y, radius, fn) {
 }
 
 /** Hat `team` mindestens einen fertigen Markt? (Handel, Marktmenü über die Geldanzeige) */
+/**
+ * Kaufpreis eines Loses am Markt (Paket „Knappes Geld“): Grundpreis CITY.market.buy je Ware, dazu der Aufschlag des Teams
+ * (c.marketHeat, steigt je gekauftem Los um CITY.market.surge und klingt mit CITY.market.calm ab). Ohne Stadt bzw. Aufschlag der Grundpreis.
+ */
+export function marketBuyPrice(game, team, good) {
+  const heat = game.city?.[team]?.marketHeat?.[good] ?? 0;
+  return Math.round(CITY.market.buy[good] * (1 + heat));
+}
+
 export function hasMarket(game, team) {
   const c = game.city?.[team];
   if (!c) return false;

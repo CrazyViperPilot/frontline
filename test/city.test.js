@@ -9,7 +9,7 @@ import { treeGone } from '../js/game/city/clearing.js';
 import { KINDS, KIND_ID } from '../js/data/citykinds.js';
 import { canZone, hasRoad, sizeOf, cellsOf, isPart, accessCells, roadAt, cellRect, DEPOSITS, cellAt } from '../js/game/city/cells.js';
 import { cityNoise } from '../js/game/city/state.js';
-import { freePop, hasMarket, cityEntityAt, cityTrainers, forEnemyCity, cityLevel } from '../js/game/city/query.js';
+import { freePop, hasMarket, cityEntityAt, cityTrainers, forEnemyCity, cityLevel, marketBuyPrice } from '../js/game/city/query.js';
 import { cityAiMemory, aiCity, aiDefend, aiRaid } from '../js/ai/cityai.js';
 import { connectRoad } from '../js/game/city/roadnet.js';
 import { transportOf, transportInfo } from '../js/game/transport.js';
@@ -19,6 +19,15 @@ import { bridgeUnder } from '../js/game/river.js';
 import { withValue } from './util.js';
 
 const run = (g, s) => { for (let t = 0; t < s * 20; t++) g.update(0.05); };
+// Summe von n Losen, wenn jedes Los den Aufschlag je Los erhöht (CITY.market.surge, wie tradeLot)
+function lotSpent(n, base, heat = 0) {
+  let s = 0;
+  for (let k = 0; k < n; k++) {
+    s += Math.round(base * (1 + heat));
+    heat = (1 + heat) * (1 + CITY.market.surge) - 1;
+  }
+  return s;
+}
 // Ursprung (c, r) eines w × h großen, ganz bebaubaren Rechtecks im Gebiet des Teams, nahe der Hauptstadt
 function spot(g, w, h, team = 0) {
   const c = g.city[team];
@@ -494,16 +503,17 @@ test('Markt: ohne Markt kein Handel, verkaufen und kaufen in Losen', () => {
   assert.ok(g.issue(0, { type: 'trade', good: 'metal', dir: 'buy' }).ok);
   assert.ok(g.city[0].metal >= metal + CITY.market.lot - 1);
 
-  // ×10: zehn Lose auf einmal, Geld genau zehnmal der Preis (Lager leer genug, Geld reicht)
+  // ×10: zehn Lose auf einmal, jedes Los zum jeweils aktuellen Preis (Lager leer genug, Geld reicht)
   g.city[0].metal = 0;
+  g.city[0].marketHeat = {}; // Aufschlag zurücksetzen
   g.teams[0].res.money = 100000;
   const r10 = g.issue(0, { type: 'trade', good: 'metal', dir: 'buy', count: 10 });
   assert.equal(r10.ok, true);
   assert.equal(r10.done, 10);
   assert.equal(g.city[0].metal, 10 * CITY.market.lot);
-  assert.equal(g.teams[0].res.money, 100000 - 10 * CITY.market.buy.metal);
+  assert.equal(g.teams[0].res.money, 100000 - lotSpent(10, CITY.market.buy.metal));
   // ×100 mit Geld für nur 3 Lose: kauft 3, meldet den Grund
-  g.teams[0].res.money = 3 * CITY.market.buy.metal + 1;
+  g.teams[0].res.money = lotSpent(3, CITY.market.buy.metal, g.city[0].marketHeat.metal ?? 0) + 1;
   const r100 = g.issue(0, { type: 'trade', good: 'metal', dir: 'buy', count: 100 });
   assert.equal(r100.ok, true);
   assert.equal(r100.done, 3);
@@ -519,6 +529,47 @@ test('Markt: ohne Markt kein Handel, verkaufen und kaufen in Losen', () => {
   const none = g.issue(0, { type: 'trade', good: 'metal', dir: 'buy', count: 100 });
   assert.equal(none.ok, false);
   assert.match(none.reason, /Geld/);
+});
+
+test('Markt: Kaufpreis steigt je Los, klingt über Zeit ab, Verkauf und anderes Team bleiben unberührt', () => {
+  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  paint(g, 'road', 0, 0, 3, 0);
+  paint(g, 'market', 0, 1, 0, 1);
+  run(g, CITY.growTime + 1);
+  assert.equal(hasMarket(g, 0), true);
+  const base = CITY.market.buy.metal;
+  assert.equal(marketBuyPrice(g, 0, 'metal'), base); // ohne Käufe der Grundpreis
+  assert.ok(g.issue(0, { type: 'trade', good: 'metal', dir: 'buy' }).ok);
+  const p1 = marketBuyPrice(g, 0, 'metal');
+  assert.equal(p1, Math.round(base * (1 + CITY.market.surge))); // ein Los: +8 %
+  assert.ok(g.issue(0, { type: 'trade', good: 'metal', dir: 'sell' }).ok);
+  assert.equal(marketBuyPrice(g, 0, 'metal'), p1); // Verkauf ändert den Kaufpreis nicht
+  assert.equal(marketBuyPrice(g, 1, 'metal'), base); // anderes Team unberührt
+  assert.equal(marketBuyPrice(g, 0, 'bm'), CITY.market.buy.bm); // andere Ware unberührt
+  assert.equal(CITY.market.sell.metal, 40); // Verkaufspreise unverändert
+  // Zeit: der Aufschlag sinkt (CITY.market.calm je s, 10 s ≈ 9,5 % weniger)
+  run(g, 10);
+  const heat = g.city[0].marketHeat.metal;
+  assert.ok(heat > CITY.market.surge * 0.9 && heat < CITY.market.surge * 0.92, `Aufschlag nach 10 s: ${heat}`);
+  assert.ok(marketBuyPrice(g, 0, 'metal') < p1);
+  // unter 0,001 fällt der Rest ganz weg
+  g.city[0].marketHeat.metal = 0.0009;
+  g.update(0.05);
+  assert.equal(marketBuyPrice(g, 0, 'metal'), base);
+});
+
+test('Markt: mehrere Lose kosten je Los den jeweils aktuellen Preis', () => {
+  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  paint(g, 'road', 0, 0, 3, 0);
+  paint(g, 'market', 0, 1, 0, 1);
+  run(g, CITY.growTime + 1);
+  g.teams[0].res.money = 100000;
+  const h0 = g.city[0].marketHeat?.bm ?? 0;
+  const before = g.teams[0].res.money;
+  const r = g.issue(0, { type: 'trade', good: 'bm', dir: 'buy', count: 3 });
+  assert.equal(r.done, 3);
+  assert.equal(before - g.teams[0].res.money, lotSpent(3, CITY.market.buy.bm, h0));
+  assert.ok(Math.abs(g.city[0].marketHeat.bm - ((1 + h0) * (1 + CITY.market.surge) ** 3 - 1)) < 1e-9);
 });
 
 test('Angriff: Stadtgebäude nehmen Schaden, werden Ruine (Prämie), wachsen danach neu', () => {

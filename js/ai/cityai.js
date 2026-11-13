@@ -7,6 +7,7 @@ import { transportOf, transportInfo } from '../game/transport.js';
 import { DEPOSITS, cellAt, idx, sizeOf, isPart, fitBig, bigCells, cellFree, roadAt, hasRoad, buildAllowed, buildWhy, canZone, nbrsOf, roadLinked } from '../game/city/cells.js';
 import { mainRoadReach, connectRoad, goalOf } from '../game/city/roadnet.js';
 import { totals } from '../game/city/state.js';
+import { marketBuyPrice } from '../game/city/query.js';
 
 /** Zellen höchstens `d` Schritte (4er-Nachbarschaft, alle Zellen) von einer Zelle aus `reach`, Uint8Array 1 = nah (seit v5.20, AP4). */
 function nearCells(c, reach, d) {
@@ -622,11 +623,11 @@ function aiMarket(game, team, reserve) {
   if (!main) return;
   for (const g of ['bm', 'mun', 'fuel']) if (main.store[g] > CITY.ai.sellAbove) game.issue(team, { type: 'trade', good: g, dir: 'sell' });
   if (c.metal > CITY.ai.sellAbove) game.issue(team, { type: 'trade', good: 'metal', dir: 'sell' });
-  if (c.metal < CITY.ai.buyMetalBelow && game.teams[team].res.money > reserve + CITY.market.buy.metal) {
+  if (c.metal < CITY.ai.buyMetalBelow && game.teams[team].res.money > reserve + marketBuyPrice(game, team, 'metal')) {
     game.issue(team, { type: 'trade', good: 'metal', dir: 'buy' });
   }
   // Baumaterial fehlt (seit v5.20, AP4): Straßen und Anschlüsse kosten es, ohne BM bleiben Werke unangebunden
-  if (main.store.bm < CITY.ai.buyBmBelow && game.teams[team].res.money > CITY.market.buy.bm) {
+  if (main.store.bm < CITY.ai.buyBmBelow && game.teams[team].res.money > marketBuyPrice(game, team, 'bm')) {
     game.issue(team, { type: 'trade', good: 'bm', dir: 'buy' });
   }
 }

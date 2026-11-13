@@ -4,6 +4,7 @@
 import { CITY } from '../../data/city.js';
 import { standsOf, freeSpace, isHighAlt } from '../../game/aircraft.js';
 import { supplyOf } from '../../game/transport.js';
+import { marketBuyPrice } from '../../game/city/query.js';
 import { BALANCE } from '../../data/balance.js';
 import { UNITS } from '../../data/units.js';
 import { canGarrison } from '../../game/garrison.js';
@@ -44,7 +45,7 @@ function steelFor(g, t, type) {
   if (!c) return true;
   const need = CITY.metalCost[type] ?? 0;
   for (let k = 0; k < 10 && c.metal < need; k++) {
-    if (g.teams[t].res.money < UNITS[type].cost.money + CITY.ai.jetReserve + CITY.market.buy.metal) return false;
+    if (g.teams[t].res.money < UNITS[type].cost.money + CITY.ai.jetReserve + marketBuyPrice(g, t, 'metal')) return false;
     if (!g.issue(t, { type: 'trade', good: 'metal', dir: 'buy' }).ok) return false;
   }
   return c.metal >= need;

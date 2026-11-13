@@ -25,6 +25,7 @@ const ASSETS = [
   './js/core/snapshot.js',
   './js/game/savegame.js',
   './js/ui/saves.js',
+  './js/ui/match.js',
   './js/data/balance.js',
   './js/data/units.js',
   './js/data/buildings.js',

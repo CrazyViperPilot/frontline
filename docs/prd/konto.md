@@ -2,7 +2,8 @@
 
 Benutzersteuerung als Grundlage für späteres Vermarkten (Premium-Konten u. a.). Plan mit allen Paketen: [docs/plan-konten.md](../plan-konten.md).
 **Stand:** KO1 (Backend), KO2 (Spielstände ans Konto), KO3 (Oberfläche im Startmenü, Rücksprung von den Mail-Links), das
-Admin-Panel (Benutzerverwaltung, Abschnitt unten) und die Kasse am Konto (KA1, Abschnitt unten) gebaut.
+Admin-Panel (Benutzerverwaltung, Abschnitt unten), die Kasse am Konto (KA1, Abschnitt unten) und der signierte Match-Start
+(MS1, Abschnitt unten) gebaut.
 
 ## Ziel und Regeln
 
@@ -21,6 +22,8 @@ Admin-Panel (Benutzerverwaltung, Abschnitt unten) und die Kasse am Konto (KA1, A
 | `sessions` | `hash` (SHA-256 des Cookies), `user_id`, `created_at`, `expires_at` | 30 Tage |
 | `attempts` | `who_hash` (HMAC einer IP oder Adresse), `kind` (`login`, `mailip`, `mail`, `admin`), `created_at` | Zähler für die Bremsen; Einträge älter als 24 h werden gelöscht |
 | `admin_sessions` | `hash` (SHA-256 des Cookies `fl_admin`), `created_at`, `expires_at` | Admin-Panel, 8 Stunden (Abschnitt „Admin-Panel“) |
+| `meta` | `k` (Schlüssel, Primärschlüssel), `v` (Text) | Match-Start (MS1): hält das Geheimnis unter `match_secret` |
+| `match_tokens` | `jti` (32 Hex, Primärschlüssel), `user_id`, `w0` (Kasse bei der Ausgabe), `issued_at`, `used_at` (leer = noch nicht gewertet) | Match-Start (MS1), Zeilen älter als 7 Tage werden gelöscht |
 
 Die Spalte `users.blocked` (`TINYINT`, Standard 0) kommt seit dem Admin-Panel dazu, die Spalte `users.wallet` (`BIGINT`, Standard
 800) seit KA1 (Kasse am Konto; Bestandskonten bekommen 800). `api/lib/konto.php` legt beide bei Bedarf selbst an.
@@ -39,8 +42,9 @@ kommen aus dem Datenbankpasswort (`api/config.php`), IPs und Adressen lassen sic
 | `POST {"action":"me"}` | `{user}` oder `{user:null}` | ohne Cookie ohne Datenbankzugriff |
 | `POST {"action":"forgot","email"}` | `{ok, message}` | nur für bestätigte Konten: Mail mit `/frontline/?reset=<token>` (1 h) |
 | `POST {"action":"reset","token","password"}` | `{ok}` | setzt das Passwort, beendet alle Sitzungen des Kontos |
-| `POST {"action":"wallet","value"}` | `{ok, wallet}` | nur mit Sitzung: meldet die Kasse (KA1, Abschnitt unten) |
 | `POST {"action":"walletreset"}` | `{ok, wallet}` | nur mit Sitzung: Kasse auf den Startbetrag (KA1) |
+
+Die Aktion `wallet` gibt es seit MS1 nicht mehr: den Endstand einer gewerteten Partie meldet `api/match.php` (Abschnitt unten).
 
 `user` nach außen: `{email, plan, premiumUntil, createdAt, wallet}`, nie Hash oder id.
 
@@ -49,6 +53,7 @@ kommen aus dem Datenbankpasswort (`api/config.php`), IPs und Adressen lassen sic
 **Fehler:** `{"error": "…"}` mit HTTP-Code. 400 Anfrage (z. B. Passwort zu kurz, Adresse ungültig, Link ungültig oder abgelaufen),
 401 Anmeldung falsch, 403 Konto noch nicht bestätigt (nur nach richtigem Passwort), 405 Methode, 429 zu viele Versuche,
 500 Datenbank oder Server, 503 Mailversand nicht eingerichtet oder fehlgeschlagen. Fremde Herkunft (`Origin`) bekommt 403.
+Die Schnittstelle `api/match.php` (Match-Start) nutzt dieselben Regeln, siehe unten.
 
 ## Regeln im Einzelnen
 
@@ -72,31 +77,74 @@ Die **Kasse** ist das Geld, das von Runde zu Runde bleibt (§3 „Ressourcen & L
 angemeldete Spieler und liegt dann im Konto, also auf jedem Gerät gleich.
 
 - **Gast:** Jede Partie startet mit dem Startbetrag (`BALANCE.startRes.money`, 800). Es gibt kein Sparschwein im Browser
-  (`localStorage`): Das Partieende meldet nichts. Das Startmenü sagt „Ohne Konto startest du jede Partie mit 800 Geld. Mit Konto
-  bleibt dein Geld von Runde zu Runde erhalten.“
-- **Angemeldet:** Die Partie startet mit der Kasse des Kontos (aus `me` oder der Anmeldung). Am Partieende meldet das Spiel den
-  Geldstand (`saves.saveWallet`, Client `js/ui/saves.js`). Die Anzeige im Startmenü: „Kasse: <Betrag> Geld … · zurücksetzen“.
-- **Speichern:** `POST auth.php {"action":"wallet","value"}` setzt die Kasse auf `max(0, min(5000, floor(value)))`. Der Server
-  zählt nicht selbst hoch; das Spiel rechnet das Geld.
-- **Endstand:** Gespeichert wird der **tatsächliche** Geldstand am Partieende (Ausgeben senkt die Kasse, gut spielen hebt sie). Der
-  Schutz gegen ein veraltetes Gerät, das einen höheren Stand überschreibt, kommt über den signierten Match-Start (eigenes Paket).
-- **Zurücksetzen:** Der Knopf „zurücksetzen“ im Startmenü ruft `walletreset` auf (ohne Bremse) und setzt auf 800.
-- **Ohne Netz:** Der gemeldete Stand wird im Browser vorgemerkt (`frontline-kasse-ausstehend`: Wert und E-Mail) und beim nächsten
-  Anmelden oder Abgleich (`syncUp`) geschickt. Gehört er zu einem anderen Konto, fällt er weg. Vorgemerkt gewinnt er gegen den
-  Stand des Servers (er ist der neuere).
-- **Abmelden:** Die Kasse verschwindet aus der Anzeige; das Spiel startet dann mit dem Startbetrag.
+  (`localStorage`). Gäste spielen ungewertet: Das Partieende meldet nichts. Das Startmenü sagt „Ohne Konto startest du jede Partie
+  mit 800 Geld, und sie zählt nicht für die Kasse. Mit Konto bleibt dein Geld von Runde zu Runde erhalten.“
+- **Angemeldet:** Die Kasse kommt aus `me` oder der Anmeldung und steht im Startmenü: „Kasse: <Betrag> Geld … · zurücksetzen“.
+  Eine Partie startet mit der Kasse nur, wenn sie **gewertet** ist: dann mit dem Startgeld aus einem Token des Servers
+  (siehe „Signierter Match-Start“ unten). Das Startmenü zeigt, wie viele gewertete Partien bereit sind.
+- **Endstand:** Gespeichert wird der **tatsächliche** Geldstand am Partieende (Ausgeben senkt die Kasse, gut spielen hebt sie). Die
+  Meldung läuft über `api/match.php` (Aktion `finish`), nicht mehr über eine eigene Kassen-Aktion.
+- **Zurücksetzen:** Der Knopf „zurücksetzen“ im Startmenü ruft `walletreset` auf (ohne Prüfung) und setzt auf 800. Tokens mit der
+  alten Kasse sind danach veraltet.
+- **Abmelden:** Die Kasse verschwindet aus der Anzeige; das Spiel startet dann mit dem Startbetrag, ungewertet.
 - **Admin-Panel:** Spalte „Kasse“ und der Knopf „Kasse setzen“ (`setwallet {id, value}`, 0 bis 5000, ganze Zahl; ohne Bremse).
-- **Ehrlichkeit:** Die Kasse wird im Browser berechnet und ist nicht fälschungssicher. Eine serverseitige Plausibilitätsprüfung der
-  Geldsumme ist bewusst nicht Teil dieses Pakets (Daniels Entscheidung).
+- **Ehrlichkeit:** Die Kasse wird im Browser berechnet. Der Server rechnet die Partie nicht nach (siehe unten „Grenzen des Schutzes“).
 - **Zahlen:** Startbetrag und Obergrenze stehen in `js/data/balance.js` (`QUICK.startMoney`, `QUICK.walletMax`) und als Spiegel in
   `api/lib/konto.php` (`FL_WALLET_START`, `FL_WALLET_MAX`). Bei einer Änderung beide Stellen anpassen.
-- **Dateien:** `api/auth.php` (Aktionen, Antwort `user`), `api/lib/konto.php` (Spalte, Spiegel), `api/admin.php` (Liste,
-  `setwallet`), `js/ui/saves.js` (Kasse am Konto: `setAccount`, `accountWallet`, `saveWallet`, `resetWallet`), `js/main.js`
-  (`loadWallet`, Partieende), `js/ui/menu.js` (Zeile im Startmenü), `admin/admin.js` und `admin/index.html`.
-- **Tests:** `test/kasse.test.js` prüft die Client-Logik ohne Browser (Gast, Anmelden, Bremse, Grenzen, Vormerkung ohne Netz, fremdes
-  Konto, zwei Meldungen während einer Übertragung, Zurücksetzen, 401). Von Hand gegen MariaDB und `php -S` geprüft: Migration der Spalte bei einem Bestandskonto, Antworten und
-  Fehler von `wallet`, `walletreset` und `setwallet`, 401 ohne Sitzung und bei gesperrtem Konto. Oberfläche im Browser mit gefälschtem
-  Backend: Gast, Anmelden über das Formular, Partie mit Kasse aus dem Konto, Zurücksetzen, Admin-Panel (Spalte und Eingabe).
+- **Dateien:** `api/auth.php` (`walletreset`, Antwort `user`), `api/lib/konto.php` (Spalte, Spiegel), `api/admin.php` (Liste,
+  `setwallet`), `js/ui/saves.js` (`setAccount`, `accountWallet`, `noteWallet`, `resetWallet`), `js/ui/match.js` (Endstand, Vorrat),
+  `js/main.js` (Startgeld, Partieende), `js/ui/menu.js` (Zeile im Startmenü), `admin/admin.js` und `admin/index.html`.
+- **Tests:** `test/kasse.test.js` (Client: Gast, Anmelden, Grenzen von `noteWallet`, Zurücksetzen, 401, keine Aktion `wallet` mehr)
+  und `test/match.test.js` (Client des Match-Starts, siehe unten). Von Hand gegen MariaDB und `php -S` geprüft (Migration der
+  Spalte, `walletreset`, `setwallet`, 401 ohne Sitzung und bei gesperrtem Konto).
+
+## Signierter Match-Start (MS1)
+
+Eine **gewertete** Partie, also eine, die die Kasse verändert, muss der Server begonnen haben. Beim Melden des Partieendes prüft er
+die Echtheit. So kommt kein Kassen-Gewinn ohne echten Start zustande, keine Partie wird doppelt gewertet, und ein veraltetes Gerät
+überschreibt keinen neueren Stand. Offline bleibt es möglich: Der Server gibt **Tokens auf Vorrat** aus (bis 3 je Konto).
+
+**Ehrlich:** Das Spiel rechnet im Browser; der Server rechnet die Partie nicht nach. Der Match-Start verhindert Melden ohne Start,
+Doppeln und unmögliche Sprünge, ist aber **kein vollständiger Betrugsschutz**. Wer den Browser verändert, kann eine gewertete Partie
+mit beliebigem Ergebnis melden, solange die Start-Kasse stimmt und die Grenze je Partie nicht überschritten wird.
+
+- **Geheimnis:** Tabelle `meta`, Schlüssel `match_secret` (64 Hex, `random_bytes`). Beim ersten Bedarf angelegt und wiederverwendet.
+  Es steht nicht in `api/config.php` und nicht in einem GitHub-Secret; es übersteht Deploys, weil es in der Datenbank liegt.
+- **Token:** `<base64url(JSON)>.<HMAC-SHA256 hex>` über den ersten Teil (`hash_hmac`, Prüfung mit `hash_equals`). Nutzlast:
+  `{uid, jti, iat, w0}`: `w0` ist die Kasse des Kontos bei der Ausgabe. Tabelle `match_tokens`: je `jti` der Startzeitpunkt und
+  `used_at` (leer, solange nicht gewertet).
+- **Vorrat:** `tokens` gibt die Tokens zurück, die noch gelten (unverbraucht, mit der **aktuellen** Kasse, nicht älter als 7 Tage),
+  und füllt auf 3 auf. Tokens mit alter Kasse fallen weg.
+- **Wertung:** `finish {token, wallet}` prüft in dieser Reihenfolge: Sitzung (sonst 401), Format und Signatur (sonst 400), Konto
+  (fremdes Konto 403), Token in der Datenbank (unbekannt oder abgelaufen 400), noch nicht gewertet (sonst 409 „schon gewertet“),
+  Start-Kasse `w0` gleich der aktuellen Kasse (sonst 409 „Kasse hat sich geändert“, veraltetes Gerät). Die Prüfung und das Setzen
+  laufen in einer Transaktion mit Sperre der Kontozeile: Ausgabe und Wertung desselben Kontos laufen nacheinander.
+- **Grenzen der Wertung:** Neue Kasse = Endstand, auf 0 bis 5000 begrenzt und höchstens `w0 + FL_MATCH_MAX_GAIN` (3000). Größere
+  Sprünge werden auf diese Grenze gekappt.
+- **Antworten:** `tokens` → `{tokens: [{token, w0, iat}], wallet}`; `finish` → `{ok, wallet}`. Fehler `{"error": "…"}` wie bei
+  `auth.php`: 400, 401, 403, 405, 409, 500.
+- **Client** (`js/ui/match.js`): Der Vorrat liegt in `localStorage` (`frontline-match-vorrat`, je Konto). `matchStart()` nimmt ein
+  Token mit der Kasse, die das Konto gerade zeigt, und verbraucht es; braucht kein Netz. Ohne Konto, ohne passendes Token: `null`,
+  die Partie ist ungewertet und startet mit dem Startbetrag. `finishMatch(token, wallet)` meldet den Endstand; ohne Netz steht er in
+  `frontline-match-ausstehend` und geht beim nächsten Abgleich der Reihe nach hinaus. Nach einer Wertung ist der Vorrat mit der alten
+  Kasse veraltet und wird gestrichen; offline gibt es dann keine gewertete Partie mehr, bis der Server die neue Kasse kennt.
+- **Antwort-Behandlung:** 409, 400 und 403 verwerfen den vorgemerkten Eintrag (nicht wiederholen); 401 behält ihn bis zur nächsten
+  Anmeldung; Netzfehler und 5xx bleiben vorgemerkt. Ein Eintrag eines anderen Kontos fällt weg.
+- **Wann der Vorrat geholt wird:** beim Anmelden, beim Öffnen des Startmenüs und nach „zurücksetzen“ (`matchSync`), nach jeder
+  erfolgreichen Wertung. Ist noch eine Meldung vorgemerkt, wird der Vorrat nicht geholt: der Server kennt die Kasse dann noch nicht.
+- **Ungewertet:** Gäste, Konten ohne Token (kein Netz und leerer Vorrat) und fortgesetzte Stände (Laden eines Standes, auch einer
+  gewerteten Partie) laufen ungewertet. Das Spiel sagt es im Verlauf. Abgebrochene Partien verbrauchen ihren Token.
+- **Lebensdauer:** Ein Token gilt 7 Tage ab Ausgabe (`BALANCE.match.tokenDays`, Spiegel `FL_MATCH_TOKEN_DAYS`); danach löscht der
+  Server die Zeile.
+- **Zahlen:** `FL_MATCH_TOKENS` = 3, `FL_MATCH_TOKEN_DAYS` = 7 (`api/lib/match.php`), `FL_MATCH_MAX_GAIN` = 3000 (`api/lib/konto.php`).
+- **Dateien:** `api/match.php` (Aktionen), `api/lib/match.php` (Tabellen, Geheimnis, Signatur), `js/ui/match.js` (Client),
+  `js/main.js` (`matchStart` beim Start, `finishMatch` am Partieende), `js/ui/menu.js` (Zeile „Gewertete Partien bereit“).
+- **Tests:** `test/match.test.js` (Client mit gefälschtem fetch: Gast, Vorrat, Verbrauch, Wertung, Vorrat mit alter Kasse, Vormerkung
+  ohne Netz, Reihenfolge, 409/400/403/401, fremdes Konto, Frist). Server gegen MariaDB und `php -S` von Hand geprüft: Vorrat
+  (höchstens 3, stabil), Wertung, doppelte Wertung (409), veraltete Kasse (409), Zuwachsgrenze (3000) und Obergrenze (5000), falsche
+  und veränderte Signatur (400), fremdes Geheimnis (400), unbekannte `jti` (400), Konto fremd (403), ohne Sitzung (401), abgelaufener
+  Token (400), gleichzeitige Wertung desselben Tokens (genau eine), Geheimnis genau einmal in `meta`.
+
 ## Mailversand (`api/lib/mail.php`)
 
 Eigener kleiner SMTP-Client (`stream_socket_client`, AUTH LOGIN, Text-Mail in UTF-8 als Base64). Zugang aus `api/config.php`,
@@ -131,6 +179,7 @@ abgelehnte Adresse), steht im Protokoll der Grund, im Browser nur „Die E-Mail 
 
 - `api/auth.php`: die Konten-Schnittstelle (oben). Konstanten (Fristen, Bremsen, Passwortlänge) stehen oben in der Datei.
 - `api/save.php`: die Spielstand-Schnittstelle (oben, KO2).
+- `api/match.php`: der Match-Start (oben, MS1). `api/lib/match.php`: Tabellen, Geheimnis und Signatur des Match-Starts.
 - `api/lib/konto.php`: Tabellen der Konten (`FL_SCHEMA`), Sitzung aus dem Cookie (`current_user`), gemeinsam mit `api/save.php`.
 - `api/lib/http.php`: CORS, JSON-Antworten, Fehler, Protokoll (gemeinsam mit `api/save.php`).
 - `api/lib/db.php`: Zugang aus `api/config.php`, Verbindung und Tabellen (gemeinsam mit `api/save.php`).

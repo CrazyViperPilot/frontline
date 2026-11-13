@@ -21,6 +21,7 @@ import { pickMood, MOOD_SETTINGS } from './render/mood.js';
 import { snapshotGame, restoreGame, SAVE_FORMAT } from './game/savegame.js';
 import { pack, unpack } from './core/snapshot.js';
 import * as saves from './ui/saves.js';
+import { matchStart, finishMatch } from './ui/match.js';
 import { GAME_VERSION } from './version.js';
 import { WEATHER_NAMES, WEATHER_SETTINGS } from './game/weather.js';
 
@@ -36,12 +37,10 @@ function loadIso() {
     return false;
   }
 }
-// Kasse (Geld von Runde zu Runde) gibt es nur am Konto (ui/saves.js, KA1): Gäste und Partien ohne bekannte Kasse starten mit
-// dem Startbetrag. Mit ?debug=1 immer der Startbetrag; dann wird auch nichts ans Konto gemeldet.
-function loadWallet() {
-  if (DEBUG) return BALANCE.startRes.money;
-  return saves.accountWallet() ?? BALANCE.startRes.money;
-}
+// Gewertete Partien (Match-Start, ui/match.js, MS1): nur mit einem Token des Kontos. Sie starten mit dessen Kasse (w0) und
+// melden am Ende den Endstand. Alle anderen Partien (Gast, kein Vorrat, Fortsetzen) laufen ungewertet mit dem Startbetrag.
+// Mit ?debug=1 nie gewertet.
+const UNRATED_NOTE = 'Diese Partie zählt nicht für die Kasse (ohne Konto oder ohne gewertetes Token).';
 const URL_SEED = Number.parseInt(params.get('seed'), 10);
 const URL_SPEED = Number.parseFloat(params.get('speed'));
 const SPEEDS = DEBUG ? [1, 2, 3, 5, 10] : [1, 2, 3];
@@ -258,6 +257,7 @@ async function resumeGame(rec) {
   hideOverlay(overlay);
   settings = body.settings ?? settings;
   buildSession(game, ai, settings, body.view);
+  if (!DEBUG) session.hud.pushMessage('Fortgesetzte Partien zählen nicht für die Kasse.'); // gewertet wird nur ein Start mit Token
   // Die Partie schreibt ab jetzt in diesen Stand
   Object.assign(session, { saveId: rec.meta.id, saveName: rec.meta.name, createdAt: rec.meta.createdAt });
   // Beim Fortsetzen erst pausiert: Zeit zum Umsehen
@@ -450,7 +450,7 @@ function frame(s) {
   const g = s.game;
   if (g.winner !== null && !s.ended) {
     s.ended = true;
-    if (!DEBUG) saves.saveWallet(g.teams[HUMAN].res.money); // Kasse ans Konto (Gäste: nichts)
+    if (!DEBUG && s.match) finishMatch(s.match.token, g.teams[HUMAN].res.money); // gewertete Partie: Endstand an den Server
     if (!DEBUG) saveNow(s, true); // beendete Partie bleibt als Stand (ended, nicht fortsetzbar), wird nicht gelöscht
     sound.end(g.winner === HUMAN);
     showEnd(
@@ -480,13 +480,16 @@ function startGame(opts) {
   const map = opts.mapId && opts.mapId !== 'random' ? loadMap(opts.mapId) : null; // gespeicherte Karte, sonst aus dem Seed
   const weather = DEBUG && WEATHER_SETTINGS.includes(params.get('weather')) ? params.get('weather') : opts.weather ?? 'off';
   const river = params.has('river') ? params.get('river') === '1' : opts.river !== false; // ?river=0|1 übersteuert das Startmenü
-  const game = new Game({ seed, winPoints: opts.winPoints, startMoney: loadWallet(), map, radio: opts.radio !== false, weather, research: opts.research !== false, river, city: true, buildRules: opts.buildRules !== false, debug: DEBUG });
+  const match = DEBUG ? null : matchStart(); // gewertet nur mit Token; sonst ungewertet
+  const game = new Game({ seed, winPoints: opts.winPoints, startMoney: match ? match.w0 : BALANCE.startRes.money, map, radio: opts.radio !== false, weather, research: opts.research !== false, river, city: true, buildRules: opts.buildRules !== false, debug: DEBUG });
   if (DEBUG && WEATHER_NAMES[params.get('wx')]) {
     const wx = params.get('wx');
     game.issue(HUMAN, { type: 'debug', weather: wx, season: wx === 'snow' ? 'winter' : game.weather.season, hold: true }); // Schnee nur im Winter; bleibt so (Grafik prüfen)
   }
   const ai = new AI(game, AI_TEAM, opts.difficulty);
   buildSession(game, ai, opts, null);
+  session.match = match;
+  if (!DEBUG && !match) session.hud.pushMessage(UNRATED_NOTE);
 }
 
 /** Oberfläche und Schleife um ein (neues oder geladenes) Spiel aufbauen. view = gespeicherte Kameraansicht oder null. */

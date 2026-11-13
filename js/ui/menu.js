@@ -7,6 +7,7 @@ import { MOOD_SETTINGS } from '../render/mood.js';
 import { SOUND_KEY, loadLevel, saveLevel } from '../audio/sound.js';
 import { KEYS } from './helptext.js';
 import { NAME_MAX, accountRequest, accountUser, accountWallet, resetWallet, setAccount } from './saves.js';
+import { matchPending, matchReady, matchSync } from './match.js';
 
 const DIFFS = [
   ['easy', 'Leicht'],
@@ -253,6 +254,7 @@ function accountHtml(st) {
  * Startmenü: onStart({difficulty, winPoints, mapId, radio, weather, mood, research, river, buildRules}) (city immer true) beim Klick auf Start (mapId 'random' oder Karten-ID,
  * radio = Sendemast-Sieg, weather = 'off' | 'random' | Jahreszeit, research = Forschungsbaum, river = Flüsse auf Zufallskarten).
  * Die Kasse (Geld von Runde zu Runde) kommt aus dem Konto (ui/saves.js, accountWallet); Gäste sehen den Startbetrag und den Hinweis.
+ * Gewertete Partien (Tokens, ui/match.js) zeigt die Kasszeile: wie viele bereit sind und ob ein Endstand noch auf Netz wartet.
  */
 export function showStartMenu(root, onStart, { resume = null } = {}) {
   // resume: { find(): Promise<{ text, source } | null>, onResume(), onDiscard() } – gespeicherte Partie (Gerät oder Webspace), siehe ui/saves.js
@@ -344,7 +346,7 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
         <li>Ist oben Fluss an, liegt vor jeder Startecke ein Fluss: über drei Brücken oder langsam durch zwei Furten. Brücken lassen sich sprengen (A, dann Brücke anklicken) und von Baufahrzeugen wieder aufbauen.</li>
         <li>Förderung, Werke, Wohnen und Gewerbe liegen an Straßen. Rohstoffe fahren zum nächsten Werk, Produkte zum Lager der Hauptstadt; ohne Straße keine Lieferung. Straßen können voll werden (Stau: gelb, rot), dann kommen Waren und Pendler langsamer. Fahrzeuge, Reparaturen und Munition brauchen Stahl; Gewerbe braucht Baumaterial vom Lager. F-16 tanken Kerosin am Kerosintank des Fliegerhorsts, Hubschrauber gelandet auf ihrem Heliport (ein Hubschrauber je Heliport, Kerosintank und Munitionslager in der Nähe).</li>
         <li>Spielstände: Die Liste oben zeigt alle Partien (Spielzeit, Punkte, Schwierigkeit, Version); je Zeile laden, umbenennen oder löschen. Beendete Partien bleiben zum Ansehen in der Liste.</li>
-        <li>Konto (oben, optional): Ohne Konto bleiben Spielstände auf diesem Gerät, und jede Partie startet mit dem Startbetrag. Mit Konto (E-Mail und Passwort, Bestätigung per Mail) liegen Spielstände und die Kasse (Geld von Runde zu Runde) auf dem Server und sind nach dem Anmelden auf jedem Gerät da.</li>
+        <li>Konto (oben, optional): Ohne Konto bleiben Spielstände auf diesem Gerät, und jede Partie startet mit dem Startbetrag und zählt nicht für eine Kasse. Mit Konto (E-Mail und Passwort, Bestätigung per Mail) liegen Spielstände und die Kasse (Geld von Runde zu Runde) auf dem Server und sind nach dem Anmelden auf jedem Gerät da. Eine Partie zählt für die Kasse, wenn der Server sie begonnen hat: Er gibt bis zu 3 Tokens auf Vorrat aus, auch für Partien ohne Netz. Ohne Token läuft die Partie ungewertet.</li>
         <li>Konfliktzone halten: jede deiner Einheiten dort bringt Geld (0,4/s, in der Hot Zone 0,8/s), alle 30 s ein Punkt. Fällt deine Hauptstadt, ist die Runde verloren.</li>
       </ol>
       <p class="muted small center" data-wallet></p>
@@ -359,8 +361,14 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
     if (!el) return;
     const w = accountWallet();
     if (!walletKnown) el.textContent = '';
-    else if (w === null) el.textContent = `Ohne Konto startest du jede Partie mit ${BALANCE.startRes.money} Geld. Mit Konto bleibt dein Geld von Runde zu Runde erhalten.`;
-    else el.innerHTML = `Kasse: <b>${w}</b> Geld (bleibt von Runde zu Runde, am Konto) · <button type="button" class="btn-sm" data-act="resetWallet">zurücksetzen</button>${note ? ` <span class="bad">${esc(note)}</span>` : ''}`;
+    else if (w === null) el.textContent = `Ohne Konto startest du jede Partie mit ${BALANCE.startRes.money} Geld, und sie zählt nicht für die Kasse. Mit Konto bleibt dein Geld von Runde zu Runde erhalten.`;
+    else {
+      const ready = matchReady();
+      const pending = matchPending();
+      const token = ready > 0 ? `Gewertete Partien bereit: ${ready}` : 'Keine gewertete Partie bereit: die nächste zählt nicht';
+      const wait = pending > 0 ? ` · ${pending} Endstand wartet auf Netz` : '';
+      el.innerHTML = `Kasse: <b>${w}</b> Geld (bleibt von Runde zu Runde, am Konto) · <button type="button" class="btn-sm" data-act="resetWallet">zurücksetzen</button> · ${token}${wait}${note ? ` <span class="bad">${esc(note)}</span>` : ''}`;
+    }
   };
   showWallet();
   // Schnellknopf „Fortsetzen“ (neuester nicht beendeter Stand) und die Liste der Spielstände (SP3)
@@ -511,6 +519,7 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
         const synced = setAccount(d.user); // Kasse und Webspace an, lokale Stände ins Konto
         accountChanged();
         await synced;
+        matchSync().then(() => showWallet()); // Vorrat für gewertete Partien holen (ohne die Liste zu verzögern)
         changed();
       } else if (kind === 'register') {
         const d = await accountRequest({ action: 'register', email, password: pw });
@@ -549,7 +558,10 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
       drawAccount();
       walletKnown = true;
       showWallet();
-      if (u) changed(); // angemeldet: Stände vom Konto nachladen
+      if (u) {
+        matchSync().then(() => showWallet()); // Vorrat und wartende Endstände
+        changed(); // angemeldet: Stände vom Konto nachladen
+      }
     })
     .catch(() => {
       drawAccount(); // Netzfehler: wie abgemeldet, der Gerätebetrieb bleibt
@@ -717,7 +729,7 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
       resume.onDiscard();
     } else if (b.dataset.act === 'resetWallet') {
       resetWallet().then(
-        () => showWallet(),
+        () => matchSync().then(() => showWallet()),
         (err) => showWallet(accMsg(err)),
       );
     } else if (b.dataset.act === 'start') {

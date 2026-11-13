@@ -1,5 +1,7 @@
 # Frontline – Plan „Match-Token: Speichern und erst am Ende verbrauchen“ (ein Paket)
 
+**Stand:** gebaut (MS2, Branch `match-token-save`, noch nicht auf `main`). Regeln: [docs/prd/konto.md](prd/konto.md), Abschnitt „Signierter Match-Start (MS1)“, Absätze „Token erst am Ende verbraucht (MS2)“ und „Token im Spielstand (MS2)“.
+
 Daniel, 2026-11-13: zwei Verbesserungen am signierten Match-Start (MS1):
 1. **Gespeicherte/fortgesetzte Partien bleiben gewertet.** Das Match-Token wird im Spielstand mitgespeichert; beim Fortsetzen meldet das
    Partieende damit `finish`.

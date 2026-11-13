@@ -21,7 +21,7 @@ import { pickMood, MOOD_SETTINGS } from './render/mood.js';
 import { snapshotGame, restoreGame, SAVE_FORMAT } from './game/savegame.js';
 import { pack, unpack } from './core/snapshot.js';
 import * as saves from './ui/saves.js';
-import { matchStart, finishMatch } from './ui/match.js';
+import { matchStart, matchResume, finishMatch } from './ui/match.js';
 import { GAME_VERSION } from './version.js';
 import { WEATHER_NAMES, WEATHER_SETTINGS } from './game/weather.js';
 
@@ -37,9 +37,10 @@ function loadIso() {
     return false;
   }
 }
-// Gewertete Partien (Match-Start, ui/match.js, MS1): nur mit einem Token des Kontos. Sie starten mit dessen Kasse (w0) und
-// melden am Ende den Endstand. Alle anderen Partien (Gast, kein Vorrat, Fortsetzen) laufen ungewertet mit dem Startbetrag.
-// Mit ?debug=1 nie gewertet.
+// Gewertete Partien (Match-Start, ui/match.js, MS1/MS2): nur mit einem Token des Kontos. Sie starten mit dessen Kasse (w0) und
+// melden am Ende den Endstand. Das Token wird erst dann verbraucht. Der Stand merkt es lokal (meta.match): ein fortgesetzter
+// Stand bleibt gewertet, solange das Token auf diesem Gerät noch im Vorrat ist. Alle anderen Partien (Gast, kein Vorrat,
+// Fortsetzen ohne Token) laufen ungewertet mit dem Startbetrag. Mit ?debug=1 nie gewertet.
 const UNRATED_NOTE = 'Diese Partie zählt nicht für die Kasse (ohne Konto oder ohne gewertetes Token).';
 const URL_SEED = Number.parseInt(params.get('seed'), 10);
 const URL_SPEED = Number.parseFloat(params.get('speed'));
@@ -150,6 +151,8 @@ async function captureSave(s, ended = false, copyName = null) {
     ended,
     size: bytes.length,
   };
+  // Gewertete Partie: das Token merkt sich der Stand (lokal; zum Webspace geht es nicht, saves.js remoteMeta). Beendet: nicht mehr.
+  if (s.match && !ended) meta.match = { token: s.match.token, w0: s.match.w0 };
   return { meta, bytes };
 }
 
@@ -256,8 +259,11 @@ async function resumeGame(rec) {
   stopSession();
   hideOverlay(overlay);
   settings = body.settings ?? settings;
+  // Gewertet bleibt, wer das Token des Standes noch im Vorrat hat (MS2); sonst läuft die Partie ungewertet weiter
+  const match = DEBUG ? null : matchResume(rec.meta.match);
   buildSession(game, ai, settings, body.view);
-  if (!DEBUG) session.hud.pushMessage('Fortgesetzte Partien zählen nicht für die Kasse.'); // gewertet wird nur ein Start mit Token
+  session.match = match;
+  if (!DEBUG) session.hud.pushMessage(match ? 'Gewertete Partie: der Endstand zählt für die Kasse.' : 'Fortgesetzte Partien zählen nicht für die Kasse.');
   // Die Partie schreibt ab jetzt in diesen Stand
   Object.assign(session, { saveId: rec.meta.id, saveName: rec.meta.name, createdAt: rec.meta.createdAt });
   // Beim Fortsetzen erst pausiert: Zeit zum Umsehen

@@ -1,9 +1,10 @@
 // Spielstände (SP2): reine Logik von js/ui/saves.js ohne Browser. Abgleich Gerät/Webspace, Namen, Ids, Übernahme des alten Stands.
+// Seit MS2: das Match-Token (meta.match) bleibt lokal und geht nie zum Webspace.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   mergeSaves, syncPush, defaultName, cleanName, copyName, newSaveId, fromLegacy, describe, NAME_MAX,
-  listSaves, setRemoteEnabled, remoteEnabled, accountUser,
+  listSaves, setRemoteEnabled, remoteEnabled, accountUser, remoteMeta, storeSave, loadSave, syncUp,
 } from '../js/ui/saves.js';
 
 const UUID4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -165,6 +166,104 @@ test('Konto abfragen: accountUser stellt den Webspace nach der Antwort von auth.
     assert.equal(remoteEnabled(), true);
   } finally {
     globalThis.fetch = realFetch;
+    setRemoteEnabled(true);
+  }
+});
+
+/** IndexedDB-Attrappe mit dem, was ui/saves.js braucht: eine Datenbank, Store `saves`, get/put/getAll/delete (Werte werden kopiert). */
+function fakeIndexedDb() {
+  const dbs = new Map();
+  const storeOf = (data) => ({
+    get: (k) => ({ result: data.has(k) ? structuredClone(data.get(k)) : undefined }),
+    put: (v, k) => {
+      data.set(k, structuredClone(v));
+      return { result: k };
+    },
+    getAll: () => ({ result: [...data.values()].map((v) => structuredClone(v)) }),
+    delete: (k) => {
+      data.delete(k);
+      return { result: undefined };
+    },
+  });
+  globalThis.indexedDB = {
+    open(name) {
+      const req = { result: null, onsuccess: null, onerror: null, onupgradeneeded: null };
+      setTimeout(() => {
+        const existed = dbs.has(name);
+        if (!existed) dbs.set(name, new Map());
+        const stores = dbs.get(name);
+        req.result = {
+          objectStoreNames: { contains: (n) => stores.has(n) },
+          createObjectStore: (n) => {
+            stores.set(n, new Map());
+            return storeOf(stores.get(n));
+          },
+          deleteObjectStore: (n) => stores.delete(n),
+          transaction: (n) => {
+            const tx = { objectStore: () => storeOf(stores.get(n)), oncomplete: null, onerror: null, onabort: null };
+            setTimeout(() => tx.oncomplete?.(), 0);
+            return tx;
+          },
+          close() {},
+        };
+        req.onupgradeneeded?.({ oldVersion: existed ? 2 : 0 }); // bestehende Datenbank: schon Version 2, nichts zu tun
+        req.onsuccess?.({});
+      }, 0);
+      return req;
+    },
+  };
+}
+
+test('Match-Token: remoteMeta lässt es weg, der Rest bleibt', () => {
+  const m = meta('a', 5, { match: { token: 'tok-geheim', w0: 800 } });
+  const r = remoteMeta(m);
+  assert.equal('match' in r, false);
+  assert.deepEqual(r, meta('a', 5));
+  assert.equal(remoteMeta(meta('b', 1)).id, 'b', 'ohne match unverändert');
+  assert.equal(m.match.token, 'tok-geheim', 'das Original bleibt, wie es war');
+});
+
+test('Match-Token: lokal im Stand, aber nie im Upload (Speichern und Abgleich)', async () => {
+  const realFetch = globalThis.fetch;
+  fakeIndexedDb();
+  const calls = [];
+  let online = true;
+  globalThis.fetch = async (url, opts) => {
+    calls.push({ url: String(url), opts });
+    const isPost = opts?.method === 'POST';
+    if (!online) throw new TypeError('Failed to fetch');
+    if (!isPost && String(url).includes('?id=')) return { ok: false, status: 404, json: async () => ({ error: 'nicht gefunden' }) };
+    return { ok: true, status: 200, json: async () => (isPost ? { ok: true } : { saves: [] }) };
+  };
+  try {
+    setRemoteEnabled(true);
+    const rec = { meta: meta('m1', 100, { match: { token: 'tok-geheim', w0: 800 } }), bytes: new Uint8Array([1, 2, 3]) };
+    assert.equal(await storeSave(rec), 'beide');
+    const posts = calls.filter((c) => c.opts?.method === 'POST');
+    assert.equal(posts.length, 1);
+    const sent = JSON.parse(posts[0].opts.body);
+    assert.equal(sent.meta.id, 'm1');
+    assert.equal('match' in sent.meta, false, 'kein match im Upload');
+    assert.equal(posts[0].opts.body.includes('tok-geheim'), false, 'das Token steht nirgends im Upload');
+
+    const local = await loadSave('m1');
+    assert.deepEqual(local.meta.match, { token: 'tok-geheim', w0: 800 }, 'lokal bleibt es erhalten');
+
+    // ohne Netz gespeichert, beim Abgleich nachgeschickt: auch dann ohne match
+    online = false;
+    const rec2 = { meta: meta('m2', 200, { match: { token: 'tok-zwei', w0: 800 } }), bytes: new Uint8Array([4]) };
+    assert.equal(await storeSave(rec2), 'lokal');
+    online = true;
+    calls.length = 0;
+    assert.equal(await syncUp(), 2, 'beide Stände kommen hoch');
+    for (const c of calls.filter((x) => x.opts?.method === 'POST')) {
+      assert.equal(c.opts.body.includes('"match"'), false);
+      assert.equal(c.opts.body.includes('tok-'), false);
+    }
+    assert.deepEqual((await loadSave('m2')).meta.match, { token: 'tok-zwei', w0: 800 });
+  } finally {
+    globalThis.fetch = realFetch;
+    delete globalThis.indexedDB;
     setRemoteEnabled(true);
   }
 });

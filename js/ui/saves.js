@@ -28,7 +28,8 @@ let remoteOn = true; // false: nicht angemeldet (401 vom Webspace oder setRemote
 
 /**
  * Meta: { id, name, version (Spielversion), format (SAVE_FORMAT), createdAt, updatedAt (ms seit 1970), gameTime,
- *         points: [blau, rot], winPoints, difficulty, ended (bool), size (Bytes gepackt) }.
+ *         points: [blau, rot], winPoints, difficulty, ended (bool), size (Bytes gepackt),
+ *         match (optional, nur lokal: { token, w0 } einer gewerteten Partie, MS2; geht nie zum Webspace, siehe remoteMeta) }.
  * Rec (lokal und beim Laden): { meta, bytes (gzip) }. Liste (listSaves): { meta, source: 'lokal' | 'Webspace', inLocal, inRemote }.
  */
 
@@ -165,11 +166,20 @@ const remoteGet = async (id) => {
   const d = await remote('GET', `?id=${encodeURIComponent(id)}`);
   return { meta: d.meta, bytes: fromB64(d.data) };
 };
-const remotePush = (rec) => remote('POST', '', { action: 'save', meta: rec.meta, data: toB64(rec.bytes) });
+const remotePush = (rec) => remote('POST', '', { action: 'save', meta: remoteMeta(rec.meta), data: toB64(rec.bytes) });
 const remoteRename = (id, name) => remote('POST', '', { action: 'rename', id, name });
 const remoteDelete = (id) => remote('POST', '', { action: 'delete', id }); // idempotent: unbekannte id ist kein Fehler
 
 // ---- Reine Logik (ohne Browser, geprüft in test/saves.test.js) ------------------------------------------------------
+
+/**
+ * Meta für den Webspace: ohne `match`. Das Match-Token ist ein Einlöse-Schein für die Wertung (MS2) und bleibt auf dem Gerät.
+ * Folge: Ein Stand, der auf einem anderen Gerät fortgesetzt wird, läuft dort ungewertet.
+ */
+export function remoteMeta(meta) {
+  const { match, ...rest } = meta;
+  return rest;
+}
 
 /** Vereinigung lokal + Webspace: je id gewinnt der neuere updatedAt (bei Gleichstand das Gerät); Löschungen fallen weg. */
 export function mergeSaves(localMetas, remoteMetas, tombs = []) {

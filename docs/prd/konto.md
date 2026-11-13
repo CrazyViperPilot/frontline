@@ -82,6 +82,7 @@ angemeldete Spieler und liegt dann im Konto, also auf jedem Gerät gleich.
 - **Angemeldet:** Die Kasse kommt aus `me` oder der Anmeldung und steht im Startmenü: „Kasse: <Betrag> Geld … · zurücksetzen“.
   Eine Partie startet mit der Kasse nur, wenn sie **gewertet** ist: dann mit dem Startgeld aus einem Token des Servers
   (siehe „Signierter Match-Start“ unten). Das Startmenü zeigt, wie viele gewertete Partien bereit sind.
+  Ein Stand einer gewerteten Partie merkt sich das Token (lokal, siehe unten), damit er gewertet fortgesetzt werden kann.
 - **Endstand:** Gespeichert wird der **tatsächliche** Geldstand am Partieende (Ausgeben senkt die Kasse, gut spielen hebt sie). Die
   Meldung läuft über `api/match.php` (Aktion `finish`), nicht mehr über eine eigene Kassen-Aktion.
 - **Zurücksetzen:** Der Knopf „zurücksetzen“ im Startmenü ruft `walletreset` auf (ohne Prüfung) und setzt auf 800. Tokens mit der
@@ -123,24 +124,36 @@ mit beliebigem Ergebnis melden, solange die Start-Kasse stimmt und die Grenze je
   Sprünge werden auf diese Grenze gekappt.
 - **Antworten:** `tokens` → `{tokens: [{token, w0, iat}], wallet}`; `finish` → `{ok, wallet}`. Fehler `{"error": "…"}` wie bei
   `auth.php`: 400, 401, 403, 405, 409, 500.
-- **Client** (`js/ui/match.js`): Der Vorrat liegt in `localStorage` (`frontline-match-vorrat`, je Konto). `matchStart()` nimmt ein
-  Token mit der Kasse, die das Konto gerade zeigt, und verbraucht es; braucht kein Netz. Ohne Konto, ohne passendes Token: `null`,
-  die Partie ist ungewertet und startet mit dem Startbetrag. `finishMatch(token, wallet)` meldet den Endstand; ohne Netz steht er in
+- **Client** (`js/ui/match.js`): Der Vorrat liegt in `localStorage` (`frontline-match-vorrat`, je Konto). `matchStart()` liefert ein
+  Token mit der Kasse, die das Konto gerade zeigt; braucht kein Netz. Ohne Konto, ohne passendes Token: `null`, die Partie ist
+  ungewertet und startet mit dem Startbetrag. `finishMatch(token, wallet)` meldet den Endstand; ohne Netz steht er in
   `frontline-match-ausstehend` und geht beim nächsten Abgleich der Reihe nach hinaus. Nach einer Wertung ist der Vorrat mit der alten
   Kasse veraltet und wird gestrichen; offline gibt es dann keine gewertete Partie mehr, bis der Server die neue Kasse kennt.
+- **Token erst am Ende verbraucht (MS2):** Der Start nimmt das Token nicht aus dem Vorrat. **Verbraucht** ist es mit dem Endstand
+  (`finishMatch`): es fällt sofort aus dem Vorrat, auch ohne Netz (die Meldung steht dann vorgemerkt in `frontline-match-ausstehend`),
+  und die Antwort des Servers ändert daran nichts mehr. Eine **abgebrochene** Partie (kein Endstand) verbraucht kein Token: der
+  Vorrat bleibt unverändert, der nächste Start nimmt denselben Token. Das Startmenü zählt ein laufendes Spiel mit seinem Token noch mit.
+- **Token im Spielstand (MS2):** Beim Speichern einer gewerteten Partie trägt die Meta des Standes `match: { token, w0 }`. Das Feld
+  ist **nur lokal** (IndexedDB): `remoteMeta` in `js/ui/saves.js` lässt es beim Hochschicken zu `api/save.php` weg, das Token liegt also
+  nie auf dem Server. Eine beendete Partie (`ended`) trägt es nicht mehr. Beim **Fortsetzen** (`matchResume`) bleibt die Partie gewertet,
+  wenn das Token auf diesem Gerät noch im Vorrat steht (gleiche Kasse, nicht abgelaufen); sonst läuft sie ungewertet weiter, ohne Fehler.
+  Folge: Ein Stand, der auf einem **anderen Gerät** fortgesetzt wird, läuft dort ungewertet (das Token kennt das andere Gerät nicht);
+  und ein Stand, dessen Token inzwischen durch eine andere Wertung verbraucht ist, ebenso.
 - **Antwort-Behandlung:** 409, 400 und 403 verwerfen den vorgemerkten Eintrag (nicht wiederholen); 401 behält ihn bis zur nächsten
   Anmeldung; Netzfehler und 5xx bleiben vorgemerkt. Ein Eintrag eines anderen Kontos fällt weg.
 - **Wann der Vorrat geholt wird:** beim Anmelden, beim Öffnen des Startmenüs und nach „zurücksetzen“ (`matchSync`), nach jeder
   erfolgreichen Wertung. Ist noch eine Meldung vorgemerkt, wird der Vorrat nicht geholt: der Server kennt die Kasse dann noch nicht.
-- **Ungewertet:** Gäste, Konten ohne Token (kein Netz und leerer Vorrat) und fortgesetzte Stände (Laden eines Standes, auch einer
-  gewerteten Partie) laufen ungewertet. Das Spiel sagt es im Verlauf. Abgebrochene Partien verbrauchen ihren Token.
+- **Ungewertet:** Gäste, Konten ohne Token (kein Netz und leerer Vorrat) und fortgesetzte Stände ohne verfügbares Token (siehe
+  „Token im Spielstand“) laufen ungewertet. Das Spiel sagt es im Verlauf. Abgebrochene Partien verbrauchen ihren Token nicht.
 - **Lebensdauer:** Ein Token gilt 7 Tage ab Ausgabe (`BALANCE.match.tokenDays`, Spiegel `FL_MATCH_TOKEN_DAYS`); danach löscht der
   Server die Zeile.
 - **Zahlen:** `FL_MATCH_TOKENS` = 3, `FL_MATCH_TOKEN_DAYS` = 7 (`api/lib/match.php`), `FL_MATCH_MAX_GAIN` = 3000 (`api/lib/konto.php`).
 - **Dateien:** `api/match.php` (Aktionen), `api/lib/match.php` (Tabellen, Geheimnis, Signatur), `js/ui/match.js` (Client),
-  `js/main.js` (`matchStart` beim Start, `finishMatch` am Partieende), `js/ui/menu.js` (Zeile „Gewertete Partien bereit“).
-- **Tests:** `test/match.test.js` (Client mit gefälschtem fetch: Gast, Vorrat, Verbrauch, Wertung, Vorrat mit alter Kasse, Vormerkung
-  ohne Netz, Reihenfolge, 409/400/403/401, fremdes Konto, Frist). Server gegen MariaDB und `php -S` von Hand geprüft: Vorrat
+  `js/main.js` (`matchStart` beim Start, `matchResume` beim Fortsetzen, `finishMatch` am Partieende, `meta.match` beim Speichern),
+  `js/ui/saves.js` (`remoteMeta`: kein `match` zum Webspace), `js/ui/menu.js` (Zeile „Gewertete Partien bereit“).
+- **Tests:** `test/match.test.js` (Client mit gefälschtem fetch: Gast, Vorrat, Abbruch verbraucht nichts, Wertung verbraucht den Token,
+  Fortsetzen mit und ohne Token, Vorrat mit alter Kasse, Vormerkung ohne Netz, Reihenfolge, 409/400/403/401, fremdes Konto, Frist),
+  `test/saves.test.js` (Token nur lokal: Speichern und Abgleich mit Attrappe der IndexedDB, nie im Upload). Server gegen MariaDB und `php -S` von Hand geprüft: Vorrat
   (höchstens 3, stabil), Wertung, doppelte Wertung (409), veraltete Kasse (409), Zuwachsgrenze (3000) und Obergrenze (5000), falsche
   und veränderte Signatur (400), fremdes Geheimnis (400), unbekannte `jti` (400), Konto fremd (403), ohne Sitzung (401), abgelaufener
   Token (400), gleichzeitige Wertung desselben Tokens (genau eine), Geheimnis genau einmal in `meta`.

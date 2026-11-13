@@ -1,0 +1,1 @@
+**Gewertete Partien mit Token speichern und fortsetzen** (Match-Start MS2, Konto, §17): Das Match-Token wird erst mit dem Endstand verbraucht, nicht beim Start, und der Spielstand merkt es lokal. Ein fortgesetzter Stand bleibt gewertet, solange das Token auf dem Gerät noch im Vorrat ist; eine abgebrochene Partie verbraucht kein Token.

@@ -776,6 +776,10 @@ body.flow-open .flow-fab { background: #2e372e; }
 .acc-res.win, .acc-earned.good { color: #a8d8a0; }
 .acc-res.loss, .acc-earned.bad { color: var(--bad); }
 .acc-earned { font-weight: 700; font-size: 13px; }
+/* Detailbereich „Konto“ im Startmenü (seit KO4, ui/menu.js detailPanel): Angaben, Nickname, Premium-Historie, Löschen */
+.acc-detail { display: grid; gap: 8px; }
+.acc-detail .acc-title { margin-top: 4px; }
+.acc-detail .seg { flex-wrap: wrap; }
 
 /* Gespeicherte Partie im Startmenü (ui/saves.js) */
 .resume { margin: 8px 0 14px; padding: 10px 12px; border: 1px solid var(--muted); border-radius: 8px; text-align: center; font-size: 14px; }

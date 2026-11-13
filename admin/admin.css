@@ -171,3 +171,7 @@ tr.empty td { text-align: center; color: var(--muted); }
   tr.empty td { display: block; text-align: center; }
   tr.empty td::before { content: none; }
 }
+
+/* Premium-Historie unter einem Konto (seit KO4, admin.js toggleHistory) */
+tr.hist-row td { background: var(--panel-2, transparent); font-size: 12.5px; }
+ul.hist { margin: 0; padding-left: 18px; }

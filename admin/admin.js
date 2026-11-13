@@ -1,5 +1,5 @@
 // Admin-Panel (ADM1, Regeln: docs/prd/konto.md „Admin-Panel“): Anmeldung und Benutzerliste über api/admin.php, seit v5.158
-// die Übersicht (Aktion stats) als zweiter Reiter.
+// die Übersicht (Aktion stats) als zweiter Reiter; seit KO4 Spalte „Aktiv“, Reaktivieren, Premium-Historie je Konto.
 // Kein Modul, kein Framework. Alle Texte aus dem Server laufen über textContent, nie über innerHTML.
 
 (() => {
@@ -9,6 +9,7 @@
   const $ = (id) => document.getElementById(id);
   let users = [];
   let walletMax = null; // Obergrenze der Kasse aus der Schnittstelle (FL_WALLET_MAX in api/lib/konto.php)
+  const COLS = 11; // Spalten der Konten-Tabelle (für Leer- und Verlaufszeilen)
 
   /** Anfrage an die Admin-API (Cookie fl_admin wird mitgeschickt). Fehler tragen den HTTP-Code in .status (0 = kein Server). */
   async function call(action, data = {}) {
@@ -76,6 +77,14 @@
     return u.premiumUntil ? `Premium (bis ${day(u.premiumUntil)})` : 'Premium (unbefristet)';
   }
 
+  /** Eine Änderung der Konto-Art als Zeile: Datum · Art · bis · Notiz (seit KO4). */
+  const histLine = (h) => [
+    day(h.createdAt),
+    h.plan === 'premium' ? 'Premium' : 'Kostenlos',
+    h.plan === 'premium' ? (h.premiumUntil ? `bis ${day(h.premiumUntil)}` : 'unbefristet') : null,
+    h.note,
+  ].filter(Boolean).join(' · ');
+
   function cell(label, text, className = '') {
     const td = document.createElement('td');
     td.dataset.label = label;
@@ -103,18 +112,21 @@
       cell('Konto', planLabel(u)),
       cell('Kasse', `${u.wallet} Geld`),
       cell('Gesperrt', u.blocked ? 'ja' : 'nein', u.blocked ? 'no' : ''),
+      cell('Aktiv', u.active ? 'aktiv' : 'inaktiv (selbst deaktiviert)', u.active ? '' : 'no'),
       cell('Spielstände', String(u.saves)),
       cell('Spiele', String(u.games)),
     );
     const acts = document.createElement('div');
     acts.className = 'acts';
     if (!u.verifiedAt) acts.append(button('Freigeben', () => act(u, 'approve'), 'ok'));
+    if (!u.active) acts.append(button('Reaktivieren', () => act(u, 'activate', {}, `${u.email}: wieder aktiviert.`), 'ok'));
     acts.append(u.blocked
       ? button('Entsperren', () => act(u, 'unblock'))
       : button('Sperren', () => act(u, 'block')));
     acts.append(u.plan === 'premium'
-      ? button('Auf Kostenlos', () => act(u, 'plan', { plan: 'free' }))
-      : button('Auf Premium', () => act(u, 'plan', { plan: 'premium' })));
+      ? button('Auf Kostenlos', () => setPlan(u, 'free'))
+      : button('Auf Premium', () => setPlan(u, 'premium')));
+    acts.append(button('Premium-Historie', () => toggleHistory(u, tr)));
     acts.append(button('Kasse setzen', () => setWallet(u)));
     acts.append(button('Löschen', () => remove(u), 'danger'));
     const td = document.createElement('td');
@@ -137,7 +149,7 @@
       const tr = document.createElement('tr');
       tr.className = 'empty';
       const td = document.createElement('td');
-      td.colSpan = 10;
+      td.colSpan = COLS;
       td.textContent = users.length ? 'Keine Adresse passt zur Suche.' : 'Noch keine Konten.';
       tr.append(td);
       tbody.append(tr);
@@ -267,6 +279,48 @@
       await loadUsers();
     } catch (err) {
       handle(err);
+    }
+  }
+
+  /** Konto-Art setzen, mit optionaler Notiz für die Premium-Historie (leer = keine). Abbrechen tut nichts. */
+  function setPlan(u, plan) {
+    const text = window.prompt(`Notiz zur Änderung (optional, bis 80 Zeichen, steht in der Premium-Historie):`, '');
+    if (text === null) return;
+    act(u, 'plan', { plan, note: text.trim() }, `${u.email}: Konto-Art auf ${plan === 'premium' ? 'Premium' : 'Kostenlos'} gesetzt.`);
+  }
+
+  /** Premium-Historie unter dem Konto (seit KO4): ein Druck öffnet die Zeile darunter, der zweite schließt sie. */
+  async function toggleHistory(u, tr) {
+    const next = tr.nextElementSibling;
+    if (next && next.classList.contains('hist-row')) {
+      next.remove();
+      return;
+    }
+    const hr = document.createElement('tr');
+    hr.className = 'hist-row';
+    const td = document.createElement('td');
+    td.colSpan = COLS;
+    td.textContent = 'Lade die Premium-Historie …';
+    hr.append(td);
+    tr.after(hr);
+    try {
+      const r = await call('premiumhistory', { id: u.id });
+      td.textContent = '';
+      if (!r.history.length) {
+        td.textContent = 'Noch keine Änderung der Konto-Art.';
+      } else {
+        const ul = document.createElement('ul');
+        ul.className = 'hist';
+        for (const h of r.history) {
+          const li = document.createElement('li');
+          li.textContent = histLine(h);
+          ul.append(li);
+        }
+        td.append(ul);
+      }
+    } catch (err) {
+      if (err.status === 401) handle(err);
+      else td.textContent = err.message;
     }
   }
 

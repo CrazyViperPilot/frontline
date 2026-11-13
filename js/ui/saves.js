@@ -325,6 +325,23 @@ export function accountRequest(body) {
   return apiRequest(ACCOUNT_URL, body);
 }
 
+/** Nickname im Konto setzen (leer oder null = keiner; seit KO4). Liefert das Konto (user) aus der Antwort; wirft bei Fehlern. */
+export async function setNickname(nickname) {
+  const d = await accountRequest({ action: 'setnickname', nickname: nickname ?? '' });
+  return d.user;
+}
+
+/** Premium-Historie des angemeldeten Kontos (seit KO4), neueste zuerst: [{ plan, premiumUntil, note, createdAt, changedBy }]. */
+export async function premiumHistory() {
+  const d = await accountRequest({ action: 'premiumHistory' });
+  return Array.isArray(d.history) ? d.history : [];
+}
+
+/** „Konto löschen“ (seit KO4): schickt die Bestätigungsmail, das Konto wird erst nach dem Klick auf den Link deaktiviert. */
+export function requestDeactivate() {
+  return accountRequest({ action: 'deactivate' });
+}
+
 /**
  * Wer ist angemeldet? Fragt api/auth.php „me“ und stellt den Webspace entsprechend ein (setAccount).
  * Liefert { email, plan, premiumUntil, createdAt, wallet } oder null (nicht angemeldet). Netzfehler werfen.

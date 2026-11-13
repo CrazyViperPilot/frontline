@@ -9,10 +9,15 @@
 //   POST auth.php {"action":"reset","token":"…","password":"…"}     → {"ok":true}; setzt das Passwort, meldet alle Sitzungen ab
 //   POST auth.php {"action":"walletreset"}                          → {"ok":true,"wallet":800}; Kasse auf den Startbetrag
 //   Die Kasse meldet seit dem Match-Start nur noch api/match.php (Aktion finish, signierter Token). Aktion wallet entfernt.
-// user nach außen: {email, plan, premiumUntil, createdAt, wallet}, nie Hash oder id.
+//   POST auth.php {"action":"setnickname","nickname":"…"}           → {"ok":true,"user":{…}}; Nickname (leer = keiner, KO4)
+//   POST auth.php {"action":"premiumHistory"}                       → {"history":[{plan,premiumUntil,note,createdAt,changedBy}]} (KO4)
+//   POST auth.php {"action":"deactivate"}                           → {"ok":true,"message":"…"}; Mail mit Link (KO4, Art deactivate)
+//   GET  auth.php?deactivate=<token>                                → 302 auf /frontline/?deactivated=1 oder …=0; setzt active = 0, beendet alle Sitzungen
+// user nach außen: {email, nickname, plan, premiumUntil, createdAt, wallet, active}, nie Hash oder id.
 // Fehler: {"error": "…"} mit HTTP-Code: 400 Anfrage, 401 Anmeldung falsch, 403 nicht bestätigt, 405 Methode,
 //         429 zu viele Versuche, 500 Server/Datenbank, 503 Mailversand nicht eingerichtet oder fehlgeschlagen.
 // Gesperrte Konten (Admin-Panel, api/admin.php) bekommen beim Anmelden nach richtigem Passwort 403 „Konto gesperrt“.
+// Selbst deaktivierte Konten (active = 0, KO4; reaktiviert nur der Admin) bekommen 403 „Konto ist deaktiviert …“.
 // Keine Aussage, ob eine E-Mail-Adresse registriert ist: register und forgot antworten gleich (bei Bremse, Bestätigung
 // und Nichtexistenz). Tokens liegen nur als SHA-256 in der Datenbank, Passwörter als password_hash.
 
@@ -33,6 +38,9 @@ const FL_MAIL_MAX_IP = 20;      // Mails je IP (gegen Massenversand an fremde Ad
 const FL_MAIL_WINDOW = 3600;    // … in Sekunden (1 h)
 const FL_PASS_MIN = 8;          // Zeichen
 const FL_PASS_MAX = 72;         // Byte: bcrypt liest nur die ersten 72, darüber würde still gekürzt
+const FL_DEACTIVATE_HOURS = 48; // Link „Konto deaktivieren“ (Mail), einmal gültig (KO4)
+const FL_NICK_MAX = 32;         // Zeichen für den Nickname (Spalte VARCHAR(32))
+const FL_PREMIUM_RECENT = 50;   // Einträge der Premium-Historie, neueste zuerst
 
 const FL_MSG_REGISTER = 'Wenn die Adresse noch nicht bestätigt ist, haben wir eine Mail mit einem Bestätigungslink geschickt. '
     . 'Der Link ist 48 Stunden gültig. Bitte auch den Spam-Ordner prüfen.';
@@ -40,14 +48,17 @@ const FL_MSG_FORGOT = 'Wenn zu dieser Adresse ein bestätigtes Konto gehört, ha
     . 'geschickt. Der Link ist 1 Stunde gültig.';
 const FL_MSG_LINK = 'Der Link ist ungültig oder abgelaufen. Bitte die Aktion noch einmal anfordern.';
 const FL_MSG_BUSY = 'Zu viele Anfragen. Bitte später erneut versuchen.';
+const FL_MSG_DEACTIVATE = 'Wir haben dir eine Bestätigungsmail geschickt. Nach dem Klick wird dein Konto deaktiviert; '
+    . 'endgültig löschen kann nur der Admin. Der Link ist 48 Stunden gültig.';
 
 fl_cors('GET, POST, OPTIONS', true);
 fl_exception_handler('Serverfehler bei der Anmeldung');
 fl_check_origin();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    if (!isset($_GET['verify'])) fail(405, 'Methode nicht erlaubt');
-    fl_verify_link($_GET['verify']);
+    if (isset($_GET['verify'])) fl_verify_link($_GET['verify']);
+    if (isset($_GET['deactivate'])) fl_deactivate_link($_GET['deactivate']);
+    fail(405, 'Methode nicht erlaubt');
 }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail(405, 'Methode nicht erlaubt');
 
@@ -62,6 +73,9 @@ switch ($body['action']) {
     case 'forgot': fl_forgot($body); break;
     case 'reset': fl_reset($body); break;
     case 'walletreset': fl_wallet_reset(); break;
+    case 'setnickname': fl_set_nickname($body); break;
+    case 'premiumHistory': fl_premium_history(); break;
+    case 'deactivate': fl_deactivate($body); break;
     default: fail(400, 'Unbekannte Aktion');
 }
 
@@ -110,6 +124,7 @@ function fl_login(array $body) {
             . 'oder mit derselben Adresse erneut registrieren.');
     }
     if ((int) $user['blocked'] === 1) fail(403, 'Konto gesperrt');
+    if ((int) $user['active'] === 0) fail(403, 'Konto ist deaktiviert, bitte wende dich an den Admin');
     $token = bin2hex(random_bytes(32));
     $now = time();
     $pdo->prepare('DELETE FROM sessions WHERE expires_at < :now')->execute([':now' => $now]);
@@ -187,6 +202,87 @@ function fl_wallet_reset() {
     out(['ok' => true, 'wallet' => FL_WALLET_START]);
 }
 
+// Nickname im Konto (KO4): trimmt, leer = keiner; sonst höchstens FL_NICK_MAX Zeichen aus Buchstaben, Ziffern, Leerzeichen und _ - .
+function fl_set_nickname(array $body) {
+    $pdo = fl_db(FL_SCHEMA);
+    $user = current_user($pdo);
+    if ($user === null) fail(401, 'Nicht angemeldet');
+    $nick = fl_check_nickname(fl_field($body, 'nickname'));
+    $pdo->prepare('UPDATE users SET nickname = :n WHERE id = :id')->execute([':n' => $nick, ':id' => (int) $user['id']]);
+    $user['nickname'] = $nick;
+    out(['ok' => true, 'user' => fl_user_out($user)]);
+}
+
+// Premium-Historie (KO4): die Änderungen der Konto-Art, neueste zuerst. Nur das Konto der Sitzung.
+function fl_premium_history() {
+    $pdo = fl_db(FL_SCHEMA);
+    $user = current_user($pdo);
+    if ($user === null) fail(401, 'Nicht angemeldet');
+    $st = $pdo->prepare('SELECT plan, premium_until, note, changed_by, created_at FROM premium_history
+        WHERE user_id = :id ORDER BY created_at DESC, id DESC LIMIT ' . FL_PREMIUM_RECENT);
+    $st->execute([':id' => (int) $user['id']]);
+    $list = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $list[] = [
+            'plan' => $r['plan'],
+            'premiumUntil' => $r['premium_until'] === null ? null : (int) $r['premium_until'],
+            'note' => $r['note'],
+            'createdAt' => (int) $r['created_at'],
+            'changedBy' => $r['changed_by'],
+        ];
+    }
+    out(['history' => $list]);
+}
+
+// Selbst deaktivieren (KO4): nur angemeldet. Mail mit Link (48 h, einmal gültig); wie bei forgot neutral, Bremse je IP und
+// je Adresse. Erst der Klick auf den Link setzt active = 0 (fl_deactivate_link).
+function fl_deactivate(array $body) {
+    $pdo = fl_db(FL_SCHEMA);
+    $user = current_user($pdo);
+    if ($user === null) fail(401, 'Nicht angemeldet');
+    fl_mail_ready();
+    $email = (string) $user['email'];
+    if (fl_attempt($pdo, 'mailip', fl_who_ip(), FL_MAIL_WINDOW) > FL_MAIL_MAX_IP) fail(429, FL_MSG_BUSY);
+    if (fl_attempt($pdo, 'mail', fl_who('mail:' . $email), FL_MAIL_WINDOW) <= FL_MAIL_MAX_EMAIL) {
+        $token = fl_issue_token($pdo, (int) $user['id'], 'deactivate', FL_DEACTIVATE_HOURS * 3600);
+        $link = FL_SITE . '/api/auth.php?deactivate=' . $token;
+        fl_send_mail($email, 'Frontline: Konto deaktivieren',
+            "Hallo,\n\nüber diesen Link wird dein Frontline-Konto deaktiviert. Danach kannst du dich nicht mehr anmelden. "
+            . "Ein Admin kann es wieder aktivieren; endgültig löschen kann nur der Admin. Der Link ist " . FL_DEACTIVATE_HOURS
+            . " Stunden gültig und funktioniert nur einmal:\n\n" . $link
+            . "\n\nFalls du das nicht angefordert hast, ignoriere diese Mail. Dein Konto bleibt dann unverändert.\n\n"
+            . "Frontline\n" . FL_SITE . "\n");
+    }
+    out(['ok' => true, 'message' => FL_MSG_DEACTIVATE]);
+}
+
+// Link aus der Mail „Konto deaktivieren“: active = 0, alle Sitzungen des Kontos enden, Weiterleitung auf ?deactivated=1|0.
+// Fehler (auch Datenbank) → 0; wie bei verify ohne Details im Browser.
+function fl_deactivate_link($raw) {
+    $ok = false;
+    if (fl_is_token($raw)) {
+        $pdo = fl_db(FL_SCHEMA, true);
+        if ($pdo !== null) {
+            try {
+                fl_konto_upgrade($pdo);
+                $uid = fl_token_user($pdo, $raw, 'deactivate');
+                if ($uid !== null) {
+                    $pdo->prepare('UPDATE users SET active = 0 WHERE id = :id')->execute([':id' => $uid]);
+                    $pdo->prepare('DELETE FROM sessions WHERE user_id = :id')->execute([':id' => $uid]);
+                    $pdo->prepare('DELETE FROM tokens WHERE hash = :h')->execute([':h' => hash('sha256', $raw)]);
+                    $ok = true;
+                }
+            } catch (PDOException $e) {
+                fl_log($e->getMessage());
+            }
+        }
+    }
+    fl_set_cookie('', time() - 3600); // der Browser hat keine gültige Sitzung mehr
+    header_remove('Content-Type');
+    header('Location: ' . FL_PATH . '?deactivated=' . ($ok ? '1' : '0'), true, 302);
+    exit;
+}
+
 // Link aus der Bestätigungsmail: Konto bestätigen, dann Weiterleitung auf die Spielseite. Fehler (auch Datenbank) → verified=0.
 function fl_verify_link($raw) {
     $ok = false;
@@ -222,6 +318,20 @@ function fl_check_email($email) {
     $email = strtolower(trim($email));
     if (strlen($email) > 254 || !filter_var($email, FILTER_VALIDATE_EMAIL)) fail(400, 'E-Mail-Adresse ungültig');
     return $email;
+}
+
+// Nickname (KO4): null und leer werden zu null (kein Nickname); sonst getrimmt, höchstens FL_NICK_MAX Zeichen, nur
+// Buchstaben, Ziffern, Leerzeichen sowie _ - . (Unicode-Buchstaben erlaubt).
+function fl_check_nickname($value) {
+    if ($value === null) return null;
+    if (!is_string($value)) fail(400, 'Nickname ungültig');
+    $nick = trim($value);
+    if ($nick === '') return null;
+    if (mb_strlen($nick, 'UTF-8') > FL_NICK_MAX) fail(400, 'Der Nickname darf höchstens ' . FL_NICK_MAX . ' Zeichen lang sein.');
+    if (preg_match('/^[\p{L}\p{N} _.\-]+$/u', $nick) !== 1) {
+        fail(400, 'Der Nickname darf nur Buchstaben, Ziffern, Leerzeichen sowie _ - . enthalten.');
+    }
+    return $nick;
 }
 
 function fl_check_password($pass) {
@@ -304,10 +414,12 @@ function fl_attempt(PDO $pdo, $kind, $who, $window) {
 function fl_user_out(array $u) {
     return [
         'email' => $u['email'],
+        'nickname' => isset($u['nickname']) && $u['nickname'] !== '' ? $u['nickname'] : null,
         'plan' => $u['plan'],
         'premiumUntil' => $u['premium_until'] === null ? null : (int) $u['premium_until'],
         'createdAt' => (int) $u['created_at'],
         'wallet' => (int) $u['wallet'],
+        'active' => !isset($u['active']) || (int) $u['active'] === 1,
     ];
 }
 

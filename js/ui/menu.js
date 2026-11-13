@@ -6,7 +6,10 @@ import { WEATHER_SETTINGS } from '../game/weather.js';
 import { MOOD_SETTINGS } from '../render/mood.js';
 import { SOUND_KEY, loadLevel, saveLevel } from '../audio/sound.js';
 import { KEYS } from './helptext.js';
-import { NAME_MAX, accountEmail, accountRequest, accountUser, accountWallet, resetWallet, setAccount } from './saves.js';
+import {
+  NAME_MAX, accountEmail, accountRequest, accountUser, accountWallet, premiumHistory, requestDeactivate, resetWallet, setAccount,
+  setNickname,
+} from './saves.js';
 import { matchPending, matchReady, matchStats, matchSync } from './match.js';
 import { statsHtml } from './stats.js';
 
@@ -170,6 +173,7 @@ function writeMapSel(v) {
 // ---- Konto (KO3, docs/prd/konto.md): Bereich im Startmenü -----------------------------------------------------------
 
 const ACC_PASS_MIN = 8; // wie api/auth.php (FL_PASS_MIN)
+const NICK_MAX = 32; // wie api/auth.php (FL_NICK_MAX), seit KO4
 const TOKEN_RE = /^[0-9a-f]{64}$/; // Link-Token aus der Mail (64 Hex-Zeichen, wie fl_is_token)
 const ACC_OFFLINE = 'Keine Verbindung zum Server. Bitte später erneut versuchen.';
 const ACC_TABS = [
@@ -190,23 +194,30 @@ function planLabel(u) {
 }
 
 /**
- * Link-Parameter aus der Adresse (Rücksprung von den Mails): ?verified=1|0 und ?reset=<token>. Gelesen wird einmal; danach
- * stehen sie nicht mehr in der Adresszeile (history.replaceState). Liefert { verified: true | false | null, reset: string | null }.
+ * Link-Parameter aus der Adresse (Rücksprung von den Mails): ?verified=1|0, ?reset=<token> und ?deactivated=1|0 (seit KO4).
+ * Gelesen wird einmal; danach stehen sie nicht mehr in der Adresszeile (history.replaceState).
+ * Liefert { verified: true | false | null, reset: string | null, deactivated: true | false | null }.
  */
-function takeAccountLink() {
+export function takeAccountLink() {
   const p = new URLSearchParams(location.search);
   const verified = p.get('verified');
   const reset = p.get('reset');
-  if (verified === null && reset === null) return { verified: null, reset: null };
+  const deactivated = p.get('deactivated');
+  if (verified === null && reset === null && deactivated === null) return { verified: null, reset: null, deactivated: null };
   p.delete('verified');
   p.delete('reset');
+  p.delete('deactivated');
   const query = p.toString();
   try {
     history.replaceState(history.state, '', `${location.pathname}${query ? `?${query}` : ''}${location.hash}`);
   } catch {
     /* ohne History-Zugriff bleibt der Parameter in der Adresse, wirkt dann beim nächsten Laden erneut */
   }
-  return { verified: verified === null ? null : verified === '1', reset };
+  return {
+    verified: verified === null ? null : verified === '1',
+    reset,
+    deactivated: deactivated === null ? null : deactivated === '1',
+  };
 }
 
 /** Eingabefeld eines Konto-Formulars; Passwörter ohne Vorbelegung. */
@@ -235,9 +246,10 @@ function accountForm(kind, st) {
  * note ({ ok, text } oder null), busy, keep ({ password, password2 } nach einer Eingabefehler-Meldung, sonst null) }. Abgemeldet: Hinweis, drei Knöpfe, Formular; angemeldet: Konto-Art und Abmelden.
  * opts (Pausenmenü, seit v5.157): compact (nur Anmelden und Registrieren, Angemeldet als …), hint (Zeile unter der Überschrift),
  * locked (Text statt aller Knöpfe, z. B. während einer gewerteten Partie). stats (seit v5.158, nur Startmenü): Knopf „Meine Spiele“
- * und die Spielstatistik darunter (st.statsOpen, st.stats, st.statsErr).
+ * und die Spielstatistik darunter (st.statsOpen, st.stats, st.statsErr). details (seit KO4, nur Startmenü): Knopf „Konto“ und der
+ * Detailbereich darunter (st.detailOpen, st.nickDraft, st.history, st.historyErr, st.askDeactivate).
  */
-function accountHtml(st, { compact = false, hint = '', locked = null, stats = false } = {}) {
+function accountHtml(st, { compact = false, hint = '', locked = null, stats = false, details = false } = {}) {
   const note = st.note ? `<p class="acc-note ${st.note.ok ? 'good' : 'bad'}" role="status">${esc(st.note.text)}</p>` : '';
   const sub = compact && hint ? `<p class="muted small">${esc(hint)}</p>` : '';
   if (locked) {
@@ -250,10 +262,12 @@ function accountHtml(st, { compact = false, hint = '', locked = null, stats = fa
       : `<p class="acc-line">Angemeldet als <b>${esc(st.user.email)}</b> · Konto: ${planLabel(st.user)}</p>`;
     const statsBtn = stats ? `<button type="button" data-acc="stats" aria-pressed="${!!st.statsOpen}">Meine Spiele</button>` : '';
     const panel = stats && st.statsOpen ? statsPanel(st) : '';
+    const kontoBtn = details ? `<button type="button" data-acc="konto" aria-pressed="${!!st.detailOpen}">Konto</button>` : '';
+    const detail = details && st.detailOpen ? detailPanel(st) : '';
     return `<span class="flabel">Konto</span>${sub}
       ${line}
       ${note}
-      <div class="stack">${statsBtn}${panel}<button type="button" data-acc="logout"${st.busy ? ' disabled' : ''}>Abmelden</button></div>`;
+      <div class="stack">${statsBtn}${kontoBtn}${panel}${detail}<button type="button" data-acc="logout"${st.busy ? ' disabled' : ''}>Abmelden</button></div>`;
   }
   if (st.form === 'reset') return `<span class="flabel">Konto</span>${note}${accountForm('reset', st)}`;
   const kinds = compact ? ACC_TABS.filter(([k]) => k !== 'forgot') : ACC_TABS;
@@ -264,6 +278,54 @@ function accountHtml(st, { compact = false, hint = '', locked = null, stats = fa
     <div class="seg">${tabs}</div>
     ${note}
     ${st.form ? accountForm(st.form, st) : ''}`;
+}
+
+/** Eine Änderung der Konto-Art in der Premium-Historie: Datum · Art · bis · Notiz (seit KO4). */
+function histItem(h) {
+  const premium = h.plan === 'premium';
+  const until = !premium ? '' : h.premiumUntil ? ` · bis ${fmtDay(h.premiumUntil * 1000)}` : ' · unbefristet';
+  return `<li class="acc-game">
+    <div class="acc-game-top"><span>${esc(fmtDay(h.createdAt * 1000))}</span><span>${esc(premium ? 'Premium' : 'Kostenlos')}${esc(until)}</span></div>
+    ${h.note ? `<div class="acc-game-bot muted"><span>${esc(h.note)}</span></div>` : ''}
+  </li>`;
+}
+
+/**
+ * Detailbereich „Konto“ im Startmenü (seit KO4): E-Mail, erstellt am, Konto-Art; Nickname (Formular); Premium-Historie;
+ * „Konto löschen“ mit Rückfrage (die Bestätigungsmail deaktiviert das Konto, löschen kann nur der Admin).
+ */
+function detailPanel(st) {
+  const u = st.user;
+  const facts = `<dl class="acc-kpis">
+    <div class="acc-kpi"><dt>E-Mail</dt><dd>${esc(u.email)}</dd></div>
+    <div class="acc-kpi"><dt>Erstellt am</dt><dd>${u.createdAt ? esc(fmtDay(u.createdAt * 1000)) : '–'}</dd></div>
+    <div class="acc-kpi"><dt>Konto-Art</dt><dd>${planLabel(u)}</dd></div>
+  </dl>`;
+  const nick = `<form class="acc-form" data-acc-form="nick">
+    <label>Nickname (optional)<input type="text" name="nickname" maxlength="${NICK_MAX}" autocomplete="nickname" value="${esc(st.nickDraft ?? u.nickname ?? '')}"></label>
+    <p class="muted small">Bis ${NICK_MAX} Zeichen: Buchstaben, Ziffern, Leerzeichen sowie _ - .</p>
+    <button type="submit" class="acc-go"${st.busy ? ' disabled' : ''}>Nickname speichern</button>
+  </form>`;
+  const hist = st.historyErr ? `<p class="acc-note bad" role="status">${esc(st.historyErr)}</p>`
+    : st.history === null || st.history === undefined ? '<p class="muted small" role="status">Lade die Premium-Historie …</p>'
+      : st.history.length ? `<ul class="acc-games">${st.history.map(histItem).join('')}</ul>`
+        : '<p class="muted small">Noch keine Änderung der Konto-Art.</p>';
+  const ask = st.askDeactivate
+    ? `<p class="acc-note bad" role="status">Das Konto wird deaktiviert, nicht gelöscht: Danach kannst du dich nicht mehr anmelden.
+        Dazu schicken wir dir eine Mail mit einem Bestätigungslink.</p>
+      <div class="seg"><button type="button" data-acc="deactivate-go"${st.busy ? ' disabled' : ''}>Mail schicken</button>
+        <button type="button" data-acc="deactivate-cancel"${st.busy ? ' disabled' : ''}>Abbrechen</button></div>`
+    : `<button type="button" data-acc="deactivate"${st.busy ? ' disabled' : ''}>Konto löschen</button>`;
+  return `<div class="acc-detail" data-acc-detail>
+    ${facts}
+    <p class="acc-title">Nickname</p>
+    ${nick}
+    <p class="acc-title">Premium-Historie</p>
+    ${hist}
+    <p class="acc-title">Konto löschen</p>
+    <p class="muted small">Das Konto wird nur deaktiviert. Endgültig löschen oder wieder aktivieren kann nur der Admin.</p>
+    ${ask}
+  </div>`;
 }
 
 /** Spielstatistik unter dem Knopf „Meine Spiele“: Meldung, Lade-Hinweis oder die Zahlen (ui/stats.js). */
@@ -280,18 +342,41 @@ function statsPanel(st) {
  * beim Öffnen abfragen, Standard an); onChanged(user) nach An- oder Abmelden; onSynced(user) nach dem Anmelden, wenn der
  * Webspace-Abgleich fertig ist. Liefert { ready }: Promise mit dem Anmeldestand (null ohne Anmeldung oder bei Netzfehler).
  */
-export function wireAccount(box, { compact = false, hint = '', locked = null, stats = false, init = {}, load = true, onChanged = null, onSynced = null } = {}) {
-  const acc = { user: null, form: null, email: '', note: null, busy: false, token: null, keep: null, statsOpen: false, stats: null, statsErr: null, ...init };
+export function wireAccount(box, { compact = false, hint = '', locked = null, stats = false, details = false, init = {}, load = true, onChanged = null, onSynced = null } = {}) {
+  const acc = {
+    user: null, form: null, email: '', note: null, busy: false, token: null, keep: null, statsOpen: false, stats: null, statsErr: null,
+    detailOpen: false, nickDraft: null, history: null, historyErr: null, askDeactivate: false, ...init,
+  };
   const draw = () => {
-    if (box.isConnected) box.innerHTML = accountHtml(acc, { compact, hint, locked, stats });
+    if (box.isConnected) box.innerHTML = accountHtml(acc, { compact, hint, locked, stats, details });
   };
   /** Nach An- oder Abmelden: Anzeige neu, dann der Aufrufer (Startmenü: Kasse und Spielstände). Die Statistik schließt sich. */
   const accountChanged = () => {
     acc.statsOpen = false;
     acc.stats = null;
     acc.statsErr = null;
+    acc.detailOpen = false;
+    acc.history = null;
+    acc.historyErr = null;
+    acc.askDeactivate = false;
+    acc.nickDraft = null;
     draw();
     onChanged?.(acc.user);
+  };
+  /** Detailbereich „Konto“ (seit KO4): ein Druck öffnet und lädt die Premium-Historie, der zweite schließt. */
+  const toggleDetail = async () => {
+    acc.detailOpen = !acc.detailOpen;
+    acc.askDeactivate = false;
+    acc.history = null;
+    acc.historyErr = null;
+    draw();
+    if (!acc.detailOpen) return;
+    try {
+      acc.history = await premiumHistory();
+    } catch (err) {
+      acc.historyErr = accMsg(err);
+    }
+    if (acc.detailOpen) draw();
   };
   /** Spielstatistik (seit v5.158): ein Druck öffnet und lädt die Zahlen frisch vom Server, der zweite schließt. */
   const toggleStats = async () => {
@@ -327,6 +412,14 @@ export function wireAccount(box, { compact = false, hint = '', locked = null, st
   const submit = (kind, f) => {
     if (acc.busy) return;
     const val = (n) => f.elements.namedItem(n)?.value ?? '';
+    if (kind === 'nick') { // Nickname im Detailbereich (seit KO4); der Wert vor run() lesen, run() zeichnet neu
+      const nickname = val('nickname');
+      return run(async () => {
+        acc.user = await setNickname(nickname);
+        acc.nickDraft = null;
+        acc.note = { ok: true, text: acc.user.nickname ? 'Nickname gespeichert.' : 'Nickname entfernt.' };
+      });
+    }
     if (kind !== 'reset') acc.email = val('email').trim();
     const email = acc.email;
     const pw = val('password');
@@ -367,6 +460,18 @@ export function wireAccount(box, { compact = false, hint = '', locked = null, st
   /** Knöpfe im Konto-Bereich: Abmelden, oder ein Formular öffnen (zweiter Druck schließt es). */
   const click = (act) => {
     if (act === 'stats') return toggleStats();
+    if (act === 'konto') return toggleDetail();
+    if (act === 'deactivate' || act === 'deactivate-cancel') { // Rückfrage vor dem Versand (seit KO4)
+      acc.askDeactivate = act === 'deactivate';
+      return draw();
+    }
+    if (act === 'deactivate-go') {
+      return run(async () => {
+        const d = await requestDeactivate();
+        acc.askDeactivate = false;
+        acc.note = { ok: true, text: d.message ?? 'Wir haben dir eine Bestätigungsmail geschickt.' };
+      });
+    }
     if (act === 'logout') {
       return run(async () => {
         await accountRequest({ action: 'logout' }); // Netzfehler: bleibt angemeldet, der Hinweis sagt es
@@ -389,6 +494,10 @@ export function wireAccount(box, { compact = false, hint = '', locked = null, st
     if (!f.matches?.('[data-acc-form]')) return;
     e.preventDefault();
     submit(f.dataset.accForm, f);
+  };
+  // Nickname-Eingabe merken, damit ein Neuzeichnen (Premium-Historie lädt) sie nicht löscht (seit KO4)
+  box.oninput = (e) => {
+    if (e.target?.name === 'nickname') acc.nickDraft = e.target.value;
   };
   draw();
   const ready = load
@@ -608,6 +717,11 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
   // Konto (KO3): Anzeige und Formulare in wireAccount; alle Anfragen gehen an api/auth.php (ui/saves.js), der Webspace wird danach eingestellt
   const link = takeAccountLink(); // Rücksprung von den Mails, einmal gelesen
   const init = {};
+  if (link.deactivated !== null) { // Bestätigungslink „Konto deaktivieren“ (seit KO4): Konto ist jetzt inaktiv, abgemeldet
+    init.note = link.deactivated
+      ? { ok: true, text: 'Dein Konto wurde deaktiviert. Anmelden ist nicht mehr möglich; zum Wiederherstellen wende dich an den Admin.' }
+      : { ok: false, text: 'Link ungültig oder abgelaufen.' };
+  }
   if (link.verified !== null) {
     init.form = 'login';
     init.note = link.verified
@@ -627,6 +741,7 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
   const accBox = root.querySelector('[data-account]');
   const account = wireAccount(accBox, {
     stats: true, // Knopf „Meine Spiele“ (seit v5.158; im Pausenmenü nicht)
+    details: true, // Knopf „Konto“ mit Nickname, Premium-Historie und Löschen (seit KO4; im Pausenmenü nicht)
     init,
     /** Nach An- oder Abmelden: Kasse-Anzeige und Spielstand-Liste neu. */
     onChanged: () => {

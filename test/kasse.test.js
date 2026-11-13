@@ -75,11 +75,11 @@ test('Anmelden: die Kasse kommt aus dem Konto; Partieende meldet den Stand', asy
   }
 });
 
-test('Bremse: der Server meldet seinen gespeicherten Stand zurück, der Browser übernimmt ihn', async () => {
+test('Der Browser übernimmt den Stand, den der Server zurückmeldet', async () => {
   const env = setup((url) => (url.endsWith('/api/auth.php') ? { body: { ok: true, wallet: 1500 } } : { body: { saves: [] } }));
   try {
     setAccount(USER);
-    await saveWallet(900); // niedriger als gespeichert: der Server behält 1500
+    await saveWallet(900); // der Server meldet seinen Stand (hier 1500) zurück
     assert.equal(accountWallet(), 1500);
   } finally {
     env.restore();

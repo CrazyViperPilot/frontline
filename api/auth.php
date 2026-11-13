@@ -179,9 +179,9 @@ function fl_reset(array $body) {
     out(['ok' => true]);
 }
 
-// Kasse am Konto (KA1): der Browser meldet den Geldstand am Partieende. Gespeichert wird er begrenzt (0 bis FL_WALLET_MAX)
-// und nur, wenn er nicht unter dem gespeicherten Stand liegt (Bremse gegen veraltete Browser); sonst bleibt der alte Stand.
-// Die Antwort nennt immer den gespeicherten Stand, damit der Browser ihn übernimmt. Nicht fälschungssicher (docs/prd/konto.md).
+// Kasse am Konto (KA1): der Browser meldet den Geldstand am Partieende. Gespeichert wird er begrenzt (0 bis FL_WALLET_MAX) –
+// der tatsächliche Endstand (Ausgeben senkt die Kasse, gut spielen hebt sie, Daniels Entscheidung 2026-11-13). Schutz gegen
+// veraltete Geräte folgt über den signierten Match-Start. Die Antwort nennt immer den gespeicherten Stand. Nicht fälschungssicher (docs/prd/konto.md).
 function fl_wallet(array $body) {
     $value = fl_field($body, 'value');
     if (!is_numeric($value)) fail(400, 'Kasse ungültig');
@@ -189,11 +189,7 @@ function fl_wallet(array $body) {
     $user = current_user($pdo);
     if ($user === null) fail(401, 'Nicht angemeldet');
     $new = (int) max(0.0, min((float) FL_WALLET_MAX, floor((float) $value)));
-    // Ein Schritt, damit zwei gleichzeitige Meldungen sich nicht überschreiben: schreiben nur, wenn der neue Wert nicht
-    // unter dem gespeicherten liegt oder der gespeicherte über der Obergrenze.
-    $pdo->prepare('UPDATE users SET wallet = :w WHERE id = :id AND (wallet <= :new OR wallet > :max)')->execute([
-        ':w' => $new, ':id' => (int) $user['id'], ':new' => $new, ':max' => FL_WALLET_MAX,
-    ]);
+    $pdo->prepare('UPDATE users SET wallet = :w WHERE id = :id')->execute([':w' => $new, ':id' => (int) $user['id']]);
     out(['ok' => true, 'wallet' => fl_wallet_of($pdo, (int) $user['id'])]);
 }
 

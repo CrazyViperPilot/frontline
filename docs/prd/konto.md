@@ -78,9 +78,8 @@ angemeldete Spieler und liegt dann im Konto, also auf jedem Gerät gleich.
   Geldstand (`saves.saveWallet`, Client `js/ui/saves.js`). Die Anzeige im Startmenü: „Kasse: <Betrag> Geld … · zurücksetzen“.
 - **Speichern:** `POST auth.php {"action":"wallet","value"}` setzt die Kasse auf `max(0, min(5000, floor(value)))`. Der Server
   zählt nicht selbst hoch; das Spiel rechnet das Geld.
-- **Bremse:** Der Server schreibt nur, wenn der neue Wert nicht unter dem gespeicherten liegt oder der gespeicherte über 5000 liegt
-  (eine einfache Bremse gegen veraltete Browser). Sonst bleibt der gespeicherte Stand; die Antwort nennt ihn, und der Browser übernimmt
-  ihn. Folge: Eine Partie, die mit weniger Geld endet als gespeichert, meldet diesen Stand nicht.
+- **Endstand:** Gespeichert wird der **tatsächliche** Geldstand am Partieende (Ausgeben senkt die Kasse, gut spielen hebt sie). Der
+  Schutz gegen ein veraltetes Gerät, das einen höheren Stand überschreibt, kommt über den signierten Match-Start (eigenes Paket).
 - **Zurücksetzen:** Der Knopf „zurücksetzen“ im Startmenü ruft `walletreset` auf (ohne Bremse) und setzt auf 800.
 - **Ohne Netz:** Der gemeldete Stand wird im Browser vorgemerkt (`frontline-kasse-ausstehend`: Wert und E-Mail) und beim nächsten
   Anmelden oder Abgleich (`syncUp`) geschickt. Gehört er zu einem anderen Konto, fällt er weg. Vorgemerkt gewinnt er gegen den

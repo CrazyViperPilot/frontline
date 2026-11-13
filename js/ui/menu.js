@@ -6,7 +6,7 @@ import { WEATHER_SETTINGS } from '../game/weather.js';
 import { MOOD_SETTINGS } from '../render/mood.js';
 import { SOUND_KEY, loadLevel, saveLevel } from '../audio/sound.js';
 import { KEYS } from './helptext.js';
-import { NAME_MAX, accountRequest, accountUser, setRemoteEnabled } from './saves.js';
+import { NAME_MAX, accountRequest, accountUser, accountWallet, resetWallet, setAccount } from './saves.js';
 
 const DIFFS = [
   ['easy', 'Leicht'],
@@ -252,8 +252,9 @@ function accountHtml(st) {
 /**
  * Startmenü: onStart({difficulty, winPoints, mapId, radio, weather, mood, research, river, buildRules}) (city immer true) beim Klick auf Start (mapId 'random' oder Karten-ID,
  * radio = Sendemast-Sieg, weather = 'off' | 'random' | Jahreszeit, research = Forschungsbaum, river = Flüsse auf Zufallskarten).
+ * Die Kasse (Geld von Runde zu Runde) kommt aus dem Konto (ui/saves.js, accountWallet); Gäste sehen den Startbetrag und den Hinweis.
  */
-export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.money, resetWallet = () => {}, resume = null } = {}) {
+export function showStartMenu(root, onStart, { resume = null } = {}) {
   // resume: { find(): Promise<{ text, source } | null>, onResume(), onDiscard() } – gespeicherte Partie (Gerät oder Webspace), siehe ui/saves.js
   const D = BALANCE.menuDefaults; // Standards: js/data/balance.js
   let difficulty = D.difficulty;
@@ -343,7 +344,7 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
         <li>Ist oben Fluss an, liegt vor jeder Startecke ein Fluss: über drei Brücken oder langsam durch zwei Furten. Brücken lassen sich sprengen (A, dann Brücke anklicken) und von Baufahrzeugen wieder aufbauen.</li>
         <li>Förderung, Werke, Wohnen und Gewerbe liegen an Straßen. Rohstoffe fahren zum nächsten Werk, Produkte zum Lager der Hauptstadt; ohne Straße keine Lieferung. Straßen können voll werden (Stau: gelb, rot), dann kommen Waren und Pendler langsamer. Fahrzeuge, Reparaturen und Munition brauchen Stahl; Gewerbe braucht Baumaterial vom Lager. F-16 tanken Kerosin am Kerosintank des Fliegerhorsts, Hubschrauber gelandet auf ihrem Heliport (ein Hubschrauber je Heliport, Kerosintank und Munitionslager in der Nähe).</li>
         <li>Spielstände: Die Liste oben zeigt alle Partien (Spielzeit, Punkte, Schwierigkeit, Version); je Zeile laden, umbenennen oder löschen. Beendete Partien bleiben zum Ansehen in der Liste.</li>
-        <li>Konto (oben, optional): Ohne Konto bleiben Spielstände auf diesem Gerät. Mit Konto (E-Mail und Passwort, Bestätigung per Mail) liegen sie auf dem Server und sind nach dem Anmelden auf jedem Gerät da.</li>
+        <li>Konto (oben, optional): Ohne Konto bleiben Spielstände auf diesem Gerät, und jede Partie startet mit dem Startbetrag. Mit Konto (E-Mail und Passwort, Bestätigung per Mail) liegen Spielstände und die Kasse (Geld von Runde zu Runde) auf dem Server und sind nach dem Anmelden auf jedem Gerät da.</li>
         <li>Konfliktzone halten: jede deiner Einheiten dort bringt Geld (0,4/s, in der Hot Zone 0,8/s), alle 30 s ein Punkt. Fällt deine Hauptstadt, ist die Runde verloren.</li>
       </ol>
       <p class="muted small center" data-wallet></p>
@@ -351,9 +352,15 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
       <p class="muted small center">Alle Tasten zeigt F1 im Spiel.</p>
     </section>`,
   );
-  const showWallet = () => {
+  // Kasse (KA1): nur am Konto. Vor der Anmeldeprüfung (walletKnown) bleibt die Zeile leer, damit Angemeldete nicht den Gast-Hinweis sehen.
+  let walletKnown = false;
+  const showWallet = (note = '') => {
     const el = root.querySelector('[data-wallet]');
-    if (el) el.innerHTML = `Kasse: <b>${wallet()}</b> Geld (bleibt von Runde zu Runde) · <button type="button" class="btn-sm" data-act="resetWallet">zurücksetzen</button>`;
+    if (!el) return;
+    const w = accountWallet();
+    if (!walletKnown) el.textContent = '';
+    else if (w === null) el.textContent = `Ohne Konto startest du jede Partie mit ${BALANCE.startRes.money} Geld. Mit Konto bleibt dein Geld von Runde zu Runde erhalten.`;
+    else el.innerHTML = `Kasse: <b>${w}</b> Geld (bleibt von Runde zu Runde, am Konto) · <button type="button" class="btn-sm" data-act="resetWallet">zurücksetzen</button>${note ? ` <span class="bad">${esc(note)}</span>` : ''}`;
   };
   showWallet();
   // Schnellknopf „Fortsetzen“ (neuester nicht beendeter Stand) und die Liste der Spielstände (SP3)
@@ -459,6 +466,7 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
   /** Nach An- oder Abmelden: Anzeige, Webspace-Schalter und Spielstand-Liste neu. */
   const accountChanged = () => {
     drawAccount();
+    showWallet();
     changed();
   };
   /** Gemeinsamer Ablauf eines Konto-Vorgangs: sperren, Anfrage, Fehler als Hinweis im Bereich. */
@@ -500,7 +508,7 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
         acc.user = d.user ?? null;
         acc.form = null;
         acc.note = null;
-        const synced = setRemoteEnabled(true); // Webspace an, lokale Stände ins Konto
+        const synced = setAccount(d.user); // Kasse und Webspace an, lokale Stände ins Konto
         accountChanged();
         await synced;
         changed();
@@ -525,7 +533,7 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
         await accountRequest({ action: 'logout' }); // Netzfehler: bleibt angemeldet, der Hinweis sagt es
         acc.user = null;
         acc.note = { ok: true, text: 'Abgemeldet. Spielstände bleiben auf diesem Gerät.' };
-        setRemoteEnabled(false);
+        setAccount(null);
         accountChanged();
       });
     }
@@ -539,9 +547,15 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
       if (!accBox?.isConnected) return;
       acc.user = u;
       drawAccount();
+      walletKnown = true;
+      showWallet();
       if (u) changed(); // angemeldet: Stände vom Konto nachladen
     })
-    .catch(() => drawAccount()); // Netzfehler: wie abgemeldet, der Gerätebetrieb bleibt
+    .catch(() => {
+      drawAccount(); // Netzfehler: wie abgemeldet, der Gerätebetrieb bleibt
+      walletKnown = true;
+      showWallet();
+    });
   const mark = () => {
     root.querySelectorAll('[data-diff]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.diff === difficulty)));
     root.querySelectorAll('[data-pts]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.pts) === winPoints)));
@@ -702,8 +716,10 @@ export function showStartMenu(root, onStart, { wallet = () => BALANCE.startRes.m
       box.hidden = true;
       resume.onDiscard();
     } else if (b.dataset.act === 'resetWallet') {
-      resetWallet();
-      showWallet();
+      resetWallet().then(
+        () => showWallet(),
+        (err) => showWallet(accMsg(err)),
+      );
     } else if (b.dataset.act === 'start') {
       hideOverlay(root);
       onStart({ difficulty, winPoints, mapId: mapSel, radio, weather, mood, research, river, city: true, buildRules });

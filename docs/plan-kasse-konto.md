@@ -44,3 +44,5 @@ Kumulierung, kein `localStorage`-Sparschwein mehr.
 - Tests: `test/saves.test.js` bzw. ein kleiner neuer Test für die Client-Logik (angemeldet → Konto, Gast → Startbetrag). Backend wie in
   KO1/KO2 lokal gegen MariaDB prüfen (Scratchpad), sonst `php -l` + Gegenlesen. `npm run test:fast`, `npm run smoke` (desktop).
 - `npm run docs` nur falls Datenwerte geändert (hier nein).
+
+**Stand: gebaut** (KA1, 2026-11-13): Backend (`wallet`, `walletreset`, `setwallet`, Spalte `users.wallet`), Client (`js/ui/saves.js`, `js/main.js`, `js/ui/menu.js`), Admin-Panel, Doku (`docs/prd/konto.md`, `docs/prd/ressourcen-bau.md`), `docs/changes/kasse-konto.md`, `test/kasse.test.js`.

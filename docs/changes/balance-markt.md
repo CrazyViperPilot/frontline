@@ -1,1 +1,0 @@
-**Markt als Notlösung** (§15 „Markt“, Balance): Kaufpreise deutlich höher (BM 200, MUN und TS 300, Stahl 400, Kerosin 350); jedes gekaufte Los hebt den Kaufpreis dieser Ware für das Team um 8 %, der Aufschlag klingt je Sekunde um 1 % ab.

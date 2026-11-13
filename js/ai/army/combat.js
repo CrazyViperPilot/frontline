@@ -394,7 +394,7 @@ export const combatMethods = {
     const dr = s.units.find((u) => u.type === 'drone');
     if (!dr) {
       if (!s.home || s.combat.length < DRONE_ARMY || g.time < DRONE_FROM || this.queued(s, 'drone')) return;
-      // Der Festungs-Hubschrauber belegt denselben Ausbildungsplatz am Heliport: steht ein Turm und fehlt er, kommt er zuerst (seit v5.160)
+      // Der Festungs-Hubschrauber belegt denselben Ausbildungsplatz am Heliport: steht ein Turm und fehlt er, kommt er zuerst (seit v5.164)
       const heliWanted = g.buildings.some((b) => b.alive && b.team === t && b.type === 'tower' && b.built) && !g.units.some((u) => u.alive && u.team === t && u.type === 'transporter');
       if (heliWanted) return;
       if (g.teams[t].res.money < UNITS.drone.cost.money + DRONE_MONEY) return;

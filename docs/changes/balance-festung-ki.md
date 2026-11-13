@@ -1,1 +1,0 @@
-**Balance-Festung: schwere KI baut die Festung trotz knappem Geld aus** (KI, §10): Mörser und Flak bauen außerhalb des Mauerrings, der Festungs-Hubschrauber kommt vor Drohne und Stahl-Lospreis (metalMaxPriceHeli 2,0), damit die schwere KI die Festung wieder voll ausbaut.

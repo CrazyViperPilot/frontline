@@ -1,1 +1,0 @@
-**Knappes Geld, KI (Paket „Balance-KI“)**: Die KI kauft Stahl am Markt nur noch bei offenem Stahlbedarf einer Fahrzeug-Ausbildung (`CITY.ai.steelWait`, Lospreis höchstens `metalMaxPrice` × Grundpreis) statt unter 150 Stahl; Späher, Drohnen und FPV kaufen keinen Stahl (§10 „Stahl am Markt“).

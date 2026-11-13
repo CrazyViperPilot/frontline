@@ -358,7 +358,7 @@ export const buildMethods = {
     const cost = UNITS.transporter.cost.money;
     if (g.teams[this.team].res.money < cost) return; // gespart wird in produce (bis Preis + HELI_MIN_MONEY), seit v5.26
     const b = this.pickProducer(s, 'transporter', BALANCE.queueMax, false);
-    if (b) this.trainOrWant(b, 'transporter'); // scheitert es am Stahl, merkt sich die KI den Bedarf (Markt kauft Stahl, seit v5.160)
+    if (b) this.trainOrWant(b, 'transporter'); // scheitert es am Stahl, merkt sich die KI den Bedarf (Markt kauft Stahl, seit v5.164)
   },
 
   // ---- Baufahrzeuge ----------------------------------------------------------------

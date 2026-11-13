@@ -13,7 +13,7 @@ const MADE_GOODS = Object.keys(CITY.yield);
 
 export const zeroGoods = (list) => Object.fromEntries(list.map((g) => [g, 0]));
 
-export const zeroStats = () => ({ powerSupply: 0, powerUse: 0, powerRatio: 1, happy: 1, shop: 0, shopSupply: 1, shopBm: 0, pop: 0, housing: 0, jobs: 0, jobsCom: 0, workers: 0, drafted: 0, free: 0, fled: 0, ...zeroGoods(MADE_GOODS), money: 0, lost: 0, jam: 1, raw: { wood: 0, stone: 0, ore: 0, oil: 0 }, cap: zeroGoods(MADE_GOODS), inp: zeroGoods(MADE_GOODS), gross: zeroGoods(MADE_GOODS) });
+export const zeroStats = () => ({ powerSupply: 0, powerUse: 0, powerRatio: 1, happy: 1, shop: 0, shopSupply: 1, shopBm: 0, pop: 0, housing: 0, jobs: 0, jobsCom: 0, workers: 0, drafted: 0, free: 0, fled: 0, ...zeroGoods(MADE_GOODS), money: 0, taxRaw: 0, lost: 0, jam: 1, raw: { wood: 0, stone: 0, ore: 0, oil: 0 }, cap: zeroGoods(MADE_GOODS), inp: zeroGoods(MADE_GOODS), gross: zeroGoods(MADE_GOODS) });
 
 /**
  * Fertige Zelle setzen (Stufe 1) ohne Kosten und ohne Wartezeit: Startviertel. Großbau (seit v5.08 die 2 × 2-Raffinerie): ein Quadrat,

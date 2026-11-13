@@ -17,6 +17,7 @@ import { snapshotGame, restoreGame } from '../js/game/savegame.js';
 import { RELIEF } from '../js/game/relief.js';
 import { bridgeUnder } from '../js/game/river.js';
 import { withValue } from './util.js';
+import { brakeTax } from '../js/game/city/economy.js';
 
 const run = (g, s) => { for (let t = 0; t < s * 20; t++) g.update(0.05); };
 // Summe von n Losen, wenn jedes Los den Aufschlag je Los erhöht (CITY.market.surge, wie tradeLot)
@@ -1134,4 +1135,16 @@ test('Startviertel (AP4): Raffinerie hat einen Weg ins Lager, Ölquelle einen We
     assert.equal(transportInfo(g, c, fuel).to, 'Lager', `Team ${team}: Raffinerie → Lager`);
     assert.equal(transportInfo(g, c, oil).to, 'Raffinerie', `Team ${team}: Ölquelle → Raffinerie`);
   }
+});
+
+test('Steuerbremse: unter der Schwelle unverändert, darüber nur gedämpft (Balance-Steuern)', () => {
+  const { from, rest } = CITY.taxBrake;
+  assert.equal(brakeTax(0), 0, 'ohne Steuer keine Steuer');
+  assert.equal(brakeTax(from), from, 'an der Schwelle noch voll');
+  assert.ok(Math.abs(brakeTax(from - 3) - (from - 3)) < 1e-12, 'unter der Schwelle voll');
+  const raw = from + 20;
+  assert.ok(Math.abs(brakeTax(raw) - (from + 20 * rest)) < 1e-9, `darüber × ${rest}: ${brakeTax(raw)}`);
+  assert.ok(brakeTax(raw) < raw, 'gebremst');
+  assert.ok(brakeTax(raw + 1) - brakeTax(raw) < 1, 'Zuwachs je Geld/s roh unter 1');
+  withValue(CITY.taxBrake, 'from', Infinity, () => assert.equal(brakeTax(500), 500, 'Bremse aus: ungebremst'));
 });

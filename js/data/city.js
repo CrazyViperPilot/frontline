@@ -37,6 +37,9 @@ export const CITY = {
   sight: 160, // Sichtradius (px) jedes fertigen Stadtgebäudes ab seinem Rand (seit v5.25; Großbauten + halbe Diagonale): hebt den Kriegsnebel um die eigene Stadt auf
   taxPop: 0.03, // Geld/s je Einwohner
   taxCom: 0.07, // Geld/s je Arbeiter im Gewerbe (seit v5.20 0,07, vorher 0,15); wirkt nur mit Versorgung, siehe CITY.shop
+  // Steuerbremse (seit Paket Balance-Steuern): Die Steuer der Stadt zählt bis `from` Geld/s voll; jeder Teil darüber zählt nur zu `rest`.
+  // So wächst das Steuereinkommen in großen Städten nicht mehr beliebig schnell. `from: Infinity` schaltet die Bremse ab.
+  taxBrake: { from: 15, rest: 0.3 },
   // Gewerbe und Markt (seit v5.20, AP3b): Sie brauchen Baumaterial aus dem Lager der Hauptstadt, über die Straße angeliefert.
   // need: Baumaterial je Arbeiter und Sekunde; base: Anteil von Steuer und Zufriedenheit ohne Versorgung (mit voller Versorgung zählt alles);
   // per: Gewerbe wächst (neue Stufe) nur, solange seine Arbeitsplätze höchstens so viele sind wie arbeitsfähige Einwohner × per.

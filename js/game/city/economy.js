@@ -240,8 +240,18 @@ function produce(game, c, id, P, dt) {
   // Stau: kleinster Stau-Faktor auf den in diesem Schritt benutzten Straßen (1 ohne Stau), dann Glättung für den nächsten Schritt
   s.jam = minFactor(tr);
   settleLoads(tr, dt);
-  s.money = (pool * CITY.taxPop + shopW * CITY.taxCom) * mood; // Gewerbe-Steuer nur nach Versorgung (shopW)
+  s.taxRaw = (pool * CITY.taxPop + shopW * CITY.taxCom) * mood; // Steuer vor der Bremse (Anzeige „roh“)
+  s.money = brakeTax(s.taxRaw); // Gewerbe-Steuer nur nach Versorgung (shopW), dann Steuerbremse
   return s;
+}
+
+/**
+ * Steuerbremse (seit Paket Balance-Steuern): Steuer bis CITY.taxBrake.from Geld/s voll, jeder Teil darüber nur zu CITY.taxBrake.rest.
+ * Rein (ohne Zustand), damit Tests und die Anzeige sie direkt nutzen können.
+ */
+export function brakeTax(raw) {
+  const { from, rest } = CITY.taxBrake;
+  return raw <= from ? raw : from + (raw - from) * rest;
 }
 
 /**

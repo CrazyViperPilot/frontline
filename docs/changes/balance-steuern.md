@@ -1,0 +1,1 @@
+**Steuerbremse** (Balance-Steuern, §15 „Steuern“): Die Stadtsteuer zählt bis 15 Geld/s voll, darüber nur zu 30 %; Konfiguration `CITY.taxBrake` in `js/data/city.js`, Anzeige „gebremst, roh …“ im Stadt-Infofeld.

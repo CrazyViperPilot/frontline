@@ -154,7 +154,9 @@ export class CityPanel {
     const jam = s.jam ?? 1;
     const jamTxt = Math.round(jam * 100) < 100 ? ` · <b class="warn">Stau ${fmt(Math.round(jam * 100))} %</b>` : '';
     const lostTxt = (s.lost ?? 0) > 0 ? ` · <b class="warn">ohne Weg ${fmt(s.lost, 1)}/s</b>` : '';
-    this.strip.innerHTML = `<span>Strom ${fmt(s.powerSupply)}/${fmt(s.powerUse)}${s.powerRatio < 1 ? ' ⚠' : ''} · Zufriedenheit ${fmt(s.happy * 100)} % · Einwohner ${fmt(s.pop)}/${fmt(s.housing)}${fled} · Truppen ${fmt(s.drafted)} · frei ${fmt(Math.max(0, s.free))} · Arbeit ${fmt(s.workers)}/${fmt(s.jobs)} · Steuern +${fmt(s.money, 1)}/s</span><span class="city-store">${store}${jamTxt}${lostTxt}</span>`;
+    // Steuerbremse (seit Paket Balance-Steuern): gebremste Steuer zeigt die Rohsumme daneben
+    const brakeTxt = (s.taxRaw ?? 0) > s.money + 0.05 ? ` (gebremst, roh ${fmt(s.taxRaw, 1)}/s)` : '';
+    this.strip.innerHTML = `<span>Strom ${fmt(s.powerSupply)}/${fmt(s.powerUse)}${s.powerRatio < 1 ? ' ⚠' : ''} · Zufriedenheit ${fmt(s.happy * 100)} % · Einwohner ${fmt(s.pop)}/${fmt(s.housing)}${fled} · Truppen ${fmt(s.drafted)} · frei ${fmt(Math.max(0, s.free))} · Arbeit ${fmt(s.workers)}/${fmt(s.jobs)} · Steuern +${fmt(s.money, 1)}/s${brakeTxt}</span><span class="city-store">${store}${jamTxt}${lostTxt}</span>`;
   }
 
   destroy() {

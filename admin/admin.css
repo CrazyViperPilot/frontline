@@ -131,7 +131,7 @@ tr.empty td { text-align: center; color: var(--muted); }
 .day-fill { width: 100%; border-radius: 3px 3px 0 0; background: var(--accent); }
 .days-axis { display: flex; justify-content: space-between; margin-top: 4px; }
 
-/* Dialoge: Konto bearbeiten, Premium-Zeiträume (seit KN1) */
+/* Dialoge: Konto bearbeiten, Premium-Zeiträume (seit Paket Konto-Premium) */
 .dlg {
   width: min(calc(100% - 32px), 480px);
   max-height: calc(100vh - 32px);

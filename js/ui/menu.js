@@ -187,7 +187,7 @@ const accNick = (v) => {
   return len >= 3 && len <= 20 && /^[\p{L}\p{N}_ -]+$/u.test(n) ? n : null;
 };
 
-/** Wer ist angemeldet, für die Zeile „Angemeldet als …“: mit Nickname „Nick (E-Mail)“, sonst die E-Mail (seit KN1). */
+/** Wer ist angemeldet, für die Zeile „Angemeldet als …“: mit Nickname „Nick (E-Mail)“, sonst die E-Mail (seit Paket Konto-Premium). */
 const accountWho = (u) => (u.nickname ? `${esc(u.nickname)} (${esc(u.email)})` : esc(u.email));
 
 /** Meldung zu einem Fehler: err.status gesetzt → Satz aus api/auth.php, sonst Netzfehler. */
@@ -342,7 +342,7 @@ export function wireAccount(box, { compact = false, hint = '', locked = null, st
     if (kind !== 'reset') acc.email = val('email').trim();
     const email = acc.email;
     const pw = val('password');
-    const nick = kind === 'register' ? accNick(val('nickname')) : null; // seit KN1: Nickname bei der Registrierung
+    const nick = kind === 'register' ? accNick(val('nickname')) : null; // seit Paket Konto-Premium: Nickname bei der Registrierung
     if (kind === 'register' && nick === null) {
       acc.note = { ok: false, text: ACC_NICK_MSG };
       acc.keep = { password: pw, password2: val('password2'), nickname: val('nickname') };

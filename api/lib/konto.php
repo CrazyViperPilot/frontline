@@ -1,7 +1,7 @@
 <?php
 // Konten, gemeinsam für api/auth.php, api/save.php, api/match.php und api/admin.php (seit KO2): Tabellen, Sitzung aus dem Cookie fl_session,
 // Sperre (users.blocked, seit ADM1), Kasse am Konto (users.wallet, seit KA1), Grenze je gewerteter Partie (FL_MATCH_MAX_GAIN, seit MS1),
-// Nickname (users.nickname) und Premium-Zeiträume (Tabelle premium_periods, beides seit KN1).
+// Nickname (users.nickname) und Premium-Zeiträume (Tabelle premium_periods, beides seit Paket Konto-Premium).
 // Regeln: docs/prd/konto.md. Nur per require_once aus api/*.php geladen; api/lib/ ist per .htaccess gesperrt.
 
 require_once __DIR__ . '/http.php';
@@ -15,7 +15,7 @@ const FL_WALLET_MAX = 5000;
 const FL_MATCH_MAX_GAIN = 3000;
 const FL_PASS_MIN = 8;          // Passwort: Zeichen (Registrierung, Zurücksetzen, Admin-Panel)
 const FL_PASS_MAX = 72;         // Byte: bcrypt liest nur die ersten 72, darüber würde still gekürzt
-const FL_NICK_MIN = 3;          // Nickname: Zeichen (KN1, Regel in fl_nickname_normalize)
+const FL_NICK_MIN = 3;          // Nickname: Zeichen (Paket Konto-Premium, Regel in fl_nickname_normalize)
 const FL_NICK_MAX = 20;
 const FL_MSG_NICK_TAKEN = 'Nickname ist schon vergeben';
 
@@ -55,7 +55,7 @@ const FL_SCHEMA = [
         ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
 ];
 
-// Premium-Zeiträume (KN1): ein Konto kann mehrere haben, auch unbefristete (ends_at leer). Premium gilt jetzt, wenn ein Zeitraum läuft
+// Premium-Zeiträume (Paket Konto-Premium): ein Konto kann mehrere haben, auch unbefristete (ends_at leer). Premium gilt jetzt, wenn ein Zeitraum läuft
 // (starts_at <= jetzt und ends_at leer oder später, fl_premium_of). Angelegt von fl_premium_upgrade, nicht über FL_SCHEMA, weil die
 // Übernahme des alten Standes nur beim ersten Anlegen geschieht.
 const FL_PREMIUM_TABLE = 'CREATE TABLE IF NOT EXISTS premium_periods (
@@ -78,7 +78,7 @@ function fl_is_token($token) {
 }
 
 // Nachrüsten (idempotent, einmal je Anfrage): Spalten users.blocked (Sperre im Admin-Panel, docs/prd/konto.md), users.wallet (Kasse am
-// Konto, KA1; Bestandskonten bekommen den Startbetrag), users.nickname (KN1; Bestandskonten bleiben ohne Nickname, NULL) mit dem
+// Konto, KA1; Bestandskonten bekommen den Startbetrag), users.nickname (Paket Konto-Premium; Bestandskonten bleiben ohne Nickname, NULL) mit dem
 // eindeutigen Schlüssel uq_users_nickname, und die Tabelle premium_periods (fl_premium_upgrade). Die Abfrage läuft über
 // information_schema, wie fl_saves_upgrade in api/save.php.
 function fl_konto_upgrade(PDO $pdo) {
@@ -141,7 +141,7 @@ function fl_premium_upgrade(PDO $pdo) {
     $st->execute([':now1' => $now, ':now2' => $now, ':now3' => $now]);
 }
 
-// Premium-Stand eines Konto-Zeitraums JETZT (die eine Stelle für alle Anfragen, seit KN1). Premium ist, wenn ein Zeitraum läuft.
+// Premium-Stand eines Konto-Zeitraums JETZT (die eine Stelle für alle Anfragen, seit Paket Konto-Premium). Premium ist, wenn ein Zeitraum läuft.
 // Liefert ['premium' => bool, 'until' => int|null (Ende des laufenden Zeitraums; null bei unbefristet oder ohne Premium),
 // 'nextStart' => int|null (Beginn des nächsten Zeitraums, der noch nicht begonnen hat)].
 function fl_premium_state(PDO $pdo, $uid, $now = null) {
@@ -188,7 +188,7 @@ function current_user(PDO $pdo) {
     return fl_session_user($pdo, $token);
 }
 
-// ---- Prüfungen (seit KN1 gemeinsam für Anmeldung und Admin-Panel) --------------------------------------------------
+// ---- Prüfungen (seit Paket Konto-Premium gemeinsam für Anmeldung und Admin-Panel) --------------------------------------------------
 
 function fl_check_email($email) {
     if (!is_string($email)) fail(400, 'E-Mail-Adresse fehlt');
@@ -204,7 +204,7 @@ function fl_check_password($pass) {
     return $pass;
 }
 
-// Nickname (KN1): 3 bis 20 Zeichen aus Buchstaben, Ziffern, Leerzeichen, _ und -. Am Rand fallen Leerzeichen weg, Folgen werden zu
+// Nickname (Paket Konto-Premium): 3 bis 20 Zeichen aus Buchstaben, Ziffern, Leerzeichen, _ und -. Am Rand fallen Leerzeichen weg, Folgen werden zu
 // einem. Eindeutig ohne Groß- und Kleinschreibung (und ohne Akzente): das besorgt der Vergleich der Tabelle (utf8mb4_unicode_ci) und
 // der eindeutige Schlüssel uq_users_nickname. Liefert den Nickname oder null bei ungültiger Eingabe.
 function fl_nickname_normalize($value) {

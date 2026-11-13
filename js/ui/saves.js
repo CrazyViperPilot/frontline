@@ -328,7 +328,7 @@ export function accountRequest(body) {
 /**
  * Wer ist angemeldet? Fragt api/auth.php „me“ und stellt den Webspace entsprechend ein (setAccount).
  * Liefert { email, nickname, plan, premiumUntil, createdAt, wallet } oder null (nicht angemeldet). Netzfehler werfen.
- * nickname (seit KN1) ist null bei Konten ohne Nickname; plan und premiumUntil berechnet der Server aus den Premium-Zeiträumen.
+ * nickname (seit Paket Konto-Premium) ist null bei Konten ohne Nickname; plan und premiumUntil berechnet der Server aus den Premium-Zeiträumen.
  */
 export async function accountUser() {
   const d = await accountRequest({ action: 'me' });

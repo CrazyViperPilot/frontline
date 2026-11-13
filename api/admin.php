@@ -5,18 +5,18 @@
 //   POST admin.php {"action":"logout"}                             → {"ok":true}; beendet die Admin-Sitzung
 //   POST admin.php {"action":"me"}                                 → {"ok":true,"user":"…"}
 //   POST admin.php {"action":"users"}                              → {"users":[{id,email,nickname,createdAt,verifiedAt,lastLogin,plan,premiumUntil,premiumNext,blocked,saves,games,wallet}],"walletMax":N}
-//                                                                   (seit KN1: nickname; plan, premiumUntil und premiumNext aus den Premium-Zeiträumen, jetzt berechnet)
+//                                                                   (seit Paket Konto-Premium: nickname; plan, premiumUntil und premiumNext aus den Premium-Zeiträumen, jetzt berechnet)
 //   POST admin.php {"action":"stats"}                              → Gesamtübersicht (seit v5.158): Konten, aktive, Partien, Geld, perDay (30 Tage), perUser (Spiele je Konto)
 //   POST admin.php {"action":"approve","id":N}                     → {"ok":true}: E-Mail gilt als bestätigt, offene Bestätigungslinks entfallen
 //   POST admin.php {"action":"block"|"unblock","id":N}             → {"ok":true}; Sperre: Anmelden 403, bestehende Sitzungen enden
 //   POST admin.php {"action":"plan","id":N,"plan":"free"|"premium","premiumUntil":Sekunden|null} → {"ok":true}
-//                                                                   Altaktion (seit KN1): „premium“ legt einen Zeitraum ab jetzt an, „free“ beendet die laufenden
-//   POST admin.php {"action":"edit","id":N,"nickname"?,"email"?,"password"?} → {"ok":true}: Nickname, E-Mail und/oder Passwort (KN1).
+//                                                                   Altaktion (seit Paket Konto-Premium): „premium“ legt einen Zeitraum ab jetzt an, „free“ beendet die laufenden
+//   POST admin.php {"action":"edit","id":N,"nickname"?,"email"?,"password"?} → {"ok":true}: Nickname, E-Mail und/oder Passwort (Paket Konto-Premium).
 //                                                                   Nur angegebene Felder ändern sich, alles wird vorher geprüft. Nickname und E-Mail
 //                                                                   müssen frei sein. E-Mail-Wechsel: offene Links des Kontos entfallen. Passwort: alle
 //                                                                   Sitzungen des Kontos enden (wie beim Zurücksetzen).
 //   POST admin.php {"action":"periods","id":N}                     → {"periods":[{id,startsAt,endsAt,state}],"premium":bool,"premiumUntil":S|null,"premiumNext":S|null}
-//                                                                   state: aktiv, geplant (beginnt später) oder abgelaufen; endsAt null = unbefristet (KN1)
+//                                                                   state: aktiv, geplant (beginnt später) oder abgelaufen; endsAt null = unbefristet (Paket Konto-Premium)
 //   POST admin.php {"action":"periodAdd","id":N,"startsAt":S,"endsAt":S|null} → {"ok":true,"id":N}
 //   POST admin.php {"action":"periodEdit","id":N,"pid":N,"startsAt":S,"endsAt":S|null} → {"ok":true}
 //   POST admin.php {"action":"periodDelete","id":N,"pid":N}        → {"ok":true}
@@ -178,7 +178,7 @@ function admin_fail_record(PDO $pdo, $who) {
 // ---- Konten ---------------------------------------------------------------------------------------------
 
 // Liste aller Konten, neueste zuerst. Spielstände zählt die Tabelle saves (fehlt sie, gibt es noch keine), Partien die Tabelle
-// matches (seit v5.158). Zählungen als Unterabfragen, damit sich die Zeilen nicht vervielfachen. Premium (seit KN1) aus allen
+// matches (seit v5.158). Zählungen als Unterabfragen, damit sich die Zeilen nicht vervielfachen. Premium (seit Paket Konto-Premium) aus allen
 // Zeiträumen auf einmal (eine Abfrage statt einer je Konto), berechnet wie fl_premium_state.
 function admin_users(PDO $pdo) {
     $saves = admin_has_table($pdo, 'saves') ? '(SELECT COUNT(*) FROM saves s WHERE s.user_id = u.id)' : '0';
@@ -309,7 +309,7 @@ function admin_block(PDO $pdo, array $body, $on) {
     if ($on) $pdo->prepare('DELETE FROM sessions WHERE user_id = :id')->execute([':id' => $id]);
 }
 
-// Konto-Art (Altaktion, seit KN1 über die Zeiträume): premium legt einen Zeitraum ab jetzt an, bis premiumUntil (fehlt es, unbefristet);
+// Konto-Art (Altaktion, seit Paket Konto-Premium über die Zeiträume): premium legt einen Zeitraum ab jetzt an, bis premiumUntil (fehlt es, unbefristet);
 // free beendet die laufenden Zeiträume jetzt. Das Admin-Panel nutzt die Zeitraum-Aktionen unten.
 function admin_plan(PDO $pdo, array $body) {
     $id = admin_id($body);
@@ -335,7 +335,7 @@ function admin_plan(PDO $pdo, array $body) {
     admin_period_insert($pdo, $id, $now, $until);
 }
 
-// Zugangsdaten eines Kontos ändern (seit KN1): Nickname, E-Mail und/oder Passwort. Nur angegebene Felder; alle Prüfungen vor dem
+// Zugangsdaten eines Kontos ändern (seit Paket Konto-Premium): Nickname, E-Mail und/oder Passwort. Nur angegebene Felder; alle Prüfungen vor dem
 // Schreiben, dann ein UPDATE. E-Mail geändert: offene Links des Kontos (Bestätigung, Zurücksetzen) entfallen, sie kamen an die alte
 // Adresse. Passwort geändert: alle Sitzungen des Kontos enden, wie beim Zurücksetzen durch den Nutzer.
 function admin_edit(PDO $pdo, array $body) {
@@ -377,7 +377,7 @@ function admin_edit(PDO $pdo, array $body) {
     if ($passChanged) $pdo->prepare('DELETE FROM sessions WHERE user_id = :id')->execute([':id' => $id]);
 }
 
-// Premium-Zeiträume eines Kontos (seit KN1), nach Beginn sortiert, dazu der Stand jetzt.
+// Premium-Zeiträume eines Kontos (seit Paket Konto-Premium), nach Beginn sortiert, dazu der Stand jetzt.
 function admin_periods(PDO $pdo, array $body) {
     $id = admin_id($body);
     admin_user_row($pdo, $id);

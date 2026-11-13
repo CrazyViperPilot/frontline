@@ -1,4 +1,4 @@
-// Konten (KN1, docs/prd/konto.md „Nickname und Premium-Zeiträume“): die reinen Regeln in api/lib/konto.php (Premium jetzt,
+// Konten (Paket Konto-Premium, docs/prd/konto.md „Nickname und Premium-Zeiträume“): die reinen Regeln in api/lib/konto.php (Premium jetzt,
 // Nickname-Regel) mit der PHP-Kommandozeile, dazu die Verdrahtung in der Schnittstelle und der Oberfläche. Fehlt php, werden
 // die PHP-Prüfungen übersprungen. Die Abläufe gegen MariaDB (Übernahme, Zeiträume, Bearbeiten, Löschen) sind von Hand geprüft.
 import test from 'node:test';

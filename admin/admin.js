@@ -1,5 +1,5 @@
 // Admin-Panel (ADM1, Regeln: docs/prd/konto.md „Admin-Panel“): Anmeldung und Benutzerliste über api/admin.php, seit v5.158
-// die Übersicht (Aktion stats) als zweiter Reiter. Seit KN1: Nickname, Bearbeiten (Nickname, E-Mail, Passwort) und die
+// die Übersicht (Aktion stats) als zweiter Reiter. Seit Paket Konto-Premium: Nickname, Bearbeiten (Nickname, E-Mail, Passwort) und die
 // Premium-Zeiträume je Konto (Dialog „Premium“).
 // Kein Modul, kein Framework. Alle Texte aus dem Server laufen über textContent, nie über innerHTML.
 
@@ -76,7 +76,7 @@
     ? new Date(ts * 1000).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     : 'nie');
 
-  /** Konto-Art wie der Server sie berechnet (seit KN1): Premium bis …, unbefristet, oder Kostenlos (mit dem nächsten Beginn). */
+  /** Konto-Art wie der Server sie berechnet (seit Paket Konto-Premium): Premium bis …, unbefristet, oder Kostenlos (mit dem nächsten Beginn). */
   function planLabel(u) {
     if (u.plan === 'premium') return u.premiumUntil ? `Premium (bis ${day(u.premiumUntil)})` : 'Premium (unbefristet)';
     return u.premiumNext ? `Kostenlos (Premium ab ${day(u.premiumNext)})` : 'Kostenlos';
@@ -297,7 +297,7 @@
     }
   }
 
-  // ---- Dialoge (seit KN1) -----------------------------------------------------------------------------
+  // ---- Dialoge (seit Paket Konto-Premium) -----------------------------------------------------------------------------
 
   function closeDialogs() {
     for (const d of document.querySelectorAll('dialog')) if (d.open) d.close();

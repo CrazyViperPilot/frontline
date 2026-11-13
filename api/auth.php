@@ -1,7 +1,7 @@
 <?php
 // Frontline Konten-API (KO1, Regeln: docs/prd/konto.md). Aktion im JSON-Feld action, Antwort immer JSON:
 //   POST auth.php {"action":"register","email":"…","nickname":"…","password":"…"} → {"ok":true,"message":"…"}; Mail mit Bestätigungslink
-//                                                                   (seit KN1 mit Nickname; vergeben → 409 „Nickname ist schon vergeben“)
+//                                                                   (seit Paket Konto-Premium mit Nickname; vergeben → 409 „Nickname ist schon vergeben“)
 //   GET  auth.php?verify=<token>                                    → 302 auf /frontline/?verified=1 oder …=0 (Link aus der Mail)
 //   POST auth.php {"action":"login","email":"…","password":"…"}     → {"ok":true,"user":{…}}; setzt Cookie fl_session
 //   POST auth.php {"action":"logout"}                               → {"ok":true}; löscht die Sitzung
@@ -10,7 +10,7 @@
 //   POST auth.php {"action":"reset","token":"…","password":"…"}     → {"ok":true}; setzt das Passwort, meldet alle Sitzungen ab
 //   POST auth.php {"action":"walletreset"}                          → {"ok":true,"wallet":800}; Kasse auf den Startbetrag
 //   Die Kasse meldet seit dem Match-Start nur noch api/match.php (Aktion finish, signierter Token). Aktion wallet entfernt.
-// user nach außen: {email, nickname, plan, premiumUntil, createdAt, wallet}, nie Hash oder id. plan und premiumUntil sind seit KN1
+// user nach außen: {email, nickname, plan, premiumUntil, createdAt, wallet}, nie Hash oder id. plan und premiumUntil sind seit Paket Konto-Premium
 // berechnet (Premium-Zeiträume, fl_premium_state in api/lib/konto.php): plan „premium“ nur, wenn ein Zeitraum jetzt läuft.
 // Fehler: {"error": "…"} mit HTTP-Code: 400 Anfrage, 401 Anmeldung falsch, 403 nicht bestätigt, 405 Methode,
 //         409 Nickname vergeben, 429 zu viele Versuche, 500 Server/Datenbank, 503 Mailversand nicht eingerichtet oder fehlgeschlagen.
@@ -68,7 +68,7 @@ switch ($body['action']) {
 // ---- Aktionen --------------------------------------------------------------------------------------------
 
 // Konto anlegen (oder bei unbestätigtem Konto den Link erneut schicken). Bestätigtes Konto: nichts passiert, gleiche Antwort.
-// Der Nickname (seit KN1) wird nur für ein neues Konto gespeichert; vergeben ist er → 409, auch vor der Bremse (keine Mail).
+// Der Nickname (seit Paket Konto-Premium) wird nur für ein neues Konto gespeichert; vergeben ist er → 409, auch vor der Bremse (keine Mail).
 function fl_register(array $body) {
     $email = fl_check_email(fl_field($body, 'email'));
     $nick = fl_check_nickname(fl_field($body, 'nickname'));
@@ -294,7 +294,7 @@ function fl_attempt(PDO $pdo, $kind, $who, $window) {
     return (int) $st->fetchColumn();
 }
 
-// Nach außen: nur diese Felder, nie Hash oder id. plan und premiumUntil kommen aus den Premium-Zeiträumen (seit KN1), nicht
+// Nach außen: nur diese Felder, nie Hash oder id. plan und premiumUntil kommen aus den Premium-Zeiträumen (seit Paket Konto-Premium), nicht
 // mehr aus den alten Spalten users.plan und users.premium_until (die bleiben nur stehen).
 function fl_user_out(PDO $pdo, array $u) {
     $premium = fl_premium_state($pdo, (int) $u['id']);

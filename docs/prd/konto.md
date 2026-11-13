@@ -4,7 +4,7 @@ Benutzersteuerung als Grundlage für späteres Vermarkten (Premium-Konten u. a.)
 **Stand:** KO1 (Backend), KO2 (Spielstände ans Konto), KO3 (Oberfläche im Startmenü, Rücksprung von den Mail-Links), das
 Admin-Panel (Benutzerverwaltung, Abschnitt unten), die Kasse am Konto (KA1, Abschnitt unten), der signierte Match-Start
 (MS1, Abschnitt unten), die Spielstatistik am Konto und die Admin-Übersicht (beide seit v5.158, Abschnitte ganz unten) gebaut,
-dazu Nickname und Premium-Zeiträume (KN1, Abschnitt ganz unten).
+dazu Nickname und Premium-Zeiträume (Paket Konto-Premium, Abschnitt ganz unten).
 
 ## Ziel und Regeln
 
@@ -13,26 +13,26 @@ dazu Nickname und Premium-Zeiträume (KN1, Abschnitt ganz unten).
 - **Konto:** E-Mail-Adresse und Passwort. Bestätigt wird per Link aus der Mail. Mit Konto liegen Stände auf dem Server
   und gehören dem Konto (KO2, Abschnitt unten).
 - **Premium:** Ein Konto kann mehrere Premium-Zeiträume haben, befristete und unbefristete. Premium gilt, solange einer läuft
-  (seit KN1, Abschnitt ganz unten). Ohne angelegten Zeitraum hat ein Konto `free`.
-- **Nickname:** Pflicht bei der Registrierung, eindeutig ohne Groß- und Kleinschreibung (KN1, Abschnitt ganz unten).
+  (seit Paket Konto-Premium, Abschnitt ganz unten). Ohne angelegten Zeitraum hat ein Konto `free`.
+- **Nickname:** Pflicht bei der Registrierung, eindeutig ohne Groß- und Kleinschreibung (Paket Konto-Premium, Abschnitt ganz unten).
 
 ## Datenmodell (MySQL, legen sich selbst an)
 
 | Tabelle | Spalten | Hinweis |
 |---|---|---|
-| `users` | `id`, `email` (klein, eindeutig), `pass_hash`, `verified_at`, `plan` und `premium_until` (nur Altbestand, seit KN1 nicht mehr gelesen), `created_at`, `last_login`, `nickname` (seit KN1, eindeutig ohne Groß- und Kleinschreibung) | Zeiten in Sekunden seit 1970; `verified_at` leer = unbestätigt |
+| `users` | `id`, `email` (klein, eindeutig), `pass_hash`, `verified_at`, `plan` und `premium_until` (nur Altbestand, seit Paket Konto-Premium nicht mehr gelesen), `created_at`, `last_login`, `nickname` (seit Paket Konto-Premium, eindeutig ohne Groß- und Kleinschreibung) | Zeiten in Sekunden seit 1970; `verified_at` leer = unbestätigt |
 | `tokens` | `hash` (SHA-256 des Links, Schlüssel), `user_id`, `kind` (`verify` oder `reset`), `expires_at` | Link nur einmal gültig; ein neuer Link derselben Art macht den alten ungültig |
 | `sessions` | `hash` (SHA-256 des Cookies), `user_id`, `created_at`, `expires_at` | 30 Tage |
 | `attempts` | `who_hash` (HMAC einer IP oder Adresse), `kind` (`login`, `mailip`, `mail`, `admin`), `created_at` | Zähler für die Bremsen; Einträge älter als 24 h werden gelöscht |
 | `admin_sessions` | `hash` (SHA-256 des Cookies `fl_admin`), `created_at`, `expires_at` | Admin-Panel, 8 Stunden (Abschnitt „Admin-Panel“) |
 | `meta` | `k` (Schlüssel, Primärschlüssel), `v` (Text) | Match-Start (MS1): hält das Geheimnis unter `match_secret` |
 | `match_tokens` | `jti` (32 Hex, Primärschlüssel), `user_id`, `w0` (Kasse bei der Ausgabe), `issued_at`, `used_at` (leer = noch nicht gewertet) | Match-Start (MS1), Zeilen älter als 7 Tage werden gelöscht |
-| `premium_periods` | `id`, `user_id`, `starts_at`, `ends_at` (leer = unbefristet), `created_at` | Premium-Zeiträume (seit KN1, Abschnitt ganz unten): Premium gilt jetzt, wenn ein Zeitraum läuft; beim Löschen des Kontos mit gelöscht |
+| `premium_periods` | `id`, `user_id`, `starts_at`, `ends_at` (leer = unbefristet), `created_at` | Premium-Zeiträume (seit Paket Konto-Premium, Abschnitt ganz unten): Premium gilt jetzt, wenn ein Zeitraum läuft; beim Löschen des Kontos mit gelöscht |
 | `matches` | `id`, `user_id`, `jti` (eindeutig: eine Partie zählt nur einmal), `started_at` (Ausgabezeit des Tokens), `finished_at`, `wallet_before`, `wallet_after`, `earned` (negativ möglich), `result` (`win`, `loss` oder leer), `duration` (Sekunden), `difficulty`, `seed`, `points_own`, `points_enemy`, `kills` | Spielstatistik (seit v5.158, Abschnitt unten): je gewerteter Partie eine Zeile, in derselben Transaktion wie die Kasse; beim Löschen des Kontos mit gelöscht |
 
 Die Spalte `users.blocked` (`TINYINT`, Standard 0) kommt seit dem Admin-Panel dazu, die Spalte `users.wallet` (`BIGINT`, Standard
 800) seit KA1 (Kasse am Konto; Bestandskonten bekommen 800), `users.nickname` mit dem Schlüssel `uq_users_nickname` und die Tabelle
-`premium_periods` seit KN1. `api/lib/konto.php` legt alles bei Bedarf selbst an (`fl_konto_upgrade`).
+`premium_periods` seit Paket Konto-Premium. `api/lib/konto.php` legt alles bei Bedarf selbst an (`fl_konto_upgrade`).
 
 Passwörter nur als `password_hash` (PASSWORD_DEFAULT), Tokens mit `random_bytes(32)`, in der Datenbank nur als Hash. Die HMAC-Schlüssel
 kommen aus dem Datenbankpasswort (`api/config.php`), IPs und Adressen lassen sich so nicht zurückrechnen.
@@ -41,7 +41,7 @@ kommen aus dem Datenbankpasswort (`api/config.php`), IPs und Adressen lassen sic
 
 | Aufruf | Antwort | Wirkung |
 |---|---|---|
-| `POST {"action":"register","email","nickname","password"}` | `{ok, message}` | legt ein Konto an oder schickt bei unbestätigtem Konto einen neuen Link; Mail mit `…/api/auth.php?verify=<token>` (48 h); Nickname seit KN1 Pflicht, vergeben → 409 |
+| `POST {"action":"register","email","nickname","password"}` | `{ok, message}` | legt ein Konto an oder schickt bei unbestätigtem Konto einen neuen Link; Mail mit `…/api/auth.php?verify=<token>` (48 h); Nickname seit Paket Konto-Premium Pflicht, vergeben → 409 |
 | `GET auth.php?verify=<token>` | 302 auf `/frontline/?verified=1` bzw. `…=0` | bestätigt das Konto, Link wird verbraucht |
 | `POST {"action":"login","email","password"}` | `{ok, user}` + Cookie | nur bestätigte Konten; setzt `fl_session` |
 | `POST {"action":"logout"}` | `{ok}` | beendet die Sitzung, löscht das Cookie |
@@ -52,7 +52,7 @@ kommen aus dem Datenbankpasswort (`api/config.php`), IPs und Adressen lassen sic
 
 Die Aktion `wallet` gibt es seit MS1 nicht mehr: den Endstand einer gewerteten Partie meldet `api/match.php` (Abschnitt unten).
 
-`user` nach außen: `{email, nickname, plan, premiumUntil, createdAt, wallet}`, nie Hash oder id. `plan` und `premiumUntil` sind seit KN1
+`user` nach außen: `{email, nickname, plan, premiumUntil, createdAt, wallet}`, nie Hash oder id. `plan` und `premiumUntil` sind seit Paket Konto-Premium
 berechnet (Premium-Zeiträume, Abschnitt ganz unten); `nickname` ist `null` bei Bestandskonten ohne Nickname.
 
 **Cookie:** `fl_session`, HttpOnly, Secure, SameSite=Lax, Pfad `/`, 30 Tage. Abmelden löscht es.
@@ -213,7 +213,7 @@ abgelehnte Adresse), steht im Protokoll der Grund, im Browser nur „Die E-Mail 
 - **Ort:** Bereich „Konto“ direkt unter dem Titel im Startmenü (`js/ui/menu.js`, Stil in `css/style.css`, Klasse `.account`).
   Die Anfragen laufen über `accountRequest`, `accountUser`, `setRemoteEnabled` aus `js/ui/saves.js`.
 - **Abgemeldet:** Hinweis „Spielstände nur auf diesem Gerät“, drei Knöpfe: Anmelden, Registrieren, Passwort vergessen. Der Knopf
-  öffnet das Formular darunter, ein zweiter Druck schließt es. Registrieren verlangt den Nickname (seit KN1, 3 bis 20 Zeichen) und die Wiederholung des Passworts; Passwörter unter
+  öffnet das Formular darunter, ein zweiter Druck schließt es. Registrieren verlangt den Nickname (seit Paket Konto-Premium, 3 bis 20 Zeichen) und die Wiederholung des Passworts; Passwörter unter
   8 Zeichen weist schon das Formular ab. Nach dem Registrieren steht die Antwort der API darunter (Hinweis auf die Bestätigungsmail).
 - **Fehler:** Die Meldung kommt wörtlich aus der API (`error`), z. B. „E-Mail oder Passwort falsch.“ oder „Zu viele Anmeldeversuche.“
   Ohne Antwort des Servers steht dort „Keine Verbindung zum Server. Bitte später erneut versuchen.“
@@ -263,19 +263,19 @@ Nicht im Offline-Cache (`admin/` steht nicht in `sw.js`), aber im Deploy hochgel
 
 | Aktion | Wirkung |
 |---|---|
-| `users` | alle Konten, neueste zuerst: id, E-Mail, Nickname (seit KN1), Registrierung, Bestätigung, letzte Anmeldung, Konto-Art (`plan`, `premiumUntil`, `premiumNext`: aus den Zeiträumen berechnet, seit KN1), Sperre, Zahl der Spielstände, Zahl der gewerteten Partien (`games`, seit v5.158) |
+| `users` | alle Konten, neueste zuerst: id, E-Mail, Nickname (seit Paket Konto-Premium), Registrierung, Bestätigung, letzte Anmeldung, Konto-Art (`plan`, `premiumUntil`, `premiumNext`: aus den Zeiträumen berechnet, seit Paket Konto-Premium), Sperre, Zahl der Spielstände, Zahl der gewerteten Partien (`games`, seit v5.158) |
 | `stats` | Gesamtübersicht (seit v5.158, Abschnitt „Admin-Übersicht“) |
 | `approve {id}` | Freigeben: E-Mail gilt als bestätigt, offene Bestätigungslinks entfallen |
 | `block {id}` / `unblock {id}` | Sperren: Anmelden 403, bestehende Sitzungen enden sofort; Entsperren hebt nur die Sperre auf |
-| `plan {id, plan, premiumUntil?}` | Altaktion (seit KN1): `premium` legt einen Zeitraum ab jetzt an (bis `premiumUntil`, fehlt es, unbefristet; schon Premium → 409), `free` beendet die laufenden Zeiträume jetzt |
-| `edit {id, nickname?, email?, password?}` | Nickname, E-Mail und/oder Passwort ändern (seit KN1, Abschnitt ganz unten) |
+| `plan {id, plan, premiumUntil?}` | Altaktion (seit Paket Konto-Premium): `premium` legt einen Zeitraum ab jetzt an (bis `premiumUntil`, fehlt es, unbefristet; schon Premium → 409), `free` beendet die laufenden Zeiträume jetzt |
+| `edit {id, nickname?, email?, password?}` | Nickname, E-Mail und/oder Passwort ändern (seit Paket Konto-Premium, Abschnitt ganz unten) |
 | `periods {id}` | Premium-Zeiträume eines Kontos mit Stand (`aktiv`, `geplant`, `abgelaufen`) und Premium jetzt |
-| `periodAdd {id, startsAt, endsAt?}`, `periodEdit {id, pid, …}`, `periodDelete {id, pid}` | Zeitraum anlegen, ändern, löschen (seit KN1). Zeiten in Sekunden seit 1970, `endsAt` fehlt oder `null` = unbefristet. Beginn vor Ende; Zeiträume eines Kontos überschneiden sich nicht (409) |
+| `periodAdd {id, startsAt, endsAt?}`, `periodEdit {id, pid, …}`, `periodDelete {id, pid}` | Zeitraum anlegen, ändern, löschen (seit Paket Konto-Premium). Zeiten in Sekunden seit 1970, `endsAt` fehlt oder `null` = unbefristet. Beginn vor Ende; Zeiträume eines Kontos überschneiden sich nicht (409) |
 | `delete {id}` | Konto, Sitzungen, Links, Spielstände, Partien (Tabellen `matches`, `match_tokens`) und Premium-Zeiträume in einer Transaktion löschen (endgültig) |
 | `logout`, `me` | Abmelden, Name der angemeldeten Admin-Sitzung |
 
 - **Oberfläche:** Anmeldeformular, danach Tabelle mit Suche nach E-Mail und Nickname, Knöpfen je Zeile (Freigeben nur bei unbestätigtem
-  Konto, Sperren/Entsperren, Bearbeiten, Premium, Kasse setzen, Löschen; seit KN1 die Dialoge „Konto bearbeiten“ und „Premium“). Löschen fragt mit einer Meldung, die die E-Mail und die Zahl der Spielstände
+  Konto, Sperren/Entsperren, Bearbeiten, Premium, Kasse setzen, Löschen; seit Paket Konto-Premium die Dialoge „Konto bearbeiten“ und „Premium“). Löschen fragt mit einer Meldung, die die E-Mail und die Zahl der Spielstände
   nennt. Auf dem Handy wird jede Zeile zu einer Karte (Spaltenüberschrift als Beschriftung).
 - **Dateien:** `api/admin.php` (Schnittstelle und Sitzung), `admin/index.html`, `admin/admin.js` (ohne Modul), `admin/admin.css`;
   `api/lib/konto.php` (Spalte `blocked`, Sperre in der Sitzungsabfrage), `api/auth.php` (403 bei gesperrten Konten).
@@ -339,7 +339,7 @@ Im Admin-Panel gibt es zwei Reiter: **Konten** (wie bisher, mit neuer Spalte **S
   MariaDB geprüft: Zahlen für zwei Konten und drei Partien (Summe, Ø, Tagesbalken, Spieler mit Partie), Löschen eines Kontos mit Partien.
   Die Oberfläche im Browser (Chrome, Desktop und Handy-Breite): Reiter, Kennzahlen, Balken, Tabelle, kein Querscroll.
 
-## Nickname und Premium-Zeiträume (KN1)
+## Nickname und Premium-Zeiträume (Paket Konto-Premium)
 
 - **Nickname:** Pflicht bei `register` (Feld `nickname`). 3 bis 20 Zeichen aus Buchstaben (auch Umlaute), Ziffern, Leerzeichen, `_` und `-`.
   Am Rand fallen Leerzeichen weg, Folgen werden zu einem. Eindeutig ohne Groß- und Kleinschreibung und ohne Akzente: das besorgt der

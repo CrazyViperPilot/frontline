@@ -27,22 +27,53 @@
         <span id="who" class="small"></span>
         <button id="logout" type="button">Abmelden</button>
       </header>
-      <div class="tools">
-        <input id="search" type="search" placeholder="E-Mail suchen" aria-label="E-Mail suchen" autocomplete="off">
-        <span id="count" class="small"></span>
-        <button id="reload" type="button">Neu laden</button>
+      <nav class="tabs" aria-label="Ansicht">
+        <button type="button" data-view="users" aria-pressed="true">Konten</button>
+        <button type="button" data-view="overview" aria-pressed="false">Übersicht</button>
+      </nav>
+
+      <div id="view-users">
+        <div class="tools">
+          <input id="search" type="search" placeholder="E-Mail suchen" aria-label="E-Mail suchen" autocomplete="off">
+          <span id="count" class="small"></span>
+          <button id="reload" type="button">Neu laden</button>
+        </div>
+        <p id="msg" class="msg" role="status"></p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>E-Mail</th><th>Registriert</th><th>Bestätigt</th><th>Letzte Anmeldung</th>
+                <th>Konto</th><th>Kasse</th><th>Gesperrt</th><th>Spielstände</th><th>Spiele</th><th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
       </div>
-      <p id="msg" class="msg" role="status"></p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>E-Mail</th><th>Registriert</th><th>Bestätigt</th><th>Letzte Anmeldung</th>
-              <th>Konto</th><th>Kasse</th><th>Gesperrt</th><th>Spielstände</th><th>Aktionen</th>
-            </tr>
-          </thead>
-          <tbody id="rows"></tbody>
-        </table>
+
+      <div id="view-overview" hidden>
+        <div class="tools">
+          <span class="small">Stand beim Öffnen. Gezählt werden nur gewertete Partien (Kasse am Konto).</span>
+          <button id="reload-overview" type="button">Neu laden</button>
+        </div>
+        <p id="overview-msg" class="msg" role="status"></p>
+        <div id="tiles" class="tiles"></div>
+        <h2 class="sub">Gewertete Partien je Tag, letzte 30 Tage</h2>
+        <div id="days" class="days" role="img" aria-label="Gewertete Partien je Tag"></div>
+        <div class="days-axis small"><span id="day-first"></span><span id="day-last"></span></div>
+        <h2 class="sub">Spiele pro Spieler</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>E-Mail</th><th>Spiele</th><th>Siege</th><th>Niederlagen</th><th>Verdient</th>
+                <th>Ø je Partie</th><th>Letzte Partie</th><th>Kasse</th>
+              </tr>
+            </thead>
+            <tbody id="player-rows"></tbody>
+          </table>
+        </div>
       </div>
     </section>
   </main>

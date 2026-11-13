@@ -4,12 +4,13 @@
 //   POST admin.php {"action":"login","user":"…","password":"…"}   → {"ok":true,"user":"…"}; setzt Cookie fl_admin (8 h)
 //   POST admin.php {"action":"logout"}                             → {"ok":true}; beendet die Admin-Sitzung
 //   POST admin.php {"action":"me"}                                 → {"ok":true,"user":"…"}
-//   POST admin.php {"action":"users"}                              → {"users":[{id,email,createdAt,verifiedAt,lastLogin,plan,premiumUntil,blocked,saves,wallet}],"walletMax":N}
+//   POST admin.php {"action":"users"}                              → {"users":[{id,email,createdAt,verifiedAt,lastLogin,plan,premiumUntil,blocked,saves,games,wallet}],"walletMax":N}
+//   POST admin.php {"action":"stats"}                              → Gesamtübersicht (seit v5.158): Konten, aktive, Partien, Geld, perDay (30 Tage), perUser (Spiele je Konto)
 //   POST admin.php {"action":"approve","id":N}                     → {"ok":true}: E-Mail gilt als bestätigt, offene Bestätigungslinks entfallen
 //   POST admin.php {"action":"block"|"unblock","id":N}             → {"ok":true}; Sperre: Anmelden 403, bestehende Sitzungen enden
 //   POST admin.php {"action":"plan","id":N,"plan":"free"|"premium","premiumUntil":Sekunden|null} → {"ok":true}
 //   POST admin.php {"action":"setwallet","id":N,"value":Zahl}      → {"ok":true}: Kasse des Kontos setzen (0 bis walletMax, KA1)
-//   POST admin.php {"action":"delete","id":N}                      → {"ok":true,"saves":n}: Konto, Sitzungen, Links und Spielstände gelöscht
+//   POST admin.php {"action":"delete","id":N}                      → {"ok":true,"saves":n}: Konto, Sitzungen, Links, Spielstände und Partien gelöscht
 // Fehler: 400 Anfrage, 401 nicht angemeldet (oder Anmeldung falsch bei login → 401 mit eigener Meldung), 404 Konto fehlt, 405 Methode,
 //         429 zu viele Fehlversuche (5 je IP in 15 min), 500 Server/Datenbank, 503 „Admin nicht eingerichtet“.
 // Zugang: admin_user und admin_pass_hash in api/config.php (der Deploy schreibt sie aus den Secrets ADMIN_USER und ADMIN_PASSWORD;
@@ -19,6 +20,7 @@
 require_once __DIR__ . '/lib/http.php';
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/konto.php';
+require_once __DIR__ . '/lib/match.php';
 
 const FL_PATH = '/frontline/';          // Pfad des Spiels auf dem Webspace (Cookie fl_admin)
 const FL_ADMIN_HOURS = 8;               // Admin-Sitzung
@@ -42,7 +44,7 @@ $body = json_decode((string) file_get_contents('php://input'), true);
 if (!is_array($body) || !isset($body['action']) || !is_string($body['action'])) fail(400, 'Ungültige Anfrage');
 
 $cfg = admin_config();
-$pdo = fl_db(array_merge(FL_SCHEMA, FL_ADMIN_SCHEMA));
+$pdo = fl_db(array_merge(FL_SCHEMA, FL_ADMIN_SCHEMA, FL_MATCH_SCHEMA));
 fl_konto_upgrade($pdo);
 $action = $body['action'];
 
@@ -55,6 +57,7 @@ switch ($action) {
     case 'logout': admin_logout($pdo); break;
     case 'me': out(['ok' => true, 'user' => $cfg['user']]);
     case 'users': admin_users($pdo); break;
+    case 'stats': admin_stats($pdo); break;
     case 'approve': admin_approve($pdo, $body); break;
     case 'block': admin_block($pdo, $body, true); break;
     case 'unblock': admin_block($pdo, $body, false); break;
@@ -156,15 +159,14 @@ function admin_fail_record(PDO $pdo, $who) {
 
 // ---- Konten ---------------------------------------------------------------------------------------------
 
-// Liste aller Konten, neueste zuerst. Spielstände zählt die Tabelle saves (fehlt sie, gibt es noch keine).
+// Liste aller Konten, neueste zuerst. Spielstände zählt die Tabelle saves (fehlt sie, gibt es noch keine), Partien die Tabelle
+// matches (seit v5.158). Zählungen als Unterabfragen, damit sich die Zeilen nicht vervielfachen.
 function admin_users(PDO $pdo) {
-    if (admin_has_table($pdo, 'saves')) {
-        $sql = 'SELECT u.id, u.email, u.created_at, u.verified_at, u.last_login, u.plan, u.premium_until, u.blocked, u.wallet, COUNT(s.id) AS saves
-                FROM users u LEFT JOIN saves s ON s.user_id = u.id GROUP BY u.id ORDER BY u.created_at DESC, u.id DESC';
-    } else {
-        $sql = 'SELECT id, email, created_at, verified_at, last_login, plan, premium_until, blocked, wallet, 0 AS saves
-                FROM users ORDER BY created_at DESC, id DESC';
-    }
+    $saves = admin_has_table($pdo, 'saves') ? '(SELECT COUNT(*) FROM saves s WHERE s.user_id = u.id)' : '0';
+    $sql = "SELECT u.id, u.email, u.created_at, u.verified_at, u.last_login, u.plan, u.premium_until, u.blocked, u.wallet,
+                $saves AS saves,
+                (SELECT COUNT(*) FROM matches m WHERE m.user_id = u.id) AS games
+            FROM users u ORDER BY u.created_at DESC, u.id DESC";
     $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     $list = [];
     foreach ($rows as $r) {
@@ -178,10 +180,88 @@ function admin_users(PDO $pdo) {
             'premiumUntil' => $r['premium_until'] === null ? null : (int) $r['premium_until'],
             'blocked' => (int) $r['blocked'] === 1,
             'saves' => (int) $r['saves'],
+            'games' => (int) $r['games'],
             'wallet' => (int) $r['wallet'],
         ];
     }
     out(['users' => $list, 'walletMax' => FL_WALLET_MAX]);
+}
+
+// Gesamtübersicht (seit v5.158, Regeln: docs/prd/konto.md „Admin-Übersicht“). Aktiv = angemeldet oder eine gewertete Partie
+// im Zeitraum. playing = Konten mit mindestens einer gewerteten Partie; avgGamesPerPlayer = Partien / playing.
+// perDay: die letzten 30 Tage (Ortszeit des Servers), älteste zuerst, auch Tage ohne Partie.
+function admin_stats(PDO $pdo) {
+    $now = time();
+    $week = $now - 7 * 86400;
+    $month = $now - 30 * 86400;
+    $one = function ($sql, $params = []) use ($pdo) {
+        $st = $pdo->prepare($sql);
+        $st->execute($params);
+        return $st->fetchColumn();
+    };
+    $players = (int) $one('SELECT COUNT(*) FROM users');
+    $playing = (int) $one('SELECT COUNT(DISTINCT user_id) FROM matches');
+    $games = (int) $one('SELECT COUNT(*) FROM matches');
+    // Aktiv: angemeldet (last_login) oder eine gewertete Partie seit $since. Zwei getrennte Platzhalter, weil PDO mit
+    // echten Prepared Statements keinen Namen zweimal erlaubt.
+    $activeSince = fn($since) => (int) $one(
+        'SELECT COUNT(*) FROM users u WHERE u.last_login >= :a OR EXISTS (SELECT 1 FROM matches m WHERE m.user_id = u.id AND m.finished_at >= :b)',
+        [':a' => $since, ':b' => $since],
+    );
+
+    // Tage: 30 Kalendertage bis heute, Schlüssel Datum (Ortszeit)
+    $start = mktime(0, 0, 0, (int) date('n', $now), (int) date('j', $now) - 29, (int) date('Y', $now));
+    $days = [];
+    for ($i = 0; $i < 30; $i++) $days[date('Y-m-d', $start + $i * 86400 + 43200)] = 0; // Mittag: DST-sicher
+    $st = $pdo->prepare('SELECT finished_at FROM matches WHERE finished_at >= :s');
+    $st->execute([':s' => $start]);
+    while (($t = $st->fetchColumn()) !== false) {
+        $key = date('Y-m-d', (int) $t);
+        if (isset($days[$key])) $days[$key]++;
+    }
+    $perDay = [];
+    foreach ($days as $day => $n) $perDay[] = ['day' => $day, 'games' => $n];
+
+    $sum = $pdo->query('SELECT COALESCE(SUM(earned), 0) AS total, AVG(earned) AS avg_earned FROM matches')->fetch(PDO::FETCH_ASSOC);
+
+    $st = $pdo->query('SELECT u.id, u.email, u.wallet, COALESCE(g.games, 0) AS games, COALESCE(g.wins, 0) AS wins,
+            COALESCE(g.losses, 0) AS losses, COALESCE(g.total, 0) AS total, g.avg_earned, g.last_game
+        FROM users u LEFT JOIN (
+            SELECT user_id, COUNT(*) AS games, SUM(result = \'win\') AS wins, SUM(result = \'loss\') AS losses,
+                SUM(earned) AS total, AVG(earned) AS avg_earned, MAX(finished_at) AS last_game
+            FROM matches GROUP BY user_id
+        ) g ON g.user_id = u.id
+        ORDER BY games DESC, u.id');
+    $perUser = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $perUser[] = [
+            'id' => (int) $r['id'],
+            'email' => $r['email'],
+            'games' => (int) $r['games'],
+            'wins' => (int) $r['wins'],
+            'losses' => (int) $r['losses'],
+            'totalEarned' => (int) $r['total'],
+            'avgEarned' => $r['avg_earned'] === null ? null : round((float) $r['avg_earned'], 1),
+            'lastGame' => $r['last_game'] === null ? null : (int) $r['last_game'],
+            'wallet' => (int) $r['wallet'],
+        ];
+    }
+
+    out([
+        'users' => $players,
+        'verified' => (int) $one('SELECT COUNT(*) FROM users WHERE verified_at IS NOT NULL'),
+        'blocked' => (int) $one('SELECT COUNT(*) FROM users WHERE blocked = 1'),
+        'activeLast7d' => $activeSince($week),
+        'activeLast30d' => $activeSince($month),
+        'playing' => $playing,
+        'totalGames' => $games,
+        'gamesLast7d' => (int) $one('SELECT COUNT(*) FROM matches WHERE finished_at >= :s', [':s' => $week]),
+        'avgGamesPerPlayer' => $playing > 0 ? round($games / $playing, 1) : null,
+        'totalEarned' => (int) $sum['total'],
+        'avgEarned' => $sum['avg_earned'] === null ? null : round((float) $sum['avg_earned'], 1),
+        'perDay' => $perDay,
+        'perUser' => $perUser,
+    ]);
 }
 
 // Freigeben: die E-Mail gilt als bestätigt; offene Bestätigungslinks werden ungültig.
@@ -241,6 +321,8 @@ function admin_delete(PDO $pdo, array $body) {
             $st->execute([':id' => $id]);
             $saves = $st->rowCount();
         }
+        $pdo->prepare('DELETE FROM matches WHERE user_id = :id')->execute([':id' => $id]);
+        $pdo->prepare('DELETE FROM match_tokens WHERE user_id = :id')->execute([':id' => $id]);
         $pdo->prepare('DELETE FROM sessions WHERE user_id = :id')->execute([':id' => $id]);
         $pdo->prepare('DELETE FROM tokens WHERE user_id = :id')->execute([':id' => $id]);
         $pdo->prepare('DELETE FROM users WHERE id = :id')->execute([':id' => $id]);

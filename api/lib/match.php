@@ -6,6 +6,8 @@
 // Kasse des Kontos zum Ausgabezeitpunkt. Die Datenbank (match_tokens) hält je Token, ob es schon gewertet ist.
 
 // Tabellen des Match-Starts (legen sich selbst an, idempotent, wie FL_SCHEMA in konto.php).
+// matches (seit v5.158): je gewerteter Partie eine Zeile für die Spielstatistik (Profil und Admin-Übersicht, docs/prd/konto.md).
+// Eine Zeile entsteht nur bei finish, in derselben Transaktion wie die Kasse. jti ist eindeutig: eine Partie zählt nur einmal.
 const FL_MATCH_SCHEMA = [
     'CREATE TABLE IF NOT EXISTS meta (
             k VARCHAR(32) NOT NULL PRIMARY KEY,
@@ -19,10 +21,63 @@ const FL_MATCH_SCHEMA = [
             used_at BIGINT NULL,
             INDEX idx_match_user (user_id)
         ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+    'CREATE TABLE IF NOT EXISTS matches (
+            id BIGINT AUTO_INCREMENT PRIMARY KEY,
+            user_id BIGINT NOT NULL,
+            jti CHAR(32) NOT NULL,
+            started_at BIGINT NOT NULL,
+            finished_at BIGINT NOT NULL,
+            wallet_before BIGINT NOT NULL,
+            wallet_after BIGINT NOT NULL,
+            earned BIGINT NOT NULL,
+            result VARCHAR(8) NULL,
+            duration INT NULL,
+            difficulty VARCHAR(8) NULL,
+            seed BIGINT NULL,
+            points_own INT NULL,
+            points_enemy INT NULL,
+            kills INT NULL,
+            UNIQUE KEY uq_matches_jti (jti),
+            INDEX idx_matches_user (user_id, finished_at),
+            INDEX idx_matches_finished (finished_at)
+        ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
 ];
 
 const FL_MATCH_TOKENS = 3;     // Tokens auf Vorrat je Konto (gültig mit der aktuellen Kasse)
 const FL_MATCH_TOKEN_DAYS = 7; // Ein Token gilt so lange ab Ausgabe; danach wird es aus der Tabelle gelöscht
+const FL_MATCH_RECENT = 50;    // Partien in der Liste der Spielstatistik (action stats)
+const FL_MATCH_SECONDS_MAX = 86400; // Obergrenze der Spielzeit einer Partie in Sekunden (Partie-Info, nur zur Anzeige)
+
+// Partie-Infos, die der Client bei finish mitschickt (Feld game, nur zur Statistik): nur bekannte Felder, Typ und Bereich
+// geprüft. Ungültige oder fehlende Werte werden null, nie ein Fehler: der Endstand (die Kasse) zählt trotzdem.
+// Liefert ein Array mit den Schlüsseln result, duration, difficulty, seed, points_own, points_enemy, kills.
+function match_game_info($body) {
+    $g = isset($body['game']) && is_array($body['game']) ? $body['game'] : [];
+    $whole = function ($v) { // Ganze Zahl; eine endliche Dezimalzahl (Spielzeit in Sekunden) wird gerundet
+        if (is_float($v) && is_finite($v)) return (int) round($v);
+        return is_int($v) ? $v : null;
+    };
+    $int = function ($key, $min, $max) use ($g, $whole) {
+        $v = $whole($g[$key] ?? null);
+        return $v !== null && $v >= $min && $v <= $max ? $v : null;
+    };
+    $points = isset($g['points']) && is_array($g['points']) && count($g['points']) === 2 ? $g['points'] : [null, null];
+    $pts = function ($v) use ($whole) {
+        $v = $whole($v);
+        return $v !== null && $v >= 0 && $v <= 100000 ? $v : null;
+    };
+    $result = $g['result'] ?? null;
+    $difficulty = $g['difficulty'] ?? null;
+    return [
+        'result' => in_array($result, ['win', 'loss'], true) ? $result : null,
+        'duration' => $int('duration', 0, FL_MATCH_SECONDS_MAX),
+        'difficulty' => in_array($difficulty, ['easy', 'normal', 'hard'], true) ? $difficulty : null,
+        'seed' => $int('seed', 0, 9007199254740991),
+        'points_own' => $pts($points[0]),
+        'points_enemy' => $pts($points[1]),
+        'kills' => $int('kills', 0, 1000000),
+    ];
+}
 
 // Geheimnis des Servers: liegt in der Tabelle meta (Schlüssel match_secret), wird beim ersten Bedarf zufällig erzeugt und
 // dann wiederverwendet. Übersteht Deploys, weil es nicht in der Quelle und nicht in config.php steht.

@@ -2,8 +2,11 @@
 // Signierter Match-Start (MS1, Regeln: docs/prd/konto.md „Signierter Match-Start“). Aktion im JSON-Feld action, Antwort immer JSON:
 //   POST match.php {"action":"tokens"}                            → {"tokens":[{"token","w0","iat"}],"wallet":Zahl}
 //        füllt den Vorrat des Kontos auf bis zu 3 gültige Tokens auf (gültig = mit der aktuellen Kasse, unverbraucht, nicht abgelaufen)
-//   POST match.php {"action":"finish","token":"…","wallet":Zahl}  → {"ok":true,"wallet":Zahl}
-//        wertet eine gestartete Partie: setzt die Kasse auf den Endstand (begrenzt, siehe unten)
+//   POST match.php {"action":"finish","token":"…","wallet":Zahl,"game":{…}?} → {"ok":true,"wallet":Zahl}
+//        wertet eine gestartete Partie: setzt die Kasse auf den Endstand (begrenzt, siehe unten) und legt eine Zeile in matches an.
+//        game (optional, nur für die Statistik): result "win"|"loss", duration (Sekunden), difficulty "easy"|"normal"|"hard",
+//        seed, points [eigene, feindliche], kills. Ungültige Felder werden null, sie lassen die Wertung nicht scheitern.
+//   POST match.php {"action":"stats"}                              → Spielstatistik des Kontos (games, wins, totalEarned, recent …)
 // Nur mit Sitzung (Cookie fl_session). Fehler: {"error": "…"} mit HTTP-Code: 400 Anfrage oder Token ungültig/abgelaufen/unbekannt,
 // 401 nicht angemeldet, 403 Token gehört zu einem anderen Konto, 405 Methode, 409 schon gewertet oder Kasse hat sich geändert,
 // 500 Server oder Datenbank. Der Server rechnet die Partie nicht nach: er prüft Echtheit, Einmaligkeit und Start-Kasse.
@@ -26,6 +29,7 @@ $pdo = fl_db(array_merge(FL_SCHEMA, FL_MATCH_SCHEMA));
 switch ($body['action']) {
     case 'tokens': match_tokens_action($pdo); break;
     case 'finish': match_finish_action($pdo, $body); break;
+    case 'stats': match_stats_action($pdo); break;
     default: fail(400, 'Unbekannte Aktion');
 }
 
@@ -117,10 +121,64 @@ function match_finish_action(PDO $pdo, array $body) {
         $new = max(0, min($want, $cur + FL_MATCH_MAX_GAIN));
         $pdo->prepare('UPDATE match_tokens SET used_at = :now WHERE jti = :j')->execute([':now' => $now, ':j' => $payload['jti']]);
         $pdo->prepare('UPDATE users SET wallet = :w WHERE id = :id')->execute([':w' => $new, ':id' => $uid]);
+        $info = match_game_info($body);
+        $pdo->prepare('INSERT INTO matches (user_id, jti, started_at, finished_at, wallet_before, wallet_after, earned, result, duration,
+                difficulty, seed, points_own, points_enemy, kills)
+            VALUES (:u, :j, :s, :f, :wb, :wa, :e, :r, :d, :df, :sd, :po, :pe, :k)')->execute([
+            ':u' => $uid, ':j' => $payload['jti'], ':s' => (int) $row['issued_at'], ':f' => $now,
+            ':wb' => $cur, ':wa' => $new, ':e' => $new - $cur,
+            ':r' => $info['result'], ':d' => $info['duration'], ':df' => $info['difficulty'], ':sd' => $info['seed'],
+            ':po' => $info['points_own'], ':pe' => $info['points_enemy'], ':k' => $info['kills'],
+        ]);
         $pdo->commit();
     } catch (Throwable $e) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         throw $e;
     }
     out(['ok' => true, 'wallet' => $new]);
+}
+
+// Spielstatistik des Kontos (seit v5.158): Zahlen über alle gewerteten Partien und die letzten FL_MATCH_RECENT in neuer Reihenfolge.
+// Nur gewertete Partien (mit Token) stehen in matches; ungewertete Partien zählt der Server nicht. wins/losses zählen nur
+// Partien, deren Ergebnis bekannt ist (game.result). earned = Kasse nach der Partie minus Kasse vor der Partie (darf negativ sein).
+function match_stats_action(PDO $pdo) {
+    $user = match_user($pdo);
+    $uid = (int) $user['id'];
+    $st = $pdo->prepare("SELECT COUNT(*) AS games, SUM(result = 'win') AS wins, SUM(result = 'loss') AS losses,
+            COALESCE(SUM(earned), 0) AS total, AVG(earned) AS avg_earned, MAX(earned) AS best, MIN(earned) AS worst,
+            COALESCE(SUM(duration), 0) AS seconds
+        FROM matches WHERE user_id = :u");
+    $st->execute([':u' => $uid]);
+    $sum = $st->fetch(PDO::FETCH_ASSOC);
+    $st = $pdo->prepare('SELECT finished_at, result, duration, difficulty, wallet_before, wallet_after, earned, points_own, points_enemy, kills
+        FROM matches WHERE user_id = :u ORDER BY finished_at DESC, id DESC LIMIT ' . FL_MATCH_RECENT);
+    $st->execute([':u' => $uid]);
+    $recent = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $recent[] = [
+            'finishedAt' => (int) $r['finished_at'],
+            'result' => $r['result'],
+            'duration' => $r['duration'] === null ? null : (int) $r['duration'],
+            'difficulty' => $r['difficulty'],
+            'walletBefore' => (int) $r['wallet_before'],
+            'walletAfter' => (int) $r['wallet_after'],
+            'earned' => (int) $r['earned'],
+            'pointsOwn' => $r['points_own'] === null ? null : (int) $r['points_own'],
+            'pointsEnemy' => $r['points_enemy'] === null ? null : (int) $r['points_enemy'],
+            'kills' => $r['kills'] === null ? null : (int) $r['kills'],
+        ];
+    }
+    out([
+        'wallet' => (int) $user['wallet'],
+        'walletMax' => FL_WALLET_MAX,
+        'games' => (int) $sum['games'],
+        'wins' => (int) $sum['wins'],
+        'losses' => (int) $sum['losses'],
+        'totalEarned' => (int) $sum['total'],
+        'avgEarned' => $sum['avg_earned'] === null ? null : round((float) $sum['avg_earned'], 1),
+        'bestEarned' => $sum['best'] === null ? null : (int) $sum['best'],
+        'worstEarned' => $sum['worst'] === null ? null : (int) $sum['worst'],
+        'totalPlaySeconds' => (int) $sum['seconds'],
+        'recent' => $recent,
+    ]);
 }

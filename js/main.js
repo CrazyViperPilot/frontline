@@ -21,7 +21,7 @@ import { pickMood, MOOD_SETTINGS } from './render/mood.js';
 import { snapshotGame, restoreGame, SAVE_FORMAT } from './game/savegame.js';
 import { pack, unpack } from './core/snapshot.js';
 import * as saves from './ui/saves.js';
-import { matchStart, matchResume, finishMatch } from './ui/match.js';
+import { matchStart, matchResume, finishMatch, gameInfo } from './ui/match.js';
 import { GAME_VERSION } from './version.js';
 import { WEATHER_NAMES, WEATHER_SETTINGS } from './game/weather.js';
 
@@ -456,7 +456,7 @@ function frame(s) {
   const g = s.game;
   if (g.winner !== null && !s.ended) {
     s.ended = true;
-    if (!DEBUG && s.match) finishMatch(s.match.token, g.teams[HUMAN].res.money); // gewertete Partie: Endstand an den Server
+    if (!DEBUG && s.match) finishMatch(s.match.token, g.teams[HUMAN].res.money, gameInfo(g, s.settings?.difficulty, HUMAN)); // gewertete Partie: Endstand und Partie-Infos (Statistik) an den Server
     if (!DEBUG) saveNow(s, true); // beendete Partie bleibt als Stand (ended, nicht fortsetzbar), wird nicht gelöscht
     sound.end(g.winner === HUMAN);
     showEnd(

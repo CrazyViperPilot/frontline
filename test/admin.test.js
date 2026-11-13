@@ -44,3 +44,16 @@ test('Doku: Abschnitt „Admin-Panel“ in konto.md mit der Adresse /frontline/a
   assert.match(doc, /## Admin-Panel/);
   assert.match(doc, /\/frontline\/admin\//);
 });
+
+test('Übersicht (seit v5.158): Aktion stats, Spalte Spiele, Partien mit dem Konto gelöscht, zwei Reiter', () => {
+  const src = read('api/admin.php');
+  assert.match(src, /case 'stats': admin_stats\(\$pdo\);/);
+  assert.match(src, /array_merge\(FL_SCHEMA, FL_ADMIN_SCHEMA, FL_MATCH_SCHEMA\)/);
+  assert.match(src, /'games' => \(int\) \$r\['games'\]/);
+  assert.match(src, /DELETE FROM matches WHERE user_id = :id/);
+  const html = read('admin/index.html');
+  assert.match(html, /data-view="overview"/);
+  assert.match(html, /id="view-overview" hidden/);
+  assert.match(html, /id="player-rows"/);
+  assert.match(read('admin/admin.js'), /call\('stats'\)/);
+});

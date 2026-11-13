@@ -761,6 +761,21 @@ body.flow-open .flow-fab { background: #2e372e; }
 .acc-note { margin: 8px 0 0; font-size: 12.5px; overflow-wrap: anywhere; }
 .acc-note.good { color: #a8d8a0; }
 .acc-note.bad { color: var(--bad); }
+/* Spielstatistik im Konto-Bereich (seit v5.158, js/ui/stats.js): zwei Kennzahlen-Spalten, darunter die letzten Partien */
+.acc-stats { display: grid; gap: 8px; }
+.acc-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.acc-kpi { min-width: 0; margin: 0; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.acc-kpi dt { font-size: 10.5px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.acc-kpi dd { margin: 2px 0 0; font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
+.acc-kpi small { display: block; margin-top: 2px; font-size: 11px; }
+.acc-games { display: grid; gap: 5px; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; list-style: none; }
+.acc-game { padding: 6px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font-size: 12px; }
+.acc-game-top, .acc-game-bot { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.acc-game-bot { font-size: 11.5px; }
+.acc-res { font-weight: 600; }
+.acc-res.win, .acc-earned.good { color: #a8d8a0; }
+.acc-res.loss, .acc-earned.bad { color: var(--bad); }
+.acc-earned { font-weight: 700; font-size: 13px; }
 
 /* Gespeicherte Partie im Startmenü (ui/saves.js) */
 .resume { margin: 8px 0 14px; padding: 10px 12px; border: 1px solid var(--muted); border-radius: 8px; text-align: center; font-size: 14px; }

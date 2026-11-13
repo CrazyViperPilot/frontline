@@ -118,6 +118,19 @@ td.no { color: var(--bad); }
 .acts button { height: 30px; padding: 0 10px; font-size: 12.5px; }
 tr.empty td { text-align: center; color: var(--muted); }
 
+/* Reiter und Übersicht (seit v5.158) */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.tabs button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.sub { margin: 22px 0 8px; font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: .04em; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.tile { display: grid; gap: 3px; min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.tile-label { font-size: 11.5px; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.tile-value { font-size: 22px; overflow-wrap: anywhere; }
+.days { display: flex; align-items: flex-end; gap: 3px; height: 130px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.day { display: flex; align-items: flex-end; flex: 1 1 0; height: 100%; min-width: 0; }
+.day-fill { width: 100%; border-radius: 3px 3px 0 0; background: var(--accent); }
+.days-axis { display: flex; justify-content: space-between; margin-top: 4px; }
+
 /* Handy: jede Zeile wird eine Karte, die Spaltenüberschrift steht als Beschriftung davor */
 @media (max-width: 760px) {
   .wrap { padding: 10px; }

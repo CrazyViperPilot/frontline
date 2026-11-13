@@ -7,7 +7,8 @@ import { MOOD_SETTINGS } from '../render/mood.js';
 import { SOUND_KEY, loadLevel, saveLevel } from '../audio/sound.js';
 import { KEYS } from './helptext.js';
 import { NAME_MAX, accountEmail, accountRequest, accountUser, accountWallet, resetWallet, setAccount } from './saves.js';
-import { matchPending, matchReady, matchSync } from './match.js';
+import { matchPending, matchReady, matchStats, matchSync } from './match.js';
+import { statsHtml } from './stats.js';
 
 const DIFFS = [
   ['easy', 'Leicht'],
@@ -233,9 +234,10 @@ function accountForm(kind, st) {
  * Konto-Bereich (KO3). st: { user (angemeldet oder null), form (null | 'login' | 'register' | 'forgot' | 'reset'), email,
  * note ({ ok, text } oder null), busy, keep ({ password, password2 } nach einer Eingabefehler-Meldung, sonst null) }. Abgemeldet: Hinweis, drei Knöpfe, Formular; angemeldet: Konto-Art und Abmelden.
  * opts (Pausenmenü, seit v5.157): compact (nur Anmelden und Registrieren, Angemeldet als …), hint (Zeile unter der Überschrift),
- * locked (Text statt aller Knöpfe, z. B. während einer gewerteten Partie).
+ * locked (Text statt aller Knöpfe, z. B. während einer gewerteten Partie). stats (seit v5.158, nur Startmenü): Knopf „Meine Spiele“
+ * und die Spielstatistik darunter (st.statsOpen, st.stats, st.statsErr).
  */
-function accountHtml(st, { compact = false, hint = '', locked = null } = {}) {
+function accountHtml(st, { compact = false, hint = '', locked = null, stats = false } = {}) {
   const note = st.note ? `<p class="acc-note ${st.note.ok ? 'good' : 'bad'}" role="status">${esc(st.note.text)}</p>` : '';
   const sub = compact && hint ? `<p class="muted small">${esc(hint)}</p>` : '';
   if (locked) {
@@ -246,10 +248,12 @@ function accountHtml(st, { compact = false, hint = '', locked = null } = {}) {
     const line = compact
       ? `<p class="acc-line">Angemeldet als <b>${esc(st.user.email)}</b></p>`
       : `<p class="acc-line">Angemeldet als <b>${esc(st.user.email)}</b> · Konto: ${planLabel(st.user)}</p>`;
+    const statsBtn = stats ? `<button type="button" data-acc="stats" aria-pressed="${!!st.statsOpen}">Meine Spiele</button>` : '';
+    const panel = stats && st.statsOpen ? statsPanel(st) : '';
     return `<span class="flabel">Konto</span>${sub}
       ${line}
       ${note}
-      <div class="stack"><button type="button" data-acc="logout"${st.busy ? ' disabled' : ''}>Abmelden</button></div>`;
+      <div class="stack">${statsBtn}${panel}<button type="button" data-acc="logout"${st.busy ? ' disabled' : ''}>Abmelden</button></div>`;
   }
   if (st.form === 'reset') return `<span class="flabel">Konto</span>${note}${accountForm('reset', st)}`;
   const kinds = compact ? ACC_TABS.filter(([k]) => k !== 'forgot') : ACC_TABS;
@@ -262,6 +266,13 @@ function accountHtml(st, { compact = false, hint = '', locked = null } = {}) {
     ${st.form ? accountForm(st.form, st) : ''}`;
 }
 
+/** Spielstatistik unter dem Knopf „Meine Spiele“: Meldung, Lade-Hinweis oder die Zahlen (ui/stats.js). */
+function statsPanel(st) {
+  if (st.statsErr) return `<p class="acc-note bad" role="status">${esc(st.statsErr)}</p>`;
+  if (!st.stats) return '<p class="muted small" role="status">Lade deine Spiele …</p>';
+  return statsHtml(st.stats);
+}
+
 /**
  * Konto-Bereich in `box` (das Element mit [data-account]) für Start- und Pausenmenü (seit v5.157 gemeinsam). Zeichnet den Zustand,
  * behandelt Knöpfe und Formulare (die Ereignisse hängen am Element selbst) und stößt die Folgen an. opts: compact, hint, locked
@@ -269,15 +280,32 @@ function accountHtml(st, { compact = false, hint = '', locked = null } = {}) {
  * beim Öffnen abfragen, Standard an); onChanged(user) nach An- oder Abmelden; onSynced(user) nach dem Anmelden, wenn der
  * Webspace-Abgleich fertig ist. Liefert { ready }: Promise mit dem Anmeldestand (null ohne Anmeldung oder bei Netzfehler).
  */
-export function wireAccount(box, { compact = false, hint = '', locked = null, init = {}, load = true, onChanged = null, onSynced = null } = {}) {
-  const acc = { user: null, form: null, email: '', note: null, busy: false, token: null, keep: null, ...init };
+export function wireAccount(box, { compact = false, hint = '', locked = null, stats = false, init = {}, load = true, onChanged = null, onSynced = null } = {}) {
+  const acc = { user: null, form: null, email: '', note: null, busy: false, token: null, keep: null, statsOpen: false, stats: null, statsErr: null, ...init };
   const draw = () => {
-    if (box.isConnected) box.innerHTML = accountHtml(acc, { compact, hint, locked });
+    if (box.isConnected) box.innerHTML = accountHtml(acc, { compact, hint, locked, stats });
   };
-  /** Nach An- oder Abmelden: Anzeige neu, dann der Aufrufer (Startmenü: Kasse und Spielstände). */
+  /** Nach An- oder Abmelden: Anzeige neu, dann der Aufrufer (Startmenü: Kasse und Spielstände). Die Statistik schließt sich. */
   const accountChanged = () => {
+    acc.statsOpen = false;
+    acc.stats = null;
+    acc.statsErr = null;
     draw();
     onChanged?.(acc.user);
+  };
+  /** Spielstatistik (seit v5.158): ein Druck öffnet und lädt die Zahlen frisch vom Server, der zweite schließt. */
+  const toggleStats = async () => {
+    acc.statsOpen = !acc.statsOpen;
+    acc.stats = null;
+    acc.statsErr = null;
+    draw();
+    if (!acc.statsOpen) return;
+    try {
+      acc.stats = await matchStats();
+    } catch (err) {
+      acc.statsErr = accMsg(err);
+    }
+    if (acc.statsOpen) draw();
   };
   /** Gemeinsamer Ablauf eines Konto-Vorgangs: sperren, Anfrage, Fehler als Hinweis im Bereich. */
   const run = async (job) => {
@@ -338,6 +366,7 @@ export function wireAccount(box, { compact = false, hint = '', locked = null, in
   };
   /** Knöpfe im Konto-Bereich: Abmelden, oder ein Formular öffnen (zweiter Druck schließt es). */
   const click = (act) => {
+    if (act === 'stats') return toggleStats();
     if (act === 'logout') {
       return run(async () => {
         await accountRequest({ action: 'logout' }); // Netzfehler: bleibt angemeldet, der Hinweis sagt es
@@ -597,6 +626,7 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
   }
   const accBox = root.querySelector('[data-account]');
   const account = wireAccount(accBox, {
+    stats: true, // Knopf „Meine Spiele“ (seit v5.158; im Pausenmenü nicht)
     init,
     /** Nach An- oder Abmelden: Kasse-Anzeige und Spielstand-Liste neu. */
     onChanged: () => {

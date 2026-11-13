@@ -2,8 +2,8 @@
 
 Benutzersteuerung als Grundlage für späteres Vermarkten (Premium-Konten u. a.). Plan mit allen Paketen: [docs/plan-konten.md](../plan-konten.md).
 **Stand:** KO1 (Backend), KO2 (Spielstände ans Konto), KO3 (Oberfläche im Startmenü, Rücksprung von den Mail-Links), das
-Admin-Panel (Benutzerverwaltung, Abschnitt unten), die Kasse am Konto (KA1, Abschnitt unten) und der signierte Match-Start
-(MS1, Abschnitt unten) gebaut.
+Admin-Panel (Benutzerverwaltung, Abschnitt unten), die Kasse am Konto (KA1, Abschnitt unten), der signierte Match-Start
+(MS1, Abschnitt unten), die Spielstatistik am Konto und die Admin-Übersicht (beide seit v5.158, Abschnitte ganz unten) gebaut.
 
 ## Ziel und Regeln
 
@@ -24,6 +24,7 @@ Admin-Panel (Benutzerverwaltung, Abschnitt unten), die Kasse am Konto (KA1, Absc
 | `admin_sessions` | `hash` (SHA-256 des Cookies `fl_admin`), `created_at`, `expires_at` | Admin-Panel, 8 Stunden (Abschnitt „Admin-Panel“) |
 | `meta` | `k` (Schlüssel, Primärschlüssel), `v` (Text) | Match-Start (MS1): hält das Geheimnis unter `match_secret` |
 | `match_tokens` | `jti` (32 Hex, Primärschlüssel), `user_id`, `w0` (Kasse bei der Ausgabe), `issued_at`, `used_at` (leer = noch nicht gewertet) | Match-Start (MS1), Zeilen älter als 7 Tage werden gelöscht |
+| `matches` | `id`, `user_id`, `jti` (eindeutig: eine Partie zählt nur einmal), `started_at` (Ausgabezeit des Tokens), `finished_at`, `wallet_before`, `wallet_after`, `earned` (negativ möglich), `result` (`win`, `loss` oder leer), `duration` (Sekunden), `difficulty`, `seed`, `points_own`, `points_enemy`, `kills` | Spielstatistik (seit v5.158, Abschnitt unten): je gewerteter Partie eine Zeile, in derselben Transaktion wie die Kasse; beim Löschen des Kontos mit gelöscht |
 
 Die Spalte `users.blocked` (`TINYINT`, Standard 0) kommt seit dem Admin-Panel dazu, die Spalte `users.wallet` (`BIGINT`, Standard
 800) seit KA1 (Kasse am Konto; Bestandskonten bekommen 800). `api/lib/konto.php` legt beide bei Bedarf selbst an.
@@ -147,7 +148,9 @@ mit beliebigem Ergebnis melden, solange die Start-Kasse stimmt und die Grenze je
   „Token im Spielstand“) laufen ungewertet. Das Spiel sagt es im Verlauf. Abgebrochene Partien verbrauchen ihren Token nicht.
 - **Lebensdauer:** Ein Token gilt 7 Tage ab Ausgabe (`BALANCE.match.tokenDays`, Spiegel `FL_MATCH_TOKEN_DAYS`); danach löscht der
   Server die Zeile.
-- **Zahlen:** `FL_MATCH_TOKENS` = 3, `FL_MATCH_TOKEN_DAYS` = 7 (`api/lib/match.php`), `FL_MATCH_MAX_GAIN` = 3000 (`api/lib/konto.php`).
+- **Zahlen:** `FL_MATCH_TOKENS` = 3, `FL_MATCH_TOKEN_DAYS` = 7, `FL_MATCH_RECENT` = 50, `FL_MATCH_SECONDS_MAX` = 86400 (`api/lib/match.php`), `FL_MATCH_MAX_GAIN` = 3000 (`api/lib/konto.php`).
+- **Statistik (seit v5.158):** `finish` nimmt optional `game` mit (Partie-Infos, siehe „Spielstatistik“) und legt in derselben Transaktion
+  eine Zeile in `matches` an. Die Antwort bleibt `{ok, wallet}`.
 - **Dateien:** `api/match.php` (Aktionen), `api/lib/match.php` (Tabellen, Geheimnis, Signatur), `js/ui/match.js` (Client),
   `js/main.js` (`matchStart` beim Start, `matchResume` beim Fortsetzen, `finishMatch` am Partieende, `meta.match` beim Speichern),
   `js/ui/saves.js` (`remoteMeta`: kein `match` zum Webspace), `js/ui/menu.js` (Zeile „Gewertete Partien bereit“).
@@ -254,11 +257,12 @@ Nicht im Offline-Cache (`admin/` steht nicht in `sw.js`), aber im Deploy hochgel
 
 | Aktion | Wirkung |
 |---|---|
-| `users` | alle Konten, neueste zuerst: id, E-Mail, Registrierung, Bestätigung, letzte Anmeldung, Konto-Art, Sperre, Zahl der Spielstände |
+| `users` | alle Konten, neueste zuerst: id, E-Mail, Registrierung, Bestätigung, letzte Anmeldung, Konto-Art, Sperre, Zahl der Spielstände, Zahl der gewerteten Partien (`games`, seit v5.158) |
+| `stats` | Gesamtübersicht (seit v5.158, Abschnitt „Admin-Übersicht“) |
 | `approve {id}` | Freigeben: E-Mail gilt als bestätigt, offene Bestätigungslinks entfallen |
 | `block {id}` / `unblock {id}` | Sperren: Anmelden 403, bestehende Sitzungen enden sofort; Entsperren hebt nur die Sperre auf |
 | `plan {id, plan, premiumUntil?}` | Konto-Art `free` oder `premium`; `premiumUntil` in Sekunden seit 1970, fehlt es, ist Premium unbefristet |
-| `delete {id}` | Konto, Sitzungen, Links und Spielstände in einer Transaktion löschen (endgültig) |
+| `delete {id}` | Konto, Sitzungen, Links, Spielstände und Partien (Tabellen `matches`, `match_tokens`) in einer Transaktion löschen (endgültig) |
 | `logout`, `me` | Abmelden, Name der angemeldeten Admin-Sitzung |
 
 - **Oberfläche:** Anmeldeformular, danach Tabelle mit Suche nach E-Mail, Knöpfen je Zeile (Freigeben nur bei unbestätigtem Konto,
@@ -271,3 +275,57 @@ Nicht im Offline-Cache (`admin/` steht nicht in `sw.js`), aber im Deploy hochgel
 Von Hand gegen MariaDB und `php -S` geprüft: falsches Passwort, Bremse, 401 ohne Sitzung, Liste, Freigeben, Sperren (Anmelden 403),
 Konto-Art, Löschen samt Spielständen, abgelaufene Sitzung, 503 ohne Zugang, Liste ohne Tabelle `saves`; Oberfläche per Browser auf Desktop und Handy.
 
+## Spielstatistik (seit v5.158)
+
+Jede **gewertete** Partie (mit Token, siehe „Signierter Match-Start“) steht mit Ergebnis und Verdienst in der Tabelle `matches`.
+Der Spieler sieht sie in seinem Profil.
+
+- **Ort:** Startmenü, Konto-Bereich, angemeldet: Knopf **„Meine Spiele“** (ein Druck öffnet und lädt die Zahlen neu, der zweite schließt).
+  Oben die Kennzahlen: Kasse, gewertete Partien mit Siegen und Niederlagen, verdient insgesamt, Ø je Partie, bestes und schwächstes Spiel,
+  Spielzeit. Darunter die letzten 50 Partien, neueste zuerst: Datum, Ergebnis, Verdienst (grün oder rot), Dauer, Schwierigkeit,
+  Punkte, Kasse vorher → nachher. Der Bereich passt auf Handy-Breite (zwei Spalten Kennzahlen, Liste mit Scroll innen). Im Pausenmenü gibt es
+  den Knopf nicht.
+- **Was gezählt wird:** nur gewertete Partien. Gäste, Partien ohne Token (kein Netz, leerer Vorrat, fortgesetzt ohne Token) und abgebrochene
+  Partien stehen nicht in `matches`. Die Statistik sagt das im Leerzustand.
+- **Wie eine Zeile entsteht:** `finish` (MS1) schreibt sie in der Transaktion, die die Kasse setzt. `wallet_before` ist die Startkasse
+  (`w0` des Tokens), `wallet_after` die neue Kasse, `earned = wallet_after − wallet_before` (darf negativ sein).
+  `started_at` ist die Ausgabezeit des Tokens (nicht der Startklick), `finished_at` die Zeit der Wertung. `jti` ist eindeutig: eine
+  Partie zählt nur einmal (eine Doppelmeldung scheitert schon an der Kasse mit 409).
+- **Partie-Infos (`game`, optional):** Der Browser schickt sie mit `finish` (aus `gameInfo` in `js/ui/match.js`): `result` (`win` oder
+  `loss`), `duration` (Spielzeit in Sekunden, gerundet), `difficulty` (`easy`, `normal`, `hard`), `seed` (Karte), `points` (`[eigene, feindliche]`),
+  `kills` (Abschüsse des Spielers). Die Prüfung ist streng: nur diese Felder (andere werden ignoriert), Ergebnis und Schwierigkeit nur aus
+  der Liste, Zahlen ganzzahlig (Dezimalzahlen werden gerundet), Spielzeit 0 bis 86400, Seed 0 bis 2^53−1, Punkte 0 bis 100000, Abschüsse
+  0 bis 1000000. Ein ungültiger Wert wird `null`; die Wertung scheitert nie daran (die Kasse zählt trotzdem). Ohne Netz steht `game`
+  mit der Vormerkung in `frontline-match-ausstehend` und geht beim Abgleich mit.
+- **Antwort `stats`** (`POST api/match.php {"action":"stats"}`, nur mit Sitzung, sonst 401): `{wallet, walletMax, games, wins, losses,
+  totalEarned, avgEarned, bestEarned, worstEarned, totalPlaySeconds, recent: [{finishedAt, result, duration, difficulty, walletBefore,
+  walletAfter, earned, pointsOwn, pointsEnemy, kills}]}`. `wins` und `losses` zählen nur Partien mit bekanntem Ergebnis; `recent` sind die
+  letzten `FL_MATCH_RECENT` (50) Partien. Ohne Partie sind die Zahlen `null` bzw. 0.
+- **Ehrlich:** Die Partie-Infos kommen aus dem Browser wie die Kasse selbst. Sie sind Anzeige, kein Beleg: Wer den Browser verändert,
+  kann Punkte und Abschüsse beliebig melden. Die Begrenzung der Kasse (MS1) bleibt die einzige Wertungsregel.
+- **Dateien:** `api/match.php` (`match_stats_action`, `match_finish_action`), `api/lib/match.php` (Tabelle `matches`, `match_game_info`),
+  `js/ui/match.js` (`gameInfo`, `tidyGame`, `matchStats`), `js/main.js` (Partieende), `js/ui/stats.js` (Anzeige als HTML),
+  `js/ui/menu.js` (Knopf und Anzeige im Konto-Bereich, Option `stats` von `wireAccount`), `css/style.css` (`.acc-stats`).
+- **Tests:** `test/match.test.js` (Client: Partie-Infos, Vormerkung mit Partie-Infos, Abruf der Statistik), `test/spielstatistik.test.js` (Anzeige,
+  Leerzustand, Vorzeichen), `test/matchphp.test.js` (Validierung von `match_game_info` mit der PHP-Kommandozeile). Von Hand gegen MariaDB
+  und `php -S` geprüft: Wertung mit und ohne Partie-Infos, Dezimalzahl, ungültige Felder, negative Kasse (−350), Doppelmeldung (409), fremder
+  Token (403), `stats` mit Sitzung und ohne (401), Löschen eines Kontos entfernt seine Partien und Tokens. Im Browser (Chrome, Handy-Breite): Anmelden, „Meine Spiele“ öffnen und schließen, Liste.
+
+## Admin-Übersicht (seit v5.158)
+
+Im Admin-Panel gibt es zwei Reiter: **Konten** (wie bisher, mit neuer Spalte **Spiele**) und **Übersicht**.
+
+- **Kennzahlen** (Aktion `stats`): Konten gesamt, davon bestätigt und gesperrt. **Aktiv** in 7 und 30 Tagen heißt: angemeldet
+  (`last_login`) oder eine gewertete Partie im Zeitraum. **Spieler mit Partie** (`playing`) sind die Konten mit mindestens einer gewerteten Partie.
+  **Ø Partien je Spieler** = Partien gesamt ÷ Spieler mit Partie (nicht ÷ alle Konten; die Zahl steht so dabei). Dazu Partien gesamt, in
+  7 Tagen, Geld verdient insgesamt und Ø je Partie.
+- **Balken:** gewertete Partien je Kalendertag, die letzten 30 Tage (Ortszeit des Servers), auch Tage ohne Partie.
+- **Tabelle „Spiele pro Spieler“:** je Konto Spiele, Siege, Niederlagen, Verdient, Ø je Partie, letzte Partie, Kasse; nach Spielen sortiert.
+- **Antwort `stats`:** `{users, verified, blocked, activeLast7d, activeLast30d, playing, totalGames, gamesLast7d, avgGamesPerPlayer,
+  totalEarned, avgEarned, perDay: [{day, games}], perUser: [{id, email, games, wins, losses, totalEarned, avgEarned, lastGame, wallet}]}`.
+  Ohne Sitzung 401 wie alle Admin-Aktionen. Zahlen auf eine Nachkommastelle gerundet (`avgGamesPerPlayer`, `avgEarned`).
+- **Dateien:** `api/admin.php` (`admin_stats`, `admin_users` mit `games`, `admin_delete` mit Partien), `admin/index.html` (Reiter, Abschnitt
+  Übersicht), `admin/admin.js` (`setView`, `loadOverview`, `renderOverview`), `admin/admin.css` (Kacheln, Balken).
+- **Tests:** `test/admin.test.js` (Verdrahtung: Aktion, Spalte, Löschen, Reiter), `test/matchphp.test.js` (Partie-Infos). Von Hand gegen
+  MariaDB geprüft: Zahlen für zwei Konten und drei Partien (Summe, Ø, Tagesbalken, Spieler mit Partie), Löschen eines Kontos mit Partien.
+  Die Oberfläche im Browser (Chrome, Desktop und Handy-Breite): Reiter, Kennzahlen, Balken, Tabelle, kein Querscroll.

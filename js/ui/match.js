@@ -4,12 +4,13 @@
 // erst mit dem Endstand verbraucht (MS2): eine abgebrochene Partie verbraucht keins. Der Spielstand merkt sich das Token
 // (meta.match, nur lokal). Ohne Token (Gast, kein Vorrat) läuft die Partie ungewertet. Ohne Netz bleibt der Endstand auf dem
 // Gerät vorgemerkt (frontline-match-ausstehend) und geht beim nächsten Abgleich. Der Server rechnet die Partie nicht nach;
-// er prüft Echtheit, Einmaligkeit und die Start-Kasse. Kein DOM; geprüft in test/match.test.js.
+// er prüft Echtheit, Einmaligkeit und die Start-Kasse. Seit v5.158 schickt das Partieende zusätzlich Partie-Infos mit (game, nur
+// für die Spielstatistik, gameInfo) und holt die Statistik (matchStats). Kein DOM; geprüft in test/match.test.js.
 import { apiRequest, MATCH_URL, accountEmail, accountWallet, noteWallet } from './saves.js';
 import { BALANCE } from '../data/balance.js';
 
 const VORRAT_KEY = 'frontline-match-vorrat'; // { email, tokens: [{ token, w0, iat }] }: ungenutzte Tokens des Kontos
-const AUSSTEHEND_KEY = 'frontline-match-ausstehend'; // [{ email, token, wallet }]: Endstände, die der Server noch nicht bestätigt hat
+const AUSSTEHEND_KEY = 'frontline-match-ausstehend'; // [{ email, token, wallet, game? }]: Endstände, die der Server noch nicht bestätigt hat
 const DAY = 86400;
 
 function load(key, fallback) {
@@ -109,7 +110,9 @@ async function flushInner() {
       continue;
     }
     try {
-      const d = await apiRequest(MATCH_URL, { action: 'finish', token: job.token, wallet: job.wallet });
+      const body = { action: 'finish', token: job.token, wallet: job.wallet };
+      if (job.game) body.game = job.game; // Partie-Infos für die Statistik (seit v5.158)
+      const d = await apiRequest(MATCH_URL, body);
       if (Number.isFinite(d.wallet)) noteWallet(d.wallet);
       save(AUSSTEHEND_KEY, loadAusstehend().slice(1));
     } catch (err) {
@@ -152,16 +155,49 @@ export function matchSync() {
 }
 
 /**
+ * Partie-Infos für die Statistik aus dem Endstand (game: die Partie, human: Team des Spielers). Ergebnis (win, loss), Spielzeit
+ * in Sekunden, Schwierigkeit, Karte (Seed), Punkte und Abschüsse des Spielers. Nur Anzeige: der Server prüft die Werte nach.
+ */
+export function gameInfo(game, difficulty, human = 0) {
+  const me = game.teams[human];
+  const foe = game.teams[1 - human];
+  return {
+    result: game.winner === null ? null : game.winner === human ? 'win' : 'loss',
+    duration: game.time,
+    difficulty,
+    seed: game.seed,
+    points: [me.points, foe.points],
+    kills: me.stats?.kills,
+  };
+}
+
+/** Nur die bekannten Felder, Zahlen ganzzahlig; was fehlt oder nicht passt, wird null (der Server verwirft es ebenfalls). */
+function tidyGame(g) {
+  const num = (v) => (Number.isFinite(v) ? Math.round(v) : null);
+  return {
+    result: g.result === 'win' || g.result === 'loss' ? g.result : null,
+    duration: num(g.duration),
+    difficulty: typeof g.difficulty === 'string' ? g.difficulty : null,
+    seed: num(g.seed),
+    points: Array.isArray(g.points) ? g.points.map(num) : [null, null],
+    kills: num(g.kills),
+  };
+}
+
+/**
  * Gewertete Partie beenden: meldet den Endstand zum Token. Der Server setzt die Kasse. Ohne Netz bleibt die Meldung vorgemerkt.
  * Verbraucht ist das Token damit: es fällt sofort aus dem Vorrat (auch ohne Netz, die Meldung steht in frontline-match-ausstehend),
- * und die Antwort des Servers ändert daran nichts mehr. Die neue Kasse macht Tokens mit anderer Kasse veraltet. Wirft nie.
+ * und die Antwort des Servers ändert daran nichts mehr. Die neue Kasse macht Tokens mit anderer Kasse veraltet. game (optional,
+ * gameInfo) reist mit der Meldung zur Statistik; fehlt es, bleibt die Meldung wie bisher. Wirft nie.
  */
-export function finishMatch(token, wallet) {
+export function finishMatch(token, wallet, game = null) {
   const email = accountEmail();
   const w = Math.max(0, Math.min(BALANCE.walletMax, Math.floor(Number(wallet))));
   if (email === null || typeof token !== 'string' || !Number.isFinite(w)) return Promise.resolve();
+  const entry = { email, token, wallet: w };
+  if (game) entry.game = tidyGame(game);
   return queue(async () => {
-    save(AUSSTEHEND_KEY, [...loadAusstehend(), { email, token, wallet: w }]);
+    save(AUSSTEHEND_KEY, [...loadAusstehend(), entry]);
     noteWallet(w); // die Anzeige zeigt den Stand sofort; der Server bestätigt ihn gleich (flushInner)
     const v = loadVorrat();
     if (v && v.email === email) save(VORRAT_KEY, { email, tokens: v.tokens.filter((t) => t && t.token !== token && t.w0 === w) });
@@ -172,4 +208,9 @@ export function finishMatch(token, wallet) {
       /* ohne Netz: beim nächsten Abgleich */
     }
   }).catch(() => {});
+}
+
+/** Spielstatistik des Kontos (api/match.php „stats“): Kennzahlen und die letzten Partien. Wirft bei Netz- oder Anmeldefehler. */
+export function matchStats() {
+  return apiRequest(MATCH_URL, { action: 'stats' });
 }

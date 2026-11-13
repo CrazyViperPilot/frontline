@@ -4,13 +4,15 @@
 //   POST admin.php {"action":"login","user":"…","password":"…"}   → {"ok":true,"user":"…"}; setzt Cookie fl_admin (8 h)
 //   POST admin.php {"action":"logout"}                             → {"ok":true}; beendet die Admin-Sitzung
 //   POST admin.php {"action":"me"}                                 → {"ok":true,"user":"…"}
-//   POST admin.php {"action":"users"}                              → {"users":[{id,email,createdAt,verifiedAt,lastLogin,plan,premiumUntil,blocked,saves,games,wallet}],"walletMax":N}
+//   POST admin.php {"action":"users"}                              → {"users":[{id,email,nickname,createdAt,verifiedAt,lastLogin,plan,premiumUntil,blocked,active,saves,games,wallet}],"walletMax":N}
 //   POST admin.php {"action":"stats"}                              → Gesamtübersicht (seit v5.158): Konten, aktive, Partien, Geld, perDay (30 Tage), perUser (Spiele je Konto)
 //   POST admin.php {"action":"approve","id":N}                     → {"ok":true}: E-Mail gilt als bestätigt, offene Bestätigungslinks entfallen
 //   POST admin.php {"action":"block"|"unblock","id":N}             → {"ok":true}; Sperre: Anmelden 403, bestehende Sitzungen enden
-//   POST admin.php {"action":"plan","id":N,"plan":"free"|"premium","premiumUntil":Sekunden|null} → {"ok":true}
+//   POST admin.php {"action":"activate","id":N}                    → {"ok":true}: reaktiviert ein selbst deaktiviertes Konto (KO4)
+//   POST admin.php {"action":"plan","id":N,"plan":"free"|"premium","premiumUntil":Sekunden|null,"note":"…"|null} → {"ok":true}; schreibt die Premium-Historie
+//   POST admin.php {"action":"premiumhistory","id":N}              → {"history":[{plan,premiumUntil,note,createdAt,changedBy}]} (neueste zuerst)
 //   POST admin.php {"action":"setwallet","id":N,"value":Zahl}      → {"ok":true}: Kasse des Kontos setzen (0 bis walletMax, KA1)
-//   POST admin.php {"action":"delete","id":N}                      → {"ok":true,"saves":n}: Konto, Sitzungen, Links, Spielstände und Partien gelöscht
+//   POST admin.php {"action":"delete","id":N}                      → {"ok":true,"saves":n}: Konto, Sitzungen, Links, Spielstände, Partien und Premium-Historie gelöscht
 // Fehler: 400 Anfrage, 401 nicht angemeldet (oder Anmeldung falsch bei login → 401 mit eigener Meldung), 404 Konto fehlt, 405 Methode,
 //         429 zu viele Fehlversuche (5 je IP in 15 min), 500 Server/Datenbank, 503 „Admin nicht eingerichtet“.
 // Zugang: admin_user und admin_pass_hash in api/config.php (der Deploy schreibt sie aus den Secrets ADMIN_USER und ADMIN_PASSWORD;
@@ -61,7 +63,9 @@ switch ($action) {
     case 'approve': admin_approve($pdo, $body); break;
     case 'block': admin_block($pdo, $body, true); break;
     case 'unblock': admin_block($pdo, $body, false); break;
+    case 'activate': admin_activate($pdo, $body); break;
     case 'plan': admin_plan($pdo, $body); break;
+    case 'premiumhistory': admin_premium_history($pdo, $body); break;
     case 'setwallet': admin_setwallet($pdo, $body); break;
     case 'delete': admin_delete($pdo, $body); break;
     default: fail(400, 'Unbekannte Aktion');
@@ -163,8 +167,8 @@ function admin_fail_record(PDO $pdo, $who) {
 // matches (seit v5.158). Zählungen als Unterabfragen, damit sich die Zeilen nicht vervielfachen.
 function admin_users(PDO $pdo) {
     $saves = admin_has_table($pdo, 'saves') ? '(SELECT COUNT(*) FROM saves s WHERE s.user_id = u.id)' : '0';
-    $sql = "SELECT u.id, u.email, u.created_at, u.verified_at, u.last_login, u.plan, u.premium_until, u.blocked, u.wallet,
-                $saves AS saves,
+    $sql = "SELECT u.id, u.email, u.nickname, u.created_at, u.verified_at, u.last_login, u.plan, u.premium_until, u.blocked, u.active,
+                u.wallet, $saves AS saves,
                 (SELECT COUNT(*) FROM matches m WHERE m.user_id = u.id) AS games
             FROM users u ORDER BY u.created_at DESC, u.id DESC";
     $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
@@ -178,7 +182,9 @@ function admin_users(PDO $pdo) {
             'lastLogin' => $r['last_login'] === null ? null : (int) $r['last_login'],
             'plan' => $r['plan'],
             'premiumUntil' => $r['premium_until'] === null ? null : (int) $r['premium_until'],
+            'nickname' => $r['nickname'] !== null && $r['nickname'] !== '' ? $r['nickname'] : null,
             'blocked' => (int) $r['blocked'] === 1,
+            'active' => (int) $r['active'] === 1,
             'saves' => (int) $r['saves'],
             'games' => (int) $r['games'],
             'wallet' => (int) $r['wallet'],
@@ -282,7 +288,15 @@ function admin_block(PDO $pdo, array $body, $on) {
     if ($on) $pdo->prepare('DELETE FROM sessions WHERE user_id = :id')->execute([':id' => $id]);
 }
 
+// Wieder aktivieren (KO4): ein selbst deaktiviertes Konto kann sich wieder anmelden. Nur das Flag; Sitzungen waren schon beendet.
+function admin_activate(PDO $pdo, array $body) {
+    $id = admin_id($body);
+    admin_user_row($pdo, $id);
+    $pdo->prepare('UPDATE users SET active = 1 WHERE id = :id')->execute([':id' => $id]);
+}
+
 // Konto-Art: free oder premium. premiumUntil (Sekunden seit 1970) nur bei premium; fehlt es, ist Premium unbefristet.
+// Jede Änderung steht in der Premium-Historie (KO4, changed_by 'admin'); note ist ein optionaler Text bis 80 Zeichen.
 function admin_plan(PDO $pdo, array $body) {
     $id = admin_id($body);
     admin_user_row($pdo, $id);
@@ -293,9 +307,32 @@ function admin_plan(PDO $pdo, array $body) {
         if (!is_numeric($body['premiumUntil']) || (int) $body['premiumUntil'] < 1) fail(400, 'premiumUntil ungültig');
         $until = (int) $body['premiumUntil'];
     }
+    $note = isset($body['note']) && is_string($body['note']) ? trim($body['note']) : '';
+    if (mb_strlen($note, 'UTF-8') > 80) fail(400, 'Die Notiz darf höchstens 80 Zeichen lang sein.');
     $pdo->prepare('UPDATE users SET plan = :p, premium_until = :u WHERE id = :id')->execute([
         ':p' => $plan, ':u' => $until, ':id' => $id,
     ]);
+    fl_premium_record($pdo, $id, $plan, $until, $note !== '' ? $note : null, 'admin');
+}
+
+// Premium-Historie eines Kontos (KO4), neueste zuerst; Form wie in auth.php premiumHistory.
+function admin_premium_history(PDO $pdo, array $body) {
+    $id = admin_id($body);
+    admin_user_row($pdo, $id);
+    $st = $pdo->prepare('SELECT plan, premium_until, note, changed_by, created_at FROM premium_history
+        WHERE user_id = :id ORDER BY created_at DESC, id DESC LIMIT 50');
+    $st->execute([':id' => $id]);
+    $list = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $list[] = [
+            'plan' => $r['plan'],
+            'premiumUntil' => $r['premium_until'] === null ? null : (int) $r['premium_until'],
+            'note' => $r['note'],
+            'createdAt' => (int) $r['created_at'],
+            'changedBy' => $r['changed_by'],
+        ];
+    }
+    out(['history' => $list]);
 }
 
 // Kasse setzen (KA1): ausdrücklich von Daniel, daher ohne die Bremse des Browser-Meldens; 0 bis FL_WALLET_MAX, ganze Zahl.
@@ -322,6 +359,7 @@ function admin_delete(PDO $pdo, array $body) {
             $saves = $st->rowCount();
         }
         $pdo->prepare('DELETE FROM matches WHERE user_id = :id')->execute([':id' => $id]);
+        $pdo->prepare('DELETE FROM premium_history WHERE user_id = :id')->execute([':id' => $id]);
         $pdo->prepare('DELETE FROM match_tokens WHERE user_id = :id')->execute([':id' => $id]);
         $pdo->prepare('DELETE FROM sessions WHERE user_id = :id')->execute([':id' => $id]);
         $pdo->prepare('DELETE FROM tokens WHERE user_id = :id')->execute([':id' => $id]);

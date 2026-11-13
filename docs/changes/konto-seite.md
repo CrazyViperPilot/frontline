@@ -1,0 +1,1 @@
+**Konto-Bereich im Startmenü** (§17 „Konto-Bereich“, KO4): Knopf „Konto“ neben „Meine Spiele“ zeigt E-Mail, Erstellt am, Konto-Art (mit „bis“), Nickname (änderbar, optional, bis 32 Zeichen), Premium-Historie und „Konto löschen“ (Rückfrage, dann Bestätigungsmail; der Link setzt das Konto auf inaktiv, reaktivieren und löschen nur im Admin-Panel).

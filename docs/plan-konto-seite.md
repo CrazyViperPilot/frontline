@@ -1,5 +1,7 @@
 # Frontline – Plan „Konto-Bereich“ (ein Paket)
 
+**Stand: gebaut** (2026-11-13, Branch `konto-seite`, noch nicht gepusht). Umsetzung: docs/prd/konto.md („Konto-Bereich (seit KO4)“), docs/changes/konto-seite.md.
+
 Daniel, 2026-11-13: Ein ausführlicher Konto-Bereich im Startmenü. Entscheidungen: **Nickname im Konto-Bereich änderbar** (keine
 Pflicht bei der Registrierung); **Selbst-Deaktivierung** per E-Mail bestätigt, setzt das Konto nur auf **inaktiv**; **reaktivieren und
 endgültig löschen kann nur der Admin**. Premium-Status, Premium-Historie und „bis wann Premium“ sichtbar.

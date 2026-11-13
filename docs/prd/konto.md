@@ -17,8 +17,9 @@ Admin-Panel (Benutzerverwaltung, Abschnitt unten), die Kasse am Konto (KA1, Absc
 
 | Tabelle | Spalten | Hinweis |
 |---|---|---|
-| `users` | `id`, `email` (klein, eindeutig), `pass_hash`, `verified_at`, `plan` (Standard `free`), `premium_until`, `created_at`, `last_login` | Zeiten in Sekunden seit 1970; `verified_at` leer = unbestätigt |
-| `tokens` | `hash` (SHA-256 des Links, Schlüssel), `user_id`, `kind` (`verify` oder `reset`), `expires_at` | Link nur einmal gültig; ein neuer Link derselben Art macht den alten ungültig |
+| `users` | `id`, `email` (klein, eindeutig), `pass_hash`, `verified_at`, `plan` (Standard `free`), `premium_until`, `created_at`, `last_login`, `nickname` (seit KO4), `active` (seit KO4, Standard 1) | Zeiten in Sekunden seit 1970; `verified_at` leer = unbestätigt; `active` = 0: selbst deaktiviert (Abschnitt „Konto-Bereich“) |
+| `tokens` | `hash` (SHA-256 des Links, Schlüssel), `user_id`, `kind` (`verify`, `reset` oder `deactivate` seit KO4), `expires_at` | Link nur einmal gültig; ein neuer Link derselben Art macht den alten ungültig |
+| `premium_history` | `id`, `user_id`, `plan`, `premium_until` (leer = unbefristet oder Kostenlos), `note` (bis 80 Zeichen, leer erlaubt), `changed_by` (`admin`), `created_at` | Premium-Historie (seit KO4): ein Eintrag je Änderung der Konto-Art im Admin-Panel; beim Löschen des Kontos mit gelöscht |
 | `sessions` | `hash` (SHA-256 des Cookies), `user_id`, `created_at`, `expires_at` | 30 Tage |
 | `attempts` | `who_hash` (HMAC einer IP oder Adresse), `kind` (`login`, `mailip`, `mail`, `admin`), `created_at` | Zähler für die Bremsen; Einträge älter als 24 h werden gelöscht |
 | `admin_sessions` | `hash` (SHA-256 des Cookies `fl_admin`), `created_at`, `expires_at` | Admin-Panel, 8 Stunden (Abschnitt „Admin-Panel“) |
@@ -27,7 +28,9 @@ Admin-Panel (Benutzerverwaltung, Abschnitt unten), die Kasse am Konto (KA1, Absc
 | `matches` | `id`, `user_id`, `jti` (eindeutig: eine Partie zählt nur einmal), `started_at` (Ausgabezeit des Tokens), `finished_at`, `wallet_before`, `wallet_after`, `earned` (negativ möglich), `result` (`win`, `loss` oder leer), `duration` (Sekunden), `difficulty`, `seed`, `points_own`, `points_enemy`, `kills` | Spielstatistik (seit v5.158, Abschnitt unten): je gewerteter Partie eine Zeile, in derselben Transaktion wie die Kasse; beim Löschen des Kontos mit gelöscht |
 
 Die Spalte `users.blocked` (`TINYINT`, Standard 0) kommt seit dem Admin-Panel dazu, die Spalte `users.wallet` (`BIGINT`, Standard
-800) seit KA1 (Kasse am Konto; Bestandskonten bekommen 800). `api/lib/konto.php` legt beide bei Bedarf selbst an.
+800) seit KA1 (Kasse am Konto; Bestandskonten bekommen 800), `users.nickname` und `users.active` sowie die Tabelle `premium_history`
+seit KO4. Die Art `deactivate` in `tokens.kind` (ENUM) wird bei einer älteren Tabelle nachgetragen. `api/lib/konto.php` legt alles
+bei Bedarf selbst an (`fl_konto_upgrade`, einmal je Anfrage, geprüft über `information_schema`).
 
 Passwörter nur als `password_hash` (PASSWORD_DEFAULT), Tokens mit `random_bytes(32)`, in der Datenbank nur als Hash. Die HMAC-Schlüssel
 kommen aus dem Datenbankpasswort (`api/config.php`), IPs und Adressen lassen sich so nicht zurückrechnen.
@@ -44,15 +47,19 @@ kommen aus dem Datenbankpasswort (`api/config.php`), IPs und Adressen lassen sic
 | `POST {"action":"forgot","email"}` | `{ok, message}` | nur für bestätigte Konten: Mail mit `/frontline/?reset=<token>` (1 h) |
 | `POST {"action":"reset","token","password"}` | `{ok}` | setzt das Passwort, beendet alle Sitzungen des Kontos |
 | `POST {"action":"walletreset"}` | `{ok, wallet}` | nur mit Sitzung: Kasse auf den Startbetrag (KA1) |
+| `POST {"action":"setnickname","nickname"}` | `{ok, user}` | nur mit Sitzung: Nickname setzen; leer oder `null` = keiner (KO4, Abschnitt „Konto-Bereich“) |
+| `POST {"action":"premiumHistory"}` | `{history: [{plan, premiumUntil, note, createdAt, changedBy}]}` | nur mit Sitzung: die Änderungen der Konto-Art, neueste zuerst, höchstens 50 (KO4) |
+| `POST {"action":"deactivate"}` | `{ok, message}` | nur mit Sitzung: Mail mit `…/api/auth.php?deactivate=<token>` (48 h), Antwort neutral |
+| `GET auth.php?deactivate=<token>` | 302 auf `/frontline/?deactivated=1` bzw. `…=0` | setzt `active = 0`, beendet alle Sitzungen des Kontos, Link wird verbraucht (KO4) |
 
 Die Aktion `wallet` gibt es seit MS1 nicht mehr: den Endstand einer gewerteten Partie meldet `api/match.php` (Abschnitt unten).
 
-`user` nach außen: `{email, plan, premiumUntil, createdAt, wallet}`, nie Hash oder id.
+`user` nach außen: `{email, nickname, plan, premiumUntil, createdAt, wallet, active}`, nie Hash oder id.
 
 **Cookie:** `fl_session`, HttpOnly, Secure, SameSite=Lax, Pfad `/`, 30 Tage. Abmelden löscht es.
 
 **Fehler:** `{"error": "…"}` mit HTTP-Code. 400 Anfrage (z. B. Passwort zu kurz, Adresse ungültig, Link ungültig oder abgelaufen),
-401 Anmeldung falsch, 403 Konto noch nicht bestätigt (nur nach richtigem Passwort), 405 Methode, 429 zu viele Versuche,
+401 Anmeldung falsch, 403 Konto noch nicht bestätigt, gesperrt oder deaktiviert (jeweils nur nach richtigem Passwort), 405 Methode, 429 zu viele Versuche,
 500 Datenbank oder Server, 503 Mailversand nicht eingerichtet oder fehlgeschlagen. Fremde Herkunft (`Origin`) bekommt 403.
 Die Schnittstelle `api/match.php` (Match-Start) nutzt dieselben Regeln, siehe unten.
 
@@ -257,16 +264,19 @@ Nicht im Offline-Cache (`admin/` steht nicht in `sw.js`), aber im Deploy hochgel
 
 | Aktion | Wirkung |
 |---|---|
-| `users` | alle Konten, neueste zuerst: id, E-Mail, Registrierung, Bestätigung, letzte Anmeldung, Konto-Art, Sperre, Zahl der Spielstände, Zahl der gewerteten Partien (`games`, seit v5.158) |
+| `users` | alle Konten, neueste zuerst: id, E-Mail, Nickname, Registrierung, Bestätigung, letzte Anmeldung, Konto-Art, Sperre, Aktiv (seit KO4), Zahl der Spielstände, Zahl der gewerteten Partien (`games`, seit v5.158) |
 | `stats` | Gesamtübersicht (seit v5.158, Abschnitt „Admin-Übersicht“) |
 | `approve {id}` | Freigeben: E-Mail gilt als bestätigt, offene Bestätigungslinks entfallen |
 | `block {id}` / `unblock {id}` | Sperren: Anmelden 403, bestehende Sitzungen enden sofort; Entsperren hebt nur die Sperre auf |
-| `plan {id, plan, premiumUntil?}` | Konto-Art `free` oder `premium`; `premiumUntil` in Sekunden seit 1970, fehlt es, ist Premium unbefristet |
-| `delete {id}` | Konto, Sitzungen, Links, Spielstände und Partien (Tabellen `matches`, `match_tokens`) in einer Transaktion löschen (endgültig) |
+| `plan {id, plan, premiumUntil?, note?}` | Konto-Art `free` oder `premium`; `premiumUntil` in Sekunden seit 1970, fehlt es, ist Premium unbefristet; jede Änderung schreibt einen Eintrag in die Premium-Historie (`changed_by` = `admin`, `note` bis 80 Zeichen, seit KO4) |
+| `premiumhistory {id}` | Premium-Historie des Kontos, neueste zuerst (seit KO4) |
+| `activate {id}` | Reaktivieren: setzt `active = 1` für ein selbst deaktiviertes Konto (seit KO4). Nur hier, nicht im Konto selbst |
+| `delete {id}` | Konto, Sitzungen, Links, Spielstände, Partien (Tabellen `matches`, `match_tokens`) und Premium-Historie in einer Transaktion löschen (endgültig) |
 | `logout`, `me` | Abmelden, Name der angemeldeten Admin-Sitzung |
 
 - **Oberfläche:** Anmeldeformular, danach Tabelle mit Suche nach E-Mail, Knöpfen je Zeile (Freigeben nur bei unbestätigtem Konto,
-  Sperren/Entsperren, Auf Premium/Auf Kostenlos, Löschen). Löschen fragt mit einer Meldung, die die E-Mail und die Zahl der Spielstände
+  Reaktivieren nur bei selbst deaktiviertem Konto (seit KO4), Sperren/Entsperren, Auf Premium/Auf Kostenlos (fragt nach einer optionalen
+  Notiz für die Historie), Premium-Historie (klappt eine Zeile darunter auf), Kasse setzen, Löschen). Spalte „Aktiv“ (seit KO4). Löschen fragt mit einer Meldung, die die E-Mail und die Zahl der Spielstände
   nennt. Auf dem Handy wird jede Zeile zu einer Karte (Spaltenüberschrift als Beschriftung).
 - **Dateien:** `api/admin.php` (Schnittstelle und Sitzung), `admin/index.html`, `admin/admin.js` (ohne Modul), `admin/admin.css`;
   `api/lib/konto.php` (Spalte `blocked`, Sperre in der Sitzungsabfrage), `api/auth.php` (403 bei gesperrten Konten).
@@ -329,3 +339,62 @@ Im Admin-Panel gibt es zwei Reiter: **Konten** (wie bisher, mit neuer Spalte **S
 - **Tests:** `test/admin.test.js` (Verdrahtung: Aktion, Spalte, Löschen, Reiter), `test/matchphp.test.js` (Partie-Infos). Von Hand gegen
   MariaDB geprüft: Zahlen für zwei Konten und drei Partien (Summe, Ø, Tagesbalken, Spieler mit Partie), Löschen eines Kontos mit Partien.
   Die Oberfläche im Browser (Chrome, Desktop und Handy-Breite): Reiter, Kennzahlen, Balken, Tabelle, kein Querscroll.
+
+## Konto-Bereich (seit KO4)
+
+Der Konto-Bereich im Startmenü (Knopf **„Konto“** neben „Meine Spiele“, nicht im Pausenmenü) klappt Angaben und Verwaltung auf.
+Oberfläche: `js/ui/menu.js` (`detailPanel`, `wireAccount` mit `details: true`), Abfragen in `js/ui/saves.js` (`setNickname`,
+`premiumHistory`, `requestDeactivate`), Schnittstelle `api/auth.php`.
+
+### Angaben
+
+E-Mail, Erstellt am (`createdAt`), Konto-Art (Kostenlos oder „Premium (bis Datum)“, `planLabel`).
+
+### Nickname
+
+Nickname ist optional und änderbar. Die Registrierung fragt ihn nicht ab. Im Bereich ein Feld und „Nickname speichern“.
+  Regeln (`fl_check_nickname`): getrimmt; leer oder `null` = kein Nickname; höchstens 32 Zeichen (Zeichen, nicht Byte);
+  Buchstaben (auch Umlaute), Ziffern, Leerzeichen sowie `_ - .`. Anderes gibt 400 mit einem Satz. Der Nickname wird nur angezeigt;
+  er ist nicht eindeutig und hat sonst keine Wirkung im Spiel.
+
+### Premium-Historie
+
+`premiumHistory` liefert die Änderungen der Konto-Art, neueste zuerst, höchstens 50, je Eintrag
+  `{plan, premiumUntil, note, createdAt, changedBy}`. Anzeige je Zeile: Datum · Art · „bis Datum“ oder „unbefristet“ · Notiz.
+  Ohne Einträge: „Noch keine Änderung der Konto-Art.“ Einträge entstehen nur im Admin-Panel (`plan`).
+
+### Deaktivieren (Selbst, inaktiv; Admin reaktiviert/löscht)
+
+Knopf „Konto löschen“ → Rückfrage (inline, ohne Browser-Dialog) → „Mail schicken“.
+  `deactivate` (nur mit Sitzung, sonst 401) schickt eine Mail mit `…/api/auth.php?deactivate=<token>` (Art `deactivate`,
+  48 Stunden, einmal gültig). Die Antwort ist neutral und zeigt den Hinweis: „Wir haben dir eine Bestätigungsmail geschickt. Nach dem
+  Klick wird dein Konto deaktiviert; endgültig löschen kann nur der Admin.“ Bremse wie beim Mailversand: je IP
+  (`FL_MAIL_MAX_IP`) und je Adresse (`FL_MAIL_MAX_EMAIL`, geteilt mit Registrieren und Passwort vergessen); über der Bremse dieselbe
+  Antwort ohne Mail.
+
+Klick auf den Link (`GET auth.php?deactivate=`): `users.active = 0`, alle Sitzungen des Kontos werden gelöscht, der Link wird
+  verbraucht, das Browser-Cookie gelöscht. Weiterleitung auf `/frontline/?deactivated=1` (Meldung „Dein Konto wurde deaktiviert.“, der
+  Browser ist abgemeldet) bzw. `?deactivated=0` („Link ungültig oder abgelaufen.“). Die Adresse wird danach bereinigt
+  (`takeAccountLink`).
+
+Wirkung von `active = 0`: `current_user` und `fl_session_user` liefern kein Konto (Sitzung, Spielstände, Match-Start und
+  Endstand bekommen 401). Anmelden mit richtigem Passwort: 403 „Konto ist deaktiviert, bitte wende dich an den Admin“. Falsches
+  Passwort bleibt 401, damit der Status nicht verraten wird. Registrieren mit der Adresse eines deaktivierten Kontos reaktiviert es nicht
+  (gleiche Antwort wie sonst). Passwort vergessen bleibt möglich, Anmelden wirkt trotzdem nicht.
+
+Reaktivieren und endgültig löschen nur im Admin-Panel: `activate {id}` setzt `active = 1`; `delete {id}` entfernt das Konto
+  samt Premium-Historie. Der Admin kann das Konto auch sperren (`blocked`); das ist unabhängig von `active`.
+
+### Technik
+
+Schema: `users.nickname VARCHAR(32)`, `users.active TINYINT NOT NULL DEFAULT 1`, Tabelle `premium_history` (siehe Datenmodell),
+  `tokens.kind` um `deactivate` erweitert (`ALTER TABLE` bei einer älteren Tabelle, einmal je Anfrage geprüft).
+
+Konstanten: `FL_NICK_MAX` (32), `FL_DEACTIVATE_HOURS` (48), `FL_PREMIUM_RECENT` (50) in `api/auth.php`; `fl_premium_record`
+  in `api/lib/konto.php` schreibt die Historie für das Admin-Panel.
+
+**Tests:** `test/konto.test.js` (Client, fetch-Attrappe): Aktionen und Felder der Schnittstellen-Hilfen, Rücksprung `?deactivated=`,
+Detailbereich öffnen und schließen, Nickname speichern (auch Fehler und Eingabe beim Neuzeichnen), Rückfrage vor dem Versand,
+Knopf im Pausenmenü fehlt. Die Schnittstelle wurde von Hand gegen MariaDB und `php -S` geprüft (Nickname-Regeln, Mailbremse,
+Link einmal gültig, Sitzungen weg, Login 403, Reaktivieren, Historie je Änderung, Löschen räumt Historie, Umrüstung einer KO1-Datenbank
+mit Bestandskonto), die Oberfläche per Browser mit gefälschtem Backend.

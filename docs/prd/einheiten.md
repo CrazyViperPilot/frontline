@@ -55,6 +55,8 @@ stirbt der Hubschrauber, sind die Passagiere verloren.
 
 Schadensmodell: Schaden je Schuss nach Panzerklasse des Ziels (Infanterie / leicht / schwer / Gebäude) – Werte in §6 „Waffen und Schaden“. Höhenvorteil siehe §7 „Gelände“.
 
+**Preislogik (seit Paket „Balance-Preise“):** Infanterie ist das Rückgrat einer Armee und bleibt günstig (60–220 Geld, Kommandeur 400). Fahrzeuge und Flieger sind teure Entscheidungen: Schützenpanzer 450, Kampfpanzer 1000 Geld, Kampfflugzeuge 2600–3500 Geld, jeweils mit Metall aus dem Stadtlager (`CITY.metalCost`). LKW, Aufklärungsfahrzeug, Pioniere, Bergepanzer, Störsender, Baufahrzeuge und das FOB-Fahrzeug kosten wie bisher. Die Preise stehen in `js/data/units.js` (`cost.money`).
+
 ### Werte (Quelle: `js/data/units.js`, `js/data/buildings.js`, `js/data/balance.js`)
 
 Die Tabellen „Werte“ und „Waffen und Schaden“ erzeugt `npm run docs` aus `js/data/` (`tools/doc-tables.mjs`); zwischen den Markierungen nichts von Hand ändern. Ein Test meldet, wenn sie nicht mehr zur Config passen.
@@ -79,24 +81,24 @@ Die Tabellen „Werte“ und „Waffen und Schaden“ erzeugt `npm run docs` aus
 | Brückenleger | C | 2 | 600 | 46 | 240 | – | 300 Geld | 14 s | 45 / 0,35 |
 | Bagger | X | 2 | 650 | 48 | 240 | 34 | 320 Geld | 14 s | 45 / 0,35 |
 | FOB-Fahrzeug | B | 2 | 600 | 60 | 260 | – | 500 Geld | 30 s | 50 / 0,4 |
-| Schützenpanzer | A | 3 | 450 | 85 | 300 | 240 | 250 Geld | 12 s | 40 / 0,4 |
-| Kampfpanzer | S | 5 | 1100 | 60 | 320 | 300 | 500 Geld | 20 s | 60 / 0,6 |
-| Little Bird | D | 1 | 220 | 170 | 380 | – | 350 Geld | 15 s | 60 / 0,5 |
-| Aufklärungsdrohne | R | 1 | 120 | 130 | 450 | – | 200 Geld | 12 s | 40 / 0,5 |
-| Kamikazedrohne | X | 1 | 60 | 190 | 250 | 15 | 200 Geld | 12 s | 40 / 0,5 |
-| Transporthubschrauber | F | 1 | 500 | 130 | 320 | – | 600 Geld | 20 s | 90 / 0,7 |
-| Kampfhubschrauber | G | 1 | 650 | 150 | 400 | 340 | 900 Geld | 28 s | 70 / 0,8 |
-| F-16 | K | 3 | 450 | 420 | 560 | 640 | 1400 Geld | 40 s | 55 / 1 |
-| F-22 | I | 3 | 500 | 460 | 600 | 700 | 1900 Geld | 55 s | 55 / 1 |
-| A-10 | D | 3 | 700 | 252 | 560 | 340 | 1500 Geld | 45 s | 90 / 1 |
-| C-130 | C | 3 | 900 | 200 | 400 | – | 1800 Geld | 60 s | 90 / 1 |
-| Su-27 | S | 3 | 480 | 450 | 560 | 640 | 1600 Geld | 45 s | 75 / 1 |
-| U-2 | O | 3 | 400 | 300 | 300 | – | 1600 Geld | 50 s | 180 / 1 |
-| Flakpanzer | Z | 2 | 300 | 70 | 380 | 330 | 220 Geld | 10 s | 40 / 0,4 |
-| SAM-Startrampe | N | 2 | 350 | 65 | 440 | 420 | 300 Geld | 12 s | 40 / 0,4 |
-| Flakpanzer Gepard | L | 3 | 450 | 62 | 480 | 420 | 650 Geld | 16 s | 45 / 0,35 |
-| Panzerhaubitze | O | 4 | 500 | 50 | 280 | 1400 | 900 Geld | 22 s | 40 / 0,35 |
-| Raketenwerfer | T | 4 | 500 | 50 | 280 | 1600 | 1000 Geld | 26 s | 40 / 0,35 |
+| Schützenpanzer | A | 3 | 450 | 85 | 300 | 240 | 450 Geld | 12 s | 40 / 0,4 |
+| Kampfpanzer | S | 5 | 1100 | 60 | 320 | 300 | 1000 Geld | 20 s | 60 / 0,6 |
+| Little Bird | D | 1 | 220 | 170 | 380 | – | 650 Geld | 15 s | 60 / 0,5 |
+| Aufklärungsdrohne | R | 1 | 120 | 130 | 450 | – | 300 Geld | 12 s | 40 / 0,5 |
+| Kamikazedrohne | X | 1 | 60 | 190 | 250 | 15 | 300 Geld | 12 s | 40 / 0,5 |
+| Transporthubschrauber | F | 1 | 500 | 130 | 320 | – | 900 Geld | 20 s | 90 / 0,7 |
+| Kampfhubschrauber | G | 1 | 650 | 150 | 400 | 340 | 1700 Geld | 28 s | 70 / 0,8 |
+| F-16 | K | 3 | 450 | 420 | 560 | 640 | 2600 Geld | 40 s | 55 / 1 |
+| F-22 | I | 3 | 500 | 460 | 600 | 700 | 3500 Geld | 55 s | 55 / 1 |
+| A-10 | D | 3 | 700 | 252 | 560 | 340 | 2800 Geld | 45 s | 90 / 1 |
+| C-130 | C | 3 | 900 | 200 | 400 | – | 3000 Geld | 60 s | 90 / 1 |
+| Su-27 | S | 3 | 480 | 450 | 560 | 640 | 2800 Geld | 45 s | 75 / 1 |
+| U-2 | O | 3 | 400 | 300 | 300 | – | 2600 Geld | 50 s | 180 / 1 |
+| Flakpanzer | Z | 2 | 300 | 70 | 380 | 330 | 300 Geld | 10 s | 40 / 0,4 |
+| SAM-Startrampe | N | 2 | 350 | 65 | 440 | 420 | 400 Geld | 12 s | 40 / 0,4 |
+| Flakpanzer Gepard | L | 3 | 450 | 62 | 480 | 420 | 1000 Geld | 16 s | 45 / 0,35 |
+| Panzerhaubitze | O | 4 | 500 | 50 | 280 | 1400 | 1500 Geld | 22 s | 40 / 0,35 |
+| Raketenwerfer | T | 4 | 500 | 50 | 280 | 1600 | 1700 Geld | 26 s | 40 / 0,35 |
 <!-- auto:units:end -->
 
 <!-- auto:buildings:start -->

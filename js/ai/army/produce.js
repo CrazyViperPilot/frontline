@@ -101,9 +101,11 @@ export const produceMethods = {
 
     // Global nach Defizit: der wichtigste Typ bekommt die knappen Mittel. Fehlt er nur an Geld, wird gespart;
     // fehlt es nur im Lager der Produktionsstätten, kommt der nächste Typ dran (Pendler füllen auf).
-    for (let k = 0; k < 4; k++) {
+    // Scheitert ein Auftrag (z. B. Stahl fehlt, seit dem Paket „Balance-Preise“ öfter), kommt der nächste Typ dran, statt die ganze Runde abzubrechen.
+    const failed = new Set();
+    for (let k = 0, tries = 0; k < 4 && tries < avail.size; tries++) {
       const entries = [];
-      for (const u of avail) entries.push({ u, deficit: (mix[u] / sumW) * (total + 1) - counts[u] });
+      for (const u of avail) if (!failed.has(u)) entries.push({ u, deficit: (mix[u] / sumW) * (total + 1) - counts[u] });
       entries.sort((a, c) => c.deficit - a.deficit);
       let pick = null;
       for (const e of entries) {
@@ -116,9 +118,13 @@ export const produceMethods = {
       }
       if (!pick) break;
       const r = g.issue(t, { type: 'train', buildingId: pick.b.id, unit: pick.u });
-      if (!r.ok) break;
+      if (!r.ok) {
+        failed.add(pick.u);
+        continue;
+      }
       counts[pick.u]++;
       total++;
+      k++;
     }
   },
 

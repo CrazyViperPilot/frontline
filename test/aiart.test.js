@@ -30,6 +30,7 @@ test('KI bildet Gepard aus, sobald sie gegnerische Luftfahrzeuge sieht', () => {
   assert.ok(4 * AIR_PER > 0);
   for (let s = 0; s < 120 && !has(g, 1, 'gepard'); s += 5) {
     g.teams[1].res.money = 20000;
+    g.city[1].metal = Math.max(g.city[1].metal, 1000); // Stahl aus dem Stadtlager: der Test prüft die Mischung, nicht die Wirtschaft (seit Paket Balance-Preise braucht ein Gepard 180)
     run(g, ai, 5);
   }
   assert.ok(has(g, 1, 'gepard'), 'Gepard in Ausbildung oder fertig');

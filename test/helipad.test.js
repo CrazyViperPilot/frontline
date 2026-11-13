@@ -159,8 +159,11 @@ test('Luftraum: Start und Landung sperren Heliports im Umkreis, mit Tower kürze
     const g = new Game({ seed: 3, city: true });
     const { pads } = heliBase(g, { tower });
     for (const p of pads) assert.ok(g.issue(0, { type: 'train', buildingId: p.id, unit: 'littlebird' }).ok);
-    run(g, UNITS.littlebird.buildTime + 1);
-    const helis = g.units.filter((x) => x.type === 'littlebird' && x.team === 0);
+    // Das Metall (CITY.metalCost) läuft über die Straße ins Werk: seit dem Paket „Balance-Preise“ braucht ein Heli 120 statt 60,
+    // die Ausbildung dauert darum länger als die Bauzeit. Bis zu zwei Helis abwarten (höchstens 120 s).
+    const aloft = () => g.units.filter((x) => x.type === 'littlebird' && x.team === 0);
+    for (let k = 0; k < 240 && aloft().length < 2; k++) run(g, 0.5);
+    const helis = aloft();
     assert.equal(helis.length, 2);
     assert.ok(g.issue(0, { type: 'move', ids: helis.map((u) => u.id), x: pads[0].x + 1500, y: pads[0].y }).ok);
     const sep = tower ? H.sepAtc : H.sep;

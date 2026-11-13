@@ -588,14 +588,14 @@ test('Su-27: Werte wie die F-16 (gleiche Waffen, parallel), aber schneller und m
   assert.ok(su.speed > f16.speed, `schneller: ${su.speed} gegen ${f16.speed}`);
   assert.ok(su.fuelMax > f16.fuelMax, 'mehr Treibstoff');
   assert.ok(su.speed * su.fuelMax > f16.speed * f16.fuelMax, 'größere Reichweite (speed × fuelMax)');
-  assert.deepEqual([su.hp, su.radius, su.sight, su.cost.money, su.buildTime], [480, 15, 560, 1600, 45]);
+  assert.deepEqual([su.hp, su.radius, su.sight, su.cost.money, su.buildTime], [480, 15, 560, 2800, 45]);
   assert.equal(su.jet, true);
   assert.equal(su.parallel, true, 'zwei Waffen feuern unabhängig, wie die F-16');
   assert.deepEqual(su.weapons, f16.weapons, 'gleiche Waffen, Schäden und Munition wie die F-16');
   assert.ok(!['K', 'I', 'O', 'U', 'W', 'Y'].includes(su.hotkey), `Taste ${su.hotkey} im Stellplatz-Menü frei`);
   assert.ok(CITY.produces.stand.includes('su27'), 'am Stellplatz ausbildbar');
   assert.equal(CITY.crew.su27, 2, 'zwei Einwohner wie die F-16');
-  assert.equal(CITY.metalCost.su27, CITY.metalCost.f16, 'Stahl wie die F-16');
+  assert.ok(CITY.metalCost.su27 >= CITY.metalCost.f16 && CITY.metalCost.su27 <= CITY.metalCost.f16 * 1.1, 'Stahl knapp über der F-16 (seit Paket Balance-Preise 330 gegen 320)');
 });
 
 test('Su-27 am Stellplatz: ausbildbar, steht auf dem Platz, hebt ab und fliegt los', () => {

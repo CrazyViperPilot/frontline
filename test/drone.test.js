@@ -36,7 +36,7 @@ test('Ausbildung nur am Heliport (mit Stadt), Stadt-Kosten, nicht in der Hauptst
   assert.ok(CITY.produces.heliport.includes('drone'));
   for (const [k, list] of Object.entries(CITY.produces)) if (k !== 'heliport') assert.ok(!list.includes('drone'), k);
   assert.ok(!BUILDINGS.fob.produces.includes('drone'), 'Hauptstadt-Menü unverändert');
-  assert.equal(CITY.metalCost.drone, 30);
+  assert.equal(CITY.metalCost.drone, 50);
   assert.ok(CITY.metalCost.drone < CITY.metalCost.littlebird);
 });
 

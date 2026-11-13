@@ -35,7 +35,7 @@ test('Ausbildung nur am Heliport (mit Stadt), nicht in der Hauptstadt', () => {
   assert.ok(CITY.produces.heliport.includes('fpv'));
   for (const [k, list] of Object.entries(CITY.produces)) if (k !== 'heliport') assert.ok(!list.includes('fpv'), k);
   assert.ok(!BUILDINGS.fob.produces.includes('fpv'), 'Hauptstadt-Menü unverändert');
-  assert.equal(CITY.metalCost.fpv, 30);
+  assert.equal(CITY.metalCost.fpv, 50);
 });
 
 test('Angriffsbefehl: Drohne fliegt ins Ziel, trifft den Panzer und ist danach weg', () => {

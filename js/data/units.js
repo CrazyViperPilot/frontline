@@ -391,7 +391,7 @@ export const UNITS = {
       { id: 'grenade', name: 'Granatwerfer', range: 240, cooldown: 2.0, rounds: 60, munCost: 10, targets: ['light', 'heavy', 'struct'], hits: { inf: 1, tank: SIDES(10, 8, 7), ifv: SIDES(8, 6, 5), light: 3 }, damage: { inf: 30, light: 40, heavy: 10, struct: 25 } },
       { id: 'mg', name: 'MG', range: 220, cooldown: 0.25, rounds: 300, munCost: 5, hits: { inf: 2 }, damage: { inf: 9, light: 3, heavy: 1, struct: 3, air: 6, jet: 2 } },
     ],
-    cost: { money: 250 },
+    cost: { money: 450 }, // seit Paket Balance-Preise (vorher 250)
     buildTime: 12,
     fuelPerSec: 0.4,
     fuelMax: 40,
@@ -413,7 +413,7 @@ export const UNITS = {
       { id: 'cannon', name: 'Hauptkanone', range: 300, cooldown: 6, rounds: 30, munCost: 20, targets: ['light', 'heavy', 'struct'], hits: { inf: 1, tank: SIDES(4, 3, 2), ifv: SIDES(3, 3, 2), light: 2 }, damage: { inf: 45, light: 120, heavy: 150, struct: 120 } },
       { id: 'mg', name: 'MG', range: 220, cooldown: 0.25, rounds: 300, munCost: 5, hits: { inf: 2 }, damage: { inf: 10, light: 3, heavy: 0, struct: 2, air: 3, jet: 1 } },
     ],
-    cost: { money: 500 },
+    cost: { money: 1000 }, // seit Paket Balance-Preise (vorher 500)
     buildTime: 20,
     fuelPerSec: 0.6,
     fuelMax: 60,
@@ -433,7 +433,7 @@ export const UNITS = {
     range: 0,
     cooldown: 0,
     damage: null,
-    cost: { money: 350 },
+    cost: { money: 650 }, // seit Paket Balance-Preise (vorher 350)
     buildTime: 15,
     ammoPerShot: 0,
     fuelPerSec: 0.5,
@@ -455,7 +455,7 @@ export const UNITS = {
     range: 0,
     cooldown: 0,
     damage: null,
-    cost: { money: 200 },
+    cost: { money: 300 }, // seit Paket Balance-Preise (vorher 200)
     buildTime: 12,
     ammoPerShot: 0,
     fuelPerSec: 0.5,
@@ -480,7 +480,7 @@ export const UNITS = {
     damage: null,
     // Einschlag beim Kontakt (≤ 20 px vom Ziel): Flächenschaden mit Abfall über splash, wie eine Granate (combat.js impact)
     blast: { damage: { light: 500, heavy: 700, struct: 300 }, splash: 30 },
-    cost: { money: 200 },
+    cost: { money: 300 }, // seit Paket Balance-Preise (vorher 200)
     buildTime: 12,
     ammoPerShot: 0,
     fuelPerSec: 0.5,
@@ -500,7 +500,7 @@ export const UNITS = {
     range: 0,
     cooldown: 0,
     damage: null,
-    cost: { money: 600 },
+    cost: { money: 900 }, // seit Paket Balance-Preise (vorher 600)
     buildTime: 20,
     ammoPerShot: 0,
     fuelPerSec: 0.7,
@@ -523,7 +523,7 @@ export const UNITS = {
       { id: 'cannon', name: 'Bordkanone', range: 340, cooldown: 0.5, rounds: 300, munCost: 10, damage: { inf: 22, light: 26, heavy: 30, struct: 18, air: 10, jet: 12 } },
       { id: 'rocket', name: 'Raketen', range: 340, cooldown: 3, rounds: 10, munCost: 100, guided: true, targets: ['heavy', 'struct', 'air'], damage: { inf: 40, light: 120, heavy: 220, struct: 120, air: 150, jet: 110 } },
     ],
-    cost: { money: 900 },
+    cost: { money: 1700 }, // seit Paket Balance-Preise (vorher 900)
     buildTime: 28,
     fuelPerSec: 0.8,
     fuelMax: 70,
@@ -551,7 +551,7 @@ export const UNITS = {
       { id: 'aim', name: 'Luft-Luft-Lenkrakete', range: 640, cooldown: 2.5, rounds: 2, munCost: 150, hitChance: 0.92, guided: true, targets: ['air'], damage: { air: 700 } },
       { id: 'agm', name: 'Luft-Boden-Rakete', range: 600, cooldown: 2.5, rounds: 2, munCost: 150, hitChance: 0.92, guided: true, targets: ['heavy', 'light'], damage: { inf: 160, light: 650, heavy: 1150, struct: 700 } },
     ],
-    cost: { money: 1400 },
+    cost: { money: 2600 }, // seit Paket Balance-Preise (vorher 1400)
     buildTime: 40,
     fuelPerSec: 1,
     fuelMax: 55, // seit v5.14 55 statt 45: die Zone liegt auf der größeren Karte weiter vom Flughafen, die Zeit über ihr bleibt gleich
@@ -576,7 +576,7 @@ export const UNITS = {
       // antiHighAlt: greift auch die U-2 in großer Höhe an (highAlt); die übrigen Flugabwehr-Waffen können das nicht (combat.js)
       { id: 'aim', name: 'Luft-Luft-Lenkrakete', range: 700, cooldown: 2.2, rounds: 6, munCost: 150, hitChance: 0.94, guided: true, targets: ['air'], antiHighAlt: true, damage: { air: 700 } },
     ],
-    cost: { money: 1900 },
+    cost: { money: 3500 }, // seit Paket Balance-Preise (vorher 1900)
     buildTime: 55,
     fuelPerSec: 1,
     fuelMax: 55, // Sekunden Flug wie die F-16 (Reichweite ≈ speed × fuelMax)
@@ -600,7 +600,7 @@ export const UNITS = {
     weapons: [
       { id: 'gun', name: 'Bordkanone', range: 340, cooldown: 0.12, rounds: 400, munCost: 2, hitChance: 0.7, targets: ['inf', 'light', 'heavy', 'struct'], damage: { inf: 25, light: 60, heavy: 35, struct: 40 } },
     ],
-    cost: { money: 1500 },
+    cost: { money: 2800 }, // seit Paket Balance-Preise (vorher 1500)
     buildTime: 45,
     fuelPerSec: 1,
     fuelMax: 90, // lange Einsatzzeit: mehr Sekunden Flug als die F-16 (55), dafür langsamer
@@ -625,7 +625,7 @@ export const UNITS = {
     dropReach: 60, // Absetzen (Paket E13 b, js/game/paradrop.js): ab diesem Abstand (px) zum Zielpunkt lassen die Passagiere los
     dropRadius: 80, // Umkreis (px) um den Zielpunkt, in dem die Fallschirmjäger landen
     chuteTime: 3, // s am Fallschirm: sie schießen nicht und können nicht schießen, bis er abgelaufen ist
-    cost: { money: 1800 },
+    cost: { money: 3000 }, // seit Paket Balance-Preise (vorher 1800)
     buildTime: 60,
     fuelPerSec: 1,
     fuelMax: 90,
@@ -652,7 +652,7 @@ export const UNITS = {
       { id: 'aim', name: 'Luft-Luft-Lenkrakete', range: 640, cooldown: 2.5, rounds: 2, munCost: 150, hitChance: 0.92, guided: true, targets: ['air'], damage: { air: 700 } },
       { id: 'agm', name: 'Luft-Boden-Rakete', range: 600, cooldown: 2.5, rounds: 2, munCost: 150, hitChance: 0.92, guided: true, targets: ['heavy', 'light'], damage: { inf: 160, light: 650, heavy: 1150, struct: 700 } },
     ],
-    cost: { money: 1600 },
+    cost: { money: 2800 }, // seit Paket Balance-Preise (vorher 1600)
     buildTime: 45,
     fuelPerSec: 1,
     fuelMax: 75, // Sekunden Flug (fuelPerSec 1, auch beim Kreisen): 75 statt 55 der F-16 (Reichweite ≈ speed × fuelMax)
@@ -676,7 +676,7 @@ export const UNITS = {
     highAlt: true, // in der Luft nur von Waffen mit antiHighAlt angreifbar (combat.js)
     standSlots: 2, // belegt beide Plätze eines Stellplatzes (CITY.air.standJets): kein anderes Flugzeug darauf
     weapons: [],
-    cost: { money: 1600 },
+    cost: { money: 2600 }, // seit Paket Balance-Preise (vorher 1600)
     buildTime: 50,
     fuelPerSec: 1,
     fuelMax: 180, // rund 3 min Flug: Karte Ecke zu Ecke (ca. 15 700 px) hin und zurück mit gut einer Minute Kreisen
@@ -696,7 +696,7 @@ export const UNITS = {
     weapons: [
       { id: 'flak', name: 'Flak', range: 330, cooldown: 0.8, rounds: 30, munCost: 20, hitChance: 0.85, speedRef: 120, damage: { air: 40 } },
     ],
-    cost: { money: 220 },
+    cost: { money: 300 }, // seit Paket Balance-Preise (vorher 220)
     buildTime: 10,
     fuelPerSec: 0.4,
     fuelMax: 40,
@@ -716,7 +716,7 @@ export const UNITS = {
     weapons: [
       { id: 'sam', name: 'Wärmesuchrakete', range: 420, cooldown: 10, rounds: 4, munCost: 250, hitChance: 0.9, guided: true, damage: { air: 350 } },
     ],
-    cost: { money: 300 },
+    cost: { money: 400 }, // seit Paket Balance-Preise (vorher 300)
     buildTime: 12,
     fuelPerSec: 0.4,
     fuelMax: 40,
@@ -736,7 +736,7 @@ export const UNITS = {
     weapons: [
       { id: 'twin35', name: 'Zwillingskanone 35 mm', range: 420, cooldown: 0.35, rounds: 80, munCost: 8, hitChance: 0.8, speedRef: 400, targets: ['air'], damage: { inf: 8, light: 14, heavy: 2, struct: 6, air: 32, jet: 32 } },
     ],
-    cost: { money: 650 },
+    cost: { money: 1000 }, // seit Paket Balance-Preise (vorher 650)
     buildTime: 16,
     fuelPerSec: 0.35,
     fuelMax: 45,
@@ -758,7 +758,7 @@ export const UNITS = {
     weapons: [
       { id: 'howitzer', name: 'Haubitze 155 mm', range: 1400, minRange: 260, cooldown: 7, rounds: 30, munCost: 25, shell: true, splash: 75, spread: 70, shellSpeed: 480, damage: { inf: 90, light: 110, heavy: 80, struct: 140 } },
     ],
-    cost: { money: 900 },
+    cost: { money: 1500 }, // seit Paket Balance-Preise (vorher 900)
     buildTime: 22,
     fuelPerSec: 0.35,
     fuelMax: 40,
@@ -780,7 +780,7 @@ export const UNITS = {
     weapons: [
       { id: 'rockets', name: 'Raketenwerfer 227 mm', range: 1600, minRange: 400, cooldown: 30, rounds: 36, munCost: 15, shell: true, splash: 60, spread: 120, shellSpeed: 480, salvo: { count: 12, gap: 0.25, reload: 30 }, damage: { inf: 70, light: 90, heavy: 60, struct: 110 } },
     ],
-    cost: { money: 1000 },
+    cost: { money: 1700 }, // seit Paket Balance-Preise (vorher 1000)
     buildTime: 26,
     fuelPerSec: 0.35,
     fuelMax: 40,

@@ -982,7 +982,7 @@ test('Abschussprämie: Fahrzeuge viel, Soldaten wenig, Mauern nichts; fertiger B
   hit(g, tank, 9999);
   const afterTank = g.teams[0].res.money;
   assert.equal(afterRifle - m0, Math.round(60 * BALANCE.bounty.inf));
-  assert.equal(afterTank - afterRifle, Math.round(500 * BALANCE.bounty.vehicle));
+  assert.equal(afterTank - afterRifle, Math.round(UNITS.tank.cost.money * BALANCE.bounty.vehicle));
   assert.ok(afterTank - afterRifle > 10 * (afterRifle - m0) / 2, 'Fahrzeug viel mehr als Soldat');
   assert.equal(g.teams[1].res.money, m0, 'der Verlierer bekommt nichts');
   hit(g, rifle, 5);

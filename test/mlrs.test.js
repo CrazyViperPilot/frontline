@@ -25,7 +25,7 @@ test('Raketenwerfer: nur in der Fabrikhalle (Taste T), nicht in der Hauptstadt, 
   const u = UNITS.mlrs;
   assert.ok(u);
   assert.equal(u.hotkey, 'T');
-  assert.equal(u.cost.money, 1000);
+  assert.equal(u.cost.money, 1700);
   assert.equal(u.indirect, true, 'Zielsuche über die Reichweite wie die Panzerhaubitze');
   assert.ok(CITY.produces.factory.includes('mlrs'));
   assert.ok(!BUILDINGS.fob.produces.includes('mlrs'), 'nicht in der Hauptstadt');

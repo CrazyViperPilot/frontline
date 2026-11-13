@@ -111,7 +111,8 @@ export const CITY = {
   startMetal: 400, // Stahl im Hauptlager zu Beginn (Stahl bleibt dort, LKW fahren es nicht; Schlüssel metal)
   startKero: 300, // Kerosin im Stadtlager zu Beginn (seit v5.20; F-16 und Hubschrauber tanken es)
   // Metall je ausgebildeter Einheit (zusätzlich zum Geld); fehlt die Sorte, kostet sie kein Metall
-  metalCost: { truck: 20, scout: 30, engineer: 20, fobTruck: 80, ifv: 60, tank: 120, flak: 60, sam: 80, gepard: 100, pzh: 140, mlrs: 160, excavator: 80, bridgelayer: 70, recovery: 40, jammer: 40, littlebird: 60, drone: 30, fpv: 30, transporter: 80, gunship: 120, f16: 160, f22: 220, u2: 150, su27: 160, a10: 180, c130: 200 },
+  // seit Paket Balance-Preise (Metall alt→neu): ifv 60→120, tank 120→250, pzh 140→280, mlrs 160→300, gepard 100→180, flak 60→80, sam 80→110, littlebird 60→120, gunship 120→250, transporter 80→120, drone 30→50, fpv 30→50, f16 160→320, su27 160→330, a10 180→360, u2 150→300, c130 200→380, f22 220→450
+  metalCost: { truck: 20, scout: 30, engineer: 20, fobTruck: 80, ifv: 120, tank: 250, flak: 80, sam: 110, gepard: 180, pzh: 280, mlrs: 300, excavator: 80, bridgelayer: 70, recovery: 40, jammer: 40, littlebird: 120, drone: 50, fpv: 50, transporter: 120, gunship: 250, f16: 320, f22: 450, u2: 300, su27: 330, a10: 360, c130: 380 },
   // Markt: handelt in Losen; verkaufen bringt wenig, kaufen kostet viel (Geld je Los)
   market: { lot: 100, maxCount: 100, sell: byGood('sell'), buy: byGood('buy') }, // maxCount: höchstens so viele Lose je Befehl (Knöpfe ×10, ×100 im Marktmenü); Preise je Ware im Register js/data/goods.js
 

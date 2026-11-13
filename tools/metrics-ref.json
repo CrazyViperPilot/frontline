@@ -1,86 +1,86 @@
 {
  "3": [
   {
-   "steel": 1046,
-   "mun": 1812,
-   "trained": 59,
-   "kills": 76,
+   "steel": 774,
+   "mun": 1018,
+   "trained": 23,
+   "kills": 38,
    "fobs": 5,
-   "cells": 526,
-   "houses": 5,
-   "storms": 0,
-   "workRoutes": 1,
-   "airDef": 2,
-   "points": 14
-  },
-  {
-   "steel": 473,
-   "mun": 939,
-   "trained": 53,
-   "kills": 63,
-   "fobs": 5,
-   "cells": 517,
-   "houses": 3,
-   "storms": 0,
-   "workRoutes": 1,
-   "airDef": 0,
-   "points": 7
-  }
- ],
- "7": [
-  {
-   "steel": 723,
-   "mun": 1869,
-   "trained": 49,
-   "kills": 73,
-   "fobs": 5,
-   "cells": 598,
+   "cells": 685,
    "houses": 2,
    "storms": 0,
-   "workRoutes": 1,
+   "workRoutes": 0,
    "airDef": 0,
    "points": 10
   },
   {
-   "steel": 378,
-   "mun": 526,
-   "trained": 47,
-   "kills": 68,
+   "steel": 881,
+   "mun": 1136,
+   "trained": 18,
+   "kills": 58,
    "fobs": 5,
-   "cells": 445,
-   "houses": 4,
+   "cells": 697,
+   "houses": 3,
    "storms": 0,
-   "workRoutes": 2,
+   "workRoutes": 0,
    "airDef": 0,
-   "points": 14
+   "points": 12
   }
  ],
- "11": [
+ "7": [
   {
-   "steel": 674,
-   "mun": 1464,
-   "trained": 59,
-   "kills": 77,
+   "steel": 1402,
+   "mun": 2011,
+   "trained": 24,
+   "kills": 73,
    "fobs": 5,
-   "cells": 616,
-   "houses": 5,
-   "storms": 3,
+   "cells": 473,
+   "houses": 3,
+   "storms": 4,
    "workRoutes": 1,
-   "airDef": 1,
-   "points": 17
+   "airDef": 0,
+   "points": 21
   },
   {
-   "steel": 562,
-   "mun": 1146,
-   "trained": 52,
-   "kills": 60,
-   "fobs": 4,
-   "cells": 522,
+   "steel": 738,
+   "mun": 300,
+   "trained": 28,
+   "kills": 49,
+   "fobs": 3,
+   "cells": 669,
    "houses": 3,
    "storms": 0,
    "workRoutes": 1,
    "airDef": 0,
-   "points": 1
+   "points": 3
+  }
+ ],
+ "11": [
+  {
+   "steel": 589,
+   "mun": 711,
+   "trained": 20,
+   "kills": 48,
+   "fobs": 5,
+   "cells": 700,
+   "houses": 4,
+   "storms": 5,
+   "workRoutes": 0,
+   "airDef": 0,
+   "points": 9
+  },
+  {
+   "steel": 855,
+   "mun": 672,
+   "trained": 23,
+   "kills": 70,
+   "fobs": 5,
+   "cells": 672,
+   "houses": 4,
+   "storms": 8,
+   "workRoutes": 0,
+   "airDef": 0,
+   "points": 8
   }
  ]
 }

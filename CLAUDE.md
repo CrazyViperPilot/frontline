@@ -83,9 +83,9 @@ npm run metrics                   # KI-Kennzahlen: 3 Seeds × 15 min KI gegen KI
   PRD.md und einen zu großen Einstieg (über 20 000 Zeichen). Alle laufen auch in `npm test`.
 - CI: `.github/workflows/test.yml` läuft bei jedem Push und Pull Request (Tests und KI-Kennzahlen).
 - **Veröffentlichung:** `.github/workflows/deploy.yml` lädt das Spiel nach jedem Push auf `main` (nach grünen Tests) per FTP auf Daniels
-  Webspace: <https://phpexpert.de/frontline/>. Secrets `FTP_SERVER`, `FTP_USER`, `FTP_PASSWORD`; Datenbank `DB_SERVER`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` (Pflicht für `api/save.php` und `api/auth.php`); Postfach für Konto-Mails `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (fehlen sie, nur Warnung; die API meldet dann beim Mailversand einen Fehler, Doku: `docs/prd/konto.md`); optionale Variablen `FTP_DIR` (Zielordner,
+  Webspace: <https://phpexpert.de/frontline/>. Secrets `FTP_SERVER`, `FTP_USER`, `FTP_PASSWORD`; Datenbank `DB_SERVER`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` (Pflicht für `api/save.php` und `api/auth.php`); Postfach für Konto-Mails `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM` (fehlen sie, nur Warnung; die API meldet dann beim Mailversand einen Fehler, Doku: `docs/prd/konto.md`); Admin-Panel `ADMIN_USER`, `ADMIN_PASSWORD` (nur Name und `password_hash` landen in `api/config.php`; fehlen sie, antwortet `api/admin.php` mit 503; Doku: `docs/prd/konto.md`, Abschnitt „Admin-Panel“); optionale Variablen `FTP_DIR` (Zielordner,
   Standard `./`), `FTP_PROTOCOL` (`ftps` oder `ftp`), `FTP_SECURITY` (`strict` oder `loose`). Hochgeladen werden nur die Dateien, die der
-  Browser braucht, plus `api/` (Spielstand-Backend `api/save.php`, Konten `api/auth.php`, gemeinsamer Code `api/lib/`, PHP); `api/data/` auf dem Server wird nie überschrieben oder gelöscht.
+  Browser braucht, plus `api/` (Spielstand-Backend `api/save.php`, Konten `api/auth.php`, Admin-API `api/admin.php`, gemeinsamer Code `api/lib/`, PHP) und `admin/` (Admin-Panel, nicht im Offline-Cache); `api/data/` auf dem Server wird nie überschrieben oder gelöscht.
 
 ## Zusammenarbeit (mehrere Agenten, seit v5.81)
 

@@ -286,3 +286,4 @@ Wo jedes Feature liegt. „KI“ = Konstanten-Präfix in `js/data/ai.js`, Logik 
 | Lichtstimmung (nur Optik, Menü „Licht“) | §7 „Wetter und Jahreszeiten“ | `MOOD_SETTINGS`, `MOODS` (`js/render/mood.js`) | – | – | `js/render/mood.js` | `mood.test.js` |
 | Offline, Installation | §11 | – | – | – | `sw.js`, `manifest.json`, `icons/` | `assets.test.js` |
 | Benutzerkonten (Backend KO1: Registrieren, Bestätigung, Anmelden per Cookie, Passwort vergessen, SMTP) | §17 | Fristen und Bremsen oben in `api/auth.php`; SMTP-Zugang in `api/config.php` (Deploy) | `api/auth.php`, `api/lib/db.php`, `api/lib/mail.php` (PHP, kein Spielcode) | – | – | von Hand (siehe §17) |
+| Admin-Panel (Benutzerverwaltung, Sperre, Konto-Art, Löschen) | §17 | Zugang in `api/config.php` (Deploy, Secrets `ADMIN_USER`, `ADMIN_PASSWORD`); Bremse und Sitzung in `api/admin.php` | `api/admin.php`, `api/lib/konto.php`, `admin/` (Oberfläche, kein Spielcode) | – | – | von Hand (siehe §17) |

@@ -10,6 +10,7 @@
 // user nach außen: {email, plan, premiumUntil, createdAt}, nie Hash oder id.
 // Fehler: {"error": "…"} mit HTTP-Code: 400 Anfrage, 401 Anmeldung falsch, 403 nicht bestätigt, 405 Methode,
 //         429 zu viele Versuche, 500 Server/Datenbank, 503 Mailversand nicht eingerichtet oder fehlgeschlagen.
+// Gesperrte Konten (Admin-Panel, api/admin.php) bekommen beim Anmelden nach richtigem Passwort 403 „Konto gesperrt“.
 // Keine Aussage, ob eine E-Mail-Adresse registriert ist: register und forgot antworten gleich (bei Bremse, Bestätigung
 // und Nichtexistenz). Tokens liegen nur als SHA-256 in der Datenbank, Passwörter als password_hash.
 
@@ -93,6 +94,7 @@ function fl_login(array $body) {
     $password = fl_field($body, 'password');
     if (!is_string($password) || $password === '') fail(400, 'Passwort fehlt');
     $pdo = fl_db(FL_SCHEMA);
+    fl_konto_upgrade($pdo);
     if (fl_attempt($pdo, 'login', fl_who_ip(), FL_LOGIN_WINDOW) > FL_LOGIN_MAX) {
         fail(429, 'Zu viele Anmeldeversuche. Bitte in 15 Minuten erneut versuchen.');
     }
@@ -104,6 +106,7 @@ function fl_login(array $body) {
         fail(403, 'Das Konto ist noch nicht bestätigt. Den Link aus der Bestätigungsmail öffnen (48 Stunden gültig) '
             . 'oder mit derselben Adresse erneut registrieren.');
     }
+    if ((int) $user['blocked'] === 1) fail(403, 'Konto gesperrt');
     $token = bin2hex(random_bytes(32));
     $now = time();
     $pdo->prepare('DELETE FROM sessions WHERE expires_at < :now')->execute([':now' => $now]);

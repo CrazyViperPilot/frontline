@@ -4,10 +4,11 @@
 //   POST admin.php {"action":"login","user":"…","password":"…"}   → {"ok":true,"user":"…"}; setzt Cookie fl_admin (8 h)
 //   POST admin.php {"action":"logout"}                             → {"ok":true}; beendet die Admin-Sitzung
 //   POST admin.php {"action":"me"}                                 → {"ok":true,"user":"…"}
-//   POST admin.php {"action":"users"}                              → {"users":[{id,email,createdAt,verifiedAt,lastLogin,plan,premiumUntil,blocked,saves}]}
+//   POST admin.php {"action":"users"}                              → {"users":[{id,email,createdAt,verifiedAt,lastLogin,plan,premiumUntil,blocked,saves,wallet}],"walletMax":N}
 //   POST admin.php {"action":"approve","id":N}                     → {"ok":true}: E-Mail gilt als bestätigt, offene Bestätigungslinks entfallen
 //   POST admin.php {"action":"block"|"unblock","id":N}             → {"ok":true}; Sperre: Anmelden 403, bestehende Sitzungen enden
 //   POST admin.php {"action":"plan","id":N,"plan":"free"|"premium","premiumUntil":Sekunden|null} → {"ok":true}
+//   POST admin.php {"action":"setwallet","id":N,"value":Zahl}      → {"ok":true}: Kasse des Kontos setzen (0 bis walletMax, KA1)
 //   POST admin.php {"action":"delete","id":N}                      → {"ok":true,"saves":n}: Konto, Sitzungen, Links und Spielstände gelöscht
 // Fehler: 400 Anfrage, 401 nicht angemeldet (oder Anmeldung falsch bei login → 401 mit eigener Meldung), 404 Konto fehlt, 405 Methode,
 //         429 zu viele Fehlversuche (5 je IP in 15 min), 500 Server/Datenbank, 503 „Admin nicht eingerichtet“.
@@ -58,6 +59,7 @@ switch ($action) {
     case 'block': admin_block($pdo, $body, true); break;
     case 'unblock': admin_block($pdo, $body, false); break;
     case 'plan': admin_plan($pdo, $body); break;
+    case 'setwallet': admin_setwallet($pdo, $body); break;
     case 'delete': admin_delete($pdo, $body); break;
     default: fail(400, 'Unbekannte Aktion');
 }
@@ -157,10 +159,10 @@ function admin_fail_record(PDO $pdo, $who) {
 // Liste aller Konten, neueste zuerst. Spielstände zählt die Tabelle saves (fehlt sie, gibt es noch keine).
 function admin_users(PDO $pdo) {
     if (admin_has_table($pdo, 'saves')) {
-        $sql = 'SELECT u.id, u.email, u.created_at, u.verified_at, u.last_login, u.plan, u.premium_until, u.blocked, COUNT(s.id) AS saves
+        $sql = 'SELECT u.id, u.email, u.created_at, u.verified_at, u.last_login, u.plan, u.premium_until, u.blocked, u.wallet, COUNT(s.id) AS saves
                 FROM users u LEFT JOIN saves s ON s.user_id = u.id GROUP BY u.id ORDER BY u.created_at DESC, u.id DESC';
     } else {
-        $sql = 'SELECT id, email, created_at, verified_at, last_login, plan, premium_until, blocked, 0 AS saves
+        $sql = 'SELECT id, email, created_at, verified_at, last_login, plan, premium_until, blocked, wallet, 0 AS saves
                 FROM users ORDER BY created_at DESC, id DESC';
     }
     $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
@@ -176,9 +178,10 @@ function admin_users(PDO $pdo) {
             'premiumUntil' => $r['premium_until'] === null ? null : (int) $r['premium_until'],
             'blocked' => (int) $r['blocked'] === 1,
             'saves' => (int) $r['saves'],
+            'wallet' => (int) $r['wallet'],
         ];
     }
-    out(['users' => $list]);
+    out(['users' => $list, 'walletMax' => FL_WALLET_MAX]);
 }
 
 // Freigeben: die E-Mail gilt als bestätigt; offene Bestätigungslinks werden ungültig.
@@ -213,6 +216,17 @@ function admin_plan(PDO $pdo, array $body) {
     $pdo->prepare('UPDATE users SET plan = :p, premium_until = :u WHERE id = :id')->execute([
         ':p' => $plan, ':u' => $until, ':id' => $id,
     ]);
+}
+
+// Kasse setzen (KA1): ausdrücklich von Daniel, daher ohne die Bremse des Browser-Meldens; 0 bis FL_WALLET_MAX, ganze Zahl.
+function admin_setwallet(PDO $pdo, array $body) {
+    $id = admin_id($body);
+    admin_user_row($pdo, $id);
+    $value = isset($body['value']) ? $body['value'] : null;
+    if (!is_numeric($value) || (float) $value < 0 || (float) $value > FL_WALLET_MAX) {
+        fail(400, 'Kasse muss eine Zahl von 0 bis ' . FL_WALLET_MAX . ' sein');
+    }
+    $pdo->prepare('UPDATE users SET wallet = :w WHERE id = :id')->execute([':w' => (int) floor((float) $value), ':id' => $id]);
 }
 
 // Löschen in einer Transaktion: Spielstände, Sitzungen, Links, dann das Konto.

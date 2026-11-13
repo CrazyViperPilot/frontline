@@ -7,6 +7,7 @@
   const API = new URL('../api/admin.php', location.href).href; // Adresse relativ zu /frontline/admin/
   const $ = (id) => document.getElementById(id);
   let users = [];
+  let walletMax = null; // Obergrenze der Kasse aus der Schnittstelle (FL_WALLET_MAX in api/lib/konto.php)
 
   /** Anfrage an die Admin-API (Cookie fl_admin wird mitgeschickt). Fehler tragen den HTTP-Code in .status (0 = kein Server). */
   async function call(action, data = {}) {
@@ -96,6 +97,7 @@
       cell('Bestätigt', u.verifiedAt ? 'ja' : 'nein', u.verifiedAt ? 'yes' : 'no'),
       cell('Letzte Anmeldung', stamp(u.lastLogin)),
       cell('Konto', planLabel(u)),
+      cell('Kasse', `${u.wallet} Geld`),
       cell('Gesperrt', u.blocked ? 'ja' : 'nein', u.blocked ? 'no' : ''),
       cell('Spielstände', String(u.saves)),
     );
@@ -108,6 +110,7 @@
     acts.append(u.plan === 'premium'
       ? button('Auf Kostenlos', () => act(u, 'plan', { plan: 'free' }))
       : button('Auf Premium', () => act(u, 'plan', { plan: 'premium' })));
+    acts.append(button('Kasse setzen', () => setWallet(u)));
     acts.append(button('Löschen', () => remove(u), 'danger'));
     const td = document.createElement('td');
     td.dataset.label = 'Aktionen';
@@ -129,7 +132,7 @@
       const tr = document.createElement('tr');
       tr.className = 'empty';
       const td = document.createElement('td');
-      td.colSpan = 8;
+      td.colSpan = 9;
       td.textContent = users.length ? 'Keine Adresse passt zur Suche.' : 'Noch keine Konten.';
       tr.append(td);
       tbody.append(tr);
@@ -144,6 +147,7 @@
     try {
       const r = await call('users');
       users = r.users || [];
+      walletMax = r.walletMax ?? walletMax;
       renderRows();
     } catch (err) {
       handle(err);
@@ -160,6 +164,13 @@
     } catch (err) {
       handle(err);
     }
+  }
+
+  /** Kasse des Kontos setzen (0 bis walletMax); die Prüfung macht der Server, seine Meldung steht dann oben. */
+  function setWallet(u) {
+    const text = window.prompt(`Neue Kasse für ${u.email} in Geld (0 bis ${walletMax ?? 'Obergrenze'}):`, String(u.wallet));
+    if (text === null) return;
+    act(u, 'setwallet', { value: text.trim() }, `${u.email}: Kasse auf ${text.trim()} gesetzt.`);
   }
 
   async function remove(u) {

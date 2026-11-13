@@ -1,12 +1,13 @@
 # Konten (§17)
 
 Benutzersteuerung als Grundlage für späteres Vermarkten (Premium-Konten u. a.). Plan mit allen Paketen: [docs/plan-konten.md](../plan-konten.md).
-**Stand:** KO1 (Backend), KO2 (Spielstände ans Konto), KO3 (Oberfläche im Startmenü, Rücksprung von den Mail-Links) und das
-Admin-Panel (Benutzerverwaltung, Abschnitt unten) gebaut.
+**Stand:** KO1 (Backend), KO2 (Spielstände ans Konto), KO3 (Oberfläche im Startmenü, Rücksprung von den Mail-Links), das
+Admin-Panel (Benutzerverwaltung, Abschnitt unten) und die Kasse am Konto (KA1, Abschnitt unten) gebaut.
 
 ## Ziel und Regeln
 
-- **Gast:** Spielen geht ohne Konto. Stände liegen dann nur auf dem Gerät (wie bisher, §16).
+- **Gast:** Spielen geht ohne Konto. Stände liegen dann nur auf dem Gerät (wie bisher, §16). Gäste starten jede Partie mit dem
+  Startbetrag; eine Kasse gibt es nur am Konto (KA1, Abschnitt unten).
 - **Konto:** E-Mail-Adresse und Passwort. Bestätigt wird per Link aus der Mail. Mit Konto liegen Stände auf dem Server
   und gehören dem Konto (KO2, Abschnitt unten).
 - Die Felder `plan` und `premium_until` sind schon da, damit Premium später ohne Datenumbau kommt. Heute hat jedes Konto `free`.
@@ -21,7 +22,8 @@ Admin-Panel (Benutzerverwaltung, Abschnitt unten) gebaut.
 | `attempts` | `who_hash` (HMAC einer IP oder Adresse), `kind` (`login`, `mailip`, `mail`, `admin`), `created_at` | Zähler für die Bremsen; Einträge älter als 24 h werden gelöscht |
 | `admin_sessions` | `hash` (SHA-256 des Cookies `fl_admin`), `created_at`, `expires_at` | Admin-Panel, 8 Stunden (Abschnitt „Admin-Panel“) |
 
-Die Spalte `users.blocked` (`TINYINT`, Standard 0) kommt seit dem Admin-Panel dazu; `api/lib/konto.php` legt sie bei Bedarf selbst an.
+Die Spalte `users.blocked` (`TINYINT`, Standard 0) kommt seit dem Admin-Panel dazu, die Spalte `users.wallet` (`BIGINT`, Standard
+800) seit KA1 (Kasse am Konto; Bestandskonten bekommen 800). `api/lib/konto.php` legt beide bei Bedarf selbst an.
 
 Passwörter nur als `password_hash` (PASSWORD_DEFAULT), Tokens mit `random_bytes(32)`, in der Datenbank nur als Hash. Die HMAC-Schlüssel
 kommen aus dem Datenbankpasswort (`api/config.php`), IPs und Adressen lassen sich so nicht zurückrechnen.
@@ -37,8 +39,10 @@ kommen aus dem Datenbankpasswort (`api/config.php`), IPs und Adressen lassen sic
 | `POST {"action":"me"}` | `{user}` oder `{user:null}` | ohne Cookie ohne Datenbankzugriff |
 | `POST {"action":"forgot","email"}` | `{ok, message}` | nur für bestätigte Konten: Mail mit `/frontline/?reset=<token>` (1 h) |
 | `POST {"action":"reset","token","password"}` | `{ok}` | setzt das Passwort, beendet alle Sitzungen des Kontos |
+| `POST {"action":"wallet","value"}` | `{ok, wallet}` | nur mit Sitzung: meldet die Kasse (KA1, Abschnitt unten) |
+| `POST {"action":"walletreset"}` | `{ok, wallet}` | nur mit Sitzung: Kasse auf den Startbetrag (KA1) |
 
-`user` nach außen: `{email, plan, premiumUntil, createdAt}`, nie Hash oder id.
+`user` nach außen: `{email, plan, premiumUntil, createdAt, wallet}`, nie Hash oder id.
 
 **Cookie:** `fl_session`, HttpOnly, Secure, SameSite=Lax, Pfad `/`, 30 Tage. Abmelden löscht es.
 
@@ -62,6 +66,37 @@ kommen aus dem Datenbankpasswort (`api/config.php`), IPs und Adressen lassen sic
 - **Sperre:** Ein gesperrtes Konto (Admin-Panel) bekommt beim Anmelden nach richtigem Passwort 403 `Konto gesperrt`. Seine
   Sitzungen gelten nicht mehr (`me` liefert `null`, `save.php` 401). Das Entsperren macht die Sitzungen nicht zurück.
 
+## Kasse am Konto (KA1)
+
+Die **Kasse** ist das Geld, das von Runde zu Runde bleibt (§3 „Ressourcen & Logistik“ in [ressourcen-bau.md](ressourcen-bau.md), `BALANCE.walletMax` als Obergrenze). Sie gibt es nur für
+angemeldete Spieler und liegt dann im Konto, also auf jedem Gerät gleich.
+
+- **Gast:** Jede Partie startet mit dem Startbetrag (`BALANCE.startRes.money`, 800). Es gibt kein Sparschwein im Browser
+  (`localStorage`): Das Partieende meldet nichts. Das Startmenü sagt „Ohne Konto startest du jede Partie mit 800 Geld. Mit Konto
+  bleibt dein Geld von Runde zu Runde erhalten.“
+- **Angemeldet:** Die Partie startet mit der Kasse des Kontos (aus `me` oder der Anmeldung). Am Partieende meldet das Spiel den
+  Geldstand (`saves.saveWallet`, Client `js/ui/saves.js`). Die Anzeige im Startmenü: „Kasse: <Betrag> Geld … · zurücksetzen“.
+- **Speichern:** `POST auth.php {"action":"wallet","value"}` setzt die Kasse auf `max(0, min(5000, floor(value)))`. Der Server
+  zählt nicht selbst hoch; das Spiel rechnet das Geld.
+- **Endstand:** Gespeichert wird der **tatsächliche** Geldstand am Partieende (Ausgeben senkt die Kasse, gut spielen hebt sie). Der
+  Schutz gegen ein veraltetes Gerät, das einen höheren Stand überschreibt, kommt über den signierten Match-Start (eigenes Paket).
+- **Zurücksetzen:** Der Knopf „zurücksetzen“ im Startmenü ruft `walletreset` auf (ohne Bremse) und setzt auf 800.
+- **Ohne Netz:** Der gemeldete Stand wird im Browser vorgemerkt (`frontline-kasse-ausstehend`: Wert und E-Mail) und beim nächsten
+  Anmelden oder Abgleich (`syncUp`) geschickt. Gehört er zu einem anderen Konto, fällt er weg. Vorgemerkt gewinnt er gegen den
+  Stand des Servers (er ist der neuere).
+- **Abmelden:** Die Kasse verschwindet aus der Anzeige; das Spiel startet dann mit dem Startbetrag.
+- **Admin-Panel:** Spalte „Kasse“ und der Knopf „Kasse setzen“ (`setwallet {id, value}`, 0 bis 5000, ganze Zahl; ohne Bremse).
+- **Ehrlichkeit:** Die Kasse wird im Browser berechnet und ist nicht fälschungssicher. Eine serverseitige Plausibilitätsprüfung der
+  Geldsumme ist bewusst nicht Teil dieses Pakets (Daniels Entscheidung).
+- **Zahlen:** Startbetrag und Obergrenze stehen in `js/data/balance.js` (`QUICK.startMoney`, `QUICK.walletMax`) und als Spiegel in
+  `api/lib/konto.php` (`FL_WALLET_START`, `FL_WALLET_MAX`). Bei einer Änderung beide Stellen anpassen.
+- **Dateien:** `api/auth.php` (Aktionen, Antwort `user`), `api/lib/konto.php` (Spalte, Spiegel), `api/admin.php` (Liste,
+  `setwallet`), `js/ui/saves.js` (Kasse am Konto: `setAccount`, `accountWallet`, `saveWallet`, `resetWallet`), `js/main.js`
+  (`loadWallet`, Partieende), `js/ui/menu.js` (Zeile im Startmenü), `admin/admin.js` und `admin/index.html`.
+- **Tests:** `test/kasse.test.js` prüft die Client-Logik ohne Browser (Gast, Anmelden, Bremse, Grenzen, Vormerkung ohne Netz, fremdes
+  Konto, zwei Meldungen während einer Übertragung, Zurücksetzen, 401). Von Hand gegen MariaDB und `php -S` geprüft: Migration der Spalte bei einem Bestandskonto, Antworten und
+  Fehler von `wallet`, `walletreset` und `setwallet`, 401 ohne Sitzung und bei gesperrtem Konto. Oberfläche im Browser mit gefälschtem
+  Backend: Gast, Anmelden über das Formular, Partie mit Kasse aus dem Konto, Zurücksetzen, Admin-Panel (Spalte und Eingabe).
 ## Mailversand (`api/lib/mail.php`)
 
 Eigener kleiner SMTP-Client (`stream_socket_client`, AUTH LOGIN, Text-Mail in UTF-8 als Base64). Zugang aus `api/config.php`,

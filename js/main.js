@@ -36,32 +36,11 @@ function loadIso() {
     return false;
   }
 }
-// Kasse: Das Geld des Spielers bleibt von Runde zu Runde (localStorage); beide Teams starten mit demselben Betrag.
-const WALLET_KEY = 'frontline-kasse';
+// Kasse (Geld von Runde zu Runde) gibt es nur am Konto (ui/saves.js, KA1): Gäste und Partien ohne bekannte Kasse starten mit
+// dem Startbetrag. Mit ?debug=1 immer der Startbetrag; dann wird auch nichts ans Konto gemeldet.
 function loadWallet() {
   if (DEBUG) return BALANCE.startRes.money;
-  try {
-    const v = Number.parseInt(localStorage.getItem(WALLET_KEY), 10);
-    if (Number.isFinite(v)) return Math.min(BALANCE.walletMax, Math.max(BALANCE.startRes.money, v));
-  } catch {
-    /* ohne Speicher: Startgeld */
-  }
-  return BALANCE.startRes.money;
-}
-function saveWallet(v) {
-  if (DEBUG) return;
-  try {
-    localStorage.setItem(WALLET_KEY, String(Math.min(BALANCE.walletMax, Math.max(0, Math.floor(v)))));
-  } catch {
-    /* ohne Speicher: gilt nur für diese Sitzung */
-  }
-}
-function resetWallet() {
-  try {
-    localStorage.removeItem(WALLET_KEY);
-  } catch {
-    /* nichts zu tun */
-  }
+  return saves.accountWallet() ?? BALANCE.startRes.money;
 }
 const URL_SEED = Number.parseInt(params.get('seed'), 10);
 const URL_SPEED = Number.parseFloat(params.get('speed'));
@@ -124,7 +103,7 @@ function stopSession() {
 
 function quitToMenu() {
   stopSession();
-  showStartMenu(overlay, startGame, { wallet: loadWallet, resetWallet, resume: resumeOffer });
+  showStartMenu(overlay, startGame, { resume: resumeOffer });
 }
 
 // ---- Spielstand (Gerät + Webspace, ui/saves.js) ----------------------------------------------------------------
@@ -266,7 +245,7 @@ function loadStand(id) {
       return resumeGame(rec);
     })
     .catch((err) => {
-      showStartMenu(overlay, startGame, { wallet: loadWallet, resetWallet, resume: resumeOffer });
+      showStartMenu(overlay, startGame, { resume: resumeOffer });
       alert(`Spielstand lässt sich nicht laden: ${err.message ?? err}`);
     });
 }
@@ -471,7 +450,7 @@ function frame(s) {
   const g = s.game;
   if (g.winner !== null && !s.ended) {
     s.ended = true;
-    saveWallet(g.teams[HUMAN].res.money);
+    if (!DEBUG) saves.saveWallet(g.teams[HUMAN].res.money); // Kasse ans Konto (Gäste: nichts)
     if (!DEBUG) saveNow(s, true); // beendete Partie bleibt als Stand (ended, nicht fortsetzbar), wird nicht gelöscht
     sound.end(g.winner === HUMAN);
     showEnd(
@@ -580,7 +559,7 @@ function buildSession(game, ai, opts, view) {
   s.loop.start();
 }
 
-showStartMenu(overlay, startGame, { wallet: loadWallet, resetWallet, resume: resumeOffer });
+showStartMenu(overlay, startGame, { resume: resumeOffer });
 
 // Beim Verlassen/Wegwischen der App sichern (lokal sicher, Webspace, wenn die Zeit reicht)
 document.addEventListener('visibilitychange', () => {

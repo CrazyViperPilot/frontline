@@ -7,7 +7,9 @@
 //   POST auth.php {"action":"me"}                                   → {"user":{…}} oder {"user":null}
 //   POST auth.php {"action":"forgot","email":"…"}                   → {"ok":true,"message":"…"}; Mail mit Link /frontline/?reset=<token>
 //   POST auth.php {"action":"reset","token":"…","password":"…"}     → {"ok":true}; setzt das Passwort, meldet alle Sitzungen ab
-// user nach außen: {email, plan, premiumUntil, createdAt}, nie Hash oder id.
+//   POST auth.php {"action":"wallet","value":Zahl}                  → {"ok":true,"wallet":Zahl}; Kasse am Konto (KA1, nur mit Sitzung)
+//   POST auth.php {"action":"walletreset"}                          → {"ok":true,"wallet":800}; Kasse auf den Startbetrag
+// user nach außen: {email, plan, premiumUntil, createdAt, wallet}, nie Hash oder id.
 // Fehler: {"error": "…"} mit HTTP-Code: 400 Anfrage, 401 Anmeldung falsch, 403 nicht bestätigt, 405 Methode,
 //         429 zu viele Versuche, 500 Server/Datenbank, 503 Mailversand nicht eingerichtet oder fehlgeschlagen.
 // Gesperrte Konten (Admin-Panel, api/admin.php) bekommen beim Anmelden nach richtigem Passwort 403 „Konto gesperrt“.
@@ -59,6 +61,8 @@ switch ($body['action']) {
     case 'me': fl_me(); break;
     case 'forgot': fl_forgot($body); break;
     case 'reset': fl_reset($body); break;
+    case 'wallet': fl_wallet($body); break;
+    case 'walletreset': fl_wallet_reset(); break;
     default: fail(400, 'Unbekannte Aktion');
 }
 
@@ -173,6 +177,35 @@ function fl_reset(array $body) {
     $pdo->prepare('DELETE FROM tokens WHERE user_id = :id AND kind = :k')->execute([':id' => $uid, ':k' => 'reset']);
     $pdo->prepare('DELETE FROM sessions WHERE user_id = :id')->execute([':id' => $uid]);
     out(['ok' => true]);
+}
+
+// Kasse am Konto (KA1): der Browser meldet den Geldstand am Partieende. Gespeichert wird er begrenzt (0 bis FL_WALLET_MAX) –
+// der tatsächliche Endstand (Ausgeben senkt die Kasse, gut spielen hebt sie, Daniels Entscheidung 2026-11-13). Schutz gegen
+// veraltete Geräte folgt über den signierten Match-Start. Die Antwort nennt immer den gespeicherten Stand. Nicht fälschungssicher (docs/prd/konto.md).
+function fl_wallet(array $body) {
+    $value = fl_field($body, 'value');
+    if (!is_numeric($value)) fail(400, 'Kasse ungültig');
+    $pdo = fl_db(FL_SCHEMA);
+    $user = current_user($pdo);
+    if ($user === null) fail(401, 'Nicht angemeldet');
+    $new = (int) max(0.0, min((float) FL_WALLET_MAX, floor((float) $value)));
+    $pdo->prepare('UPDATE users SET wallet = :w WHERE id = :id')->execute([':w' => $new, ':id' => (int) $user['id']]);
+    out(['ok' => true, 'wallet' => fl_wallet_of($pdo, (int) $user['id'])]);
+}
+
+// Kasse auf den Startbetrag (Knopf „zurücksetzen“ im Startmenü). Ausdrücklich gewollt, daher ohne die Bremse von fl_wallet.
+function fl_wallet_reset() {
+    $pdo = fl_db(FL_SCHEMA);
+    $user = current_user($pdo);
+    if ($user === null) fail(401, 'Nicht angemeldet');
+    $pdo->prepare('UPDATE users SET wallet = :w WHERE id = :id')->execute([':w' => FL_WALLET_START, ':id' => (int) $user['id']]);
+    out(['ok' => true, 'wallet' => FL_WALLET_START]);
+}
+
+function fl_wallet_of(PDO $pdo, $uid) {
+    $st = $pdo->prepare('SELECT wallet FROM users WHERE id = :id');
+    $st->execute([':id' => $uid]);
+    return (int) $st->fetchColumn();
 }
 
 // Link aus der Bestätigungsmail: Konto bestätigen, dann Weiterleitung auf die Spielseite. Fehler (auch Datenbank) → verified=0.
@@ -295,6 +328,7 @@ function fl_user_out(array $u) {
         'plan' => $u['plan'],
         'premiumUntil' => $u['premium_until'] === null ? null : (int) $u['premium_until'],
         'createdAt' => (int) $u['created_at'],
+        'wallet' => (int) $u['wallet'],
     ];
 }
 

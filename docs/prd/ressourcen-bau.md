@@ -24,7 +24,7 @@
 - **Soldaten tragen Baumaterial:** Schütze und PAK tragen **50 Baumaterial** (starten voll, laden im FOB-Bauradius oder nahe einem LKW nach) und bauen daraus **Mauern und Tore, nur im Bauradius einer FOB**.
 - **LKW im Feld:** füllt Einheiten im 180-px-Umkreis aus seiner Ladung auf (Munition, Treibstoff, Baumaterial).
 - **Soldaten-Nachschub (wie im Original: Gefallene steigen wieder ein):** Hat ein Team weniger als **29 Soldaten** (Schützen und PAK, auch in Fahrzeugen und in Ausbildung), stellt die Hauptstadt **alle 6 s kostenlos einen Schützen** bereit, der zum Sammelpunkt läuft. Die Auswahl der Hauptstadt zeigt „Nachschub: Schütze in N s (Soldaten x/29, Plätze y/300)“ bzw. „Nachschub ruht“. Geld bleibt nötig für PAK, Fahrzeuge und Hubschrauber.
-- **Kasse:** Das Geld am Rundenende wird gespeichert (höchstens 5000) und ist das Startgeld der nächsten Runde (mindestens 800); die KI startet mit demselben Betrag. Im Startmenü lässt sich die Kasse zurücksetzen.
+- **Kasse:** Das Geld am Rundenende wird gespeichert (höchstens 5000) und ist das Startgeld der nächsten Runde; die KI startet mit demselben Betrag. Die Kasse gibt es nur am Konto (§17, „Kasse am Konto“): Gäste starten jede Runde mit 800. Im Startmenü lässt sich die Kasse zurücksetzen (auf 800).
 - Einheiten starten **voll munitioniert, betankt und mit vollem Baumaterial**.
 - **Waffen und Munition je Einheit:** Jede Waffe hat einen eigenen Schussvorrat; beim Nachladen kostet jeder Schuss Munition aus dem Lager.
 

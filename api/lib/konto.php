@@ -1,7 +1,12 @@
 <?php
 // Konten, gemeinsam für api/auth.php, api/save.php und api/admin.php (seit KO2): Tabellen, Sitzung aus dem Cookie fl_session,
-// Sperre (users.blocked, seit ADM1).
+// Sperre (users.blocked, seit ADM1), Kasse am Konto (users.wallet, seit KA1).
 // Regeln: docs/prd/konto.md. Nur per require_once aus api/*.php geladen; api/lib/ ist per .htaccess gesperrt.
+
+// Kasse am Konto (KA1): Startbetrag und Obergrenze. Muss zu js/data/balance.js passen (QUICK.startMoney = 800,
+// QUICK.walletMax = 5000); bei einer Änderung dort hier nachziehen. Ein neues Konto und „zurücksetzen“ bekommen FL_WALLET_START.
+const FL_WALLET_START = 800;
+const FL_WALLET_MAX = 5000;
 
 // Tabellen der Konten (legen sich selbst an, idempotent). Zeiten in Sekunden seit 1970.
 const FL_SCHEMA = [
@@ -49,21 +54,28 @@ function fl_is_token($token) {
     return is_string($token) && preg_match('/^[0-9a-f]{64}$/', $token) === 1;
 }
 
-// Nachrüsten (idempotent, einmal je Anfrage): Spalte users.blocked für die Sperre im Admin-Panel (docs/prd/konto.md).
-// Die Abfrage läuft über information_schema, wie fl_saves_upgrade in api/save.php.
+// Nachrüsten (idempotent, einmal je Anfrage): Spalten users.blocked (Sperre im Admin-Panel, docs/prd/konto.md) und
+// users.wallet (Kasse am Konto, KA1; Bestandskonten bekommen den Startbetrag). Die Abfrage läuft über information_schema,
+// wie fl_saves_upgrade in api/save.php.
 function fl_konto_upgrade(PDO $pdo) {
     static $done = false;
     if ($done) return;
-    $st = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'blocked'");
-    $st->execute();
+    fl_add_user_column($pdo, 'blocked', 'TINYINT NOT NULL DEFAULT 0');
+    fl_add_user_column($pdo, 'wallet', 'BIGINT NOT NULL DEFAULT ' . FL_WALLET_START);
+    $done = true;
+}
+
+// Spalte users.$name anlegen, wenn sie fehlt. $ddl ist eine feste Angabe aus dem Code, nie Eingabe.
+function fl_add_user_column(PDO $pdo, $name, $ddl) {
+    $st = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = :c");
+    $st->execute([':c' => $name]);
     if ((int) $st->fetchColumn() === 0) {
         try {
-            $pdo->exec('ALTER TABLE users ADD COLUMN blocked TINYINT NOT NULL DEFAULT 0');
+            $pdo->exec("ALTER TABLE users ADD COLUMN $name $ddl");
         } catch (PDOException $e) {
             if ((int) ($e->errorInfo[1] ?? 0) !== 1060) throw $e; // 1060 Spalte gibt es schon (gleichzeitige Anfrage)
         }
     }
-    $done = true;
 }
 
 // Sitzung zu einem Token → Konto (Zeile aus users, mit id) oder null. Abgelaufene Sitzungen zählen nicht,

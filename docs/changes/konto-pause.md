@@ -1,1 +1,0 @@
-**Konto im Pausenmenü** (§17 „Oberfläche“, Pausenmenü): Anmelden, Registrieren und Abmelden auch im Pausenmenü (P) mit dem Konto-Code des Startmenüs (`wireAccount`); die laufende Partie bleibt, wie sie begonnen hat, und eine gewertete Partie lässt sich dort erst nach dem Endstand wechseln.

@@ -6,7 +6,7 @@
 // Seit KO2 gehören die Stände auf dem Webspace einem Konto: ohne Anmeldung (Antwort 401) arbeitet das Spiel nur auf dem
 // Gerät, ohne Fehlermeldungen. `setRemoteEnabled(true)` (nach dem Anmelden, KO3) schaltet den Webspace wieder ein und
 // schickt die lokalen Stände ins Konto (`syncUp`). Seit KA1 gehört auch die Kasse (Geld von Runde zu Runde) dem Konto,
-// siehe unten „Kasse am Konto“.
+// siehe unten „Kasse am Konto“; ihren Stand am Partieende meldet seit dem Match-Start ui/match.js (api/match.php).
 import { toB64, fromB64 } from '../core/snapshot.js';
 import { BALANCE } from '../data/balance.js';
 
@@ -23,6 +23,7 @@ const TOMB_KEY = 'frontline-spielstand-loeschen'; // ids, die auf dem Webspace n
 const RENAME_KEY = 'frontline-spielstand-umbenannt'; // { id: name }: Umbenennungen, die der Webspace noch nicht bestätigt hat
 const TIMEOUT = 15000;
 export const ACCOUNT_URL = new URL('api/auth.php', DEPLOY_BASE).href; // Konten (KO1), Sitzung über das Cookie fl_session
+export const MATCH_URL = new URL('api/match.php', DEPLOY_BASE).href; // Match-Start (MS1, ui/match.js), gleiche Sitzung
 let remoteOn = true; // false: nicht angemeldet (401 vom Webspace oder setRemoteEnabled(false)); dann kein Webspace-Zugriff
 
 /**
@@ -282,14 +283,14 @@ export function remoteEnabled() {
 }
 
 /**
- * Anfrage an api/auth.php (Cookie wird mitgeschickt), z. B. { action: 'me' }. Liefert die JSON-Antwort; Netzfehler und
- * Fehler mit HTTP-Code werfen (err.status, err.message = Satz aus der API).
+ * Anfrage an eine API-Adresse (Cookie wird mitgeschickt), z. B. ACCOUNT_URL mit { action: 'me' }. Liefert die JSON-Antwort;
+ * Netzfehler und Fehler mit HTTP-Code werfen (err.status, err.message = Satz aus der API).
  */
-export async function accountRequest(body) {
+export async function apiRequest(url, body) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT);
   try {
-    const res = await fetch(ACCOUNT_URL, {
+    const res = await fetch(url, {
       method: 'POST',
       body: JSON.stringify(body),
       headers: { 'Content-Type': 'text/plain' }, // kein Preflight nötig
@@ -309,6 +310,11 @@ export async function accountRequest(body) {
   }
 }
 
+/** Anfrage an api/auth.php (Konto). */
+export function accountRequest(body) {
+  return apiRequest(ACCOUNT_URL, body);
+}
+
 /**
  * Wer ist angemeldet? Fragt api/auth.php „me“ und stellt den Webspace entsprechend ein (setAccount).
  * Liefert { email, plan, premiumUntil, createdAt, wallet } oder null (nicht angemeldet). Netzfehler werfen.
@@ -321,102 +327,52 @@ export async function accountUser() {
 }
 
 // ---- Kasse am Konto (KA1, docs/prd/konto.md „Kasse am Konto“) -------------------------------------------------------
-// Die Kasse (Geld von Runde zu Runde) gibt es nur am Konto: Gäste starten jede Partie mit dem Startbetrag, ohne Sparschwein
-// auf dem Gerät. Das Spiel rechnet das Geld; am Partieende meldet es den Stand (saveWallet), der Server speichert ihn begrenzt
-// und nie zurückgedreht (Bremse). Ohne Netz merkt sich das Gerät den Stand (WALLET_PENDING_KEY) und schickt ihn beim nächsten
-// Anmelden oder Abgleich.
-const WALLET_PENDING_KEY = 'frontline-kasse-ausstehend'; // { value, email }: Kassenstand, den das Konto noch nicht bestätigt hat
+// Die Kasse (Geld von Runde zu Runde) gibt es nur am Konto: Gäste starten jede Partie mit dem Startbetrag, ohne Wertung.
+// Angemeldet zeigt das Spiel die Kasse aus dem Konto (Anmeldung, Antworten des Servers). Den Stand am Partieende meldet
+// seit dem Match-Start ui/match.js (api/match.php, finish), nur für gewertete Partien.
 let walletEmail = null; // Konto der Kasse (null: nicht angemeldet)
 let walletCache = null; // Kasse dieses Kontos in Geld, null ohne Anmeldung
 
-function loadPendingWallet() {
-  try {
-    const o = JSON.parse(localStorage.getItem(WALLET_PENDING_KEY) ?? 'null');
-    if (o && Number.isFinite(o.value) && typeof o.email === 'string') return o;
-  } catch {
-    /* ohne Speicher oder fremder Inhalt: nichts vorgemerkt */
-  }
-  return null;
-}
-
-function savePendingWallet(o) {
-  try {
-    if (o) localStorage.setItem(WALLET_PENDING_KEY, JSON.stringify(o));
-    else localStorage.removeItem(WALLET_PENDING_KEY);
-  } catch {
-    /* ohne Speicher: gilt nur für diese Sitzung */
-  }
-}
-
-/** Anmeldestand übernehmen: ein vorgemerkter Stand desselben Kontos ist neuer als der Server und gewinnt. */
+/** Anmeldestand übernehmen (Kasse aus dem Konto). Der alte Vormerk-Schlüssel der Kasse (KA1) ist mit dem Match-Start überholt. */
 function noteUser(user) {
+  try {
+    localStorage.removeItem('frontline-kasse-ausstehend');
+  } catch {
+    /* ohne Speicher: nichts zu räumen */
+  }
   if (!user) {
     walletEmail = null;
     walletCache = null;
     return;
   }
-  const pending = loadPendingWallet();
-  if (pending && pending.email !== user.email) savePendingWallet(null); // Stand eines anderen Kontos: verwerfen
   walletEmail = user.email;
-  const own = pending && pending.email === user.email;
-  walletCache = own ? pending.value : Number.isFinite(user.wallet) ? user.wallet : BALANCE.startRes.money;
+  walletCache = Number.isFinite(user.wallet) ? user.wallet : BALANCE.startRes.money;
+}
+
+/** E-Mail des angemeldeten Kontos (null ohne Anmeldung). */
+export function accountEmail() {
+  return walletEmail;
+}
+
+/** Kassenstand, den ein Vorgang gemeldet hat (Wertung, Vorrat): ganzzahlig, 0 bis walletMax; nur angemeldet. */
+export function noteWallet(value) {
+  const v = Math.floor(Number(value));
+  if (walletEmail === null || !Number.isFinite(v)) return;
+  walletCache = Math.max(0, Math.min(BALANCE.walletMax, v));
 }
 
 /**
- * Den vorgemerkten Kassenstand ans Konto schicken. Innerhalb der Warteschlange aufrufen. Ohne Netz bleibt er vorgemerkt;
- * ist die Sitzung abgelaufen, schaltet der Webspace aus (der Stand bleibt für die nächste Anmeldung).
- */
-async function pushWallet() {
-  const pending = loadPendingWallet();
-  if (!pending || walletEmail === null) return;
-  if (pending.email !== walletEmail) {
-    savePendingWallet(null);
-    return;
-  }
-  try {
-    const d = await accountRequest({ action: 'wallet', value: pending.value });
-    const cur = loadPendingWallet();
-    // Nur wenn kein neuerer Stand dazwischen gekommen ist (der bliebe vorgemerkt und geht als Nächstes raus):
-    if (cur && cur.value === pending.value && cur.email === pending.email) {
-      savePendingWallet(null);
-      if (Number.isFinite(d.wallet)) walletCache = d.wallet; // die Bremse des Servers kann den Stand auf seinen gespeicherten setzen
-    }
-  } catch (err) {
-    if (err?.status === 401) {
-      noteUser(null);
-      setRemoteEnabled(false);
-    }
-    /* sonst Netz oder Server: beim nächsten Abgleich */
-  }
-}
-
-/**
- * Anmelden (user aus auth.php) oder Abmelden (null): merkt die Kasse, schaltet den Webspace ein oder aus (setRemoteEnabled)
- * und schickt einen vorgemerkten Kassenstand. Liefert das Ergebnis von setRemoteEnabled (wartbar).
+ * Anmelden (user aus auth.php) oder Abmelden (null): merkt die Kasse und schaltet den Webspace ein oder aus (setRemoteEnabled).
+ * Liefert das Ergebnis von setRemoteEnabled (wartbar).
  */
 export function setAccount(user) {
   noteUser(user);
-  const on = setRemoteEnabled(user !== null);
-  if (user) queue(pushWallet).catch(() => {});
-  return on;
+  return setRemoteEnabled(user !== null);
 }
 
 /** Kasse des angemeldeten Kontos in Geld; null für Gäste (und solange die Anmeldung noch nicht feststeht). */
 export function accountWallet() {
   return remoteOn ? walletCache : null;
-}
-
-/**
- * Kassenstand am Partieende melden. Nur angemeldet (sonst geschieht nichts). Der Stand wird sofort vorgemerkt und geschickt;
- * ohne Netz bleibt er bis zum nächsten Abgleich vorgemerkt. Liefert ein Promise ohne Ergebnis (Fehler werden nicht geworfen).
- */
-export function saveWallet(value) {
-  const v = Math.floor(Number(value));
-  if (walletEmail === null || !remoteOn || !Number.isFinite(v)) return Promise.resolve();
-  const w = Math.max(0, Math.min(BALANCE.walletMax, v));
-  walletCache = w;
-  savePendingWallet({ value: w, email: walletEmail });
-  return queue(pushWallet).catch(() => {});
 }
 
 /** „zurücksetzen“ im Startmenü: die Kasse des Kontos auf den Startbetrag setzen. Wirft, wenn es nicht klappt (Netz, Anmeldung). */
@@ -425,7 +381,6 @@ export function resetWallet() {
     if (walletEmail === null) throw new Error('Nicht angemeldet');
     const d = await accountRequest({ action: 'walletreset' });
     walletCache = Number.isFinite(d.wallet) ? d.wallet : walletCache;
-    savePendingWallet(null);
     return walletCache;
   });
 }
@@ -533,12 +488,11 @@ export function deleteSave(id) {
 }
 
 /**
- * Abgleich nach dem Start oder nach Offline-Spielen: vorgemerkte Kasse und Löschungen nachholen, neuere lokale Stände hochschicken.
+ * Abgleich nach dem Start oder nach Offline-Spielen: Löschungen nachholen, neuere lokale Stände hochschicken.
  * Liefert die Zahl der hochgeschickten Stände (0, wenn der Webspace nicht erreichbar ist).
  */
 export function syncUp() {
   return queue(async () => {
-    await pushWallet(); // vorgemerkte Kasse zuerst (Kasse am Konto, KA1)
     let remoteMetas;
     try {
       remoteMetas = await remoteList();

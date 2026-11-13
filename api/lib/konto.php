@@ -1,12 +1,14 @@
 <?php
 // Konten, gemeinsam für api/auth.php, api/save.php und api/admin.php (seit KO2): Tabellen, Sitzung aus dem Cookie fl_session,
-// Sperre (users.blocked, seit ADM1), Kasse am Konto (users.wallet, seit KA1).
+// Sperre (users.blocked, seit ADM1), Kasse am Konto (users.wallet, seit KA1), Grenze je gewerteter Partie (FL_MATCH_MAX_GAIN, seit MS1).
 // Regeln: docs/prd/konto.md. Nur per require_once aus api/*.php geladen; api/lib/ ist per .htaccess gesperrt.
 
 // Kasse am Konto (KA1): Startbetrag und Obergrenze. Muss zu js/data/balance.js passen (QUICK.startMoney = 800,
 // QUICK.walletMax = 5000); bei einer Änderung dort hier nachziehen. Ein neues Konto und „zurücksetzen“ bekommen FL_WALLET_START.
 const FL_WALLET_START = 800;
 const FL_WALLET_MAX = 5000;
+// Höchster Zuwachs der Kasse je gewerteter Partie (Match-Start, api/match.php): größere Sprünge werden auf Start + diesen Wert gekappt.
+const FL_MATCH_MAX_GAIN = 3000;
 
 // Tabellen der Konten (legen sich selbst an, idempotent). Zeiten in Sekunden seit 1970.
 const FL_SCHEMA = [

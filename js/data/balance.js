@@ -50,6 +50,8 @@ export const BALANCE = {
   // Geld für Abschüsse und Bauten (Anteil am Geldpreis der Einheit bzw. am Baumaterialpreis des Gebäudes)
   bounty: { inf: 0.25, vehicle: 0.6, building: 0.2, built: 0.2, notify: 100 },
   walletMax: QUICK.walletMax, // Obergrenze der Kasse, die von Runde zu Runde bleibt
+  // Match-Start (docs/prd/konto.md): Gültigkeit eines Tokens in Tagen ab Ausgabe; Spiegel FL_MATCH_TOKEN_DAYS in api/lib/match.php
+  match: { tokenDays: 7 },
   pointInterval: QUICK.pointEvery,
   startRes: { money: QUICK.startMoney }, // Startgeld; die Hauptstadt hat unendlich Baumaterial, Munition und Treibstoff
   // Einheitenlimit in Plätzen je Team: Soldat/LKW/Baufahrzeug/Hubschrauber 1, Schützenpanzer 3, Kampfpanzer 5, Flak und SAM 2 (`slots` in units.js)

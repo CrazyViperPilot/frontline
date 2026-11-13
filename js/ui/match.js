@@ -1,0 +1,169 @@
+// Signierter Match-Start (MS1, docs/prd/konto.md „Signierter Match-Start“). Gewertet wird nur eine Partie, die der Server
+// begonnen hat: Der Server gibt Tokens auf Vorrat aus (bis 3, je mit der Kasse von damals, w0). Eine gewertete Partie startet
+// mit einem Token (Startgeld = w0) und meldet am Ende ihren Endstand (finish). Ohne Token (Gast, kein Vorrat) läuft die Partie
+// ungewertet. Ohne Netz bleibt der Endstand auf dem Gerät vorgemerkt (frontline-match-ausstehend) und geht beim nächsten Abgleich.
+// Der Server rechnet die Partie nicht nach; er prüft Echtheit, Einmaligkeit und die Start-Kasse. Kein DOM; geprüft in test/match.test.js.
+import { apiRequest, MATCH_URL, accountEmail, accountWallet, noteWallet } from './saves.js';
+import { BALANCE } from '../data/balance.js';
+
+const VORRAT_KEY = 'frontline-match-vorrat'; // { email, tokens: [{ token, w0, iat }] }: ungenutzte Tokens des Kontos
+const AUSSTEHEND_KEY = 'frontline-match-ausstehend'; // [{ email, token, wallet }]: Endstände, die der Server noch nicht bestätigt hat
+const DAY = 86400;
+
+function load(key, fallback) {
+  try {
+    const v = JSON.parse(localStorage.getItem(key) ?? 'null');
+    return v ?? fallback;
+  } catch {
+    return fallback; // ohne Speicher oder fremder Inhalt
+  }
+}
+
+function save(key, value) {
+  try {
+    if (value === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* ohne Speicher: gilt nur für diese Sitzung */
+  }
+}
+
+function loadVorrat() {
+  const v = load(VORRAT_KEY, null);
+  return v && typeof v.email === 'string' && Array.isArray(v.tokens) ? v : null;
+}
+
+function loadAusstehend() {
+  const list = load(AUSSTEHEND_KEY, []);
+  if (!Array.isArray(list)) return [];
+  return list.filter((e) => e && typeof e.email === 'string' && typeof e.token === 'string' && Number.isFinite(e.wallet));
+}
+
+/** Gültig für die Kasse, die das Konto jetzt hat: gleiche Kasse wie beim Ausgeben und nicht abgelaufen (Frist aus BALANCE.match). */
+function usable(t, kasse, now) {
+  return t && typeof t.token === 'string' && t.w0 === kasse && Number.isFinite(t.iat) && now - t.iat < BALANCE.match.tokenDays * DAY;
+}
+
+/** Vorrat des angemeldeten Kontos, der jetzt verwendbar ist; leer ohne Konto. */
+function vorratNow() {
+  const email = accountEmail();
+  const kasse = accountWallet();
+  if (email === null || kasse === null) return [];
+  const v = loadVorrat();
+  if (!v || v.email !== email) return [];
+  const now = Math.floor(Date.now() / 1000);
+  return v.tokens.filter((t) => usable(t, kasse, now));
+}
+
+/**
+ * Gewertete Partie beginnen: nimmt ein verwendbares Token aus dem Vorrat (es ist danach verbraucht) und liefert { token, w0 };
+ * w0 ist das Startgeld. Ohne Konto oder ohne verwendbares Token: null (die Partie ist dann ungewertet). Braucht kein Netz.
+ */
+export function matchStart() {
+  const email = accountEmail();
+  const kasse = accountWallet();
+  if (email === null || kasse === null) return null;
+  const v = loadVorrat();
+  if (!v || v.email !== email) return null;
+  const now = Math.floor(Date.now() / 1000);
+  const i = v.tokens.findIndex((t) => usable(t, kasse, now));
+  if (i < 0) return null;
+  const [t] = v.tokens.splice(i, 1);
+  save(VORRAT_KEY, v);
+  return { token: t.token, w0: t.w0 };
+}
+
+/** Wie viele gewertete Partien sofort möglich sind (Anzeige im Startmenü). */
+export function matchReady() {
+  return vorratNow().length;
+}
+
+/** Wie viele Endstände noch auf die Verbindung warten (für das Konto, das angemeldet ist). */
+export function matchPending() {
+  const email = accountEmail();
+  return email === null ? 0 : loadAusstehend().filter((e) => e.email === email).length;
+}
+
+// Alle Vorgänge laufen nacheinander (Vorrat holen, Endstände schicken), damit sich Meldungen nicht überholen.
+let chain = Promise.resolve();
+function queue(fn) {
+  const job = chain.then(fn);
+  chain = job.catch(() => {});
+  return job;
+}
+
+/** Vorgemerkte Endstände der Reihe nach schicken. Gehört einer zu einem anderen Konto, fällt er weg; abgelehnte (409, 400, 403) auch. */
+async function flushInner() {
+  for (;;) {
+    const email = accountEmail();
+    const list = loadAusstehend();
+    if (email === null || list.length === 0) return; // abgemeldet: bleibt vorgemerkt
+    const job = list[0];
+    if (job.email !== email) {
+      save(AUSSTEHEND_KEY, list.slice(1));
+      continue;
+    }
+    try {
+      const d = await apiRequest(MATCH_URL, { action: 'finish', token: job.token, wallet: job.wallet });
+      if (Number.isFinite(d.wallet)) noteWallet(d.wallet);
+      save(AUSSTEHEND_KEY, loadAusstehend().slice(1));
+    } catch (err) {
+      if (err?.status === 401) return; // nicht angemeldet: bleibt vorgemerkt bis zur nächsten Anmeldung
+      if (err?.status === 400 || err?.status === 403 || err?.status === 409) {
+        save(AUSSTEHEND_KEY, loadAusstehend().slice(1)); // Token verbraucht, abgelaufen oder veraltet: nicht wiederholen
+        continue;
+      }
+      return; // Netz oder Server: beim nächsten Mal
+    }
+  }
+}
+
+/** Vorrat vom Server holen, wenn keine Meldung mehr wartet (sonst kennt der Server die Kasse noch nicht). */
+async function refillInner() {
+  const email = accountEmail();
+  if (email === null || matchPending() > 0) return 0;
+  const d = await apiRequest(MATCH_URL, { action: 'tokens' });
+  const now = Math.floor(Date.now() / 1000);
+  const tokens = Array.isArray(d.tokens) ? d.tokens.filter((t) => t && typeof t.token === 'string') : [];
+  save(VORRAT_KEY, { email, tokens });
+  if (Number.isFinite(d.wallet)) noteWallet(d.wallet);
+  return tokens.filter((t) => now - t.iat < BALANCE.match.tokenDays * DAY).length;
+}
+
+/**
+ * Vorrat auffüllen und vorgemerkte Endstände schicken: beim Anmelden, beim Öffnen des Startmenüs, nach „zurücksetzen“.
+ * Liefert die Zahl der verwendbaren Tokens (0 ohne Konto oder ohne Netz). Wirft nie.
+ */
+export function matchSync() {
+  return queue(async () => {
+    await flushInner();
+    try {
+      await refillInner();
+    } catch {
+      /* ohne Netz: der Vorrat bleibt, wie er ist */
+    }
+    return matchReady();
+  }).catch(() => 0);
+}
+
+/**
+ * Gewertete Partie beenden: meldet den Endstand zum Token. Der Server setzt die Kasse. Ohne Netz bleibt die Meldung vorgemerkt.
+ * Nach Erfolg wird der Vorrat auf die neue Kasse gebracht (Tokens mit anderer Kasse sind veraltet). Wirft nie.
+ */
+export function finishMatch(token, wallet) {
+  const email = accountEmail();
+  const w = Math.max(0, Math.min(BALANCE.walletMax, Math.floor(Number(wallet))));
+  if (email === null || typeof token !== 'string' || !Number.isFinite(w)) return Promise.resolve();
+  return queue(async () => {
+    save(AUSSTEHEND_KEY, [...loadAusstehend(), { email, token, wallet: w }]);
+    noteWallet(w); // die Anzeige zeigt den Stand sofort; der Server bestätigt ihn gleich (flushInner)
+    const v = loadVorrat();
+    if (v && v.email === email) save(VORRAT_KEY, { email, tokens: v.tokens.filter((t) => t && t.w0 === w) });
+    await flushInner();
+    try {
+      await refillInner();
+    } catch {
+      /* ohne Netz: beim nächsten Abgleich */
+    }
+  }).catch(() => {});
+}

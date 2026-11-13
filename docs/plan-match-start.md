@@ -1,5 +1,7 @@
 # Frontline – Plan „Signierter Match-Start“ (ein Paket)
 
+**Stand:** gebaut (MS1, Branch `match-start`, noch nicht auf `main`). Regeln: [docs/prd/konto.md](prd/konto.md), Abschnitt „Signierter Match-Start (MS1)“.
+
 Daniel, 2026-11-13: Eine gewertete Partie (die die Kasse verändert) muss vom Server **begonnen** worden sein. Beim Melden des
 Partieendes prüft der Server die Echtheit. So wird kein Kassen-Gewinn ohne echten Start gutgeschrieben, keine Partie doppelt gewertet,
 und ein veraltetes Gerät überschreibt keinen neueren Stand. Offline soll weiter möglich sein: dafür gibt der Server **Tokens auf Vorrat**

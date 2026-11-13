@@ -1,5 +1,6 @@
 <?php
-// Konten, gemeinsam für api/auth.php und api/save.php (seit KO2): Tabellen, Sitzung aus dem Cookie fl_session.
+// Konten, gemeinsam für api/auth.php, api/save.php und api/admin.php (seit KO2): Tabellen, Sitzung aus dem Cookie fl_session,
+// Sperre (users.blocked, seit ADM1).
 // Regeln: docs/prd/konto.md. Nur per require_once aus api/*.php geladen; api/lib/ ist per .htaccess gesperrt.
 
 // Tabellen der Konten (legen sich selbst an, idempotent). Zeiten in Sekunden seit 1970.
@@ -48,9 +49,28 @@ function fl_is_token($token) {
     return is_string($token) && preg_match('/^[0-9a-f]{64}$/', $token) === 1;
 }
 
-// Sitzung zu einem Token → Konto (Zeile aus users, mit id) oder null. Abgelaufene Sitzungen zählen nicht.
+// Nachrüsten (idempotent, einmal je Anfrage): Spalte users.blocked für die Sperre im Admin-Panel (docs/prd/konto.md).
+// Die Abfrage läuft über information_schema, wie fl_saves_upgrade in api/save.php.
+function fl_konto_upgrade(PDO $pdo) {
+    static $done = false;
+    if ($done) return;
+    $st = $pdo->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'blocked'");
+    $st->execute();
+    if ((int) $st->fetchColumn() === 0) {
+        try {
+            $pdo->exec('ALTER TABLE users ADD COLUMN blocked TINYINT NOT NULL DEFAULT 0');
+        } catch (PDOException $e) {
+            if ((int) ($e->errorInfo[1] ?? 0) !== 1060) throw $e; // 1060 Spalte gibt es schon (gleichzeitige Anfrage)
+        }
+    }
+    $done = true;
+}
+
+// Sitzung zu einem Token → Konto (Zeile aus users, mit id) oder null. Abgelaufene Sitzungen zählen nicht,
+// gesperrte Konten (blocked = 1) ebenso.
 function fl_session_user(PDO $pdo, $token) {
-    $st = $pdo->prepare('SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.hash = :h AND s.expires_at > :now');
+    fl_konto_upgrade($pdo);
+    $st = $pdo->prepare('SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.hash = :h AND s.expires_at > :now AND u.blocked = 0');
     $st->execute([':h' => hash('sha256', $token), ':now' => time()]);
     $row = $st->fetch(PDO::FETCH_ASSOC);
     return $row !== false ? $row : null;

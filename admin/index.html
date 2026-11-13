@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Frontline · Benutzerverwaltung</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <main class="wrap">
+    <section id="login" class="panel" hidden>
+      <h1>Benutzerverwaltung</h1>
+      <form id="login-form" autocomplete="on">
+        <label class="flabel" for="user">Benutzername</label>
+        <input id="user" name="user" autocomplete="username" required>
+        <label class="flabel" for="pass">Passwort</label>
+        <input id="pass" name="password" type="password" autocomplete="current-password" required>
+        <button id="login-btn" class="primary" type="submit">Anmelden</button>
+      </form>
+      <p id="login-msg" class="msg" role="alert"></p>
+    </section>
+
+    <section id="panel" class="panel wide" hidden>
+      <header class="bar">
+        <h1>Benutzerverwaltung</h1>
+        <span id="who" class="small"></span>
+        <button id="logout" type="button">Abmelden</button>
+      </header>
+      <div class="tools">
+        <input id="search" type="search" placeholder="E-Mail suchen" aria-label="E-Mail suchen" autocomplete="off">
+        <span id="count" class="small"></span>
+        <button id="reload" type="button">Neu laden</button>
+      </div>
+      <p id="msg" class="msg" role="status"></p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>E-Mail</th><th>Registriert</th><th>Bestätigt</th><th>Letzte Anmeldung</th>
+              <th>Konto</th><th>Gesperrt</th><th>Spielstände</th><th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script src="admin.js"></script>
+</body>
+</html>

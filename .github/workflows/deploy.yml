@@ -7,6 +7,9 @@
 #   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, MAIL_FROM   Postfach für die Konto-Mails (Bestätigung, Passwort vergessen).
 #     Fehlen sie, gibt es nur eine Warnung; die API meldet dann beim Mailversand „E-Mail-Versand … nicht eingerichtet“.
 #     Port 465 = TLS von Anfang an, sonst STARTTLS (z. B. 587). MAIL_FROM z. B. „Frontline <spiel@beispiel.de>“.
+#   ADMIN_USER, ADMIN_PASSWORD   Zugang zum Admin-Panel (/frontline/admin/, api/admin.php). Der Deploy schreibt nur den
+#     Benutzernamen und den Hash des Passworts (password_hash) in api/config.php, nie das Passwort selbst. Fehlen sie, gibt es
+#     nur eine Warnung; die Admin-API antwortet dann mit 503 „Admin nicht eingerichtet“. Das Passwort höchstens 72 Byte.
 # Optionale Variablen (gleiche Seite, Reiter „Variables“):
 #   FTP_DIR       Zielordner relativ zum FTP-Login, mit Schrägstrich am Ende (Standard ./ = Startordner des Logins)
 #   FTP_PROTOCOL  ftps (Standard) oder ftp
@@ -62,6 +65,8 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          ADMIN_USER: ${{ secrets.ADMIN_USER }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
         run: |
           for v in DB_SERVER DB_PORT DB_NAME DB_USER DB_PASSWORD; do
             if [ -z "${!v}" ]; then echo "::error::Secret $v fehlt (Settings → Secrets and variables → Actions)."; exit 1; fi
@@ -76,12 +81,20 @@ jobs:
           elif ! [[ "$SMTP_PORT" =~ ^[0-9]+$ ]]; then
             echo "::warning::Secret SMTP_PORT ist keine Zahl: Mailversand nicht eingerichtet."
           fi
+          if [ -z "$ADMIN_USER" ] || [ -z "$ADMIN_PASSWORD" ]; then
+            echo "::warning::Secrets ADMIN_USER oder ADMIN_PASSWORD fehlen: das Admin-Panel antwortet mit „Admin nicht eingerichtet“."
+          fi
           php -r '
+            // Admin-Zugang: nur Name und Hash; das Passwort selbst geht nicht in die Datei. bcrypt liest höchstens 72 Byte.
+            $adminPass = (string) getenv("ADMIN_PASSWORD");
+            if (strlen($adminPass) > 72) { fwrite(STDERR, "ADMIN_PASSWORD ist länger als 72 Byte\n"); exit(1); }
             $c = ["host" => getenv("DB_SERVER"), "port" => (int) getenv("DB_PORT"), "name" => getenv("DB_NAME"),
                   "user" => getenv("DB_USER"), "password" => getenv("DB_PASSWORD"),
                   "smtp_host" => (string) getenv("SMTP_HOST"), "smtp_port" => (int) getenv("SMTP_PORT"),
                   "smtp_user" => (string) getenv("SMTP_USER"), "smtp_password" => (string) getenv("SMTP_PASSWORD"),
-                  "mail_from" => (string) getenv("MAIL_FROM")];
+                  "mail_from" => (string) getenv("MAIL_FROM"),
+                  "admin_user" => trim((string) getenv("ADMIN_USER")),
+                  "admin_pass_hash" => $adminPass !== "" ? password_hash($adminPass, PASSWORD_DEFAULT) : ""];
             $src = "<?php\n// Vom Deploy (.github/workflows/deploy.yml) aus den Secrets DB_* geschrieben. Nicht im Repo.\nreturn " . var_export($c, true) . ";\n";
             @mkdir("secret");
             if (file_put_contents("secret/config.php", $src) === false) { fwrite(STDERR, "secret/config.php nicht schreibbar\n"); exit(1); }
@@ -99,9 +112,10 @@ jobs:
           FTP_SECURITY: ${{ vars.FTP_SECURITY || 'strict' }}
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq lftp > /dev/null
-          # Nur, was der Browser braucht, plus das Spielstand-Backend api/. Kein --delete: api/data/ (Spielstände) bleibt unberührt.
+          # Nur, was der Browser braucht, plus das Spielstand-Backend api/ und das Admin-Panel admin/ (nicht im Offline-Cache).
+          # Kein --delete: api/data/ (Spielstände) bleibt unberührt.
           mkdir site
-          cp -r index.html editor.html manifest.json sw.js css js icons api site/
+          cp -r index.html editor.html manifest.json sw.js css js icons api admin site/
           ssl=$([ "$FTP_PROTOCOL" = "ftp" ] && echo false || echo true)
           verify=$([ "$FTP_SECURITY" = "loose" ] && echo no || echo yes)
           lftp --env-password -u "$FTP_USER" "$FTP_SERVER" <<LFTP

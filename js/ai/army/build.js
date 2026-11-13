@@ -5,7 +5,7 @@ import { BALANCE } from '../../data/balance.js';
 import { UNITS } from '../../data/units.js';
 import { BUILDINGS } from '../../data/buildings.js';
 import { CITY } from '../../data/city.js';
-import { ZONE_REACH, WALL_RETRY, RELAY_STEP, FLANK_R, FOBV_MAX, DEPLOY_REACH, FOBV_RETRY, BAD_TIME, WALL_OFFSET, WALL_HALF, ENG_NEAR, RADIO_SITE, BRIDGE_EVERY, ROAD_REPAIR_EVERY, ROAD_REPAIR_SAFE, BRIDGE_RESERVE, FORT_EVERY, FORT_BM_MIN, FORT_CREW_RANGE, FORT_ROOFS } from '../../data/ai.js';
+import { ZONE_REACH, WALL_RETRY, RELAY_STEP, FLANK_R, FOBV_MAX, DEPLOY_REACH, FOBV_RETRY, BAD_TIME, WALL_OFFSET, WALL_HALF, ENG_NEAR, RADIO_SITE, BRIDGE_EVERY, ROAD_REPAIR_EVERY, ROAD_REPAIR_SAFE, BRIDGE_RESERVE, FORT_EVERY, FORT_BM_MIN, FORT_CREW_RANGE, FORT_ROOFS, FORT_CLEAR } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
 
 const DEG = Math.PI / 180;
@@ -242,7 +242,7 @@ export const buildMethods = {
         const have = s.own.filter((b) => b.type === type && dist(b.x, b.y, f.x, f.y) < DEF_RANGE).length >= want;
         if (have) continue;
         if (g.fobsInRadius(t, f.x, f.y).every((o) => o.store.bm < BUILDINGS[type].cost.bm || o.store.mun < BUILDINGS[type].cost.mun)) continue;
-        const p = this.findSite(type, f.x, f.y, 130, 330, {
+        const p = this.findSite(type, f.x, f.y, this.cfg.fort.fobs ? FORT_CLEAR : 130, 330, {
           angle: towardFoe(f),
           corridor: f === s.home,
         });
@@ -358,7 +358,7 @@ export const buildMethods = {
     const cost = UNITS.transporter.cost.money;
     if (g.teams[this.team].res.money < cost) return; // gespart wird in produce (bis Preis + HELI_MIN_MONEY), seit v5.26
     const b = this.pickProducer(s, 'transporter', BALANCE.queueMax, false);
-    if (b) g.issue(this.team, { type: 'train', buildingId: b.id, unit: 'transporter' });
+    if (b) this.trainOrWant(b, 'transporter'); // scheitert es am Stahl, merkt sich die KI den Bedarf (Markt kauft Stahl, seit v5.160)
   },
 
   // ---- Baufahrzeuge ----------------------------------------------------------------

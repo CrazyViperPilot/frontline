@@ -248,6 +248,7 @@ export const CITY = {
     // (cityMem.steelWant, produce.js trainOrWant), bis der Stahl dafür reicht, und nur, solange der Lospreis höchstens metalMaxPrice × Grundpreis beträgt
     steelWait: 40, // s, so lange gilt ein Stahlbedarf als offen
     metalMaxPrice: 1.3, // höchstes Vielfache des Grundpreises (CITY.market.buy.metal), zu dem sie Stahl kauft (jedes Los hebt den Preis)
+    metalMaxPriceHeli: 2.0, // dasselbe, wenn der Stahl für den Transporthubschrauber der Festung fehlt (seit v5.160; sonst bleibt die Festung ohne Hubschrauber)
     buyBmBelow: 120, // kauft Baumaterial am Markt, wenn das Lager der Hauptstadt darunter liegt und genug Geld (reserve + Preis) bleibt (seit v5.20, AP4)
     raidEvery: { easy: 0, normal: 240, hard: 150 }, // s zwischen Angriffen auf die gegnerische Stadt (0 = nie)
     raidSize: 4, // so viele Fahrzeuge greifen an

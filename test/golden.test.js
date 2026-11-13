@@ -36,8 +36,8 @@ const FULL = { radio: true, weather: 'random', research: true, river: true, city
 // Läufe (play) neu gesetzt mit v5.61 (Review-Paket P8: Wegsuche mit Budget je Schritt, unerreichbare Ziele, lange Suchen); Paket K1: KI bildet Unterstützer aus; Paket K2: KI bildet Artillerie aus und lässt sie feuern
 const GOLDEN = {
   2: { map: '894406ba81d0', river: '533ace5a08d3', start: 'fc78e7cb5f07', play: ['d412e9e0d380', 'ac35122097f7', '7abd9704119f', '704e28a7a751'] },
-  3: { map: 'b8095c497a39', river: 'de3f5da9bcba', start: '90317789c157', play: ['f5d395ab5f6c', 'a69653a46fce', '63e51144f4bb', '0ae476c9af36'] },
-  7: { map: 'e6c2e69a3dc6', river: 'b5fa8dc32b8a', start: '286eed3aa049', play: ['c815ffc52714', '835f25962bb7', '23bcac37a358', '69a8a29a2c68'] },
+  3: { map: 'b8095c497a39', river: 'de3f5da9bcba', start: '90317789c157', play: ['f5d395ab5f6c', 'a69653a46fce', '63e51144f4bb', 'f411eacadfdf'] },
+  7: { map: 'e6c2e69a3dc6', river: 'b5fa8dc32b8a', start: '286eed3aa049', play: ['c815ffc52714', '835f25962bb7', '23bcac37a358', '8a7c956c34dd'] },
 };
 
 /** Prüfsumme (12 Hex-Zeichen) über einen Wert: Zahlen exakt (String), Typed Arrays als Bytes, Objekte mit sortierten Schlüsseln. */

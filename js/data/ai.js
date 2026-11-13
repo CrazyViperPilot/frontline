@@ -160,6 +160,7 @@ export const ROAD_REPAIR_SAFE = 400; // px: kein Räumen, solange sichtbare gegn
 export const FORT_EVERY = 15; // s zwischen zwei Ausbau-Runden der Festung (der Befehl ergänzt nur, was fehlt)
 export const FORT_BM_MIN = 250; // Baumaterial im Lager der FOB, ab dem der Ausbau beginnt (damit Mauern nicht alles aufbrauchen)
 export const FORT_CREW_RANGE = 800; // ein freier Schütze geht nur in einen Turm in diesem Umkreis
+export const FORT_CLEAR = 224; // px ab Mitte einer FOB: Mörser und Flak bauen die KI außerhalb des Mauerrings (sonst belegen sie die Ringzellen, seit v5.160)
 export const FORT_ROOFS = ['mortar', 'sam', 'flak']; // Reihenfolge der Dachaufbauten je Festung (mit gegnerischen Luftzielen zuerst SAM)
 export const FORT_WANT = { bm: 150, mun: 150 }; // zusätzlicher Soll-Lagerstand einer ausgebauten FOB (Nachschub für Mörser, Flak, Reparatur)
 export const HELI_MIN_MONEY = 300; // seit v5.26: so viel über seinem Preis spart die KI auf den Transporthubschrauber (erst bei einer Festung), keine Kampfeinheiten bis dahin; gekauft wird ab seinem Preis

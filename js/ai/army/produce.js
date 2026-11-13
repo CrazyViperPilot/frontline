@@ -68,6 +68,9 @@ export const produceMethods = {
     const g = this.game;
     const t = this.team;
     const res = g.teams[t].res;
+    // Festung (seit v5.160): Hubschrauber vor Bauzeug und LKW, sobald Turm, Geld und Stahl da sind (sonst verbraucht die Armee den Stahl)
+    if (!s.helis.length && !this.queued(s, 'transporter') && s.own.some((b) => b.type === 'tower' && b.built)
+      && res.money >= UNITS.transporter.cost.money && (g.city?.[t]?.metal ?? 0) >= (CITY.metalCost.transporter ?? 0)) this.buyHeli(s);
     const qmax = res.money > QUEUE_RICH ? QUEUE_LONG : QUEUE_SHORT;
     this.escort(s); // Sanitäter und Störsender rücken zur Armee nach (K1)
 
@@ -94,7 +97,15 @@ export const produceMethods = {
 
     if (this.saveForScout || this.saveForRadio || this.saveForResearch || this.saveForFob) return; // Geld für Späher, Sendemast, Stufe bzw. FOB-Fahrzeug sparen
     // Festung (seit v5.26): steht ein Turm und fehlt der Transporthubschrauber, zuerst auf ihn sparen (buyHeli in fortify kauft ihn)
-    if (!s.helis.length && !this.queued(s, 'transporter') && s.own.some((b) => b.type === 'tower' && b.built) && res.money < UNITS.transporter.cost.money + HELI_MIN_MONEY) return;
+    if (!s.helis.length && !this.queued(s, 'transporter') && s.own.some((b) => b.type === 'tower' && b.built)) {
+      if (res.money < UNITS.transporter.cost.money + HELI_MIN_MONEY) return;
+      // Auch der Stahl für den Hubschrauber geht vor (seit v5.160): fehlt er im Stadtlager, spart die KI ihn und meldet den Bedarf am Markt
+      const need = CITY.metalCost.transporter ?? 0;
+      if ((g.city?.[t]?.metal ?? 0) < need) {
+        this.cityMem.steelWant = { amount: need, cost: UNITS.transporter.cost.money, time: g.time, max: CITY.ai.metalMaxPriceHeli };
+        return;
+      }
+    }
 
     const mix = this.counterMix(s);
 

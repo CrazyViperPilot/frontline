@@ -628,7 +628,7 @@ function aiMarket(game, team, reserve, mem = cityAiMemory()) {
   const w = mem.steelWant;
   const price = marketBuyPrice(game, team, 'metal');
   if (w && game.time - w.time <= CITY.ai.steelWait && c.metal < w.amount && game.teams[team].res.money >= w.cost + price
-    && price <= CITY.market.buy.metal * CITY.ai.metalMaxPrice) {
+    && price <= CITY.market.buy.metal * (w.max ?? CITY.ai.metalMaxPrice)) {
     game.issue(team, { type: 'trade', good: 'metal', dir: 'buy' });
   }
   // Baumaterial fehlt (seit v5.20, AP4): Straßen und Anschlüsse kosten es, ohne BM bleiben Werke unangebunden

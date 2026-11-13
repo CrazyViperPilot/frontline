@@ -3,6 +3,7 @@
 
 import { heliTrainCheck } from '../../game/helipad.js';
 import { BALANCE } from '../../data/balance.js';
+import { CITY } from '../../data/city.js';
 import { UNITS } from '../../data/units.js';
 import { hasCommander } from '../../game/commander.js';
 import { researchBlock, RESEARCH_KEYS } from '../../game/research.js';
@@ -30,6 +31,18 @@ export const produceMethods = {
   },
 
   // ---- Produktion ------------------------------------------------------------------
+
+  /**
+   * Ausbildung mit Stahlbedarf (Paket „Knappes Geld“): scheitert sie, weil der Stahl im Stadtlager fehlt, merkt sich die KI den Bedarf
+   * (cityMem.steelWant); aiMarket kauft dann am Markt, solange der Preis passt (CITY.ai.steelWait, metalMaxPrice).
+   */
+  trainOrWant(b, type) {
+    const g = this.game;
+    const r = g.issue(this.team, { type: 'train', buildingId: b.id, unit: type });
+    const need = CITY.metalCost[type] ?? 0;
+    if (!r.ok && need && (g.city?.[this.team]?.metal ?? 0) < need) this.cityMem.steelWant = { amount: need, cost: UNITS[type].cost.money, time: g.time };
+    return r;
+  },
 
   /** Ausbildende Einrichtung für `type` (Hauptstadt bzw. Kaserne, Fabrikhalle, Heliport): kürzeste Warteschlange. */
   pickProducer(s, type, qmax, towardZone) {
@@ -117,7 +130,7 @@ export const produceMethods = {
         if (b && e.deficit > 0.5) break; // sparen
       }
       if (!pick) break;
-      const r = g.issue(t, { type: 'train', buildingId: pick.b.id, unit: pick.u });
+      const r = this.trainOrWant(pick.b, pick.u);
       if (!r.ok) {
         failed.add(pick.u);
         continue;

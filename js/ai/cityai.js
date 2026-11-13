@@ -176,7 +176,7 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
   if (!city) return;
   const reserve = CITY.ai.reserve[difficulty] ?? CITY.ai.reserve.normal;
   const money = () => game.teams[team].res.money;
-  aiMarket(game, team, reserve);
+  aiMarket(game, team, reserve, mem);
   mem.turn++;
   let n = 0;
   // Förderanlagen zuerst: jedes Vorkommen im Gebiet nutzen
@@ -617,13 +617,18 @@ function depositCells(game, c) {
 }
 
 /** Markt der KI: Überschuss verkaufen, Metall zukaufen, wenn es knapp ist. */
-function aiMarket(game, team, reserve) {
+function aiMarket(game, team, reserve, mem = cityAiMemory()) {
   const c = game.city[team];
   const main = game.mainFob(team);
   if (!main) return;
   for (const g of ['bm', 'mun', 'fuel']) if (main.store[g] > CITY.ai.sellAbove) game.issue(team, { type: 'trade', good: g, dir: 'sell' });
   if (c.metal > CITY.ai.sellAbove) game.issue(team, { type: 'trade', good: 'metal', dir: 'sell' });
-  if (c.metal < CITY.ai.buyMetalBelow && game.teams[team].res.money > reserve + marketBuyPrice(game, team, 'metal')) {
+  // Stahl nur, wenn eine Ausbildung zuletzt daran scheiterte (Bedarf offen, steelWait s), Geld für Fahrzeug und Los reicht (sonst kaufte sie
+  // den Stahl, und das Fahrzeug blieb unbezahlbar) und der Lospreis nicht über metalMaxPrice liegt
+  const w = mem.steelWant;
+  const price = marketBuyPrice(game, team, 'metal');
+  if (w && game.time - w.time <= CITY.ai.steelWait && c.metal < w.amount && game.teams[team].res.money >= w.cost + price
+    && price <= CITY.market.buy.metal * CITY.ai.metalMaxPrice) {
     game.issue(team, { type: 'trade', good: 'metal', dir: 'buy' });
   }
   // Baumaterial fehlt (seit v5.20, AP4): Straßen und Anschlüsse kosten es, ohne BM bleiben Werke unangebunden

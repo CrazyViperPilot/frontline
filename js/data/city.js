@@ -244,7 +244,10 @@ export const CITY = {
     uniFrom: 6, // Arbeitsstätten, ab denen sie eine Universität baut
     dcFrom: 16, // … ein Rechenzentrum (nach der Uni)
     sellAbove: 2700, // verkauft am Markt, wenn eine Sorte im Hauptlager darüber liegt
-    buyMetalBelow: 150, // kauft Metall am Markt, wenn weniger da ist und genug Geld (reserve + Preis) bleibt
+    // Stahl am Markt (Paket „Knappes Geld“): nur, wenn eine Ausbildung in den letzten steelWait s am fehlenden Stahl scheiterte
+    // (cityMem.steelWant, produce.js trainOrWant), bis der Stahl dafür reicht, und nur, solange der Lospreis höchstens metalMaxPrice × Grundpreis beträgt
+    steelWait: 40, // s, so lange gilt ein Stahlbedarf als offen
+    metalMaxPrice: 1.3, // höchstes Vielfache des Grundpreises (CITY.market.buy.metal), zu dem sie Stahl kauft (jedes Los hebt den Preis)
     buyBmBelow: 120, // kauft Baumaterial am Markt, wenn das Lager der Hauptstadt darunter liegt und genug Geld (reserve + Preis) bleibt (seit v5.20, AP4)
     raidEvery: { easy: 0, normal: 240, hard: 150 }, // s zwischen Angriffen auf die gegnerische Stadt (0 = nie)
     raidSize: 4, // so viele Fahrzeuge greifen an

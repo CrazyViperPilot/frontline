@@ -92,6 +92,7 @@ export const BALANCE = {
     spawnRing: 90, // Einheiten erscheinen in diesem Umkreis um die Flagge (px)
     flagRing: 120, // Radius der Umkreislinie um den Flaggenmast (px, nur Darstellung)
     slotCap: { 2: 500, 3: 500, 4: 500 }, // Einheitenlimit je Team nach Spielerzahl (klassisch QUICK.unitLimit); viele Einheiten kosten Bildrate
+    reinforce: false, // kostenloser Soldaten-Nachschub der Hauptstadt (BALANCE.reinforce): in der Eroberung aus, Truppen kosten immer Geld
     names: 'ABCDEFGHIJKLMNOP', // Buchstaben der Flaggen, zeilenweise von links oben
   },
   // Hot Zone: kleiner Kreis in der Konfliktzone, wandert zufällig oder zu aktiven Bohrern.

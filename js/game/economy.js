@@ -130,6 +130,7 @@ export function updateEconomy(game, dt) {
 function updateReinforce(game, team, dt) {
   const R = BALANCE.reinforce;
   const b = game.mainFob(team.id);
+  if (game.conquest && !BALANCE.conquest.reinforce) return; // Eroberung: kein kostenloser Nachschub
   if (!b || !b.built || game.soldierCount(team.id) >= R.soldierMin || game.slotsUsed(team.id) + 1 > game.slotCap) {
     team.reinforceTimer = 0;
     return;

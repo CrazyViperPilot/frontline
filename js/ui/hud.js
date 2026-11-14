@@ -515,7 +515,7 @@ export class Hud {
     if (crates) h += `<div class="muted small">${crates} Versorgungskiste${crates > 1 ? 'n' : ''} eingelagert: +${fmtDe(crates * BALANCE.crates.income)} Geld/s</div>`;
     if (b.type === 'fob' && b.infinite) {
       h += '<div class="muted small lagerhead">Unendlich Baumaterial, Munition und Treibstoff · bildet alle Einheiten aus (nur gegen Geld)</div>';
-      h += this.reinforceInfo(b);
+      if (!g.conquest || BALANCE.conquest.reinforce) h += this.reinforceInfo(b);
       if (g.research) h += this.researchInfo(b.team);
     } else if (b.type === 'fob') {
       const cap = b.main ? CAPITAL_CAP : STORE_CAP;

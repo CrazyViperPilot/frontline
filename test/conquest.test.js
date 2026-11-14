@@ -173,3 +173,16 @@ test('Eroberung: Start-Tickets nach Wahl (1000 für lange Partien), Einheitenlim
   assert.equal(g.slotCap, 500);
   assert.equal(new Game({ seed: 3 }).slotCap, BALANCE.slotCap);
 });
+
+test('Eroberung: kein kostenloser Soldaten-Nachschub (klassisch weiter)', () => {
+  const lose = (g) => g.units.filter((u) => u.team === 0 && u.def.armor === 'inf').forEach((u) => (u.alive = false));
+  const soldiers = (g) => g.soldierCount(0);
+  const a = new Game({ seed: 3, conquest: true });
+  lose(a);
+  run(a, 3 * BALANCE.reinforce.interval);
+  assert.equal(soldiers(a), 0);
+  const b = new Game({ seed: 3 });
+  lose(b);
+  run(b, 3 * BALANCE.reinforce.interval);
+  assert.ok(soldiers(b) >= 1);
+});

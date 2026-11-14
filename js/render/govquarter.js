@@ -9,8 +9,8 @@
 //   Streifen belegen kann. Iso: acht Gruppen um die Mitte (Ecken und Seiten), jede ein eigenes Bild je Drehung und mit eigener
 //   Tiefe, damit Einheiten im Viertel richtig davor oder dahinter stehen. Steht in einer Gruppe ein anderes Gebäude (Bunker,
 //   Turm …), entfällt sie. 2D: alle Teile in einem Bild.
-// - Die Anlage ist für Team 1 um 180° gedreht (die Karte ist punktsymmetrisch): Zufahrt und Parkplatz liegen für beide Teams auf
-//   derselben Seite ihrer Stadt.
+// - Die Anlage ist je Team gedreht (TURN: Team 1 um 180°, Teams 2 und 3 um 90° bzw. 270°): Zufahrt und Parkplatz liegen für alle Teams
+//   auf der Seite ihrer Stadt, die zur Kartenmitte zeigt.
 // Alle Bilder über spritecache.js je Maßstab; unter Zoom 0,42 ohne Fenster, Laternen und Bänke. Nur Darstellung, keine Spielregeln:
 // Wege, Auswahl und Trefferprüfung bleiben beim Fußabdruck der Hauptstadt.
 import { CITY } from '../data/city.js';
@@ -55,8 +55,12 @@ export function quarterRect(b) {
   return { x0: X0 - b.x, x1: X1 - b.x, y0: Y0 - b.y, y1: Y1 - b.y };
 }
 
-/** Drehung der Anlage: Team 1 um 180° (Index in ROT wie camera.js). */
-const turnOf = (b) => (b.team === 1 ? 2 : 0);
+/**
+ * Drehung der Anlage je Team (Index in ROT wie camera.js). Die Zufahrt liegt bei Team 0 (unten links) im Nordosten, also zur Kartenmitte:
+ * Team 1 (oben rechts) dreht um 180° (2), Team 2 (oben links, Mitte im Südosten) um 90° (1), Team 3 (unten rechts, Mitte im Nordwesten) um 270° (3).
+ */
+const TURN = [0, 2, 1, 3];
+const turnOf = (b) => TURN[b.team] ?? 0;
 const tv = (r, x, y) => {
   const m = ROT[r];
   return [m[0] * x + m[1] * y, m[2] * x + m[3] * y];
@@ -69,11 +73,12 @@ function tRect(r, x0, x1, y0, y1) {
 /** Achse 'x'/'y' der Anlage → 'u'/'v' im Bild (bei 90°/270° vertauscht). */
 const tAxis = (r, ax) => ((r % 2 === 1) === (ax === 'x') ? 'v' : 'u');
 
-/** Ausdehnung in Anlage-Koordinaten (Team 1 gedreht): { W, E, N, S } ab der Mitte, je mindestens INNER. */
+/** Ausdehnung in Anlage-Koordinaten (Team gedreht): { W, E, N, S } ab der Mitte, je mindestens INNER. */
 function extOf(b) {
   const q = quarterRect(b);
   const t = turnOf(b);
-  const [x0, x1, y0, y1] = tRect(t, q.x0, q.x1, q.y0, q.y1);
+  // Welt = Drehung um t × Anlage, also Anlage = Drehung um -t × Welt (bei 0 und 180° dasselbe, bei 90° und 270° nicht)
+  const [x0, x1, y0, y1] = tRect((4 - t) % 4, q.x0, q.x1, q.y0, q.y1);
   return { W: -x0, E: x1, N: -y0, S: y1 };
 }
 
@@ -281,7 +286,7 @@ export function drawQuarterGround(ctx, cam, b, color, season = 'summer', dpr = 1
   const key = `gqg|${t}|${ext.W},${ext.E},${ext.N},${ext.S}|${color}|${season}`;
   const paint = (c, s) => {
     c.scale(s, s);
-    if (t) c.rotate(Math.PI);
+    c.rotate((t * Math.PI) / 2); // Anlage → Welt, wie tv(t) in GROUPS
     paintGround(c, ext, color, season, s >= 0.6);
   };
   const e = sprite(key, cam.zoom * spriteDpr(), [q.x0, q.y0, q.x1, q.y1], paint);

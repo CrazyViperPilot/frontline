@@ -1,6 +1,6 @@
 // Vorschau der Einheiten-Modelle (Rezept docs/rezept-einheiten.md): malt Modelle aus js/render/unitpaint.js in ein PNG, damit ein
 // Mensch oder ein Modell (KI) die Form prüfen kann, ohne eine Partie zu starten. Je Einheit eine Zeile: 8 Iso-Richtungen (Blau),
-// 2D von oben, Rot schräg, am Boden (Fahrwerk/Waffen, nur Luftfahrzeuge) und „Spielgröße“ (so klein wie im Spiel bei Zoom 1).
+// 2D von oben, Rot, Grün, Gelb und Ausstellungsstück schräg, am Boden (Fahrwerk/Waffen, nur Luftfahrzeuge) und „Spielgröße“ (so klein wie im Spiel bei Zoom 1).
 // Zum Vergleich stehen Referenzmodelle (Standard: f16 und tank) mit im Bild, im selben Maßstab.
 //
 //   node tools/unitpreview.mjs f22                    → .preview/units.png (f22 neben f16 und tank)
@@ -49,6 +49,7 @@ try {
       const bad = types.filter((t) => !all.includes(t));
       if (bad.length) return { error: `unbekannt: ${bad.join(', ')} (Modelle: ${all.join(', ')})` };
       const { paintSolids, boundsOf } = U.PAINT;
+      // Teams 0 … 3 (Blau, Rot, Grün, Gelb) und das Ausstellungsstück (U.SHOWROOM, keine Teamnummer)
       const TAU = Math.PI * 2;
       const HEAD = 8; // Iso-Richtungen in der Vorschau (das Spiel nutzt 16)
       const ISO_SCALE = 1.35; // wie unitpaint.js: Iso-Modelle im Spiel etwas größer
@@ -59,6 +60,9 @@ try {
         for (let k = 0; k < HEAD; k++) c.push([`Iso ${k * 45}°`, 0, (k / HEAD) * TAU, true, {}, scale]);
         c.push(['2D oben', 0, -Math.PI / 2, false, {}, scale]);
         c.push(['Rot', 1, TAU / 8, true, {}, scale]);
+        c.push(['Grün', 2, TAU / 8, true, {}, scale]);
+        c.push(['Gelb', 3, TAU / 8, true, {}, scale]);
+        c.push(['Ausstellung', U.SHOWROOM, TAU / 8, true, {}, scale]);
         if (air) c.push(['am Boden', 0, TAU / 8, true, { gear: true }, scale]);
         c.push(['Spielgröße', 0, TAU / 8, true, {}, ISO_SCALE]);
         return c;

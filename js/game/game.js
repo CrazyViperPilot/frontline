@@ -10,7 +10,7 @@ import { reliefOf } from './relief.js';
 import { createUnit, createBuilding, defineAmmo, canAttack, inRange } from './entities.js';
 import { Fog } from './fog.js';
 import { updateEconomy, smoothIncome } from './economy.js';
-import { createCity } from './city/create.js';
+import { createCity, ownCells } from './city/create.js';
 import { updateCity } from './city/economy.js';
 import { cityNoise, payMetal } from './city/state.js';
 import { freePop, crewOf, cityTrainers, trainerKind } from './city/query.js';
@@ -18,6 +18,7 @@ import { KIND_NAME } from '../data/citykinds.js';
 import { updateMovement, nearestPassable, planPath, setIdle, separate, exitHouse } from './movement.js';
 import { updateCombat } from './combat.js';
 import { updateZone } from './zone.js';
+import { enemiesOf } from './teams.js';
 import { createConquest, updateConquest, checkCapitals, bindLock, lockedFor, slotCapOf } from './conquest.js';
 import { createHot, updateHot } from './hotzone.js';
 import { updateLogistics, cargoSum, storeCapOf } from './logistics.js';
@@ -179,6 +180,7 @@ export class Game {
     this.formationSeq = 0;
     this.events = [];
     this.winner = null;
+    this.hitBy = -1; // Team des Schützen des gerade abgewickelten Treffers (combat.hit), -1 = unbekannt
     this.winReason = null;
     this.winPoints = winPoints;
     this.radioWin = !!radio;
@@ -270,6 +272,7 @@ export class Game {
       c.out ??= new Float32Array(c.kind.length);
       c.workOut ??= new Float32Array(c.kind.length); // seit v5.70: Ausstoß je s am Anker (leer in älteren Ständen)
       c.pickClaim ??= new Uint8Array(c.kind.length);
+      if (this.conquest && !c.own) c.own = ownCells(this, c.team, c.cols, c.rows); // Stände vor v5.167
     }
   }
 
@@ -291,12 +294,16 @@ export class Game {
 
   /** Meldung an alle Gegner von `team` (bei zwei Teams: an das andere). */
   messageFoes(team, text, x = null, y = null) {
-    for (const t of this.teams) if (t.id !== team && !t.out) this.message(t.id, text, x, y);
+    for (const t of enemiesOf(this, team)) this.message(t.id, text, x, y);
   }
 
-  /** Richtung „zum Gegner“: bei zwei Teams dessen Startpunkt, in der Eroberung die Zonenmitte (dorther kommen alle Gegner). */
+  /** Richtung „zum Gegner“: bei zwei Teams dessen Startpunkt, in der Eroberung die ferne Seite der Zone (dorther kommen die Gegner). */
   foeSpawn(team) {
-    return this.conquest ? this.map.zone : this.map.spawns[1 - team];
+    if (!this.conquest) return this.map.spawns[1 - team];
+    // Eroberung: der Punkt gegenüber der eigenen Startecke (durch die Zonenmitte gespiegelt); dort liegt die ferne Seite der Zone
+    const z = this.map.zone;
+    const sp = this.map.spawns[team];
+    return { x: 2 * z.x - sp.x, y: 2 * z.y - sp.y };
   }
 
   /** Einheitenlimit je Team (Eroberung: nach Spielerzahl). */
@@ -1240,7 +1247,8 @@ export class Game {
   foeOf(dead) {
     if (dead.team < 0) return -1;
     if (this.teams.length === 2) return 1 - dead.team;
-    return dead.hitBy !== undefined && dead.hitBy !== dead.team ? dead.hitBy : -1;
+    const by = dead.hitBy ?? -1;
+    return by >= 0 && by !== dead.team && this.teams[by] && !this.teams[by].out ? by : -1;
   }
 
   /** Abschussprämie für den Gegner: Soldaten wenig, Fahrzeuge und Hubschrauber viel (Anteil am Preis), Gebäude außer Mauern und Toren. */
@@ -1362,6 +1370,7 @@ export class Game {
     // erzeugten Ruckler. Jedes Team rechnet weiter alle fogInterval s.
     let fogged = false;
     for (let t = 0; t < this.teams.length; t++) {
+      if (this.teams[t].out) continue; // ausgeschieden: keine Sicht mehr
       this.fogTimers[t] += dt;
       if (this.fogTimers[t] < BALANCE.fogInterval) continue;
       this.fogTimers[t] = 0;

@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { UNITS } from '../js/data/units.js';
-import { unitModel, unitModelTypes, unitLook, drawUnitIso, drawUnitTop, drawWreckIso, drawWreckTop, PAINT } from '../js/render/unitpaint.js';
+import { unitModel, unitModelTypes, unitLook, drawUnitIso, drawUnitTop, drawWreckIso, drawWreckTop, PAINT, paintOf, teamKey, SHOWROOM } from '../js/render/unitpaint.js';
 
 function checkSolids(name, solids) {
   assert.ok(solids.length > 0, `${name}: keine Körper`);
@@ -27,7 +27,7 @@ test('jede Einheitenart hat ein gemaltes Modell', () => {
 
 test('Modelle sind gültig, je Team, Gehbild und Zustand der F-16', () => {
   for (const type of unitModelTypes()) {
-    for (const team of [0, 1, 2]) {
+    for (const team of [0, 1, 2, 3]) {
       const looks = UNITS[type]?.armor === 'inf' ? [0, 1, 2, 3, 4].map((frame) => ({ frame })) : [{}, { missiles: 0, gear: true }];
       for (const o of looks) {
         const m = unitModel(type, team, o);
@@ -93,6 +93,22 @@ test('U-2: Bild hängt nur vom Fahrwerk ab (Boden mit Stützrädern und hängend
     assert.ok(y0 <= -span(m, Math.max) && y1 >= span(m, Math.max), 'Bild von oben schneidet die Flügel nicht ab');
   }
   assert.equal(bad, 0, 'keine ungültigen Zahlen beim Malen');
+});
+
+test('vier Teams, Ausstellungsstück und neutral sind in Lackierung und Bildschlüssel verschieden', () => {
+  const marks = [0, 1, 2, 3].map((team) => paintOf(team).mark);
+  assert.equal(new Set(marks).size, 4, `Teamfarben nicht verschieden: ${marks}`);
+  assert.equal(marks[2], '#3fb950', 'Grün (Team 2)');
+  assert.equal(marks[3], '#e3b341', 'Gelb (Team 3)');
+  assert.notEqual(paintOf(SHOWROOM), paintOf(3), 'Ausstellungsstück nicht wie Team 3');
+  assert.notEqual(paintOf(-1), paintOf(3), 'neutral nicht wie Team 3');
+  const keys = [0, 1, 2, 3, SHOWROOM, -1].map(teamKey);
+  assert.equal(new Set(keys).size, keys.length, `Bildschlüssel teilen sich: ${keys}`);
+  assert.equal(teamKey(undefined), teamKey(-1), 'unbekanntes Team wird neutral gemalt');
+  // Modelle: die Lackierung zeigt sich in den Farben der Körper
+  const cols = (team) => unitModel('tank', team).S.map((so) => so.col).join();
+  const all = [0, 1, 2, 3, SHOWROOM].map(cols);
+  assert.equal(new Set(all).size, all.length, 'Modelle je Team und Ausstellungsstück verschieden');
 });
 
 test('Teams unterscheiden sich in der Farbe, Gehbilder in der Haltung', () => {

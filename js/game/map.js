@@ -7,6 +7,7 @@ import { findPath } from './pathfinding.js';
 import { setRelief, RELIEF } from './relief.js';
 import { buildLandscape, groundOk, countRoutes, RIVER_SIZE } from './landscape.js';
 import { openBridges } from './river.js';
+import { zoneDist } from './zonegeo.js';
 
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;
@@ -22,7 +23,12 @@ const SPAWNS2 = [
 // Eroberung mit 3 oder 4 Spielern: auch die beiden anderen Ecken sind Startpunkte (Bauland, Zufahrt, flaches Gelände). Die Karte
 // bleibt punktsymmetrisch: Ecke 2 und 3 spiegeln sich wie 0 und 1.
 const SPAWNS4 = [...SPAWNS2, { x: SPAWN_EDGE, y: SPAWN_EDGE }, { x: W - SPAWN_EDGE, y: H - SPAWN_EDGE }];
-let SPAWNS = SPAWNS2; // Startecken der Karte, die gerade erzeugt wird (generateMap setzt sie)
+let SPAWNS = SPAWNS2;
+// Form der Konfliktzone der Karte, die gerade erzeugt wird: mit 3 oder 4 Spielern (nur Eroberung) das Quadrat der Flaggengebiete,
+// sonst der Kreis wie immer (Karten mit 2 Spielern bleiben je Seed unverändert, Regel 4)
+let ZONE = { x: CX, y: CY, r: ZONE_R };
+/** Abstand zur Zonenmitte in der Form der Zone (zonegeo.zoneDist): `zd(x, y) <= ZONE_R` heißt in der Zone. */
+const zd = (x, y) => zoneDist(ZONE, x, y); // Startecken der Karte, die gerade erzeugt wird (generateMap setzt sie)
 const MAX_ATTEMPTS = MAPGEN.general.attempts;
 const OBSTACLE_PAIRS = MAPGEN.scatter.obstaclePairs;
 const MIN_ROUTES = MAPGEN.general.minRoutes;
@@ -40,7 +46,8 @@ const reaches = (path, x, y) => path.length > 0 && path[path.length - 1].x === x
  * @returns {{ width, height, tile, obstacles: {x,y,r}[], town: {roads, buildings, parks, cars, trees, fields}, trees: {x,y,r}[] (Bäume außerhalb der Stadt; wie die Stadtbäume blockierend), spawns: {x,y}[], zone: {x,y,r}, crates: {x,y}[] (Versorgungskisten), relief: string (Höhengelände, relief.js), fords?: {x,y,r}[], bridges?: {x1,y1,x2,y2}[] (nur mit Fluss) }}
  */
 export function generateMap(seed, { river = false, players = 2 } = {}) {
-  SPAWNS = players > 2 ? SPAWNS4 : SPAWNS2; // mit 2 Spielern bleibt jede Karte je Seed, wie sie war (Regel 4)
+  SPAWNS = players > 2 ? SPAWNS4 : SPAWNS2;
+  ZONE = players > 2 ? { x: CX, y: CY, r: ZONE_R, half: BALANCE.conquest.half } : { x: CX, y: CY, r: ZONE_R }; // mit 2 Spielern bleibt jede Karte je Seed, wie sie war (Regel 4)
   try {
     for (let k = 0; k < MAX_ATTEMPTS; k++) {
       const map = tryBuild(seed + k, river);
@@ -51,6 +58,7 @@ export function generateMap(seed, { river = false, players = 2 } = {}) {
     }
   } finally {
     SPAWNS = SPAWNS2;
+    ZONE = { x: CX, y: CY, r: ZONE_R };
   }
   throw new Error('Karte konnte nicht erzeugt werden');
 }
@@ -58,9 +66,9 @@ export function generateMap(seed, { river = false, players = 2 } = {}) {
 function tryBuild(seed, river = false) {
   const rng = makeRng(seed);
   // 0. Gelände: Hügel, Bergrücken und Seen (wahlweise Flüsse); Zufahrten, Bahn, Startpunkte und Stadt bleiben frei befahrbar
-  const land = buildLandscape(seed, { spawns: SPAWNS, zone: { x: CX, y: CY, r: ZONE_R }, roads: accessRoads(), railY: CY }, { river });
+  const land = buildLandscape(seed, { spawns: SPAWNS, zone: ZONE, roads: accessRoads(), railY: CY }, { river });
   const { relief, fords, bridges, clearings, crossings } = land;
-  if (!gentleZone(relief)) return null;
+  if (!gentleZone(relief, river)) return null;
   const cleared = (x, y, r) => clearings.some((c) => dist(x, y, c.x, c.y) < c.r + r); // Zufahrt einer Brücke oder Furt
   // 1. Hindernispaare (Wald), nur auf festem, nicht zu steilem Grund
   const obstacles = [];
@@ -70,7 +78,7 @@ function tryBuild(seed, river = false) {
       const r = 2 * Math.round(rng.range(30, 90)); // immer gerade: nur Wald, keine Felsen
       const x = Math.round(rng.range(r, W - r));
       const y = Math.round(rng.range(r, H - r));
-      if (dist(x, y, CX, CY) < ZONE_R + r + 40) continue; // Stadt bleibt frei von Felsen/Wald
+      if (zd(x, y) < ZONE_R + r + 40) continue; // Stadt bleibt frei von Felsen/Wald
       if (inRail(y, r)) continue; // Bahnlinie bleibt frei
       if (SPAWNS.some((s) => dist(x, y, s.x, s.y) < BUILD_LAND + r)) continue;
       if (!groundOk(relief, x, y, r) || !groundOk(relief, W - x, H - y, r)) continue;
@@ -200,13 +208,29 @@ function accessRoads() {
 }
 
 /** In der Konfliktzone ist das Gelände überall sanft (keine Zelle steiler als ZONE_SLOPE, kein Wasser). */
-function gentleZone(relief) {
+function gentleZone(relief, river) {
   const c0 = Math.floor((CX - ZONE_R) / TILE);
   const c1 = Math.ceil((CX + ZONE_R) / TILE);
+  // Mit Fluss schneidet dieser die Ecken des Quadrats vor den Startecken von Blau und Rot (zwischen Bauland und Zone ist sonst
+  // kein Platz): dort gilt weiter der Kreis, und nur die Flaggenmasten müssen frei stehen.
+  const region = river ? (x, y) => dist(x, y, CX, CY) <= ZONE_R : (x, y) => zd(x, y) <= ZONE_R;
   for (let r = c0; r < c1; r++) {
     for (let c = c0; c < c1; c++) {
-      if (dist((c + 0.5) * TILE, (r + 0.5) * TILE, CX, CY) > ZONE_R) continue;
+      if (!region((c + 0.5) * TILE, (r + 0.5) * TILE)) continue;
       if (relief.cellSlope(c, r) > ZONE_SLOPE || relief.cellBlocked(c, r)) return false;
+    }
+  }
+  if (!ZONE.half) return true;
+  // Eroberung: um jeden Flaggenmast (Mitte der grid × grid Gebiete) ist der Boden begehbar
+  const Q = BALANCE.conquest;
+  const size = (2 * Q.half) / Q.grid;
+  for (let j = 0; j < Q.grid; j++) {
+    for (let i = 0; i < Q.grid; i++) {
+      const fx = CX - Q.half + (i + 0.5) * size;
+      const fy = CY - Q.half + (j + 0.5) * size;
+      for (let r = Math.floor((fy - Q.flagRing) / TILE); r <= Math.floor((fy + Q.flagRing) / TILE); r++) {
+        for (let c = Math.floor((fx - Q.flagRing) / TILE); c <= Math.floor((fx + Q.flagRing) / TILE); c++) if (relief.cellBlocked(c, r)) return false;
+      }
     }
   }
   return true;
@@ -454,7 +478,7 @@ function buildOutposts(rng, obstacles, relief = null, clearings = []) {
         px < W - r - 300 &&
         py < H - r - 300 &&
         !inRail(py, r) &&
-        dist(px, py, CX, CY) > ZONE_R + r + 150 &&
+        zd(px, py) > ZONE_R + r + 150 &&
         SPAWNS.every((sp) => dist(px, py, sp.x, sp.y) > BUILD_LAND + r) &&
         obstacles.every((o) => dist(px, py, o.x, o.y) > o.r + r + 40) &&
         areas.every((a) => dist(px, py, a.x, a.y) > a.r + r + 60) &&
@@ -522,7 +546,7 @@ function scatterTrees(rng, obstacles, keepOut = [], relief = null) {
     x < W - 40 &&
     y < H - 40 &&
     !inRail(y, 20) &&
-    dist(x, y, CX, CY) > ZONE_R + 30 &&
+    zd(x, y) > ZONE_R + 30 &&
     SPAWNS.every((s) => dist(x, y, s.x, s.y) > BUILD_LAND) &&
     obstacles.every((o) => dist(x, y, o.x, o.y) > o.r + 25) &&
     keepOut.every((a) => dist(x, y, a.x, a.y) > a.r + 25) &&
@@ -590,7 +614,7 @@ function placeCrates(rng, grid) {
       const y = Math.round(rng.range(400, H - 400));
       const ok = [[x, y], [W - x, H - y]].every(
         ([px, py]) =>
-          dist(px, py, CX, CY) > ZONE_R + CRATE_ZONE &&
+          zd(px, py) > ZONE_R + CRATE_ZONE &&
           !inRail(py, 80) &&
           SPAWNS.every((s) => dist(px, py, s.x, s.y) > CRATE_SPAWN) &&
           crates.every((c) => dist(px, py, c.x, c.y) > CRATE_GAP) &&
@@ -679,7 +703,7 @@ function placeFarms(seed, town, outpostBuildings, obstacles, trees, relief) {
         ([px, py]) =>
           px > 150 && py > 150 && px < W - 150 && py < H - 150 &&
           !inRail(py, 30) &&
-          dist(px, py, CX, CY) > ZONE_R + 120 &&
+          zd(px, py) > ZONE_R + 120 &&
           SPAWNS.every((sp) => dist(px, py, sp.x, sp.y) > BUILD_LAND) &&
           obs.every((o) => dist(px, py, o.x, o.y) > o.r + 15) &&
           bld.every((b) => !inBox(b, px, py, 20)) &&
@@ -783,7 +807,7 @@ function placeFarms(seed, town, outpostBuildings, obstacles, trees, relief) {
     for (let t = 0; t < 40; t++) {
       const x = rng.range(400, W - 400);
       const y = rng.range(400, H - 400);
-      if (dist(x, y, CX, CY) < ZONE_R + 400) continue;
+      if (zd(x, y) < ZONE_R + 400) continue;
       const angle = randAngle();
       const fr = frame(angle, 0);
       const back = frame(angle, 2);

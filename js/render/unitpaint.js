@@ -3,7 +3,7 @@
 // (links oben, wie `lit` in isokit.js) einmal je Variante in ein Bild (spritecache.js) und kopiert es danach nur noch.
 // Iso: Wanne in 16 Richtungen, Turm getrennt in 16 Richtungen (folgt dem Ziel), Soldaten in 8 Richtungen mit Gehbewegung.
 // 2D: dasselbe Modell genau von oben, Wanne und Turm frei gedreht, Schatten als Umriss. Rotoren und Nachbrenner laufen live.
-// Teams: Blau graublau, Rot rotbraun, dazu Teamfarbe an Weste, Wimpel und Markierungen. Nur Darstellung, keine Spielregel.
+// Teams: Blau graublau, Rot rotbraun, Grün olivgrün, Gelb ockergrau, dazu Teamfarbe an Weste, Wimpel und Markierungen. Nur Darstellung, keine Spielregel.
 import { sprite, blit, spriteDpr, peek } from './spritecache.js';
 import { ISO_K } from './camera.js';
 import { jetAlt, jetGrounded } from '../game/aircraft.js';
@@ -20,15 +20,20 @@ const INF_SECT = 8; // Richtungen der Soldaten in Iso
 
 // rgbOf, hexOf, mix aus color.js (seit v5.59)
 
-// Je Team: Lack (body), dunkel, hell, Tarnfleck, Teamfarbe (mark), Weste der Soldaten, Luftfahrzeuge
+// Je Team (Index = Teamnummer, wie BALANCE.teamColors): Lack (body), dunkel, hell, Tarnfleck, Teamfarbe (mark), Weste der Soldaten,
+// Luftfahrzeuge. Lack: gedämpfter Ton mit einem Stich in die Teamfarbe; Weste: Teamfarbe, etwas dunkler; Luft: grau getönt.
+// Grün (Team 2) und Gelb (Team 3) nach demselben Muster wie Blau und Rot.
 const TEAM_PAINT = [
   { body: '#566f8f', dark: '#3b4c63', light: '#7690b0', camo: '#475a5c', mark: '#3d8bfd', vest: '#3a6fc0', air: '#62778f' },
   { body: '#8f5a4a', dark: '#603a30', light: '#ad7966', camo: '#665041', mark: '#e5484d', vest: '#b8443a', air: '#8e665b' },
+  { body: '#51874f', dark: '#3a6039', light: '#70aa6e', camo: '#445a4b', mark: '#3fb950', vest: '#309147', air: '#619060' },
+  { body: '#897a4d', dark: '#625737', light: '#ac9c6c', camo: '#5b5c42', mark: '#e3b341', vest: '#b4872d', air: '#908460' },
 ];
 // Ausstellungsstücke auf den Höfen der Ausbildungsgebäude (seit v5.40, bigbuild.js): sandfarbene Grundierung ohne Teamfarbe,
-// damit man sie nicht für echte Einheiten hält (Team-Index SHOWROOM)
+// damit man sie nicht für echte Einheiten hält
 const DISPLAY = { body: '#bdb08c', dark: '#8f8568', light: '#d9cfae', camo: '#a99f80', mark: '#f1ede0', vest: '#a89c7a', air: '#c2bdaf' };
-export const SHOWROOM = 3;
+/** Team-Kennung der Ausstellungsstücke. Kein Teamindex: Teams sind Zahlen 0 … 3, neutral -1 (Tiere, Kisten, Wracks). */
+export const SHOWROOM = 'show';
 const NEUTRAL = { body: '#6f7469', dark: '#4b4f47', light: '#8e9387', camo: '#585c50', mark: '#c9c9c0', vest: '#6f7469', air: '#7a7f78' };
 const TRACK = '#2a2c2e';
 const WHEEL = '#2b2d2f';
@@ -1769,7 +1774,10 @@ function soldier(P, o) {
 
 const MODELS = { tank, ifv, flak, sam, gepard, pzh, mlrs, truck, scout, fobTruck, engineer, excavator, bridgelayer, littlebird, drone, fpv, gunship, transporter, recovery, jammer, f16, f22, su27, u2, a10, c130 };
 const INFANTRY = { rifleman: 'rifleman', medic: 'medic', at: 'at', manpads: 'manpads', flamer: 'flamer', mortarteam: 'mortar', sniper: 'sniper', sapper: 'sapper', commander: 'commander' };
-const TEAM_KEYS = ['b', 'r', 'n', 'd'];
+// Bildschlüssel je Team (für die Zwischenspeicher in spritecache.js): je Lackierung ein eigener Buchstabe, sodass kein Bild zwei Teams teilt
+const TEAM_KEYS = ['b', 'r', 'g', 'y'];
+/** Bildschlüssel: Teams 0 … 3, Ausstellungsstück 's', alles andere (neutral, Tiere, Wracks) 'n'. */
+const keyOf = (team) => (team === SHOWROOM ? 's' : TEAM_KEYS[team] ?? 'n');
 
 const paintOf = (team) => (team === SHOWROOM ? DISPLAY : TEAM_PAINT[team] ?? NEUTRAL);
 const SIZE = { tank: 1.12, pzh: 1.08, recovery: 1.12, bridgelayer: 1.12, fpv: 2 }; // schwere Fahrzeuge etwas größer, damit sie sich vom Schützenpanzer abheben; fpv (Kamikazedrohne) doppelt, sonst nur ein Punkt
@@ -1883,7 +1891,7 @@ export function drawUnitIso(ctx, cam, u, p, aim = null, lift = 0, now = 0) {
   const face = m.inf && aim !== null && aim !== undefined ? aim : u.angle ?? 0;
   const va = viewAngle(cam, face);
   const sec = sectorOf(va, n);
-  const tk = TEAM_KEYS[u.team] ?? 'n';
+  const tk = keyOf(u.team);
   const base = `ui|${u.type}|${tk}|${look.frame ?? ''}|${look.missiles ?? ''}|${look.gear ? 1 : 0}`;
   const make = (k) => `${base}|${k}`;
   const yaw = (k) => (k / n) * TAU;
@@ -1998,7 +2006,7 @@ export function drawUnitShadowIso(ctx, cam, u, p, dpr, now = 0) {
   const look = lookOf(u, now);
   const m = modelOf(u.type, u.team, { ...look, frame: 0 });
   if (!m) return false;
-  const tk = TEAM_KEYS[u.team] ?? 'n';
+  const tk = keyOf(u.team);
   const key = `uo|${u.type}|${tk}|${look.missiles ?? ''}|${look.gear ? 1 : 0}|sh`;
   const e = sprite(key, cam.zoom * ISO_SCALE * spriteDpr(), boundsOf(m, m.S, 0, false), (c, s) => paintSolids(c, m.S, 0, { iso: false, s, shadow: true }));
   if (!e) return false;
@@ -2023,7 +2031,7 @@ export function drawUnitTop(ctx, u, zoom, aim = null, now = 0) {
   const look = lookOf(u, now);
   const m = modelOf(u.type, u.team, { ...look, frame: 0 });
   if (!m) return false;
-  const tk = TEAM_KEYS[u.team] ?? 'n';
+  const tk = keyOf(u.team);
   const base = `uo|${u.type}|${tk}|${look.missiles ?? ''}|${look.gear ? 1 : 0}`;
   const sc = zoom * spriteDpr();
   const hull = u.angle ?? 0;
@@ -2181,3 +2189,4 @@ export { modelOf as unitModel, lookOf as unitLook };
 
 /** Malwerkzeug für andere gemalte Modelle (Tiere und Felsen in nature.js, seit v5.28): Körper, Renderer, Bildgrenzen, Richtungen. */
 export const PAINT = { solid, box, cyl, ball, loft, prX, prY, prZ, on, fine, paintSolids, boundsOf, getSprite, viewAngle, nearKeys, sectorOf, mix };
+export { paintOf, keyOf as teamKey };

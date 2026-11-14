@@ -118,6 +118,7 @@ export function ejectCrew(game, b) {
       u.hp -= u.maxHp * F.ejectDamage;
       if (u.hp <= 0) {
         u.alive = false;
+        u.hitBy = b.hitBy; // wer den Turm zerstört hat
         game.bounty(u);
       }
     }

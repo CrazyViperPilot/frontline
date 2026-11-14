@@ -70,6 +70,7 @@ export function updateCity(game, dt) {
   if (!game.city) return;
   game.teams.forEach((team, id) => {
     const c = game.city[id];
+    if (team.out) return; // ausgeschieden (Eroberung): die Stadt steht still
     calmMarket(c, dt);
     refreshClaim(game, c, dt);
     clearRuins(game, c, id);
@@ -112,7 +113,7 @@ function clearRuins(game, c, id) {
     }
     c.timer[i] = -CITY.ruinTime; // Großbau: die Mitte zählt die Zeit für alle Zellen
     c.ver++;
-    game.addEffect('explosion', e.x, e.y, 1 - id, e.x, e.y, 'building');
+    game.addEffect('explosion', e.x, e.y, id, e.x, e.y, 'building'); // Team des Besitzers (wie game.cleanup): Gegner sehen sie nur mit Sicht
     game.message(id, `${e.def.name} in der Stadt zerstört`, e.x, e.y);
   }
 }

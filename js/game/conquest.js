@@ -1,6 +1,8 @@
 // Eroberung (docs/prd/eroberung.md): 2 bis 4 Teams, jeder gegen jeden. Quadratische Konfliktzone mit 4 × 4 Flaggengebieten,
 // Tickets statt Punktebalken, gesperrte Viertel außerhalb der Zone, Ausscheiden. Kein DOM.
 import { BALANCE } from '../data/balance.js';
+import { inZone } from './zonegeo.js';
+import { aliveTeams } from './teams.js';
 
 const Q = BALANCE.conquest;
 const H = BALANCE.hot;
@@ -11,6 +13,7 @@ export function createConquest(game, on, tickets = null) {
   game.conquest = null;
   if (!on) return;
   const z = game.map.zone;
+  game.zone.half = Q.half; // die Zone ist ab jetzt ein Quadrat (zonegeo.inZone liest `half`)
   const size = (2 * Q.half) / Q.grid;
   const x0 = z.x - Q.half;
   const y0 = z.y - Q.half;
@@ -43,6 +46,7 @@ export function bindLock(game) {
   const cq = game.conquest;
   const g = game.grid;
   if (!cq) return;
+  game.zone.half ??= cq.half; // Stände vor v5.167 hatten das Feld noch nicht
   const lock = new Int8Array(g.cols * g.rows);
   for (let r = 0; r < g.rows; r++) for (let c = 0; c < g.cols; c++) lock[r * g.cols + c] = quarterAt(game, g.center(c), g.center(r));
   g.lock = lock;
@@ -51,9 +55,7 @@ export function bindLock(game) {
 
 /** In der quadratischen Konfliktzone? */
 export function inSquare(game, x, y) {
-  const z = game.map.zone;
-  const h = game.conquest.half;
-  return Math.abs(x - z.x) <= h && Math.abs(y - z.y) <= h;
+  return inZone(game.zone, x, y);
 }
 
 /** Viertel des Punkts: Team-Index, CLOSED (Viertel ohne Spieler) oder -1 (Konfliktzone). */
@@ -117,11 +119,19 @@ export function eliminate(game, t, why) {
 
 function checkEnd(game) {
   if (game.winner !== null) return;
-  const alive = game.teams.filter((t) => !t.out);
+  const alive = aliveTeams(game);
   const humans = game.teams.filter((t) => !t.isAI);
   const best = () => [...(alive.length ? alive : game.teams)].sort((a, b) => b.tickets - a.tickets || a.id - b.id)[0].id;
   if (alive.length <= 1) game.endGame(best(), 'tickets');
   else if (humans.length && humans.length < game.teams.length && humans.every((t) => t.out)) game.endGame(best(), 'tickets'); // der Mensch ist raus: Partie vorbei
+}
+
+/** Tickets abziehen; bei 0 scheidet das Team aus (einzige Stelle, die Tickets senkt: Takt, Kommandeur). */
+export function loseTickets(game, t, n) {
+  const team = game.teams[t];
+  if (!game.conquest || team.out) return;
+  team.tickets -= n;
+  if (team.tickets <= 0) eliminate(game, t, 'keine Tickets mehr');
 }
 
 /** Hauptstadt gefallen (nur möglich, wenn die Sperre des Viertels gefallen ist): das Team scheidet aus. */
@@ -227,8 +237,7 @@ export function updateConquest(game, dt) {
       for (let t = 0; t < n; t++) {
         const team = game.teams[t];
         if (team.out || held[t] >= most) continue;
-        team.tickets -= 1 + (held[t] === 0 ? Q.noFlagLoss : 0);
-        if (team.tickets <= 0) eliminate(game, t, 'keine Tickets mehr');
+        loseTickets(game, t, 1 + (held[t] === 0 ? Q.noFlagLoss : 0));
       }
     }
   }

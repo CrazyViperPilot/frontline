@@ -1,6 +1,7 @@
 // Kommandeur (nach dem Strategen-Helden aus Empire Earth und dem Königsmord-Modus aus Age of Empires II): eine einmalige Einheit je
 // Team mit Aura. Eigene Einheiten in ihrem Umkreis schießen schneller (u.aura), verletzte Infanterie heilt dort, sobald sie eine Weile
 // nicht getroffen wurde. Fällt der Kommandeur, bekommt der Gegner Punkte; die Hauptstadt kann einen neuen ausbilden.
+import { loseTickets } from './conquest.js';
 import { BALANCE } from '../data/balance.js';
 import { UNITS } from '../data/units.js';
 
@@ -42,9 +43,9 @@ export const auraCooldown = (u, cooldown) => (u.aura ? cooldown / C.fireRate : c
 export function commanderFallen(game, u) {
   if (game.conquest) {
     // Eroberung: der Verlust kostet das eigene Team Tickets (statt Punkte für den einen Gegner)
-    game.teams[u.team].tickets -= C.deathPoints;
     game.message(u.team, `Unser Kommandeur ist gefallen: −${C.deathPoints} Tickets`, u.x, u.y);
     game.messageFoes(u.team, `Kommandeur von ${game.teams[u.team].name} gefallen`, u.x, u.y);
+    loseTickets(game, u.team, C.deathPoints); // bei 0 Tickets scheidet das Team aus, auch wenn es führt
     return;
   }
   const foe = 1 - u.team;

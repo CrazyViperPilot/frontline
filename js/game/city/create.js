@@ -1,6 +1,6 @@
 // Stadt (PRD §15), Erzeugung: Raster je Team über die ganze Karte, gesperrte Zellen, Konfliktzone, Rohstoffvorkommen, Startviertel.
 // Nur aktiv, wenn das Spiel mit `city: true` startet. Kein DOM, deterministisch.
-import { inSquare } from '../conquest.js';
+import { inSquare, quarterAt } from '../conquest.js';
 import { CITY } from '../../data/city.js';
 import { KINDS, KIND_ID } from '../../data/citykinds.js';
 import { makeRng } from '../../core/rng.js';
@@ -49,6 +49,15 @@ function zoneCells(game, cols, rows) {
       if (game.conquest ? inSquare(game, x, y) : Math.hypot(x - z.x, y - z.y) <= z.r) out[row * cols + col] = 1;
     }
   }
+  return out;
+}
+
+/** Eroberung: je Team die Zellen, auf denen es Stadtgebäude setzen darf (1 = eigenes Viertel, Zellmitte); klassisch null. */
+export function ownCells(game, team, cols, rows) {
+  if (!game.conquest) return null;
+  const S = CITY.cell;
+  const out = new Uint8Array(cols * rows);
+  for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) if (quarterAt(game, (col + 0.5) * S, (row + 0.5) * S) === team) out[row * cols + col] = 1;
   return out;
 }
 
@@ -144,6 +153,7 @@ function createTeamCity(game, team, shared) {
     blocked, // 1 = hier kann nichts gebaut werden (beide Teams)
     felled, // 1 = Bäume gefällt (Räumen, seit v5.13; beide Teams)
     inZone, // 1 = Zelle in der Konfliktzone
+    own: ownCells(game, team, cols, rows), // Eroberung: 1 = eigenes Viertel (nur dort wird gebaut); klassisch null
     deposit, // Rohstoffvorkommen je Zelle (Index in DEPOSITS + 1), für beide Teams gleich
     mapRoads: game.roads?.kind ?? null, // Stadtstraßen der Karte (roads.js, seit v5.03): zählen als Straße, für beide Teams gleich
     metal: CITY.startMetal, // Stahl im Stadtlager (nur hier, LKW fahren es nicht)

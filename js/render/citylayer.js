@@ -113,7 +113,7 @@ export function cityBuildings(game, team, known, inRect) {
       continue;
     }
     const e = c.ents.get(i);
-    const color = c.team < 2 ? game.teams[c.team].color : '#888';
+    const color = game.teams[c.team]?.color ?? '#888';
     const damage = e ? 1 - e.hp / e.def.hp : 0;
     if (big && BIG_KINDS.has(k)) {
       // Großbau (seit v5.03): jeder Körper ein eigenes Objekt, damit die Tiefenordnung auch große Anlagen richtig zeigt (bigbuild.js)
@@ -1201,7 +1201,7 @@ export function drawCityRoofs(ren, ctx, team, known, inRect) {
   for (const { c, k, lv, i, big, ctr } of cells(g, team, known)) {
     if (k !== 'stand' || lv < 2 || big !== 'anchor' || !inRect(ctr.x, ctr.y, c.cell + 32)) continue;
     const e = c.ents.get(i);
-    const color = c.team < 2 ? g.teams[c.team].color : '#888';
+    const color = g.teams[c.team]?.color ?? '#888';
     drawBigTop(ctx, bigPlan(k, lv, ctr.x, ctr.y, sizeOf(k) * c.cell), color, e ? 1 - e.hp / e.def.hp : 0, ren.camera.zoom, true);
   }
 }
@@ -1220,7 +1220,7 @@ export function drawCityTop(ren, ctx, team, known, inRect) {
       continue;
     }
     const e = c.ents.get(i);
-    const color = c.team < 2 ? g.teams[c.team].color : '#888';
+    const color = g.teams[c.team]?.color ?? '#888';
     if (big && BIG_KINDS.has(k)) {
       drawBigTop(ctx, bigPlan(k, lv, ctr.x, ctr.y, sizeOf(k) * c.cell), color, e ? 1 - e.hp / e.def.hp : 0, ren.camera.zoom);
       continue;

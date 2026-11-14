@@ -165,6 +165,7 @@ export function cmdCancelResearch(game, team, cmd = {}) {
 export function updateResearch(game, dt) {
   if (!game.research) return;
   for (const team of game.teams) {
+    if (team.out) continue; // ausgeschieden (Eroberung)
     const tech = team.tech;
     const cur = tech.cur;
     if (!cur || !game.mainFob(team.id)) continue;

@@ -7,6 +7,7 @@ import { ownWork } from '../../game/logistics.js';
 import { BALANCE } from '../../data/balance.js';
 import { SUPPLY_FROM, PEND_PER, PEND_MAX, FOB_WANT, SUPPLY_BEHIND, SUPPLY_MIN, SURPLUS_MIN, ROUTE_HOLD, WORK_SOURCE_NEAR, WORK_SOURCE_TRUCKS, WORK_SOURCE_MIN_RATE, CRATE_EVERY, CRATE_RANGE, FORT_WANT } from '../../data/ai.js';
 import { DEF_RANGE, dist, unitVec } from './util.js';
+import { inZone } from '../../game/zonegeo.js';
 
 const KEYS = ['bm', 'mun', 'fuel'];
 const CAP = BALANCE.logistics.truckCapacity;
@@ -281,7 +282,7 @@ export const logisticsMethods = {
       let bd = CRATE_RANGE;
       for (const u of pool) {
         // Soldaten in der Zone verdienen dort Geld: sie zählen, als stünden sie weiter weg
-        const d = dist(u.x, u.y, c.x, c.y) + (dist(u.x, u.y, z.x, z.y) <= z.r ? 800 : 0);
+        const d = dist(u.x, u.y, c.x, c.y) + (inZone(z, u.x, u.y) ? 800 : 0);
         if (d < bd) {
           best = u;
           bd = d;

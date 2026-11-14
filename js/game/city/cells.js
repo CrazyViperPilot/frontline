@@ -265,6 +265,7 @@ export function accessCells(c, a) {
 
 /** Darf `team` die Zelle i ausweisen? Nicht gesperrt, nicht vom Gegner belegt (überall auf der Karte). */
 export function canZone(game, c, i) {
+  if (c.own && !c.own[i]) return false; // Eroberung: nur im eigenen Viertel, nie in der Zone (create.js `ownCells`), auch ohne Baugebiet
   if (c.blocked[i]) return false; // seit v4.87 überall, nicht nur im Gebiet (das Gebiet nutzt nur noch die KI)
   if (game.rubble?.[i]) return false; // Schutt einer zerstörten Straße (Paket „Straßen“): erst räumen
   if (c.mapRoads?.[i]) return false; // Stadtstraße der Karte (Zone, Brücke): gehört niemandem, bleibt Straße
@@ -465,13 +466,7 @@ export function buildWhy(game, c, i, kind) {
   const y = c.y0 + ((i - col) / c.cols + 0.5) * c.cell;
   if (!game.fog[c.team].isExplored(x, y)) return 'unexplored';
   const z = game.zone;
-  if (game.conquest) {
-    // Eroberung: gebaut wird nur im eigenen Viertel (nicht in der Zone, nicht bei anderen, auch wenn deren Sperre gefallen ist)
-    // (Geometrie wie conquest.quarterAt, hier ausgeschrieben: cells.js bleibt ein Blattmodul)
-    const cq = game.conquest;
-    if (Math.abs(x - z.x) <= cq.half && Math.abs(y - z.y) <= cq.half) return 'zone';
-    if (cq.quad[(x >= z.x ? 1 : 0) + (y >= z.y ? 2 : 0)] !== c.team) return 'quarter';
-  }
+  if (c.own && !c.own[i]) return c.inZone[i] ? 'zone' : 'quarter'; // Eroberung: nur im eigenen Viertel (auch canZone)
   if (CITY.build.noZone && z && (x - z.x) ** 2 + (y - z.y) ** 2 <= z.r * z.r) return 'zone';
   if (enemyNear(game, c)[i]) return 'enemy';
   // Anschlusspflicht (Paket „Straßen“): Einzelzellen hier; Großbauten prüft fitBig als Ganzes (roadLinkWhy). Ohne `kind` (strenge

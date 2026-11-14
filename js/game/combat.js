@@ -129,11 +129,12 @@ function warnBase(game, target) {
 }
 
 /** Fügt Schaden zu, setzt lastHitTime und markiert Tote. Stadthäuser: garrison.damageHouse, Brücken: river.damageBridge. Einheiten: erforschte Panzerung, Deckung an Ruinen (seit v5.66). */
-export function hit(game, target, amount, occMul = 1) {
+export function hit(game, target, amount, occMul = 1, by = -1) {
   if (!target.alive || !(amount > 0)) return;
-  // Eroberung: in ein gesperrtes fremdes Viertel wirkt kein Schaden (game.hitBy = Team des Schützen, vor jedem Treffer gesetzt)
-  if (game.conquest && lockedFor(game, game.hitBy, target.x, target.y)) return;
-  if (target.kind !== 'house' && target.kind !== 'bridge') target.hitBy = game.hitBy; // letzter Treffer: Prämie und Statistik bei mehr als zwei Teams
+  // by = Team des Schützen (-1 = unbekannt: Tests, Unfälle). Eroberung: in ein gesperrtes fremdes Viertel wirkt kein Schaden.
+  if (game.conquest && by >= 0 && lockedFor(game, by, target.x, target.y)) return;
+  game.hitBy = by; // gilt, bis dieser Treffer abgewickelt ist (Besatzer eines Hauses: garrison.js)
+  if (target.kind !== 'house' && target.kind !== 'bridge') target.hitBy = by; // letzter Treffer: Prämie und Statistik bei mehr als zwei Teams
   if (target.kind === 'house') {
     damageHouse(game, target, amount, occMul);
     return;
@@ -206,8 +207,7 @@ function fireDirect(game, s, t, w) {
     game.addEffect('tracer', s.x, s.y, s.team, t.x, t.y, w.snd ?? 'base');
   }
   s.cooldown = w.cooldown * modOf(game, s, 'rof');
-  game.hitBy = s.team;
-  hit(game, t, dmg);
+  hit(game, t, dmg, 1, s.team);
 }
 
 /**
@@ -276,8 +276,7 @@ function fireWeapon(game, u, w, t) {
   // Flak und SAM: Treffer nur mit Wurf (Trefferchance, siehe unitHitChance); daneben geht der Schuss, der Schaden bleibt aus
   if (w.spec.hitChance !== undefined && !(game.rng.next() < unitHitChance(u, t, w.spec) * modOf(game, u, 'acc') * modOf(game, t, 'evade') * jamFactor(game, t, w.spec))) return; // Forschung: Zünder, Radar; Flares, Störsender des Ziels
   const dmg = shotDamage(w.spec, u, t, heightMult(game, u, t)) * dealtMul(game, u, t);
-  game.hitBy = u.team;
-  hit(game, t, dmg, w.spec.occupantMul ?? 1);
+  hit(game, t, dmg, w.spec.occupantMul ?? 1, u.team);
   if (w.spec.splash) flameSplash(game, u, t, w.spec.splash, dmg);
 }
 
@@ -286,7 +285,7 @@ function flameSplash(game, u, t, R, dmg) {
   for (const e of game.units) {
     if (e === t || !e.alive || e.team === u.team || e.house) continue;
     const d = Math.hypot(e.x - t.x, e.y - t.y);
-    if (d < R) hit(game, e, dmg * (1 - d / R) * 0.5);
+    if (d < R) hit(game, e, dmg * (1 - d / R) * 0.5, 1, u.team);
   }
 }
 
@@ -454,26 +453,25 @@ function interceptShells(game) {
 /** Einschlag: Flächenschaden mit linearem Abfall über `splash` an alle gegnerischen Entities (Besatzer schützt ihr Haus) und an Brücken. */
 export function impact(game, p) {
   p.alive = false;
-  game.hitBy = p.team;
   game.addEffect('explosion', p.tx, p.ty, p.team);
   addCrater(game, p.tx, p.ty);
   const R = p.splash || 1;
   for (const h of game.garrisoned) {
     if (!h.alive || !isFoe(p.team, h)) continue;
     const d = Math.hypot(Math.max(0, Math.abs(h.x - p.tx) - h.pw / 2), Math.max(0, Math.abs(h.y - p.ty) - h.ph / 2));
-    if (d < R) hit(game, h, (p.damage.struct || 0) * houseMult(p.damage) * (1 - d / R));
+    if (d < R) hit(game, h, (p.damage.struct || 0) * houseMult(p.damage) * (1 - d / R), 1, p.team);
   }
   for (const b of game.bridges ?? []) {
     if (b.broken) continue;
     const d = deckDist(b, p.tx, p.ty);
-    if (d < R) hit(game, b, (p.damage.struct || 0) * houseMult(p.damage) * (1 - d / R));
+    if (d < R) hit(game, b, (p.damage.struct || 0) * houseMult(p.damage) * (1 - d / R), 1, p.team);
   }
   const splash = (e) => {
     if (!e.alive || e.team === p.team || e.house || isHighAlt(e)) return; // seit v5.35 treffen Granaten auch abgestellte Jets (Schutz: parkedArmor); hochfliegende U-2 nie (seit v5.83)
     const d = Math.max(0, Math.hypot(e.x - p.tx, e.y - p.ty) - radiusOf(e));
     if (d >= R) return;
     const dmg = dmgVs(p.damage, e) * (1 - d / R) * (p.mul ?? 1);
-    hit(game, e, dmg);
+    hit(game, e, dmg, 1, p.team);
   };
   for (const list of [game.units, game.buildings]) for (const e of list) splash(e);
   forEnemyCity(game, p.team, p.tx, p.ty, R, splash); // Gebäude der gegnerischen Stadt

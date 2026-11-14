@@ -12,6 +12,8 @@ import { radioEta } from '../../game/radio.js';
 import { weatherSight } from '../../game/weather.js';
 import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, RADIO_NEAR, RADIO_EVERY, RADIO_GATHER, RADIO_GATHER_R, RADIO_GATHER_SHARE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
+import { inZone as inZoneOf } from '../../game/zonegeo.js';
+import { nearestOf } from '../../game/teams.js';
 
 /** Nächster Punkt auf einer Straße oder einem Feldweg der Karte (Projektion), höchstens MINE_ROAD px entfernt; sonst null. */
 function nearestRoad(game, x, y) {
@@ -99,7 +101,7 @@ export const combatMethods = {
     const ready = fighters.filter((u) => u.parked && u.jet?.ready && u.order.type === 'idle').sort((a, b) => a.id - b.id);
     if (!ready.length || !this.once('jets', JET_EVERY)) return;
     const air = s.enemies.filter((e) => e.def.air && !e.parked);
-    const armor = s.enemies.filter((e) => (e.def.armor === 'heavy' || e.def.armor === 'light') && (dist(e.x, e.y, s.zone.x, s.zone.y) <= s.zone.r || dist(e.x, e.y, s.ax, s.ay) <= DEF_RANGE * 2));
+    const armor = s.enemies.filter((e) => (e.def.armor === 'heavy' || e.def.armor === 'light') && (inZoneOf(s.zone, e.x, e.y) || dist(e.x, e.y, s.ax, s.ay) <= DEF_RANGE * 2));
     const near = (list) => list.slice().sort((a, b) => dist(a.x, a.y, s.ax, s.ay) - dist(b.x, b.y, s.ax, s.ay) || a.id - b.id);
     // Nur Waffen mit Bodenziel (F-16, Luft-Boden) greifen gepanzerte Fahrzeuge an; hochfliegende Ziele nur mit antiHighAlt (F-22)
     const groundArms = (u) => u.def.weapons.some((w) => (w.targets ?? []).some((k) => k !== 'air'));
@@ -138,7 +140,7 @@ export const combatMethods = {
     const ready = s.units.filter((u) => u.def.highAlt && u.parked && u.jet?.ready && u.order.type === 'idle');
     if (!ready.length || !this.once('recon', A.reconEvery)) return;
     this.reconToFoe = !this.reconToFoe; // im Wechsel: Konfliktzone, gegnerische Hauptstadt
-    const foe = g.buildings.find((b) => b.alive && b.built && b.type === 'fob' && b.main && b.team !== t);
+    const foe = nearestOf(g.buildings.filter((b) => b.alive && b.built && b.type === 'fob' && b.main && b.team !== t), s.ax, s.ay); // die nächste gegnerische Hauptstadt
     const dest = this.reconToFoe && foe ? foe : s.zone;
     g.issue(t, { type: 'move', ids: [ready[0].id], x: dest.x, y: dest.y });
   },
@@ -427,7 +429,7 @@ export const combatMethods = {
     const z = s.zone;
     if (!this.cfg.scout) return;
     const tanks = s.enemies
-      .filter((e) => e.def.armor === 'heavy' && !e.def.air && dist(e.x, e.y, z.x, z.y) <= z.r + FPV_NEAR)
+      .filter((e) => e.def.armor === 'heavy' && !e.def.air && inZoneOf(z, e.x, e.y, FPV_NEAR))
       .sort((a, b) => dist(a.x, a.y, z.x, z.y) - dist(b.x, b.y, z.x, z.y) || a.id - b.id);
     if (!tanks.length) return; // ohne gesehenen Panzer nahe der Zone kauft die KI keine Kamikazedrohne
     const drones = s.units.filter((u) => u.type === 'fpv');
@@ -546,7 +548,7 @@ export const combatMethods = {
     if (!g.houses || !g.houses.length || !this.once('garrison', GARRISON_EVERY)) return;
     const z = s.zone;
     const t = this.team;
-    const inZone = (e) => dist(e.x, e.y, z.x, z.y) <= z.r;
+    const inZone = (e) => inZoneOf(z, e.x, e.y);
     const inf = s.units.filter((u) => u.def.armor === 'inf' && u.def.range > 0 && !u.def.hero && inZone(u));
     const pending = new Map(); // Haus-ID → Soldaten auf dem Weg hinein
     let housed = 0;
@@ -590,11 +592,11 @@ export const combatMethods = {
     if (!this.cfg.houseStorm || !g.houses?.length || !this.once('storm', STORM_EVERY)) return;
     const z = s.zone;
     const foes = g.houses
-      .filter((h) => h.alive && h.team >= 0 && h.team !== t && h.occupants.length > 0 && dist(h.x, h.y, z.x, z.y) <= z.r && g.sees(t, h))
+      .filter((h) => h.alive && h.team >= 0 && h.team !== t && h.occupants.length > 0 && inZoneOf(z, h.x, h.y) && g.sees(t, h))
       .sort((a, b) => dist(a.x, a.y, z.x, z.y) - dist(b.x, b.y, z.x, z.y) || a.id - b.id);
     if (!foes.length) return;
     const raiding = this.raid ? this.raid.ids : null;
-    const ready = (o) => o.type === 'idle' || (STORM_MARCH && o.type === 'attackMove' && dist(o.x, o.y, z.x, z.y) <= z.r);
+    const ready = (o) => o.type === 'idle' || (STORM_MARCH && o.type === 'attackMove' && inZoneOf(z, o.x, o.y));
     const free = s.units.filter((u) => canGarrison(u) && u.def.range > 0 && !u.def.hero && !u.house && ready(u.order) && !(raiding && raiding.has(u.id)));
     for (const h of foes) {
       const near = free.filter((u) => dist(u.x, u.y, h.x, h.y) <= STORM_RANGE).sort((a, b) => dist(a.x, a.y, h.x, h.y) - dist(b.x, b.y, h.x, h.y) || a.id - b.id);
@@ -629,7 +631,7 @@ export const combatMethods = {
    */
   attackRadio(s) {
     const g = this.game;
-    const mast = g.buildings.find((b) => b.alive && b.def.radio && b.team !== this.team);
+    const mast = nearestOf(g.buildings.filter((b) => b.alive && b.def.radio && b.team !== this.team), s.ax, s.ay); // mehrere Gegner: der nächste Mast
     if (!mast) {
       this.strike = null;
       return false;

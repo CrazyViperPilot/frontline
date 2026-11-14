@@ -1,6 +1,7 @@
 // Landschaft der Zufallskarte: Höhengelände mit welligem Grund, Hügeln, Bergrücken (Fels, unpassierbar), Seen und (wahlweise) je
 // einem Fluss vor jeder Startecke mit Brücken und Furten. Punktsymmetrisch wie die übrige Karte. Dazu die Prüfung, ob mehrere
 // getrennte Wege in die Konfliktzone führen. Kein DOM.
+import { zoneDist } from './zonegeo.js';
 import { BALANCE } from '../data/balance.js';
 import { MAPGEN } from '../data/mapgen.js';
 import { CITY } from '../data/city.js';
@@ -91,7 +92,7 @@ export function buildLandscape(seed, keep, { river = false } = {}) {
   // Freiraum eines Punktes mit Einflussradius `reach` zu Zone, Startpunkten, Zufahrten, Bahn und Rand
   const clear = (x, y, reach, zoneGap = 0) =>
     x > 150 && y > 150 && x < W - 150 && y < H - 150 &&
-    dist(x, y, zone.x, zone.y) > ZR + reach + zoneGap &&
+    zoneDist(zone, x, y) > ZR + reach + zoneGap &&
     spawns.every((s) => dist(x, y, s.x, s.y) > SPAWN_BLEND + reach) &&
     roads.every((r) => segDist(x, y, r.x1, r.y1, r.x2, r.y2).d > reach + 40) &&
     Math.abs(y - railY) > reach + 60;
@@ -161,7 +162,7 @@ export function buildLandscape(seed, keep, { river = false } = {}) {
       const sigma = Math.max(2.4 * h, rng.range(330, 520));
       const x = rng.range(200, W - 200);
       const y = rng.range(200, H - 200);
-      const dz = dist(x, y, zone.x, zone.y);
+      const dz = zoneDist(zone, x, y);
       if (dz < ZR + 2 * sigma && h > 0.2 * sigma) continue; // an der Stadt nur ganz flache Hügel
       if (dz < ZR - 200) continue;
       if (lakes.some((l) => dist(x, y, l.x, l.y) < 2.4 * l.r + 2 * sigma)) continue;
@@ -215,7 +216,7 @@ export function buildLandscape(seed, keep, { river = false } = {}) {
     for (let i = 0; i < n; i++) {
       const x = i * res;
       const y = j * res;
-      const dz = dist(x, y, zone.x, zone.y);
+      const dz = zoneDist(zone, x, y); // in der Form der Zone (Kreis oder Quadrat der Eroberung)
       // Grund: punktsymmetrisch gemittelt, in der Stadt stark gedämpft
       let h = BASE_LEVEL + 0.7 * (base(x, y) + base(W - x, H - y)) * (0.25 + 0.75 * smooth(ZR - 700, ZR + 800, dz));
       for (const hl of hills) h += hl.h * Math.exp(-((dist(x, y, hl.x, hl.y) / hl.sigma) ** 2));
@@ -319,7 +320,7 @@ function carveRivers(coarse, seed, keep) {
       if (q.x < -50 || q.y < -50 || q.x > W + 50 || q.y > H + 50) return true;
       return (
         dist(q.x, q.y, s0.x, s0.y) > SPAWN_BLEND + RW &&
-        dist(q.x, q.y, zone.x, zone.y) > zone.r + reach + 40 &&
+        dist(q.x, q.y, zone.x, zone.y) > zone.r + reach + 40 && // Fluss: immer der Kreis (zwischen Bauland und Quadrat-Ecke ist kein Platz)
         coarseAt(coarse, q.x, q.y) < RIVER.maxH
       );
     });

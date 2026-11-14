@@ -3,13 +3,14 @@ import { UNITS } from '../../data/units.js';
 import { WAVE_MIN, WAVE_PATIENCE, RESERVE, RESERVE_FROM, CQ_HOLD, CQ_EVERY, CQ_LEADER, CQ_NEUTRAL, CQ_GUARD, CQ_SPAWN_EVERY } from '../../data/ai.js';
 import { flagAt, inSquare, spawnFlags } from '../../game/conquest.js';
 import { dist } from './util.js';
+import { enemiesOf } from '../../game/teams.js';
 
 export const conquestMethods = {
   /** Führender Gegner: das andere, nicht ausgeschiedene Team mit den meisten Flaggen (bei Gleichstand den meisten Tickets). */
   leaderFoe() {
     const g = this.game;
     const held = g.conquest.held;
-    return g.teams.filter((t) => t.id !== this.team && !t.out).sort((a, b) => held[b.id] - held[a.id] || b.tickets - a.tickets || a.id - b.id)[0]?.id ?? -1;
+    return enemiesOf(g, this.team).sort((a, b) => held[b.id] - held[a.id] || b.tickets - a.tickets || a.id - b.id)[0]?.id ?? -1;
   },
 
   /**

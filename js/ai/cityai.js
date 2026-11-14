@@ -8,6 +8,7 @@ import { DEPOSITS, cellAt, idx, sizeOf, isPart, fitBig, bigCells, cellFree, road
 import { mainRoadReach, connectRoad, goalOf } from '../game/city/roadnet.js';
 import { totals } from '../game/city/state.js';
 import { marketBuyPrice } from '../game/city/query.js';
+import { enemiesOf, nearestOf } from '../game/teams.js';
 
 /** Zellen höchstens `d` Schritte (4er-Nachbarschaft, alle Zellen) von einer Zelle aus `reach`, Uint8Array 1 = nah (seit v5.20, AP4). */
 function nearCells(c, reach, d) {
@@ -649,8 +650,12 @@ export function aiRaid(game, team, difficulty, dt, mem = cityAiMemory()) {
   if (mem.raidTimer < every) return;
   mem.raidTimer = 0;
   // Ziel: die gegnerische Stadt; in der Eroberung nur eine, deren Viertel-Sperre gefallen ist (sonst kommt niemand hinein)
-  const foe = game.conquest ? game.city.find((o) => o.team !== team && !game.teams[o.team].out && game.conquest.open[o.team]) : game.city[1 - team];
   const main = game.mainFob(team);
+  if (!main) return;
+  // Eroberung: unter den Städten mit offenem Viertel die, deren Hauptstadt am nächsten liegt
+  const open = game.conquest ? enemiesOf(game, team).filter((o) => game.conquest.open[o.id] && game.mainFob(o.id)) : [];
+  const near = nearestOf(open.map((o) => game.mainFob(o.id)), main.x, main.y);
+  const foe = game.conquest ? (near ? game.city[near.team] : null) : game.city[1 - team];
   if (!foe || !main) return;
   // Ziel nach Wert: Werke, Förderung und Markt zuerst, geteilt durch die Entfernung (freie Planung seit v4.85)
   let target = null;

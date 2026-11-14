@@ -280,6 +280,7 @@ export function damageHouse(game, h, amount, occMul = 1) {
     u.hp -= u.maxHp * G.ejectDamage;
     if (u.hp <= 0) {
       u.alive = false;
+      u.hitBy = game.hitBy; // der Schütze, der das Haus zum Einsturz brachte
       game.bounty(u);
     }
   }
@@ -300,6 +301,7 @@ function wound(game, u, amount) {
   if (u.hp <= 0) {
     u.hp = 0;
     u.alive = false;
+    u.hitBy = game.hitBy; // Schütze des laufenden Treffers bzw. das stürmende Team
     game.bounty(u);
   }
 }
@@ -370,7 +372,9 @@ function fightAtWall(game, h, list, dt) {
   if (!occ.length) return;
   const S = G.storm;
   const wire = h.works.wire ? G.works.wire.stormMult : 1;
+  game.hitBy = list[0]?.team ?? -1; // die Stürmer treffen die Besatzer …
   woundInOrder(game, occ, list.length * S.dps * S.cover * wire * dt);
+  game.hitBy = occ[0].team; // … und die Besatzer die Stürmer (Prämie bei mehr als zwei Teams)
   woundInOrder(game, list, occ.length * S.dps * dt);
   for (const u of occ) u.lastHitTime = game.time;
 }

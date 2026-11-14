@@ -113,7 +113,7 @@ export class Hud {
     for (const k of RES_KEYS) {
       this.res[k] = { box: q(`[data-res=${k}]`), val: q(`[data-res=${k}] .val`), rate: q(`[data-res=${k}] .rate`) };
     }
-    this.pts = [0, 1].map((t) => ({
+    this.pts = this.game.teams.map((_, t) => ({
       fill: q(`[data-pf="${t}"]`),
       prog: q(`[data-pp="${t}"]`),
       num: q(`[data-pn="${t}"]`),
@@ -123,6 +123,21 @@ export class Hud {
     try { this.folded = localStorage.getItem('frontline-hud-fold') === '1'; } catch { this.folded = false; }
     root.classList.toggle('folded', this.folded);
 
+    // Eroberung: Auswahlliste für den Erscheinungsort neuer Einheiten (bleibt als Element bestehen, damit sie beim Aufklappen nicht zugeht)
+    this.spawnEl = document.createElement('div');
+    this.spawnEl.className = 'spawn-pick';
+    this.spawnEl.hidden = true;
+    this.spawnIds = [];
+    this.onChange = (e) => {
+      if (!e.target.matches?.('[data-spawn]')) return;
+      const flag = e.target.value === '' ? null : Number(e.target.value);
+      for (const id of this.spawnIds) {
+        const r = this.game.issue(this.team, { type: 'spawnAt', buildingId: id, flag });
+        if (!r.ok) this.controller.message(r.reason);
+      }
+      e.target.blur();
+    };
+    root.addEventListener('change', this.onChange);
     this.onClick = (e) => this.click(e);
     root.addEventListener('click', this.onClick);
   }
@@ -134,7 +149,8 @@ export class Hud {
         `<div class="res res-${k}" data-res="${k}"${k === 'money' && g.city ? ' data-act="market"' : ''}><i class="dot"></i><span class="lbl">${k === 'money' ? BALANCE.resNames[k] : `Front ${SHORT_RES[k]}`}</span>` +
         `<b class="val">0</b><small class="rate">+0/s</small>${k === 'money' && g.city ? '<i class="mk-ico" aria-hidden="true">⚖</i>' : ''}</div>`,
     ).join('');
-    const pts = [0, 1]
+    const pts = g.teams
+      .map((_, t) => t)
       .map(
         (t) =>
           `<div class="pt" style="--c:${BALANCE.teamColors[t]}"><span class="pt-name">${BALANCE.teamNames[t]}</span>` +
@@ -268,11 +284,19 @@ export class Hud {
     if (g.city) this.res.money.box.classList.toggle('mk-on', hasMarket(g, this.team));
     // Forschungsknopf leuchtet, solange eine Forschung läuft
     this.researchBtn?.classList.toggle('on', !!t.tech?.cur);
-    for (let i = 0; i < 2; i++) {
+    const cq = g.conquest;
+    const tickets0 = cq ? Math.round(g.winPoints * BALANCE.conquest.ticketMul) : 0;
+    for (let i = 0; i < g.teams.length; i++) {
       const tm = g.teams[i];
       const p = this.pts[i];
-      p.fill.style.width = pct(tm.points / g.winPoints);
-      p.num.textContent = `${tm.points} / ${g.winPoints}`;
+      if (cq) {
+        // Eroberung: Balken = verbliebene Tickets, dahinter die Zahl der gehaltenen Flaggen
+        p.fill.style.width = pct(Math.max(0, tm.tickets) / tickets0);
+        p.num.textContent = tm.out ? 'raus' : `${Math.max(0, tm.tickets)} · ${cq.held[i]}⚑`;
+      } else {
+        p.fill.style.width = pct(tm.points / g.winPoints);
+        p.num.textContent = `${tm.points} / ${g.winPoints}`;
+      }
     }
     const z = g.zone;
     let label;
@@ -287,19 +311,26 @@ export class Hud {
       label = 'neutral';
       col = '#9aa596';
     }
-    const [c0, c1] = BALANCE.teamColors;
+    if (cq) {
+      label = `Flaggen ${cq.held[this.team]}/${cq.flags.length}`;
+      col = BALANCE.teamColors[this.team];
+    }
+    const cols = BALANCE.teamColors;
+    const perTeam = (arr) => arr.map((v, i) => `<b style="color:${cols[i]}">${v}</b>`).join('<i>:</i>');
+    // Eroberung: Buchstaben aller Flaggen in der Farbe des Besitzers (grau = neutral)
+    const strip = cq ? `<span class="flag-strip" title="Flaggen: Farbe des Besitzers, grau = neutral">${cq.flags.map((f) => `<b style="color:${f.owner >= 0 ? cols[f.owner] : '#9aa596'}">${f.letter}</b>`).join('')}</span>` : '';
     // Geld des eigenen Teams aus der Zone: je Einheit in der Zone, in der Hot Zone das Doppelte
     const me = this.team;
     const hzCount = g.hot ? g.hot.counts[me] : 0;
     const nCrates = storedCrates(g, me);
     const crateTxt = nCrates ? `, ${nCrates} Kiste${nCrates > 1 ? 'n' : ''}` : '';
     const inc =
-      `<span class="zone-inc" title="Geld aus der Konfliktzone (je Einheit ${fmtDe(BALANCE.zone.unitIncome)}/s, in der Hot Zone ${fmtDe(BALANCE.hot.unitIncome)}/s) und aus Versorgungskisten (je ${fmtDe(BALANCE.crates.income)}/s)">` +
+      `<span class="zone-inc" title="Geld aus der Konfliktzone (je Einheit ${fmtDe(BALANCE.zone.unitIncome)}/s, in der Hot Zone ${fmtDe(BALANCE.hot.unitIncome)}/s${cq ? `, je Flagge ${fmtDe(BALANCE.conquest.flagIncome)}/s` : ''}) und aus Versorgungskisten (je ${fmtDe(BALANCE.crates.income)}/s)">` +
       `+${fmtRate(t.rate.money)} Geld/s (${z.counts[me]} Einheiten in der Zone, ${hzCount} in der Hot Zone${crateTxt})</span>`;
     this.zoneEl.innerHTML =
       `<span class="zone-state" style="color:${col}">${label}</span>` +
-      `<span class="zone-cnt"><b style="color:${c0}">${z.counts[0]}</b><i>:</i><b style="color:${c1}">${z.counts[1]}</b></span>` +
-      `<span class="zone-cnt" title="Wertung (Hot Zone doppelt)"><small>Wertung</small> <b style="color:${c0}">${z.weight[0]}</b><i>:</i><b style="color:${c1}">${z.weight[1]}</b></span>` +
+      `<span class="zone-cnt">${perTeam(z.counts)}</span>` +
+      (cq ? strip : `<span class="zone-cnt" title="Wertung (Hot Zone doppelt)"><small>Wertung</small> ${perTeam(z.weight)}</span>`) +
       inc;
     const bar = z.bar;
     this.capFill.style.width = pct(bar.p);
@@ -309,7 +340,7 @@ export class Hud {
     const hl = hz.contested ? 'HOT umkämpft' : hz.owner >= 0 ? `HOT ${BALANCE.teamNames[hz.owner]}` : 'HOT neutral';
     this.hotEl.innerHTML =
       `<span class="zone-state" style="color:${hc}">${hl}</span>` +
-      `<span class="zone-cnt"><b style="color:${c0}">${hz.counts[0]}</b><i>:</i><b style="color:${c1}">${hz.counts[1]}</b></span>`;
+      `<span class="zone-cnt">${perTeam(hz.counts)}</span>`;
     // Sendemast: Restzeit je fertigem Mast (beide Seiten sehen sie)
     const masts = radios(g);
     this.radioEl.hidden = !masts.length;
@@ -366,10 +397,35 @@ export class Hud {
     } else {
       html += this.multiInfo(sel);
     }
+    if (this.spawnEl.contains(document.activeElement)) return; // Dropdown ist offen: das Feld nicht neu aufbauen
     if (html !== this.selHtml) {
       this.selHtml = html;
       this.selEl.innerHTML = html;
+      this.selEl.appendChild(this.spawnEl);
     }
+    this.updateSpawnPick(sel);
+  }
+
+  /**
+   * Eroberung: Auswahlliste „Neue Einheiten erscheinen“ für gewählte eigene Ausbildungsgebäude mit Bodeneinheiten (Kaserne,
+   * Fabrikhalle): am Gebäude oder an einer Flagge, die dem Team gerade gehört. Steht ein Gegner im Gebiet der Flagge oder geht sie
+   * verloren, erscheinen die Einheiten am Gebäude (Befehl spawnAt).
+   */
+  updateSpawnPick(sel) {
+    const g = this.game;
+    const blds = g.conquest ? sel.filter((b) => b.kind === 'building' && b.team === this.team && b.built && b.produces?.some((u) => !UNITS[u].air)) : [];
+    this.spawnIds = blds.map((b) => b.id);
+    this.spawnEl.hidden = !blds.length;
+    if (!blds.length) return;
+    const cur = blds[0].spawnFlag ?? null;
+    const flags = g.conquest.flags.filter((f) => f.owner === this.team || f.id === cur);
+    const key = `${this.spawnIds.join(',')}|${cur}|${flags.map((f) => `${f.id}${f.owner !== this.team ? 'x' : f.contested ? '!' : ''}`).join(',')}`;
+    if (key === this.spawnKey) return;
+    this.spawnKey = key;
+    const opt = (f) => `<option value="${f.id}"${f.id === cur ? ' selected' : ''}>Flagge ${f.letter}${f.owner !== this.team ? ' (verloren)' : f.contested ? ' (umkämpft)' : ''}</option>`;
+    this.spawnEl.innerHTML =
+      `<label class="small">Neue Einheiten erscheinen <select data-spawn><option value=""${cur === null ? ' selected' : ''}>am Gebäude</option>${flags.map(opt).join('')}</select></label>` +
+      (flags.length ? '' : '<div class="muted small">Noch keine eigene Flagge</div>');
   }
 
   /** Einzelne Einheit: HP, Vorrat (Munition/Treibstoff), LKW-Ladung, Auftrag. */
@@ -647,7 +703,7 @@ export class Hud {
     const R = BALANCE.reinforce;
     const t = g.teams[b.team];
     const soldiers = g.soldierCount(b.team);
-    const label = `Soldaten ${soldiers}/${R.soldierMin}, Plätze ${g.slotsUsed(b.team)}/${BALANCE.slotCap}`;
+    const label = `Soldaten ${soldiers}/${R.soldierMin}, Plätze ${g.slotsUsed(b.team)}/${g.slotCap}`;
     if (soldiers >= R.soldierMin) {
       return `<div class="muted small">Nachschub ruht (${label})</div>`;
     }
@@ -769,6 +825,7 @@ export class Hud {
 
   destroy() {
     this.root.removeEventListener('click', this.onClick);
+    this.root.removeEventListener('change', this.onChange);
     this.root.innerHTML = '';
     this.root.hidden = true;
   }

@@ -166,7 +166,7 @@ export function gameInfo(game, difficulty, human = 0) {
     duration: game.time,
     difficulty,
     seed: game.seed,
-    points: [me.points, foe.points],
+    points: game.conquest ? [Math.max(0, me.tickets), Math.max(0, foe.tickets)] : [me.points, foe.points], // Eroberung: Tickets (eigene, erster Gegner)
     kills: me.stats?.kills,
   };
 }

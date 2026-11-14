@@ -361,7 +361,8 @@ export class Renderer {
     drawCityTop(this, ctx, team, known, inRect); // Stadt: Dächer
     this.drawNatureTop(ctx, inRect, z); // Felsen, Büsche und Bäume von oben (seit v5.28 gemalt, nicht mehr im Geländebild)
     drawCityBadges(this, ctx, team, known, inRect, false); // Stadt: Schilder (Funktion, privat/kommerziell)
-    this.drawZone(ctx, z);
+    if (this.game.conquest) this.drawConquest(ctx, z);
+    else this.drawZone(ctx, z);
     this.drawHot(ctx, z, now);
   }
 
@@ -830,7 +831,8 @@ export class Renderer {
     setIsoGround(ctx, cam, dpr);
     drawCityGround(this, ctx, f.team, f.known, inRect); // Stadt: Straßen und Grundstücke
     setIsoGround(ctx, cam, dpr);
-    this.drawZone(ctx, z);
+    if (this.game.conquest) this.drawConquest(ctx, z);
+    else this.drawZone(ctx, z);
     this.drawHot(ctx, z, now);
   }
 
@@ -1362,6 +1364,130 @@ export class Renderer {
     if (this.camera.iso) this.uprightAtWorld(ctx, zn.x, zn.y - zn.r + 110, 0);
     ctx.fillText('KONFLIKTZONE', zn.x, zn.y - zn.r + 110);
     ctx.restore();
+  }
+
+  /**
+   * Eroberung: Rand der quadratischen Konfliktzone, die 16 Flaggengebiete, je Flagge Umkreislinie, Mast mit Fahne und Buchstabe in der
+   * Farbe des Besitzers (grau = neutral), Einnahme-Fortschritt als Bogen; dazu die Grenzen der Viertel (rot gestrichelt, solange das
+   * Viertel für das eigene Team gesperrt ist).
+   */
+  drawConquest(ctx, z) {
+    const g = this.game;
+    const cq = g.conquest;
+    const C = BALANCE.conquest;
+    const zn = g.zone;
+    const drape = this.draping();
+    const k = drape ? z : 1;
+    const lw = (w) => (drape ? Math.max(1, w * z) : w);
+    const GRAY = '#b8beb6';
+    const colOf = (t) => (t >= 0 ? g.teams[t].color : GRAY);
+    const h = cq.half;
+    ctx.save();
+    if (drape) ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    // Gitter der Gebiete (dünn) und Rand der Zone (kräftig)
+    ctx.beginPath();
+    for (let i = 1; i < C.grid; i++) {
+      this.groundLine(ctx, cq.x0 + i * cq.size, cq.y0, cq.x0 + i * cq.size, cq.y0 + 2 * h);
+      this.groundLine(ctx, cq.x0, cq.y0 + i * cq.size, cq.x0 + 2 * h, cq.y0 + i * cq.size);
+    }
+    ctx.strokeStyle = 'rgba(232,236,232,0.42)';
+    ctx.lineWidth = lw(2);
+    ctx.setLineDash([18 * k, 14 * k]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    this.groundLine(ctx, cq.x0, cq.y0, cq.x0 + 2 * h, cq.y0);
+    this.groundLine(ctx, cq.x0 + 2 * h, cq.y0, cq.x0 + 2 * h, cq.y0 + 2 * h);
+    this.groundLine(ctx, cq.x0 + 2 * h, cq.y0 + 2 * h, cq.x0, cq.y0 + 2 * h);
+    this.groundLine(ctx, cq.x0, cq.y0 + 2 * h, cq.x0, cq.y0);
+    ctx.strokeStyle = 'rgba(232,236,232,0.8)';
+    ctx.lineWidth = lw(4);
+    ctx.stroke();
+    // Viertelgrenzen außerhalb der Zone: vier Strahlen von den Kantenmitten zum Kartenrand
+    const rays = [
+      [zn.x, cq.y0, zn.x, 0, 0, 1],
+      [zn.x, cq.y0 + 2 * h, zn.x, H, 2, 3],
+      [cq.x0, zn.y, 0, zn.y, 0, 2],
+      [cq.x0 + 2 * h, zn.y, W, zn.y, 1, 3],
+    ];
+    for (const [x1, y1, x2, y2, qa, qb] of rays) {
+      const locked = [qa, qb].some((q) => cq.quad[q] !== this.team && !cq.open[cq.quad[q]]);
+      ctx.beginPath();
+      this.groundLine(ctx, x1, y1, x2, y2);
+      ctx.strokeStyle = locked ? 'rgba(229,72,77,0.75)' : 'rgba(232,236,232,0.45)';
+      ctx.lineWidth = lw(3);
+      ctx.setLineDash([24 * k, 16 * k]);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // Rand eines fremden, gesperrten Viertels zur Zone hin
+    for (let q = 0; q < 4; q++) {
+      const own = cq.quad[q];
+      if (own === this.team || cq.open[own]) continue;
+      const sx = q & 1 ? 1 : -1;
+      const sy = q & 2 ? 1 : -1;
+      ctx.beginPath();
+      this.groundLine(ctx, zn.x, zn.y + sy * h, zn.x + sx * h, zn.y + sy * h);
+      this.groundLine(ctx, zn.x + sx * h, zn.y + sy * h, zn.x + sx * h, zn.y);
+      ctx.strokeStyle = hexA(own < g.teams.length ? g.teams[own].color : '#e5484d', 0.9);
+      ctx.lineWidth = lw(5);
+      ctx.stroke();
+    }
+    // Flaggen: Umkreislinie und Fortschritt
+    for (const f of cq.flags) {
+      const col = colOf(f.owner);
+      this.groundArc(ctx, f.x, f.y, C.flagRing);
+      ctx.fillStyle = hexA(col, f.owner >= 0 ? 0.22 : 0.1);
+      ctx.fill();
+      ctx.strokeStyle = hexA(col, 0.95);
+      ctx.lineWidth = lw(4);
+      if (f.contested) ctx.setLineDash([14 * k, 10 * k]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      if (f.p > 0 && f.p < 1 && f.capTeam >= 0) {
+        // Einnahme läuft: äußerer Ring in der Farbe des Balkens, Länge = Fortschritt
+        const n = Math.max(2, Math.round(40 * f.p));
+        ctx.beginPath();
+        for (let i = 0; i <= n; i++) {
+          const a = -Math.PI / 2 + (i / 40) * Math.PI * 2;
+          const wx = f.x + Math.cos(a) * (C.flagRing + 14);
+          const wy = f.y + Math.sin(a) * (C.flagRing + 14);
+          const p = drape ? this.camera.worldToScreen(wx, wy) : { x: wx, y: wy };
+          if (i) ctx.lineTo(p.x, p.y);
+          else ctx.moveTo(p.x, p.y);
+        }
+        ctx.strokeStyle = hexA(colOf(f.capTeam), 0.95);
+        ctx.lineWidth = lw(6);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+    // Mast, Fahne und Buchstabe (aufrecht)
+    for (const f of cq.flags) {
+      const col = colOf(f.owner);
+      ctx.save();
+      if (this.camera.iso) this.uprightAtWorld(ctx, f.x, f.y, 0);
+      else if (drape) ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+      ctx.strokeStyle = '#e8ece8';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(f.x, f.y);
+      ctx.lineTo(f.x, f.y - 96);
+      ctx.stroke();
+      ctx.fillStyle = col;
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.rect(f.x + 2, f.y - 96, 58, 38);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#10140f';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '800 30px system-ui, sans-serif';
+      ctx.fillText(f.letter, f.x + 31, f.y - 76);
+      ctx.restore();
+    }
   }
 
   /** Hot Zone: pulsierender oranger Kreis mit Beschriftung; Besitzfarbe, wenn ein Team sie hält. */

@@ -288,7 +288,7 @@ export function damageHouse(game, h, amount, occMul = 1) {
   game.addEffect('explosion', h.x, h.y, -1);
   if (team >= 0) {
     game.message(team, `${h.def.name} eingestürzt – Besatzung verschüttet`, h.x, h.y);
-    game.message(1 - team, `${h.def.name} eingestürzt – Besatzung vertrieben`, h.x, h.y);
+    game.messageFoes(team, `${h.def.name} eingestürzt – Besatzung vertrieben`, h.x, h.y);
   }
 }
 

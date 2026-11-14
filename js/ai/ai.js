@@ -14,6 +14,7 @@ import { buildMethods } from './army/build.js';
 import { produceMethods } from './army/produce.js';
 import { logisticsMethods } from './army/logistics.js';
 import { combatMethods } from './army/combat.js';
+import { conquestMethods } from './army/conquest.js';
 
 export class AI {
   constructor(game, team, difficulty = 'normal') {
@@ -24,8 +25,9 @@ export class AI {
     this.rng = makeRng(game.seed + team);
     // erster Denkschritt sofort; Rot (Team 1) einen halben Takt später, damit nie beide KIs im selben Schritt rechnen (seit v5.93: weniger
     // Ruckler). Ebenso der Takt der Stadt-KI (cityTimer, siehe think).
-    this.timer = team === 1 ? this.cfg.think * 1.5 : this.cfg.think; // Team 1: erster Schritt auch sofort, der nächste nach einem halben Takt
-    this.cityTimer = team === 1 ? CITY.ai.interval[this.difficulty] / 2 : 0;
+    const n = game.teams.length; // jede KI um einen Bruchteil des Takts versetzt (bei zwei Teams wie bisher ein halber Takt)
+    this.timer = this.cfg.think * (1 + team / n); // Team 1: erster Schritt auch sofort, der nächste nach einem halben Takt
+    this.cityTimer = (CITY.ai.interval[this.difficulty] * team) / n;
     this.budget = 0;
     this.corridor = null; // Gasse vor der Hauptstadt, in der nichts gebaut wird (Ausgang bleibt frei)
     this.badSites = []; // { x, y, until } fehlgeschlagene FOB-Ziele
@@ -54,7 +56,7 @@ export class AI {
   }
 
   update(dt) {
-    if (this.game.winner !== null) return;
+    if (this.game.winner !== null || this.game.teams[this.team].out) return; // ausgeschieden (Eroberung): nichts mehr tun
     this.timer += dt;
     if (this.timer < this.cfg.think) return;
     this.timer -= this.cfg.think;
@@ -103,7 +105,7 @@ export class AI {
     this.garrisonZone(s);
     this.stormHouses(s); // Häuser stürmen (seit v5.67)
     this.fortifyHouses(); // eigene Besatzungshäuser ausbauen (seit v5.67)
-    if (!this.attackRadio(s)) this.army(s); // steht ein gegnerischer Sendemast, gilt ihm der ganze Angriff
+    if (!this.attackRadio(s)) this.game.conquest ? this.conquestArmy(s) : this.army(s); // steht ein gegnerischer Sendemast, gilt ihm der ganze Angriff
     this.guardCommander(s);
     this.collectCrates(s); // nach der Welle: Kisten holen nur, die zurückbleiben (Reserve, Nachschub)
   }
@@ -171,4 +173,4 @@ export class AI {
   }
 }
 
-Object.assign(AI.prototype, buildMethods, produceMethods, logisticsMethods, combatMethods);
+Object.assign(AI.prototype, buildMethods, produceMethods, logisticsMethods, combatMethods, conquestMethods);

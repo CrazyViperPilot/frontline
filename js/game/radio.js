@@ -19,7 +19,7 @@ const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStar
 
 /** Eine Baustelle wurde gesetzt: der Gegner erfährt, dass gebaut wird (nicht wo). */
 export function radioStarted(game, b) {
-  game.message(1 - b.team, 'Der Gegner baut einen Sendemast');
+  game.messageFoes(b.team, 'Der Gegner baut einen Sendemast');
 }
 
 /** Zeit der fertigen Masten; Meldungen bei Fertigstellung und kurz vor Ablauf; Sieg nach `hold` s. */
@@ -30,7 +30,7 @@ export function updateRadio(game, dt) {
     if (b.hold === undefined) {
       b.hold = 0;
       game.message(b.team, `Sendemast steht: halte ihn ${clock(R.hold)} für den Sieg`, b.x, b.y);
-      game.message(1 - b.team, `${names[b.team]} hat einen Sendemast errichtet: zerstört ihn binnen ${clock(R.hold)}!`, b.x, b.y);
+      game.messageFoes(b.team, `${names[b.team]} hat einen Sendemast errichtet: zerstört ihn binnen ${clock(R.hold)}!`, b.x, b.y);
     }
     b.hold += dt;
     if (!b.warned && radioLeft(b) <= R.warn) {
@@ -46,5 +46,5 @@ export function updateRadio(game, dt) {
 
 /** Ein Mast ist gefallen (zerstört, nicht abgerissen): Meldung an den Gegner. */
 export function radioLost(game, b) {
-  if (b.built) game.message(1 - b.team, `Sendemast von ${names[b.team]} zerstört`, b.x, b.y);
+  if (b.built) game.messageFoes(b.team, `Sendemast von ${names[b.team]} zerstört`, b.x, b.y);
 }

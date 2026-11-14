@@ -12,6 +12,7 @@ import { armorMul, modOf, rangeMul, sightMul, dealtMul, smokeMul, hasUnlock } fr
 const autoTurret = (game, team) => hasUnlock(game, team, 'autoturret');
 import { damageBridge, deckDist } from './river.js';
 import { forEnemyCity } from './city/query.js';
+import { lockedFor } from './conquest.js';
 import { jetGrounded, parkedArmor, isHighAlt, canHitAltitude } from './aircraft.js';
 import { UNITS } from '../data/units.js';
 
@@ -130,6 +131,9 @@ function warnBase(game, target) {
 /** Fügt Schaden zu, setzt lastHitTime und markiert Tote. Stadthäuser: garrison.damageHouse, Brücken: river.damageBridge. Einheiten: erforschte Panzerung, Deckung an Ruinen (seit v5.66). */
 export function hit(game, target, amount, occMul = 1) {
   if (!target.alive || !(amount > 0)) return;
+  // Eroberung: in ein gesperrtes fremdes Viertel wirkt kein Schaden (game.hitBy = Team des Schützen, vor jedem Treffer gesetzt)
+  if (game.conquest && lockedFor(game, game.hitBy, target.x, target.y)) return;
+  if (target.kind !== 'house' && target.kind !== 'bridge') target.hitBy = game.hitBy; // letzter Treffer: Prämie und Statistik bei mehr als zwei Teams
   if (target.kind === 'house') {
     damageHouse(game, target, amount, occMul);
     return;
@@ -163,6 +167,7 @@ function searchTarget(game, hash, s, R, dmg, { minRange = 0, prefer = null, unit
   let bestScore = Infinity;
   const consider = (e) => {
     if (!e.alive || !isFoe(team, e) || e.house) return;
+    if (game.conquest && lockedFor(game, team, e.x, e.y)) return; // Eroberung: kein Feuer in ein gesperrtes Viertel
     if (!(dmgVs(dmg, e) > 0)) return; // z. B. Mörser und Panzer können keine Hubschrauber treffen, Soldaten keine Flugzeuge
     if (!anti && isHighAlt(e)) return; // hochfliegende U-2 nur für Waffen mit antiHighAlt (seit v5.83)
     if (s.house && !houseCanFire(game, s, e)) return; // Besatzer sehen und zielen nur durch Fensterseiten (seit v5.67)
@@ -201,6 +206,7 @@ function fireDirect(game, s, t, w) {
     game.addEffect('tracer', s.x, s.y, s.team, t.x, t.y, w.snd ?? 'base');
   }
   s.cooldown = w.cooldown * modOf(game, s, 'rof');
+  game.hitBy = s.team;
   hit(game, t, dmg);
 }
 
@@ -270,6 +276,7 @@ function fireWeapon(game, u, w, t) {
   // Flak und SAM: Treffer nur mit Wurf (Trefferchance, siehe unitHitChance); daneben geht der Schuss, der Schaden bleibt aus
   if (w.spec.hitChance !== undefined && !(game.rng.next() < unitHitChance(u, t, w.spec) * modOf(game, u, 'acc') * modOf(game, t, 'evade') * jamFactor(game, t, w.spec))) return; // Forschung: Zünder, Radar; Flares, Störsender des Ziels
   const dmg = shotDamage(w.spec, u, t, heightMult(game, u, t)) * dealtMul(game, u, t);
+  game.hitBy = u.team;
   hit(game, t, dmg, w.spec.occupantMul ?? 1);
   if (w.spec.splash) flameSplash(game, u, t, w.spec.splash, dmg);
 }
@@ -447,6 +454,7 @@ function interceptShells(game) {
 /** Einschlag: Flächenschaden mit linearem Abfall über `splash` an alle gegnerischen Entities (Besatzer schützt ihr Haus) und an Brücken. */
 export function impact(game, p) {
   p.alive = false;
+  game.hitBy = p.team;
   game.addEffect('explosion', p.tx, p.ty, p.team);
   addCrater(game, p.tx, p.ty);
   const R = p.splash || 1;

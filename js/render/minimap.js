@@ -70,14 +70,38 @@ export class Minimap {
 
     // Zone
     const zn = g.zone;
-    const col = zn.owner >= 0 ? g.teams[zn.owner].color : '#e8ece8';
-    ctx.beginPath();
-    ctx.arc(zn.x, zn.y, zn.r, 0, Math.PI * 2);
-    ctx.fillStyle = hexA(col, zn.owner >= 0 ? 0.25 : 0.1);
-    ctx.fill();
-    ctx.strokeStyle = hexA(col, 0.9);
-    ctx.lineWidth = 1.5 * px;
-    ctx.stroke();
+    const cq = g.conquest;
+    if (cq) {
+      // Eroberung: Gebiete in der Farbe des Besitzers (grau = neutral), Zonenrand, Viertelgrenzen
+      for (const f of cq.flags) {
+        ctx.fillStyle = hexA(f.owner >= 0 ? g.teams[f.owner].color : '#e8ece8', f.owner >= 0 ? 0.4 : 0.1);
+        ctx.fillRect(f.x - cq.size / 2 + 12 * px, f.y - cq.size / 2 + 12 * px, cq.size - 24 * px, cq.size - 24 * px);
+      }
+      ctx.strokeStyle = hexA('#e8ece8', 0.9);
+      ctx.lineWidth = 1.5 * px;
+      ctx.strokeRect(cq.x0, cq.y0, 2 * cq.half, 2 * cq.half);
+      ctx.beginPath();
+      ctx.moveTo(zn.x, 0);
+      ctx.lineTo(zn.x, cq.y0);
+      ctx.moveTo(zn.x, cq.y0 + 2 * cq.half);
+      ctx.lineTo(zn.x, H);
+      ctx.moveTo(0, zn.y);
+      ctx.lineTo(cq.x0, zn.y);
+      ctx.moveTo(cq.x0 + 2 * cq.half, zn.y);
+      ctx.lineTo(W, zn.y);
+      ctx.strokeStyle = hexA('#e8ece8', 0.55);
+      ctx.lineWidth = 1 * px;
+      ctx.stroke();
+    } else {
+      const col = zn.owner >= 0 ? g.teams[zn.owner].color : '#e8ece8';
+      ctx.beginPath();
+      ctx.arc(zn.x, zn.y, zn.r, 0, Math.PI * 2);
+      ctx.fillStyle = hexA(col, zn.owner >= 0 ? 0.25 : 0.1);
+      ctx.fill();
+      ctx.strokeStyle = hexA(col, 0.9);
+      ctx.lineWidth = 1.5 * px;
+      ctx.stroke();
+    }
 
     // Stadt: Zonen blass, Gebäude kräftig in Teamfarbe (Bild je Team, neu nur wenn sich Gebiet oder Zellen ändern)
     for (const c of g.city ?? []) {

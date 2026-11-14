@@ -48,7 +48,10 @@ export function updateAbilities(game, dt) {
     game.mines.splice(i, 1);
     game.addEffect('explosion', m.x, m.y, m.team, m.x, m.y, 'hit');
     for (const u of game.units) {
-      if (u.alive && u.team !== m.team && !u.def.air && !u.house && Math.hypot(u.x - m.x, u.y - m.y) <= M.blast) hit(game, u, M.damage);
+      if (u.alive && u.team !== m.team && !u.def.air && !u.house && Math.hypot(u.x - m.x, u.y - m.y) <= M.blast) {
+        game.hitBy = m.team;
+        hit(game, u, M.damage);
+      }
     }
   }
   for (const u of game.units) {

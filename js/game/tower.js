@@ -73,7 +73,7 @@ export function cmdFortify(game, team, cmd) {
   const f = game.getEntity(cmd.buildingId);
   if (!f || f.kind !== 'building' || f.type !== 'fob' || f.team !== team || !f.alive) return fail('Nur eine eigene FOB wird zur Festung');
   if (!f.built) return fail('FOB ist noch im Bau');
-  const foe = game.map.spawns[1 - team];
+  const foe = game.foeSpawn(team);
   const plan = planFortress(game, f, cmd.tx ?? foe.x, cmd.ty ?? foe.y, cmd.towers ?? F.towers);
   const list = game.ownUnits(team, cmd.ids ?? []);
   const eng = list.filter((u) => u.def.builder === 'all').map((u) => u.id);

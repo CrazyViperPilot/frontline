@@ -138,7 +138,7 @@ export const buildMethods = {
     }
     if (goal) return;
     // Zonen-FOB zuerst – nicht kurz nach einem Verlust und nicht mitten in einer gegnerischen Übermacht
-    const zoneHeld = s.zone.counts[1 - this.team] >= 4; // Besatzung der Zone ist öffentlich (wie bei der Zonenwertung)
+    const zoneHeld = Math.max(...s.zone.counts.filter((_, i) => i !== this.team)) >= 4; // Besatzung der Zone ist öffentlich (wie bei der Zonenwertung)
     const zoneWanted = !s.zoneFob && g.time >= this.zoneBan && !zoneHeld;
     let site = zoneWanted ? this.zoneSite(s) : null;
     if (!site && s.zoneFob) site = this.frontSite(s);
@@ -232,7 +232,7 @@ export const buildMethods = {
     const z = s.zone;
     const fobs = [...s.builtFobs].sort((a, b) => dist(a.x, a.y, z.x, z.y) - dist(b.x, b.y, z.x, z.y));
     const toZone = Math.atan2(s.dir.y, s.dir.x);
-    const foe = g.map.spawns[1 - t];
+    const foe = g.foeSpawn(t);
     // Zonen-FOB: Verteidigung zur Gegnerseite hin; sie ist der Brennpunkt und bekommt einen zweiten Mörser.
     const towardFoe = (f) => (f === s.zoneFob ? Math.atan2(foe.y - f.y, foe.x - f.x) : toZone);
 
@@ -318,7 +318,7 @@ export const buildMethods = {
     if (!cfg.fobs || g.time < cfg.from || !s.home || !this.once('fort', FORT_EVERY)) return;
     const front = s.builtFobs.filter((f) => f !== s.home).sort((a, b) => dist(a.x, a.y, s.zone.x, s.zone.y) - dist(b.x, b.y, s.zone.x, s.zone.y))[0];
     const targets = [s.home, s.zoneFob?.built ? s.zoneFob : front].filter(Boolean).slice(0, cfg.fobs);
-    const foe = g.map.spawns[1 - t];
+    const foe = g.foeSpawn(t);
     const airSeen = s.enemies.some((e) => e.def.air);
     for (const f of targets) {
       const towers = s.own.filter((b) => b.type === 'tower' && dist(b.x, b.y, f.x, f.y) <= DEF_RANGE);
@@ -403,7 +403,7 @@ export const buildMethods = {
   rebuildBridges(s) {
     const g = this.game;
     if (!g.bridges?.length || !s.engineers.length || !this.once('bridges', BRIDGE_EVERY)) return;
-    const foe = g.map.spawns[1 - this.team];
+    const foe = g.foeSpawn(this.team);
     const cost = BALANCE.river.rebuildCost;
     for (const b of g.bridges) {
       if (!b.broken || dist(b.x, b.y, s.ax, s.ay) >= dist(b.x, b.y, foe.x, foe.y)) continue;

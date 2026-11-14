@@ -522,7 +522,7 @@ export const cardMethods = {
       let reason = '';
       if (!producers.some((b) => b.built)) reason = 'Gebäude ist noch im Bau';
       else if (!ready) reason = 'Warteschlange ist voll';
-      else if (this.game.slotsUsed(ready.team) + (def.slots ?? 1) > BALANCE.slotCap) reason = 'Einheitenlimit erreicht';
+      else if (this.game.slotsUsed(ready.team) + (def.slots ?? 1) > this.game.slotCap) reason = 'Einheitenlimit erreicht';
       else if (def.hero && hasCommander(this.game, ready.team)) reason = 'Nur ein Kommandeur je Team';
       else if (this.game.city && freePop(this.game, ready.team) < crewOf(u)) reason = 'Zu wenig freie Einwohner (Stadt: Wohnen ausbauen)';
       else if (this.game.city && this.game.city[ready.team].metal < (CITY.metalCost[u] ?? 0)) reason = 'Zu wenig Stahl (Stadt: Erzmine, Hütte und Stahlwerk oder Markt)';

@@ -118,6 +118,9 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .hotz { min-width: 96px; border-color: #ff9a1f66; }
 .radioz { min-width: 96px; border-color: #e0404099; }
 .radio-row { display: block; font-size: 12px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.spawn-pick { margin-top: 4px; }
+.spawn-pick select { font: inherit; color: inherit; background: #1a211a; border: 1px solid #3a463a; border-radius: 4px; padding: 2px 4px; max-width: 100%; }
+.flag-strip { display: block; font-size: 11px; letter-spacing: 2px; white-space: nowrap; }
 .zone-state { display: block; font-weight: 700; font-size: 11px; white-space: nowrap; }
 .zone-cnt { display: flex; justify-content: center; align-items: baseline; gap: 6px; font-size: 16px; font-variant-numeric: tabular-nums; }
 .zone-cnt b { min-width: 2ch; }

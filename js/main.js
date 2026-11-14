@@ -145,7 +145,8 @@ async function captureSave(s, ended = false, copyName = null) {
     createdAt: s.createdAt,
     updatedAt: Date.now(),
     gameTime: g.time,
-    points: [g.teams[0].points, g.teams[1].points],
+    points: g.teams.map((t) => (g.conquest ? Math.max(0, t.tickets) : t.points)),
+    tickets: !!g.conquest, // Eroberung: `points` sind Tickets je Team
     winPoints: g.winPoints,
     difficulty: s.settings.difficulty ?? 'normal',
     ended,
@@ -255,7 +256,8 @@ function loadStand(id) {
 async function resumeGame(rec) {
   const body = await unpack(rec.bytes);
   if (body.format !== SAVE_FORMAT) throw new Error('Stand stammt von einer anderen Version');
-  const { game, ai } = restoreGame(body.snap);
+  const { game, ai: saved } = restoreGame(body.snap);
+  const ai = Array.isArray(saved) ? saved : [saved]; // Stände vor der Eroberung: eine einzelne KI
   stopSession();
   hideOverlay(overlay);
   settings = body.settings ?? settings;
@@ -467,7 +469,8 @@ function frame(s) {
         reason: g.winReason,
         stats: {
           time: g.time,
-          points: [g.teams[0].points, g.teams[1].points],
+          points: g.teams.map((t) => (g.conquest ? Math.max(0, t.tickets) : t.points)),
+          tickets: !!g.conquest,
           winPoints: g.winPoints,
           teams: g.teams.map((t) => ({ ...t.stats, earned: t.earned || 0, used: { ...t.used } })), // Statistik je Team (seit v5.65)
         },
@@ -487,12 +490,17 @@ function startGame(opts) {
   const weather = DEBUG && WEATHER_SETTINGS.includes(params.get('weather')) ? params.get('weather') : opts.weather ?? 'off';
   const river = params.has('river') ? params.get('river') === '1' : opts.river !== false; // ?river=0|1 übersteuert das Startmenü
   const match = DEBUG ? null : matchStart(); // gewertet nur mit Token; sonst ungewertet
-  const game = new Game({ seed, winPoints: opts.winPoints, startMoney: match ? match.w0 : BALANCE.startRes.money, map, radio: opts.radio !== false, weather, research: opts.research !== false, river, city: true, buildRules: opts.buildRules !== false, debug: DEBUG });
+  // Eroberung: 1 bis 3 Computergegner (Team 1 bis 3), jeder mit eigener Schwierigkeit; gespeicherte Karten haben nur so viele
+  // Startpunkte, wie der Editor gesetzt hat (heute 2): dann entsprechend weniger Gegner
+  const conquest = opts.conquest !== false;
+  const diffs = (opts.difficulties?.length ? opts.difficulties : [opts.difficulty ?? 'normal']).slice(0, conquest ? 3 : 1);
+  if (map && map.spawns.length < diffs.length + 1) diffs.length = Math.max(1, map.spawns.length - 1);
+  const game = new Game({ conquest, players: diffs.length + 1, seed, winPoints: opts.winPoints, startMoney: match ? match.w0 : BALANCE.startRes.money, map, radio: opts.radio !== false, weather, research: opts.research !== false, river, city: true, buildRules: opts.buildRules !== false, debug: DEBUG });
   if (DEBUG && WEATHER_NAMES[params.get('wx')]) {
     const wx = params.get('wx');
     game.issue(HUMAN, { type: 'debug', weather: wx, season: wx === 'snow' ? 'winter' : game.weather.season, hold: true }); // Schnee nur im Winter; bleibt so (Grafik prüfen)
   }
-  const ai = new AI(game, AI_TEAM, opts.difficulty);
+  const ai = diffs.map((d, i) => new AI(game, AI_TEAM + i, d)); // eine KI je Computergegner
   buildSession(game, ai, opts, null);
   session.match = match;
   if (!DEBUG && !match) session.hud.pushMessage(UNRATED_NOTE);
@@ -555,7 +563,7 @@ function buildSession(game, ai, opts, view) {
   s.loop = createLoop({
     tickRate: BALANCE.tickRate,
     update(dt) {
-      ai.update(dt);
+      for (const a of ai) a.update(dt);
       game.update(dt);
       if (REVEAL) game.fog[HUMAN].revealAll(); // Simulation setzt den Nebel alle 0,25 s neu
     },

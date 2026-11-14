@@ -1,6 +1,6 @@
 # Frontline – Einstieg für Erweiterungen
 
-Echtzeit-Strategie im Browser (Blau = Spieler gegen Rot = KI). Vanilla JS mit ES-Modulen, Canvas 2D und WebGL-Boden,
+Echtzeit-Strategie im Browser (Blau = Spieler gegen Rot = KI; im Modus Eroberung bis zu drei KIs: Rot, Grün, Gelb, jeder gegen jeden). Vanilla JS mit ES-Modulen, Canvas 2D und WebGL-Boden,
 kein Build-Schritt, offline als PWA. Diese Datei ist der Einstieg für Menschen und Modelle: erst sie lesen, dann gezielt
 die genannten Dateien.
 
@@ -29,7 +29,7 @@ die genannten Dateien.
    `docs/changelog.md` nicht direkt bearbeiten. Die Hilfe (F1) in `js/ui/helptext.js` liest die meisten Zahlen und Tasten aus den Daten
    (seit v5.63); der Rest steht von Hand dort und in `js/ui/menu.js`: mitpflegen (Suche z. B. `grep -rn "300 Plätze" js docs/prd`).
 8. Neue Ideen, die Daniel nur festhalten will: PRD §13 „Geparkte Ideen“ (`docs/prd/ideen.md`), nicht bauen.
-9. Startmenü-Schalter (Sendemast, Wetter, Forschung, Fluss) sind im Menü standardmäßig an, in `new Game()` ohne Angabe aus. Tests verlassen sich darauf. `new Game()` startet mit Stadt; `city: false` nur noch in alten Tests, Ausbau folgt.
+9. Startmenü-Schalter (Eroberung, Sendemast, Wetter, Forschung, Fluss) sind im Menü standardmäßig an, in `new Game()` ohne Angabe aus (`conquest: true, players: 2…4` schaltet die Eroberung ein; ohne sie gibt es genau zwei Teams). Tests verlassen sich darauf. `new Game()` startet mit Stadt; `city: false` nur noch in alten Tests, Ausbau folgt.
 10. Texte im Spiel, Kommentare und Doku auf Deutsch, Bezeichner im Code englisch. Nach jeder Änderung in `js/data/`: `npm run docs`
     (erzeugt die Wertetabellen in `docs/prd/`) und `npm run test:quick`. Vor dem Push `npm test` (alle grün).
 11. Ressourcen der Stadt (Rohstoffe, Werke, Waren, Förder- und Verarbeitungsformeln) ändern: Zellenarten stehen im Register
@@ -105,6 +105,7 @@ Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 
 | Ich will … | Datei | Schlüssel |
 |---|---|---|
+| Eroberung (Standardmodus im Menü): Größe der quadratischen Zone, Zahl der Flaggen, Einnahmezeit, Flaggengeld, Tickets und Takt, Frist bis die Viertel-Sperre fällt, Einheitenlimit nach Spielerzahl | balance.js | `BALANCE.conquest` (Regeln: `docs/prd/eroberung.md`, Logik: `js/game/conquest.js`, KI: `js/ai/army/conquest.js` mit `CQ_*` in `js/data/ai.js`) |
 | Einheitenlimit (Plätze je Team) | balance.js | `QUICK.unitLimit` (im Code `BALANCE.slotCap`) |
 | Plätze, die eine Einheit belegt | units.js | `UNITS.<typ>.slots` (fehlt = 1) |
 | Geld pro Sekunde je Einheit in der Konfliktzone | balance.js | `QUICK.moneyPerUnitZone` (im Code `BALANCE.zone.unitIncome`) |

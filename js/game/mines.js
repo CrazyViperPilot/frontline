@@ -122,6 +122,7 @@ export function updateMines(game, dt) {
     if (tripped) {
       list.splice(i, 1);
       game.addEffect('explosion', m.x, m.y, m.team, m.x, m.y, 'hit');
+      game.hitBy = m.team;
       hit(game, tripped, S.mineDamage[tripped.def.armor] ?? S.mineDamage.light);
       continue;
     }

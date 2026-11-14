@@ -61,7 +61,7 @@ export function createCrates(game) {
     game.entities.set(c.id, c);
     return c;
   });
-  game.crateSeen = [0, 1].map(() => new Map(game.crates.map((c) => [c.id, { x: c.x, y: c.y }])));
+  game.crateSeen = game.teams.map(() => new Map(game.crates.map((c) => [c.id, { x: c.x, y: c.y }])));
 }
 
 /**
@@ -206,7 +206,7 @@ function stepPicker(game, u, dt) {
   c.holder = u.team;
   c.x = u.x;
   c.y = u.y;
-  game.message(1 - u.team, 'Der Gegner hat eine Versorgungskiste aufgenommen', c.x, c.y);
+  game.messageFoes(u.team, 'Der Gegner hat eine Versorgungskiste aufgenommen', c.x, c.y);
   if (!startDeliver(game, u)) setIdle(u);
 }
 
@@ -251,7 +251,7 @@ function stepCarrier(game, u, dt) {
   u.crateStall = 0;
   setIdle(u);
   game.message(u.team, `Versorgungskiste eingelagert: +${C.income} Geld/s`, f.x, f.y);
-  game.message(1 - u.team, 'Der Gegner hat eine Versorgungskiste eingelagert', f.x, f.y);
+  game.messageFoes(u.team, 'Der Gegner hat eine Versorgungskiste eingelagert', f.x, f.y);
 }
 
 /**

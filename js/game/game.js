@@ -18,6 +18,7 @@ import { KIND_NAME } from '../data/citykinds.js';
 import { updateMovement, nearestPassable, planPath, setIdle, separate, exitHouse } from './movement.js';
 import { updateCombat } from './combat.js';
 import { updateZone } from './zone.js';
+import { createConquest, updateConquest, checkCapitals, bindLock, lockedFor, slotCapOf } from './conquest.js';
 import { createHot, updateHot } from './hotzone.js';
 import { updateLogistics, cargoSum, storeCapOf } from './logistics.js';
 import { updateConstruction, canBuild, orderBuild, orderBuildSeq } from './construction.js';
@@ -120,6 +121,8 @@ function takeStock(e, cost) {
 
 /** Tragen alle diese Bauer nur Baumaterial (Soldaten)? Dann zahlen sie Mauern und Tore aus ihrer Ladung. */
 /** Felder mit Koordinaten in Befehlen (Weltpunkt x/y, Linie x1…y2, Turmziel tx/ty, Stadtzellen c0…r1); game.issue prüft sie. */
+// Befehle, deren x/y keine Weltpunkte sind (Stadtzellen) oder die kein Ziel auf der Karte haben: keine Prüfung der Viertel-Sperre
+const WORLD_FREE = new Set(['city', 'cityUpgrade', 'trade', 'train', 'cancelTrain', 'research', 'cancelResearch', 'setDifficulty', 'debug', 'spawnAt']);
 const COORD_FIELDS = ['x', 'y', 'x1', 'y1', 'x2', 'y2', 'tx', 'ty', 'c0', 'r0', 'c1', 'r1'];
 
 const paysCarried = (list) => list.length > 0 && list.every((u) => u.def.builder === 'fort');
@@ -150,11 +153,14 @@ export class Game {
   /** city: Zonenstadt hinter der Hauptstadt (js/game/city/; Standard seit S2a an; ohne Stadt nur noch in alten Tests mit `city: false`: Hauptstadt hat dann unendlich Material). */
   /** buildRules: Baugebiet der Stadt (seit v5.78): Gebäude nur im eigenen Gebiet, auf erkundetem Gelände, nicht nahe dem Feind und nicht in der Konfliktzone (js/game/city/cells.js `buildWhy`). Wirkt nur mit city; ohne Angabe aus. */
   /** river: Zufallskarte mit Flüssen, Brücken und Furten (river.js; ohne Angabe aus). Fertige Karten bringen ihre eigenen mit. */
-  constructor({ seed = 1, winPoints = BALANCE.winPoints, startMoney = BALANCE.startRes.money, map = null, radio = false, weather = 'off', research = false, river = false, city = true, buildRules = false, debug = false } = {}) {
+  constructor({ seed = 1, winPoints = BALANCE.winPoints, startMoney = BALANCE.startRes.money, map = null, radio = false, weather = 'off', research = false, river = false, city = true, buildRules = false, debug = false, conquest = false, players = 2 } = {}) {
     this.seed = seed;
     this.debug = !!debug; // ?debug=1: erlaubt den Befehl `debug` (Geld, festes Wetter), seit v5.58
     this.rng = makeRng(seed);
-    this.map = map ?? generateMap(seed, { river });
+    // conquest: Modus Eroberung (js/game/conquest.js; ohne Angabe aus, Regel 9); players: 2 bis 4 Teams (mehr als 2 nur in der Eroberung)
+    const teamCount = conquest ? Math.max(2, Math.min(4, Math.floor(players) || 2)) : 2;
+    this.map = map ?? generateMap(seed, { river, players: teamCount });
+    if (this.map.spawns.length < teamCount) throw new Error(`Karte hat nur ${this.map.spawns.length} Startpunkte`);
     this.relief = reliefOf(this.map); // Höhengelände oder null (flache Karte); im Spielstand nur das Grobraster (savegame.js)
     // Raster: Hindernisse, Häuser, Bäume, steile Hänge, Seen und Flüsse (Furten passierbar), Hangkosten; im Spielstand nur der Unterschied dazu
     this.grid = terrainGrid(this.map, this.relief);
@@ -177,7 +183,7 @@ export class Game {
     this.winPoints = winPoints;
     this.radioWin = !!radio;
     this.buildRules = !!buildRules; // Baugebiet der Stadt (seit v5.78; Spielstand: Feld wird mitgespeichert)
-    this.fogTimers = [0, BALANCE.fogInterval / 2]; // Takt des Nebels je Team (Team 1 versetzt, seit v5.93)
+    this.fogTimers = Array.from({ length: teamCount }, (_, t) => (t * BALANCE.fogInterval) / teamCount); // Takt des Nebels je Team (Team 1 versetzt, seit v5.93)
     this.statTimer = 0; // Takt der Heeresgröße für die Statistik (sampleArmy, einmal je s)
     this.pathWork = 0; // untersuchte Zellen der Wegsuche seit dem letzten Schritt (Wegbudget, pathplan.js)
     this.pathBacklog = false; // warten Einheiten auf ihren Weg (neue Anfragen stellen sich dann an)? (pathplan.js)
@@ -186,7 +192,7 @@ export class Game {
     this.pathShare = []; // in diesem Schritt gefundene Wege zum Teilen (pathplan.js)
     this.logiTimer = 0; // Takt des Nachfüllens (logistics.js)
     this.consTimer = 0; // Takt der automatischen Bauzuweisung (construction.js)
-    this.teams = [0, 1].map((id) => {
+    this.teams = Array.from({ length: teamCount }, (_, id) => id).map((id) => {
       const team = {
         id,
         name: BALANCE.teamNames[id],
@@ -210,12 +216,13 @@ export class Game {
       return team;
     });
     createResearch(this, research); // Stufen und Verbesserungen je Team (team.tech)
-    this.zone = { ...this.map.zone, owner: -1, contested: false, counts: [0, 0], weight: [0, 0], bar: { team: -1, p: 0 } };
+    this.zone = { ...this.map.zone, owner: -1, contested: false, counts: this.teams.map(() => 0), weight: this.teams.map(() => 0), bar: { team: -1, p: 0 } };
+    createConquest(this, conquest); // Flaggen, Tickets, gesperrte Viertel (nur im Modus Eroberung)
     this.hot = createHot(this);
-    this.fog = [new Fog(W, H), new Fog(W, H)];
+    this.fog = this.teams.map(() => new Fog(W, H));
 
     // Startzustand: je Team die Hauptstadt auf dem Spawn (unendlicher Vorrat), Startunits als Formation davor
-    for (let t = 0; t < 2; t++) {
+    for (let t = 0; t < teamCount; t++) {
       const sp = this.map.spawns[t];
       this.spawnBuilding('fob', t, this.grid.toCell(sp.x) - 1, this.grid.toCell(sp.y) - 1, { built: true, main: true });
       const spots = startFormation(this.grid, t, sp.x, sp.y, BALANCE.startUnits);
@@ -252,7 +259,8 @@ export class Game {
       team.earned = team.earned || 0;
     }
     this.statTimer = this.statTimer || 0;
-    this.fogTimers ??= [0, BALANCE.fogInterval / 2]; // Stände vor v5.93 hatten einen gemeinsamen fogTimer
+    this.fogTimers ??= [0, BALANCE.fogInterval / 2];
+    bindLock(this); // Eroberung: Viertel-Sperre wieder ins Wegeraster hängen // Stände vor v5.93 hatten einen gemeinsamen fogTimer
     // Ruinenliste fehlt in Ständen vor v5.66: aus den eingestürzten Häusern neu aufbauen
     if (!this.ruins) this.ruins = (this.houses || []).filter((h) => h.ruined);
     // Nachrüstungen für ältere Stände (Straßen, Forschungsbaum, Stadt, FOB-Baustellen) gibt es seit v5.56 nicht mehr: Stände eines
@@ -278,6 +286,21 @@ export class Game {
   /** Ereignis: team = Empfänger (-1 = alle). */
   message(team, text, x = null, y = null) {
     this.events.push({ type: 'message', team, text, x, y });
+  }
+
+  /** Meldung an alle Gegner von `team` (bei zwei Teams: an das andere). */
+  messageFoes(team, text, x = null, y = null) {
+    for (const t of this.teams) if (t.id !== team && !t.out) this.message(t.id, text, x, y);
+  }
+
+  /** Richtung „zum Gegner“: bei zwei Teams dessen Startpunkt, in der Eroberung die Zonenmitte (dorther kommen alle Gegner). */
+  foeSpawn(team) {
+    return this.conquest ? this.map.zone : this.map.spawns[1 - team];
+  }
+
+  /** Einheitenlimit je Team (Eroberung: nach Spielerzahl). */
+  get slotCap() {
+    return slotCapOf(this);
   }
 
   /**
@@ -634,6 +657,19 @@ export class Game {
     // Koordinaten (Weltpunkt oder Stadtzelle): angegeben, aber keine endliche Zahl, heißt kaputter Befehl. Sonst liefen Einheiten
     // „nach NaN“ und ihre Position würde selbst NaN (Zeichnen, Wegsuche, Sicht brächen später). Fehlende Felder prüft der Befehl selbst.
     for (const k of COORD_FIELDS) if (cmd[k] !== undefined && !Number.isFinite(cmd[k])) return fail('Ungültige Koordinaten');
+    if (this.conquest) {
+      if (this.teams[team].out) return fail('Ausgeschieden');
+      // Gesperrtes Viertel: kein Ziel dort (Punkt oder Entity); nur das Aufklärungsflugzeug (highAlt) darf darüber fliegen
+      if (!WORLD_FREE.has(cmd.type)) {
+        const e = cmd.targetId !== undefined ? this.getEntity(cmd.targetId) : null;
+        const px = e ? e.x : cmd.x;
+        const py = e ? e.y : cmd.y;
+        if (Number.isFinite(px) && Number.isFinite(py) && lockedFor(this, team, px, py)) {
+          const ids = Array.isArray(cmd.ids) ? this.ownUnits(team, cmd.ids) : [];
+          if (!(ids.length && !e && ids.every((u) => u.def.highAlt))) return fail('Gesperrtes Viertel eines anderen Spielers');
+        }
+      }
+    }
     return c.run(this, team, cmd);
   }
 
@@ -1043,7 +1079,7 @@ export class Game {
     const jetNo = trainCheck(this, b, cmd.unit) ?? (UNITS[cmd.unit].air && !UNITS[cmd.unit].jet ? heliTrainCheck(this, b) : null); // Stellplatz bzw. Heliport: ein Luftfahrzeug je Platz
     if (jetNo) return fail(jetNo);
     if (b.queue.length >= BALANCE.queueMax) return fail('Warteschlange ist voll');
-    if (this.slotsUsed(team) + (UNITS[cmd.unit].slots ?? 1) > BALANCE.slotCap) return fail('Einheitenlimit erreicht');
+    if (this.slotsUsed(team) + (UNITS[cmd.unit].slots ?? 1) > this.slotCap) return fail('Einheitenlimit erreicht');
     if (UNITS[cmd.unit].hero && hasCommander(this, team)) return fail(ONE_COMMANDER);
     if (this.city && freePop(this, team) < crewOf(cmd.unit)) return fail('Zu wenig freie Einwohner (Stadt: Wohnen ausbauen)');
     const cost = UNITS[cmd.unit].cost;
@@ -1110,6 +1146,22 @@ export class Game {
     return { ok: true };
   }
 
+  /** Eroberung: Erscheinungsort neuer Bodeneinheiten dieses Gebäudes: `flag` = Nummer einer eigenen Flagge, null = am Gebäude. */
+  cmdSpawnAt(team, cmd) {
+    if (!this.conquest) return fail('Nur im Modus Eroberung');
+    const b = this.getEntity(cmd.buildingId);
+    if (!b || b.kind !== 'building' || b.team !== team) return fail('Kein eigenes Gebäude gewählt');
+    if (!b.produces?.some((t) => !UNITS[t].air)) return fail('Dieses Gebäude bildet keine Bodeneinheiten aus');
+    if (cmd.flag === null || cmd.flag === undefined) {
+      b.spawnFlag = null;
+      return { ok: true };
+    }
+    const f = this.conquest.flags[cmd.flag];
+    if (!f || f.owner !== team) return fail('Diese Flagge gehört dir nicht');
+    b.spawnFlag = f.id;
+    return { ok: true };
+  }
+
   cmdRally(team, cmd) {
     const b = this.getEntity(cmd.buildingId);
     if (!b || b.kind !== 'building' || b.team !== team) return fail('Kein eigenes Gebäude gewählt');
@@ -1156,12 +1208,13 @@ export class Game {
   endGame(winner, reason) {
     this.winner = winner;
     this.winReason = reason;
-    const how = reason === 'points' ? 'nach Punkten' : reason === 'radio' ? 'durch den Sendemast' : 'durch Eliminierung';
+    const how = reason === 'tickets' ? 'als letzter mit Tickets' : reason === 'points' ? 'nach Punkten' : reason === 'radio' ? 'durch den Sendemast' : 'durch Eliminierung';
     this.message(-1, `${BALANCE.teamNames[winner]} gewinnt ${how}`);
   }
 
   /** Fällt die Hauptstadt eines Teams, ist es verloren (nur sie bildet Einheiten aus). */
   checkElimination() {
+    if (this.conquest) return checkCapitals(this); // Eroberung: das Team scheidet aus, die Partie läuft weiter
     const lost = [];
     for (let t = 0; t < 2; t++) if (!this.mainFob(t)) lost.push(t);
     if (lost.length === 0) return;
@@ -1182,11 +1235,18 @@ export class Game {
     if (why && amount >= BALANCE.bounty.notify) this.message(team, `+${amount} Geld: ${why}`);
   }
 
+  /** Wer hat `dead` zerstört? Bei zwei Teams das andere, sonst das Team des letzten Treffers (`hitBy`, combat.hit) oder -1. */
+  foeOf(dead) {
+    if (dead.team < 0) return -1;
+    if (this.teams.length === 2) return 1 - dead.team;
+    return dead.hitBy !== undefined && dead.hitBy !== dead.team ? dead.hitBy : -1;
+  }
+
   /** Abschussprämie für den Gegner: Soldaten wenig, Fahrzeuge und Hubschrauber viel (Anteil am Preis), Gebäude außer Mauern und Toren. */
   bounty(dead) {
     const B = BALANCE.bounty;
-    const foe = 1 - dead.team;
-    if (foe < 0 || foe > 1 || !this.teams[foe]) return;
+    const foe = this.foeOf(dead);
+    if (foe < 0 || !this.teams[foe]) return;
     if (dead.kind === 'unit') {
       const frac = dead.def.armor === 'inf' ? B.inf : B.vehicle;
       this.reward(foe, Math.round((dead.def.cost.money || 0) * frac), `${dead.def.name} zerstört`);
@@ -1197,7 +1257,7 @@ export class Game {
 
   /** Höchste Zahl lebender Einheiten je Team (Statistik „Höchste Armeegröße“); von update() einmal je s Spielzeit aufgerufen. */
   sampleArmy() {
-    const n = [0, 0];
+    const n = this.teams.map(() => 0);
     for (const u of this.units) if (u.alive) n[u.team] += 1 + (u.passengers?.length || 0); // wie slotsUsed: Passagiere zählen mit
     for (const t of this.teams) if (n[t.id] > t.stats.peakUnits) t.stats.peakUnits = n[t.id];
   }
@@ -1215,7 +1275,7 @@ export class Game {
         if (u.hp <= 0) {
           const fallen = 1 + (u.passengers?.length || 0); // Passagiere sterben mit dem Fahrzeug
           this.teams[u.team].stats.lost += fallen;
-          this.teams[1 - u.team].stats.kills += fallen;
+          if (this.teams[this.foeOf(u)]) this.teams[this.foeOf(u)].stats.kills += fallen;
           this.addEffect('death', u.x, u.y, u.team, u.x, u.y, u.def.armor);
           addUnitWreck(this, u); // eingestiegene Passagiere (alive = false, hp > 0) hinterlassen nichts
           // gefallener Kommandeur, auch als Passagier eines zerstörten Fahrzeugs
@@ -1239,7 +1299,7 @@ export class Game {
       if (!b.demolished) {
         if (b.type !== 'wall' && b.type !== 'gate') {
           this.teams[b.team].stats.buildingsLost++;
-          this.teams[1 - b.team].stats.buildingsKilled++;
+          if (this.teams[this.foeOf(b)]) this.teams[this.foeOf(b)].stats.buildingsKilled++;
         }
         this.addEffect('explosion', b.x, b.y, b.team, b.x, b.y, 'building');
         addBuildingWreck(this, b);
@@ -1285,7 +1345,8 @@ export class Game {
     updateFpv(this, dt); // Kamikazedrohnen explodieren bei Kontakt mit ihrem Ziel (Paket E11)
     updateMines(this, dt); // Pionier-Minen lösen aus und werden geräumt (Paket E8)
     updateCombat(this, dt);
-    updateZone(this, dt);
+    if (this.conquest) updateConquest(this, dt);
+    else updateZone(this, dt);
     updateHot(this, dt);
     updateRadio(this, dt);
     smoothIncome(this, dt);

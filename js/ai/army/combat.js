@@ -375,7 +375,7 @@ export const combatMethods = {
     }
     this.scoutHome = false;
     // Zielpunkt: Zonenrand zur Gegnerseite (vom eigenen Zonenrand aus gesehen auf der anderen Seite)
-    const foe = g.map.spawns[1 - t];
+    const foe = g.foeSpawn(t);
     const v = unitVec(foe.x - z.x, foe.y - z.y);
     const x = z.x + v.x * z.r * 0.8;
     const y = z.y + v.y * z.r * 0.8;
@@ -409,7 +409,7 @@ export const combatMethods = {
       return;
     }
     this.droneHome = false;
-    const foe = g.map.spawns[1 - t];
+    const foe = g.foeSpawn(t);
     const v = unitVec(foe.x - z.x, foe.y - z.y);
     const x = z.x + v.x * z.r * 0.8;
     const y = z.y + v.y * z.r * 0.8;

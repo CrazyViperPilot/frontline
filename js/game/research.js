@@ -183,7 +183,7 @@ export function updateResearch(game, dt) {
     game.message(team.id, `${it.name} erforscht: ${researchEffect(cur.key)}`);
     if (tech.tier > was) {
       game.message(team.id, `Forschungsstufe ${tech.tier} offen`);
-      game.message(1 - team.id, `Der Gegner forscht auf Stufe ${tech.tier}`);
+      game.messageFoes(team.id, `Der Gegner forscht auf Stufe ${tech.tier}`);
     }
   }
 }

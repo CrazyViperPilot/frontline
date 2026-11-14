@@ -3,7 +3,7 @@
 // Inhalt (Suche nach dem Schlüssel):
 //   QUICK            Schnelleinstellungen: die Werte, die man am häufigsten ändert (gleich hier oben)
 //   Partie und Sieg  map, tickRate, winPoints, pointInterval, radio
-//   Geld             startRes, walletMax, bounty, zone, hot, crates
+//   Geld             startRes, walletMax, bounty, zone, conquest, hot, crates
 //   Einheiten        slotCap, startUnits, reinforce, queueMax, trainSlots, fuelSlowMul, leash, scanInterval
 //   FOB und Bauen    fob, construction, demolishRefund
 //   Logistik         logistics, shortageWarn, baseAttackWarn
@@ -75,6 +75,23 @@ export const BALANCE = {
   },
   // Geld je Sekunde und lebende eigene Einheit in der Konfliktzone (auch umkämpft, ohne Deckel)
   zone: { r: 3300, unitIncome: QUICK.moneyPerUnitZone },
+  // Eroberung (seit dem Paket „Eroberung“, docs/prd/eroberung.md): 2 bis 4 Spieler, jeder gegen jeden. Die Konfliktzone ist ein Quadrat
+  // aus grid × grid gleich großen Flaggengebieten, die Karte außerhalb ist in Viertel geteilt (je Startecke eines, für Fremde gesperrt).
+  conquest: {
+    half: 3300, // halbe Kantenlänge der quadratischen Konfliktzone (px); gleich zone.r, damit Stadt und Hot Zone ganz darin liegen
+    grid: 4, // Gebiete je Kante (4 × 4 = 16 Flaggen A bis P)
+    capTime: 20, // Sekunden, um eine Flagge bei 1 Einheit Vorsprung zu neutralisieren bzw. danach einzunehmen
+    capMaxMul: 3, // höchstens so vielfach schneller bei größerem Vorsprung (je Einheit Vorsprung + 1 Tempo)
+    flagIncome: 1.5, // Geld je Sekunde und gehaltener Flagge (kleines Zusatzeinkommen, vor dem Einkommensfaktor der KI)
+    ticketMul: 3, // Start-Tickets = Siegpunkte des Startmenüs (25/50/100) × ticketMul
+    tickEvery: 10, // Sekunden je Ticket-Takt: wer weniger Flaggen hält als der Führende, verliert 1 Ticket
+    noFlagLoss: 1, // zusätzlicher Ticket-Verlust je Takt, wenn ein Team gar keine Flagge hält (und ein anderes eine hält)
+    lockGrace: 300, // so viele Sekunden ohne Flagge (während ein anderes Team eine hält), dann fällt die Sperre des eigenen Viertels für den Rest der Partie
+    spawnRing: 90, // Einheiten erscheinen in diesem Umkreis um die Flagge (px)
+    flagRing: 120, // Radius der Umkreislinie um den Flaggenmast (px, nur Darstellung)
+    slotCap: { 2: 300, 3: 240, 4: 200 }, // Einheitenlimit je Team nach Spielerzahl (Bildrate bei vielen Spielern)
+    names: 'ABCDEFGHIJKLMNOP', // Buchstaben der Flaggen, zeilenweise von links oben
+  },
   // Hot Zone: kleiner Kreis in der Konfliktzone, wandert zufällig oder zu aktiven Bohrern.
   // Einheiten darin bringen statt unitIncome das Doppelte (unitIncome = 2 × zone.unitIncome, nicht zusätzlich).
   // drillMinFuel = Mindestvorrat der FOB, um einen Bohrer zu starten
@@ -324,8 +341,8 @@ export const BALANCE = {
     groupGap: 1100, // Abstand der Rudel untereinander
   },
   // Standards im Startmenü (das Menü merkt sich die letzte Wahl je Gerät). new Game() ohne Angabe schaltet alles aus (Tests).
-  menuDefaults: { difficulty: 'normal', radio: true, weather: 'random', research: true, river: true, buildRules: true }, // buildRules: Baugebiet der Stadt (seit v5.78)
+  menuDefaults: { conquest: true, opponents: 1, difficulty: 'normal', radio: true, weather: 'random', research: true, river: true, buildRules: true }, // buildRules: Baugebiet der Stadt (seit v5.78)
   resNames: { money: 'Geld', bm: 'Baumaterial', mun: 'Munition', fuel: 'Treibstoff' },
-  teamNames: ['Blau', 'Rot'],
-  teamColors: ['#3d8bfd', '#e5484d'],
+  teamNames: ['Blau', 'Rot', 'Grün', 'Gelb'], // Team 2 und 3 nur im Modus Eroberung (bis zu 4 Spieler)
+  teamColors: ['#3d8bfd', '#e5484d', '#3fb950', '#e3b341'],
 };

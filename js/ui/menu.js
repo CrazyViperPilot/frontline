@@ -88,7 +88,7 @@ function saveItem(e, editing) {
       <dt>Erstellt</dt><dd>${fmtWhen(m.createdAt)}</dd>
       <dt>Gespeichert</dt><dd>${fmtWhen(m.updatedAt)}</dd>
       <dt>Spielzeit</dt><dd>${fmtTime(m.gameTime)}</dd>
-      <dt>Punkte</dt><dd>${m.points[0]} : ${m.points[1]} von ${m.winPoints}</dd>
+      <dt>${m.tickets ? 'Tickets' : 'Punkte'}</dt><dd>${m.points.join(' : ')}${m.tickets ? '' : ` von ${m.winPoints}`}</dd>
       <dt>Schwierigkeit</dt><dd>${esc(DIFF_LABEL[m.difficulty] ?? m.difficulty)}</dd>
     </dl>
     <div class="save-acts">
@@ -122,6 +122,9 @@ const MOOD_KEY = 'frontline-licht'; // Startmenü: Lichtstimmung (nur Optik)
 const WEATHER_KEY = 'frontline-wetter'; // Startmenü: Wetter aus, Zufall oder feste Jahreszeit
 const RESEARCH_KEY = 'frontline-forschung'; // Startmenü: Forschung an/aus
 const RIVER_KEY = 'frontline-fluss'; // Startmenü: Flüsse auf Zufallskarten an/aus
+const CONQUEST_KEY = 'frontline-eroberung'; // Startmenü: Modus Eroberung an/aus
+const OPP_KEY = 'frontline-gegner'; // Startmenü: Zahl der Computergegner (1 bis 3, nur Eroberung)
+const OPP_DIFF_KEY = 'frontline-ki-'; // + Nummer des Gegners: seine Schwierigkeit
 const BUILD_KEY = 'frontline-baugebiet'; // Startmenü: Baugebiet der Stadt an/aus (seit v5.78)
 function readMapSel() {
   try {
@@ -517,7 +520,7 @@ export function wireAccount(box, { compact = false, hint = '', locked = null, st
 }
 
 /**
- * Startmenü: onStart({difficulty, winPoints, mapId, radio, weather, mood, research, river, buildRules}) (city immer true) beim Klick auf Start (mapId 'random' oder Karten-ID,
+ * Startmenü: onStart({conquest, difficulty, difficulties (je Computergegner), winPoints, mapId, radio, weather, mood, research, river, buildRules}) (city immer true) beim Klick auf Start (mapId 'random' oder Karten-ID,
  * radio = Sendemast-Sieg, weather = 'off' | 'random' | Jahreszeit, research = Forschungsbaum, river = Flüsse auf Zufallskarten).
  * Die Kasse (Geld von Runde zu Runde) kommt aus dem Konto (ui/saves.js, accountWallet); Gäste sehen den Startbetrag und den Hinweis.
  * Gewertete Partien (Tokens, ui/match.js) zeigt die Kasszeile: wie viele bereit sind und ob ein Endstand noch auf Netz wartet.
@@ -525,7 +528,10 @@ export function wireAccount(box, { compact = false, hint = '', locked = null, st
 export function showStartMenu(root, onStart, { resume = null } = {}) {
   // resume: { find(): Promise<{ text, source } | null>, onResume(), onDiscard() } – gespeicherte Partie (Gerät oder Webspace), siehe ui/saves.js
   const D = BALANCE.menuDefaults; // Standards: js/data/balance.js
-  let difficulty = D.difficulty;
+  // Eroberung: bis zu 3 Computergegner, jeder mit eigener Schwierigkeit (gemerkt); klassisch: ein Gegner
+  let conquest = readFlag(CONQUEST_KEY, D.conquest);
+  let opponents = Number(readChoice(OPP_KEY, ['1', '2', '3'], String(D.opponents)));
+  const diffs = [1, 2, 3].map((i) => readChoice(OPP_DIFF_KEY + i, DIFFS.map(([k]) => k), D.difficulty));
   let mapSel = readMapSel(); // 'random' | Karten-ID
   let winPoints = BALANCE.winPoints;
   let radio = readFlag(RADIO_KEY, D.radio);
@@ -548,11 +554,23 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
       </section>
       <p class="tag">Echtzeit-Strategie · Einheiten an die Front bringen, versorgen und die Konfliktzone halten</p>
       <div class="field">
-        <span class="flabel">Schwierigkeit</span>
-        <div class="seg">${DIFFS.map(([k, l]) => `<button type="button" data-diff="${k}">${l}</button>`).join('')}</div>
+        <span class="flabel" title="Eroberung: 16 Flaggen in der Konfliktzone, Tickets, bis zu 4 Spieler, jeder gegen jeden. Klassisch: Punktebalken, ein Gegner">Modus</span>
+        <div class="seg"><button type="button" data-cq="1">Eroberung</button><button type="button" data-cq="0">Klassisch</button></div>
       </div>
+      <div class="field" data-oppfield>
+        <span class="flabel">Computergegner</span>
+        <div class="seg">${[1, 2, 3].map((n) => `<button type="button" data-opp="${n}">${n}</button>`).join('')}</div>
+      </div>
+      ${[1, 2, 3]
+        .map(
+          (i) => `<div class="field" data-opprow="${i}">
+        <span class="flabel" style="color:${BALANCE.teamColors[i]}">${BALANCE.teamNames[i]}</span>
+        <div class="seg">${DIFFS.map(([k, l]) => `<button type="button" data-od="${i}:${k}">${l}</button>`).join('')}</div>
+      </div>`,
+        )
+        .join('')}
       <div class="field">
-        <span class="flabel">Siegpunkte</span>
+        <span class="flabel" data-ptslabel>Siegpunkte</span>
         <div class="seg">${POINTS.map((p) => `<button type="button" data-pts="${p}">${p}</button>`).join('')}</div>
       </div>
       <div class="field">
@@ -613,7 +631,8 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
         <li>Förderung, Werke, Wohnen und Gewerbe liegen an Straßen. Rohstoffe fahren zum nächsten Werk, Produkte zum Lager der Hauptstadt; ohne Straße keine Lieferung. Straßen können voll werden (Stau: gelb, rot), dann kommen Waren und Pendler langsamer. Fahrzeuge, Reparaturen und Munition brauchen Stahl; Gewerbe braucht Baumaterial vom Lager. F-16 tanken Kerosin am Kerosintank des Fliegerhorsts, Hubschrauber gelandet auf ihrem Heliport (ein Hubschrauber je Heliport, Kerosintank und Munitionslager in der Nähe).</li>
         <li>Spielstände: Die Liste oben zeigt alle Partien (Spielzeit, Punkte, Schwierigkeit, Version); je Zeile laden, umbenennen oder löschen. Beendete Partien bleiben zum Ansehen in der Liste.</li>
         <li>Konto (oben, optional): Ohne Konto bleiben Spielstände auf diesem Gerät, und jede Partie startet mit dem Startbetrag und zählt nicht für eine Kasse. Anmelden und Abmelden geht auch im Pausenmenü (P): Die laufende Partie bleibt, wie sie begonnen hat; eine gewertete Partie lässt sich dort erst nach dem Endstand wechseln. Mit Konto (E-Mail und Passwort, Bestätigung per Mail) liegen Spielstände und die Kasse (Geld von Runde zu Runde) auf dem Server und sind nach dem Anmelden auf jedem Gerät da. Eine Partie zählt für die Kasse, wenn der Server sie begonnen hat: Er gibt bis zu 3 Tokens auf Vorrat aus, auch für Partien ohne Netz. Ohne Token läuft die Partie ungewertet. Ein Token wird erst mit dem Endstand verbraucht: Eine abgebrochene Partie kostet keins. Ein gespeicherter Stand bleibt auf diesem Gerät gewertet, solange sein Token im Vorrat ist.</li>
-        <li>Konfliktzone halten: jede deiner Einheiten dort bringt Geld (0,4/s, in der Hot Zone 0,8/s), alle 30 s ein Punkt. Fällt deine Hauptstadt, ist die Runde verloren.</li>
+        <li>Eroberung: 16 Flaggen (A bis P) in der Konfliktzone. Wer im Gebiet einer Flagge die meisten Einheiten hat, nimmt sie ein. Wer weniger Flaggen hält als der Führende, verliert Tickets; ohne Tickets scheidet man aus. Fremde Viertel sind gesperrt, bis ihr Besitzer ${Math.round(BALANCE.conquest.lockGrace / 60)} min ohne Flagge ist. Kaserne und Fabrikhalle: im Infofeld wählen, ob neue Einheiten am Gebäude oder an einer eigenen Flagge erscheinen.</li>
+        <li>Klassisch: Konfliktzone halten: jede deiner Einheiten dort bringt Geld (0,4/s, in der Hot Zone 0,8/s), alle 30 s ein Punkt. Fällt deine Hauptstadt, ist die Runde verloren.</li>
       </ol>
       <p class="muted small center" data-wallet></p>
       <button type="button" class="primary" data-act="start">Start</button>
@@ -764,8 +783,21 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
     }
   });
   const mark = () => {
-    root.querySelectorAll('[data-diff]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.diff === difficulty)));
-    root.querySelectorAll('[data-pts]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.pts) === winPoints)));
+    const count = conquest ? opponents : 1;
+    root.querySelectorAll('[data-cq]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.cq === '1') === conquest)));
+    root.querySelector('[data-oppfield]').hidden = !conquest;
+    root.querySelectorAll('[data-opp]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.opp) === opponents)));
+    root.querySelectorAll('[data-opprow]').forEach((r) => (r.hidden = Number(r.dataset.opprow) > count));
+    root.querySelectorAll('[data-od]').forEach((b) => {
+      const [i, k] = b.dataset.od.split(':');
+      b.setAttribute('aria-pressed', String(diffs[i - 1] === k));
+    });
+    // Eroberung: die Wahl 25/50/100 zählt als Tickets × ticketMul
+    root.querySelector('[data-ptslabel]').textContent = conquest ? 'Tickets' : 'Siegpunkte';
+    root.querySelectorAll('[data-pts]').forEach((b) => {
+      b.textContent = String(Number(b.dataset.pts) * (conquest ? BALANCE.conquest.ticketMul : 1));
+      b.setAttribute('aria-pressed', String(Number(b.dataset.pts) === winPoints));
+    });
     root.querySelectorAll('[data-radio]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.radio === '1') === radio)));
     root.querySelectorAll('[data-weather]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.weather === weather)));
     root.querySelectorAll('[data-mood]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mood === mood)));
@@ -881,8 +913,17 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
       renderMapBox();
       return;
     }
-    if (b.dataset.diff) difficulty = b.dataset.diff;
-    else if (b.dataset.pts) winPoints = Number(b.dataset.pts);
+    if (b.dataset.cq) {
+      conquest = b.dataset.cq === '1';
+      writeFlag(CONQUEST_KEY, conquest);
+    } else if (b.dataset.opp) {
+      opponents = Number(b.dataset.opp);
+      writeChoice(OPP_KEY, String(opponents));
+    } else if (b.dataset.od) {
+      const [i, k] = b.dataset.od.split(':');
+      diffs[i - 1] = k;
+      writeChoice(OPP_DIFF_KEY + i, k);
+    } else if (b.dataset.pts) winPoints = Number(b.dataset.pts);
     else if (b.dataset.radio) {
       radio = b.dataset.radio === '1';
       writeFlag(RADIO_KEY, radio);
@@ -923,7 +964,8 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
       );
     } else if (b.dataset.act === 'start') {
       hideOverlay(root);
-      onStart({ difficulty, winPoints, mapId: mapSel, radio, weather, mood, research, river, city: true, buildRules });
+      // difficulties: Schwierigkeit je Computergegner (Team 1, 2, 3); difficulty: die des ersten (Spielstand-Liste, Statistik)
+      onStart({ conquest, difficulty: diffs[0], difficulties: diffs.slice(0, conquest ? opponents : 1), winPoints, mapId: mapSel, radio, weather, mood, research, river, city: true, buildRules });
       return;
     }
     mark();
@@ -1083,7 +1125,8 @@ export function showEnd(root, { winner, team, reason, stats }, onRestart) {
   const won = winner === team;
   const who = BALANCE.teamNames[winner];
   let why;
-  if (reason === 'points') why = `${who} hat ${stats.winPoints} Siegpunkte erreicht.`;
+  if (reason === 'tickets') why = won ? 'Alle Gegner sind ausgeschieden.' : `Du bist ausgeschieden. ${who} liegt nach Tickets vorn.`;
+  else if (reason === 'points') why = `${who} hat ${stats.winPoints} Siegpunkte erreicht.`;
   else if (reason === 'radio') why = `${who} hat den Sendemast ${Math.round(BALANCE.radio.hold / 60)} Minuten gehalten.`;
   else if (won) why = 'Die Hauptstadt des Gegners ist zerstört.';
   else why = 'Deine Hauptstadt ist zerstört.';
@@ -1100,19 +1143,20 @@ export function showEnd(root, { winner, team, reason, stats }, onRestart) {
   ];
   const num = (v) => Math.round(v || 0).toLocaleString('de-DE');
   const val = (t, key) => (key === 'mun' || key === 'fuel' ? num(t.used?.[key]) : num(t[key]));
-  const names = BALANCE.teamNames;
+  const names = BALANCE.teamNames.slice(0, stats.points.length);
+  const ptsLabel = stats.tickets ? 'Tickets' : 'Siegpunkte';
   const table = stats.teams
     ? `<table class="keys end-stats">
         <tr class="head"><th></th>${names.map((n, i) => `<td class="${i === team ? 'mine' : ''}">${esc(n)}${i === team ? ' (du)' : ''}</td>`).join('')}</tr>
-        <tr><th>Spielzeit</th><td colspan="2" class="center">${fmtTime(stats.time)}</td></tr>
-        <tr><th>Siegpunkte</th>${names.map((n, i) => `<td class="${i === team ? 'mine' : ''}">${num(stats.points[i])}</td>`).join('')}</tr>
+        <tr><th>Spielzeit</th><td colspan="${names.length}" class="center">${fmtTime(stats.time)}</td></tr>
+        <tr><th>${ptsLabel}</th>${names.map((n, i) => `<td class="${i === team ? 'mine' : ''}">${num(stats.points[i])}</td>`).join('')}</tr>
         ${rows
           .map(([label, key]) => `<tr><th>${label}</th>${stats.teams.map((t, i) => `<td class="${i === team ? 'mine' : ''}">${val(t, key)}</td>`).join('')}</tr>`)
           .join('')}
       </table>`
     : `<table class="keys">
         <tr><th>Spielzeit</th><td>${fmtTime(stats.time)}</td></tr>
-        <tr><th>Siegpunkte</th><td>${BALANCE.teamNames[0]} ${stats.points[0]} : ${stats.points[1]} ${BALANCE.teamNames[1]}</td></tr>
+        <tr><th>${ptsLabel}</th><td>${names.map((n, i) => `${n} ${stats.points[i]}`).join(' : ')}</td></tr>
       </table>`;
   show(
     root,

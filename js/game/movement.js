@@ -1,4 +1,5 @@
 // Bewegung: Wegfolgen, Verfolgung, Fahrhelfer für LKW/Bauer und Trennung (docs/verlauf.md §5, §11). Kein DOM.
+import { lockedFor } from './conquest.js';
 import { BALANCE } from '../data/balance.js';
 import { lineOfSight } from './pathfinding.js';
 import { planUnitPath, pathPending, planPending } from './pathplan.js';
@@ -159,7 +160,7 @@ function stepToward(grid, u, tx, ty, step) {
 
 /** Folgt dem Weg mit Tempo `speed * speedMul * dt`. false, wenn ein Wegpunkt blockiert ist (neu planen). */
 /** Flug: geradeaus zum Wegpunkt, ohne Gelände- oder Gebäudeprüfung. */
-function followAir(u, dt) {
+function followAir(game, u, dt) {
   let budget = u.def.speed * u.speedMul * dt;
   while (budget > 1e-9 && u.pathIndex < u.path.length) {
     const wp = u.path[u.pathIndex];
@@ -171,6 +172,11 @@ function followAir(u, dt) {
     }
     const step = Math.min(d, budget);
     u.angle = Math.atan2(wp.y - u.y, wp.x - u.x);
+    // Eroberung: über ein gesperrtes fremdes Viertel fliegt nur das Aufklärungsflugzeug; alle anderen halten an der Grenze
+    if (game.conquest && !u.def.highAlt && lockedFor(game, u.team, u.x + ((wp.x - u.x) / d) * step, u.y + ((wp.y - u.y) / d) * step)) {
+      u.pathIndex = u.path.length;
+      break;
+    }
     u.x += ((wp.x - u.x) / d) * step;
     u.y += ((wp.y - u.y) / d) * step;
     budget -= step;
@@ -196,7 +202,7 @@ export function slopeFactor(relief, u, dx, dy) {
 }
 
 function followPath(game, u, dt) {
-  if (u.def.air) return followAir(u, dt);
+  if (u.def.air) return followAir(game, u, dt);
   const grid = game.grid;
   let budget = u.def.speed * u.speedMul * dt;
   if (game.relief && u.pathIndex < u.path.length) {

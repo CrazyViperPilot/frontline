@@ -15,10 +15,14 @@ const CX = W / 2;
 const CY = H / 2;
 const ZONE_R = BALANCE.zone.r;
 const SPAWN_EDGE = MAPGEN.general.spawnEdge;
-const SPAWNS = [
+const SPAWNS2 = [
   { x: SPAWN_EDGE, y: H - SPAWN_EDGE },
   { x: W - SPAWN_EDGE, y: SPAWN_EDGE },
 ];
+// Eroberung mit 3 oder 4 Spielern: auch die beiden anderen Ecken sind Startpunkte (Bauland, Zufahrt, flaches Gelände). Die Karte
+// bleibt punktsymmetrisch: Ecke 2 und 3 spiegeln sich wie 0 und 1.
+const SPAWNS4 = [...SPAWNS2, { x: SPAWN_EDGE, y: SPAWN_EDGE }, { x: W - SPAWN_EDGE, y: H - SPAWN_EDGE }];
+let SPAWNS = SPAWNS2; // Startecken der Karte, die gerade erzeugt wird (generateMap setzt sie)
 const MAX_ATTEMPTS = MAPGEN.general.attempts;
 const OBSTACLE_PAIRS = MAPGEN.scatter.obstaclePairs;
 const MIN_ROUTES = MAPGEN.general.minRoutes;
@@ -35,10 +39,18 @@ const reaches = (path, x, y) => path.length > 0 && path[path.length - 1].x === x
  * river: je ein Fluss vor jeder Startecke mit Brücken und Furten (v4.53; ohne ihn bleibt jede Karte wie zuvor).
  * @returns {{ width, height, tile, obstacles: {x,y,r}[], town: {roads, buildings, parks, cars, trees, fields}, trees: {x,y,r}[] (Bäume außerhalb der Stadt; wie die Stadtbäume blockierend), spawns: {x,y}[], zone: {x,y,r}, crates: {x,y}[] (Versorgungskisten), relief: string (Höhengelände, relief.js), fords?: {x,y,r}[], bridges?: {x1,y1,x2,y2}[] (nur mit Fluss) }}
  */
-export function generateMap(seed, { river = false } = {}) {
-  for (let k = 0; k < MAX_ATTEMPTS; k++) {
-    const map = tryBuild(seed + k, river);
-    if (map) return map;
+export function generateMap(seed, { river = false, players = 2 } = {}) {
+  SPAWNS = players > 2 ? SPAWNS4 : SPAWNS2; // mit 2 Spielern bleibt jede Karte je Seed, wie sie war (Regel 4)
+  try {
+    for (let k = 0; k < MAX_ATTEMPTS; k++) {
+      const map = tryBuild(seed + k, river);
+      if (map) {
+        map.spawns = map.spawns.slice(0, Math.max(2, players));
+        return map;
+      }
+    }
+  } finally {
+    SPAWNS = SPAWNS2;
   }
   throw new Error('Karte konnte nicht erzeugt werden');
 }
@@ -216,6 +228,7 @@ function isConnected(grid) {
   const cy = CY - RAIL_HALF - 20; // Zonenmitte liegt unter dem Zug: Nachbarpunkt prüfen
   if (!reaches(findPath(grid, a.x, a.y, CX, cy, 0), CX, cy)) return false;
   if (!reaches(findPath(grid, a.x, a.y, b.x, b.y, 0), b.x, b.y)) return false;
+  for (const o of SPAWNS.slice(2)) if (!reaches(findPath(grid, o.x, o.y, CX, cy, 0), CX, cy)) return false; // weitere Startecken (Eroberung)
   // Mehrere getrennte Zugänge zur Zone (die Karte ist punktsymmetrisch: Start 0 genügt)
   const keepOut = [{ x: a.x, y: a.y, r: 900 }, { x: CX, y: CY, r: ZONE_R }];
   return countRoutes(grid, a, { x: CX, y: cy }, { want: MIN_ROUTES, keepOut }) >= MIN_ROUTES;

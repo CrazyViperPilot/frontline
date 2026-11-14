@@ -143,6 +143,7 @@ Neue Befehle: Rezept in [CLAUDE.md](CLAUDE.md).
 | `research`, `cancelResearch` | `buildingId, key` / `key?` | `research.js` | Forschung starten oder einreihen (bis 3 wartend, bezahlt beim Einreihen) / abbrechen (ohne `key` die laufende; Abhängige fallen mit heraus, alles erstattet) |
 | `smoke`, `mine` | `ids` | `abilities.js` | Nebelwand (Fahrzeuge) / Mine (Baufahrzeug) |
 | `rally` | `buildingId, x, y` | `game.js` `cmdRally` | Sammelpunkt |
+| `spawnAt` | `buildingId, flag` (Nummer einer eigenen Flagge oder `null`) | `game.js` `cmdSpawnAt` | Eroberung: neue Bodeneinheiten des Gebäudes erscheinen an dieser Flagge (`null`: am Gebäude) |
 | `demolish` | `buildingId` | `game.js` `cmdDemolish` | Gebäude abreißen |
 | `setDifficulty` | `difficulty` (`easy`, `normal`, `hard`) | `game.js` | KI meldet ihr Team an (seit v5.58, aus dem Konstruktor von `AI`): `isAI`, `incomeMult` aus `BALANCE.difficulty` |
 | `debug` | `money?`, `weather?`, `season?`, `hold?` | `game.js` `cmdDebug` | Nur mit `new Game({ debug: true })` (`?debug=1`, seit v5.58): Geld dazu (Taste M) / Wetter setzen, mit `hold` bleibt es |
@@ -240,6 +241,7 @@ Wo jedes Feature liegt. „KI“ = Konstanten-Präfix in `js/data/ai.js`, Logik 
 |---|---|---|---|---|---|---|
 | Spielzustand, Befehle, Platzierung, Sieg, Statistik am Spielende | §2, §4, §9 „Endbildschirm“ | `fob`, `winPoints` | `game.js` (`newStats`, `sampleArmy`, Zählung in `cleanup`), `economy.js` (Ausbildung) | – | `menu.js` (`showEnd`) | `game.test.js`, `stats.test.js` |
 | Ausbildung, Einheitenlimit, Nachschub, Einkommen | §2, §3, §5 | `slotCap`, `trainSlots`, `reinforce`, `startRes` | `economy.js`, `game.js` (`cmdTrain`) | `MIX`, `COUNTER_*` | `controller.js`, `hud.js` | `economy.test.js` |
+| Eroberung: 2 bis 4 Teams, Flaggen, Tickets, Viertel-Sperre, Flaggen-Spawn | §7 „Eroberung“ | `conquest`, `CQ_*` | `conquest.js` (`updateConquest`, `lockedFor`, `eliminate`), `grid.js` (`lock`), `combat.js` (`hit`), `economy.js` (`flagSpot`), `game.js` (`issue`, `cmdSpawnAt`, `foeOf`) | `js/ai/army/conquest.js` | `renderer.js` (`drawConquest`), `minimap.js`, `hud.js` (`updateSpawnPick`), `menu.js` | `conquest.test.js` |
 | Konfliktzone, Punkte, Zonengeld | §7 | `zone`, `pointInterval` | `zone.js` | `WAVE_*`, `THREAT_*` | `renderer.js`, `hud.js` | `economy.test.js`, `game.test.js` |
 | Hot Zone und Bohrer | §7 „Hot Zone“, „Bohrer“ | `hot`, `BUILDINGS.drill` | `hotzone.js` | – | `renderer.js`, `hud.js` | `game.test.js` |
 | Lager, LKW, Nachfüllen, Transport, Einsteigen; Werkslager und LKW am Werk (seit v5.69), Pendeln ab Werk (seit v5.70) | §3, §10, §15 „Werkslager“ | `logistics`, `CITY.pickup` | `logistics.js` (`ownWork`, `loadWork`), Ausgangslager `stockAtWork` in `city/economy.js` | `SUPPLY_*`, `SURPLUS_MIN`, `ROUTE_HOLD`, `WORK_SOURCE_NEAR`, `WORK_SOURCE_TRUCKS` (`pendlerPlan`, `workSource`, `pickupWorks` in `ai/army/logistics.js`, seit v5.70) | `renderer.js` (`drawRoutes`), `controller.js` (Rechtsklick auf Werk `pickWork`, Pendeln T ab Werk `confirmRouteFrom`), `hud.js` (`cityInfo`: Abholbereit) | `logistics.test.js`, `pickup.test.js`, `pickupai.test.js` |

@@ -158,7 +158,8 @@ test('Zufallstest: jeder Befehl mit gültigen und verdorbenen Werten antwortet o
   const { g, dead } = world();
   const rng = makeRng(20261108);
   const gen = makeGen(g, dead, rng);
-  const types = Object.keys(COMMANDS).filter((t) => t !== 'debug'); // debug ist nur mit ?debug=1 erreichbar
+  // debug ist nur mit ?debug=1 erreichbar; spawnAt gibt es nur in der Eroberung (eigener Test unten und test/conquest.test.js)
+  const types = Object.keys(COMMANDS).filter((t) => t !== 'debug' && t !== 'spawnAt');
   for (const t of types) assert.ok(TEMPLATES[t], `Vorlage für ${t} fehlt (neuer Befehl? hier ergänzen)`);
   const failures = [];
   const oks = {};
@@ -439,3 +440,20 @@ for (const [type, make] of Object.entries(SCENES)) {
     assert.equal(nan, undefined, nan ? `NaN an ${nan.type}: ${JSON.stringify(nan.order)}` : '');
   });
 }
+
+test('Gezielte Lage „spawnAt“ (Eroberung): gültig angenommen, verdorbene Varianten ohne Ausnahme, Spiel läuft weiter', () => {
+  const g = new Game({ seed: 4, conquest: true, players: 3 });
+  const b = g.mainFob(0);
+  const trainer = g.city ? [...g.city[0].ents.values()].find((e) => e.produces?.includes('rifleman')) : b;
+  const f = g.conquest.flags[6];
+  f.owner = 0;
+  assert.equal(g.issue(0, { type: 'spawnAt', buildingId: trainer.id, flag: f.id }).ok, true);
+  for (const flag of [NaN, -1, 99, 1.5, '6', {}, [], Infinity, undefined, null]) {
+    for (const buildingId of [trainer.id, -5, NaN, 'x', null, g.mainFob(1).id]) {
+      const r = g.issue(0, { type: 'spawnAt', buildingId, flag });
+      assert.equal(typeof r.ok, 'boolean');
+      if (!r.ok) assert.equal(typeof r.reason, 'string');
+    }
+  }
+  for (let i = 0; i < 40; i++) g.update(0.05);
+});

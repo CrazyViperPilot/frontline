@@ -92,6 +92,7 @@ export const COMMANDS = {
   mine: { run: cmdAbility },
   cancelResearch: { run: cmdCancelResearch },
   rally: { run: (g, t, c) => g.cmdRally(t, c) },
+  spawnAt: { run: (g, t, c) => g.cmdSpawnAt(t, c) }, // Eroberung: Einheiten an einer eigenen Flagge erscheinen lassen
   demolish: { run: (g, t, c) => g.cmdDemolish(t, c) },
   setDifficulty: { run: cmdSetDifficulty },
   debug: { run: (g, t, c) => g.cmdDebug(t, c) },

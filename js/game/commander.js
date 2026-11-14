@@ -40,6 +40,13 @@ export const auraCooldown = (u, cooldown) => (u.aura ? cooldown / C.fireRate : c
 
 /** Ein Kommandeur ist gefallen: Punkte für den Gegner (kann die Partie entscheiden), Meldung an beide. */
 export function commanderFallen(game, u) {
+  if (game.conquest) {
+    // Eroberung: der Verlust kostet das eigene Team Tickets (statt Punkte für den einen Gegner)
+    game.teams[u.team].tickets -= C.deathPoints;
+    game.message(u.team, `Unser Kommandeur ist gefallen: −${C.deathPoints} Tickets`, u.x, u.y);
+    game.messageFoes(u.team, `Kommandeur von ${game.teams[u.team].name} gefallen`, u.x, u.y);
+    return;
+  }
   const foe = 1 - u.team;
   const team = game.teams[foe];
   if (!team) return;

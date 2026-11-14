@@ -21,7 +21,7 @@ export function createHot(game) {
     wanderT: 0,
     owner: -1,
     contested: false,
-    counts: [0, 0],
+    counts: game.teams.map(() => 0),
     drillTarget: false, // wandert gerade zu einem aktiven Bohrer
     rng: makeRng((game.seed ^ 0x5bd1e995) >>> 0),
   };
@@ -169,14 +169,14 @@ export function updateHot(game, dt) {
   }
 
   // Besitz: nur ein Team darin = Besitzer (Geld)
-  const counts = [0, 0];
+  const counts = game.teams.map(() => 0);
   for (const u of game.units) {
     if (u.alive && dist(u.x, u.y, hot.x, hot.y) <= hot.r) counts[u.team]++;
   }
   hot.counts = counts;
-  hot.contested = counts[0] > 0 && counts[1] > 0;
-  let owner = -1;
-  if (!hot.contested) owner = counts[0] > 0 ? 0 : counts[1] > 0 ? 1 : -1;
+  const present = counts.filter((c) => c > 0).length;
+  hot.contested = present > 1;
+  const owner = present === 1 ? counts.findIndex((c) => c > 0) : -1;
   if (owner !== hot.owner && owner >= 0) game.message(-1, `${BALANCE.teamNames[owner]} hält die Hot Zone`);
   hot.owner = owner;
 }

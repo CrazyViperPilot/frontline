@@ -167,3 +167,10 @@ export const HELI_MIN_MONEY = 300; // seit v5.26: so viel über seinem Preis spa
 export const JET_GROUP = 2; // so viele startbereite F-16 fliegen zusammen los (seit v5.03; Zahl der Jets und Reserve: CITY.ai.jets/jetReserve)
 export const JET_EVERY = 6; // s zwischen zwei Startbefehlen an die Jets
 export const JET_QUEUE = 2; // so viele F-16 höchstens in der Warteschlange eines Fliegerhorsts
+// Eroberung (js/ai/army/conquest.js, PRD §7 „Eroberung“): Flaggen als Angriffsziele, jeder gegen jeden
+export const CQ_HOLD = 2; // so viele Einheiten bleiben als Wache an einer eingenommenen Flagge, der Rest zieht zur nächsten
+export const CQ_EVERY = 6; // s zwischen zwei Marschbefehlen an dieselbe Flaggengruppe
+export const CQ_LEADER = 1500; // px, um die eine Flagge des führenden Gegners näher wirkt (der Führende wird gezielt angegriffen)
+export const CQ_NEUTRAL = 1000; // px, um die eine neutrale Flagge näher wirkt (leichte Beute zuerst)
+export const CQ_GUARD = 220; // px Zuschlag je gegnerischer Einheit im Gebiet (stark besetzte Flaggen später)
+export const CQ_SPAWN_EVERY = 15; // s, so oft wählt die KI die Flagge, an der neue Einheiten erscheinen (nicht auf Leicht)

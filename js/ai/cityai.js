@@ -648,7 +648,8 @@ export function aiRaid(game, team, difficulty, dt, mem = cityAiMemory()) {
   mem.raidTimer += dt;
   if (mem.raidTimer < every) return;
   mem.raidTimer = 0;
-  const foe = game.city[1 - team];
+  // Ziel: die gegnerische Stadt; in der Eroberung nur eine, deren Viertel-Sperre gefallen ist (sonst kommt niemand hinein)
+  const foe = game.conquest ? game.city.find((o) => o.team !== team && !game.teams[o.team].out && game.conquest.open[o.team]) : game.city[1 - team];
   const main = game.mainFob(team);
   if (!foe || !main) return;
   // Ziel nach Wert: Werke, Förderung und Markt zuerst, geteilt durch die Entfernung (freie Planung seit v4.85)

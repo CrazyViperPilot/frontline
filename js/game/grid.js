@@ -51,6 +51,8 @@ export class Grid {
     this.cost = null; // Zusatzkosten je Zelle in Zehnteln (Hänge, rasterizeRelief); null = überall 0
     this.ford = null; // 1 = Furt (seichtes Wasser, passierbar); null = keine Furten
     this.deck = null; // 1 = unter einer Brückenfahrbahn (river.createBridges); null = keine Brücken
+    this.lock = null; // Eroberung (conquest.bindLock): Viertel je Zelle (Team-Index, 9 = ohne Spieler, -1 = Konfliktzone); null = keine Sperre
+    this.lockOpen = null; // je Viertel: true = Sperre gefallen
   }
 
   idx(c, r) {
@@ -76,6 +78,10 @@ export class Grid {
     if (!this.inBounds(c, r)) return false;
     const i = this.idx(c, r);
     if (this.terrain[i]) return false;
+    if (this.lock !== null && team >= 0) {
+      const q = this.lock[i]; // fremdes Viertel mit stehender Sperre: nicht begehbar
+      if (q >= 0 && q !== team && !this.lockOpen[q]) return false;
+    }
     if (this.struct[i] === 0) return true;
     return this.gateTeam[i] === team;
   }

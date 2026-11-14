@@ -3,7 +3,7 @@
 import { crewOf, cityTrainers } from './city/query.js';
 import { BALANCE } from '../data/balance.js';
 import { UNITS } from '../data/units.js';
-import { planPath, setIdle } from './movement.js';
+import { planPath, setIdle, nearestPassable } from './movement.js';
 import { parkNew } from './aircraft.js';
 import { isHeliport, landHeliNew } from './helipad.js';
 import { trainRate } from './transport.js';
@@ -37,6 +37,17 @@ function spawnSpot(game, b) {
     }
   }
   return best;
+}
+
+/** Eroberung: Platz an der gewählten Flagge des Gebäudes (b.spawnFlag), wenn sie dem Team gehört und kein Gegner im Gebiet steht; sonst null. */
+function flagSpot(game, b) {
+  if (!game.conquest || b.spawnFlag === null || b.spawnFlag === undefined) return null;
+  const f = game.conquest.flags[b.spawnFlag];
+  if (!f || f.owner !== b.team || f.contested) return null;
+  const a = game.rng.next() * Math.PI * 2;
+  const r = BALANCE.conquest.spawnRing * (0.4 + 0.6 * game.rng.next());
+  const p = nearestPassable(game.grid, f.x + Math.cos(a) * r, f.y + Math.sin(a) * r, b.team);
+  return p ? { x: p.x, y: p.y, letter: f.letter } : null;
 }
 
 /**
@@ -73,7 +84,9 @@ export function updateEconomy(game, dt) {
       }
       b.queue.splice(i, 1);
       b.queueTimes.splice(i, 1);
-      const u = game.spawnUnit(type, b.team, spot.x, spot.y);
+      // Eroberung: Bodeneinheiten erscheinen auf Wunsch an einer eigenen, unbestrittenen Flagge (Befehl spawnAt), sonst am Gebäude
+      const at = ut.air ? null : flagSpot(game, b);
+      const u = game.spawnUnit(type, b.team, (at ?? spot).x, (at ?? spot).y);
       game.teams[b.team].stats.trained++; // Statistik: ausgebildet (Startarmee und Nachschub zählen nicht)
       if (game.city) u.crew = crewOf(type); // Stadt: die Einheit belegt Einwohner, solange sie lebt
       if (u.def.jet) {
@@ -84,6 +97,11 @@ export function updateEconomy(game, dt) {
       if (u.def.air && isHeliport(game, b)) {
         landHeliNew(u, b); // Hubschrauber: steht gelandet auf seinem Heliport (helipad.js, seit v5.51)
         game.message(b.team, `${ut.name} bereit`, u.x, u.y);
+        continue;
+      }
+      if (at) {
+        setIdle(u);
+        game.message(b.team, `${ut.name} bereit an Flagge ${at.letter}`, at.x, at.y);
         continue;
       }
       u.order = { type: 'move', x: b.rallyX, y: b.rallyY, targetId: null };
@@ -112,7 +130,7 @@ export function updateEconomy(game, dt) {
 function updateReinforce(game, team, dt) {
   const R = BALANCE.reinforce;
   const b = game.mainFob(team.id);
-  if (!b || !b.built || game.soldierCount(team.id) >= R.soldierMin || game.slotsUsed(team.id) + 1 > BALANCE.slotCap) {
+  if (!b || !b.built || game.soldierCount(team.id) >= R.soldierMin || game.slotsUsed(team.id) + 1 > game.slotCap) {
     team.reinforceTimer = 0;
     return;
   }

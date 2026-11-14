@@ -5,6 +5,8 @@
 
 ## 10. KI-Gegner
 
+Im Modus **Eroberung** (bis zu drei KIs, jeder gegen jeden) ersetzt der Flaggenkampf die Angriffswelle auf die Zonenmitte; alles andere (Ausbau, Ausbildung, Logistik, Verteidigung) bleibt gleich. Regeln: [eroberung.md](eroberung.md), Abschnitt „KI“.
+
 Gleiche Regeln und Befehls-Schnittstelle wie der Spieler (Sonderrecht nur: Einkommensfaktor bei Leicht 0,8, sonst 1; die KI
 ignoriert den Nebel bei der Zielwahl, Mörser brauchen aber Sicht).
 Verhalten: FOB-Fahrzeuge gründen FOBs (eins zur Zeit, die KI spart darauf, außer bei Alarm an der Hauptstadt; es fährt zum Ziel und baut dort auf, ein gescheitertes Ziel ist 240 s gesperrt), Baufahrzeug baut Verteidigung, Schützen bauen Mauern aus getragenem Baumaterial; **zuerst eine FOB in der Konfliktzone**, dann Relais-FOBs auf dem Weg (1000 px Abstand) und Flanken-FOBs um die Zonen-FOB (Grenze je Schwierigkeit 3/5/7 FOBs); gemischte Armee aus der Hauptstadt → Zone halten → Verteidigung (Mörser/Flak/Mauern) an vorderen FOBs. Die Startarmee rückt sofort aus; ein Fünftel bleibt als Reserve an der Hauptstadt. **Logistik:** Pendler-LKW bringen Baumaterial, Munition und Treibstoff aus der Hauptstadt zu den vorderen FOBs, ein Versorger-LKW folgt der Armee; Einheiten ohne Munition ziehen sich zurück. Seit v5.70 holen Pendler auch am **eigenen Werk mit Ausgangslager** (§15 „Werkslager“) ab, wenn keine FOB Überschuss hat oder das Werk höchstens `WORK_SOURCE_NEAR` (0,5) so weit von der Bedarfsfront liegt wie die beste FOB-Quelle; höchstens `WORK_SOURCE_TRUCKS` (1) KI-LKW je Werk, nie für die Hauptstadt. Ein Werk ist nur Quelle, wenn es gerade liefert: Ausstoß je s mindestens `WORK_SOURCE_MIN_RATE` (0,2 Ware je s, Merker `c.workOut` am Anker) oder Ausgangslager mindestens `SURPLUS_MIN`; eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr liefert und der LKW nicht über 50 geladen hat.
@@ -57,6 +59,7 @@ Verhalten: FOB-Fahrzeuge gründen FOBs (eins zur Zeit, die KI spart darauf, auß
 | Angriff | `attackStrength` (Wert der angreifenden Einheiten in Geld) | Leicht 2500 · Normal 2000 · Schwer 1600 |
 | Angriff | Verhältnis zur Zonenbesatzung (`WAVE_ODDS`) | 1,2 |
 | Angriff | Geduld bis zur Untergrenze (`WAVE_PATIENCE` / `WAVE_MIN`) | 600 s / 60 % |
+| Eroberung (§7 „Eroberung“, `js/ai/army/conquest.js`) | Wache je eingenommener Flagge `CQ_HOLD` · Takt der Marschbefehle `CQ_EVERY` · Flagge des Führenden wirkt näher `CQ_LEADER` · neutrale Flagge näher `CQ_NEUTRAL` · Zuschlag je gegnerischer Einheit im Gebiet `CQ_GUARD` · Takt der Wahl des Erscheinungsorts `CQ_SPAWN_EVERY` | 2 · 6 s · 1500 px · 1000 px · 220 px · 15 s |
 | Angriff | Reserve an der Hauptstadt (`RESERVE`, ab `RESERVE_FROM` Einheiten) · Welle bei neutraler Zone schon ab (`WAVE_NEUTRAL`) | 20 % ab 5 · 60 % der Stärke |
 | Besatzungsschätzung | mittlerer Einheitenwert (`THREAT_PER_UNIT`) | 150 Geld |
 | Sammelpunkt | Abstand von der Hauptstadt zur Zone / von der Zonen-FOB zur Basis | 300 px / 150 px |

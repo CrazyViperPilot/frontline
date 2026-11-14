@@ -278,6 +278,7 @@ export const BUILD_BLOCK = {
   unexplored: 'Unerkundetes Gelände: erst aufklären',
   enemy: 'Zu nah am Feind',
   zone: 'Nicht in der Konfliktzone',
+  quarter: 'Nur im eigenen Viertel bauen',
   road: 'Nur an einer Straße bauen, die mit dem Lager der Hauptstadt verbunden ist',
   air: 'Stellplatz braucht eine Verbindung zur Startbahn (direkt oder über das Rollfeld)',
 };
@@ -464,6 +465,13 @@ export function buildWhy(game, c, i, kind) {
   const y = c.y0 + ((i - col) / c.cols + 0.5) * c.cell;
   if (!game.fog[c.team].isExplored(x, y)) return 'unexplored';
   const z = game.zone;
+  if (game.conquest) {
+    // Eroberung: gebaut wird nur im eigenen Viertel (nicht in der Zone, nicht bei anderen, auch wenn deren Sperre gefallen ist)
+    // (Geometrie wie conquest.quarterAt, hier ausgeschrieben: cells.js bleibt ein Blattmodul)
+    const cq = game.conquest;
+    if (Math.abs(x - z.x) <= cq.half && Math.abs(y - z.y) <= cq.half) return 'zone';
+    if (cq.quad[(x >= z.x ? 1 : 0) + (y >= z.y ? 2 : 0)] !== c.team) return 'quarter';
+  }
   if (CITY.build.noZone && z && (x - z.x) ** 2 + (y - z.y) ** 2 <= z.r * z.r) return 'zone';
   if (enemyNear(game, c)[i]) return 'enemy';
   // Anschlusspflicht (Paket „Straßen“): Einzelzellen hier; Großbauten prüft fitBig als Ganzes (roadLinkWhy). Ohne `kind` (strenge

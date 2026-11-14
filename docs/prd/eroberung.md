@@ -14,12 +14,13 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
   eigene Schwierigkeit** (Leicht, Normal, Schwer; gemerkt). **Jeder gegen jeden**, keine Allianzen.
 - Jeder Spieler startet in einer Kartenecke mit Hauptstadt, Stadt und Startarmee wie bisher. Startecken: Blau unten links, Rot oben
   rechts, Grün oben links, Gelb unten rechts.
-- **Kein kostenloser Soldaten-Nachschub** (`reinforce: false`): Die Hauptstadt stellt in der Eroberung keine Schützen von selbst nach (klassisch weiter alle 30 s unter der Mindestzahl, §4); Truppen kosten immer Geld, Einwohner und Stahl.
+- **Kein kostenloser Soldaten-Nachschub** (`reinforce: false`): Die Hauptstadt stellt in der Eroberung keine Schützen von selbst nach (klassisch weiter alle 6 s, solange weniger als 29 Soldaten leben, §4); Truppen kosten immer Geld, Einwohner und Stahl.
 - **Einheitenlimit** je Spieler nach Spielerzahl (`slotCap`): **500** bei 2, 3 und 4 Spielern (klassisch 300). Viele Einheiten kosten Bildrate, vor allem auf Tablet und Telefon.
 - Zufallskarten mit 2 Spielern sind je Seed dieselben wie klassisch. Mit 3 oder 4 Spielern bekommen auch die beiden anderen Ecken
   Bauland, flaches Gelände und eine Zufahrt; die Karte bleibt **punktsymmetrisch** (Blau/Rot und Grün/Gelb spiegeln sich, die beiden
-  Paare haben verschiedenes Gelände; Flüsse liegen nur vor den Ecken von Blau und Rot). Gespeicherte Karten aus dem Editor haben
-  zwei Startpunkte: dort spielt nur ein Gegner.
+  Paare haben verschiedenes Gelände). Das ganze Quadrat der Zone bleibt frei von Wald, Felsen, steilen Hängen und Versorgungskisten
+  (die Stadt liegt wie bisher darin). Flüsse liegen nur vor den Ecken von Blau und Rot; mit Fluss schneiden sie dort die Spitzen der
+  Quadrat-Ecken ab. Gespeicherte Karten aus dem Editor haben zwei Startpunkte: dort spielt nur ein Gegner.
 
 ### Konfliktzone und Flaggen
 
@@ -27,8 +28,9 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
   (je 1650 × 1650 px). In der Mitte jedes Gebiets steht eine **Flagge** mit Buchstabe **A bis P** (zeilenweise von links oben).
 - **Einnehmen:** Wer in einem Gebiet **mehr Einheiten** hat als jeder andere, bewegt den Balken der Flagge (Gleichstand: nichts
   geschieht). Gehört die Flagge einem anderen, sinkt dessen Balken zuerst auf 0 (Flagge wird **neutral**, grau), dann steigt der
-  eigene auf voll (**Besitz**). Jede Phase dauert `capTime` 20 s bei einer Einheit Vorsprung, mit mehr Vorsprung bis `capMaxMul` 3 ×
-  schneller. Flugzeuge im Überflug zählen nicht, Hubschrauber und Besatzer in Häusern schon.
+  eigene auf voll (**Besitz**). Jede Phase dauert `capTime` 20 s bei einer Einheit Vorsprung; das Tempo ist der Vorsprung in Einheiten
+  (2 Einheiten = 2 ×), höchstens `capMaxMul` 3 ×. Flugzeuge im Überflug zählen nicht, Hubschrauber und Besatzer in Häusern schon.
+  Die Hot Zone wandert wie bisher im eingeschriebenen Kreis (Radius 3300 px) des Quadrats; in ihr bringt eine Einheit 0,8 statt 0,4 Geld/s.
 - **Farben:** Die Flagge, ihre **Umkreislinie** und ihr Gebiet auf der Minimap tragen die Farbe des Besitzers, neutral grau. Solange
   Gegner im Gebiet stehen, ist die Umkreislinie gestrichelt („umkämpft“); ein äußerer Bogen zeigt den Fortschritt der Einnahme.
   Die Leiste oben zeigt alle 16 Buchstaben in der Farbe ihres Besitzers.
@@ -40,9 +42,9 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
 - Jeder startet mit **Tickets** nach Wahl im Startmenü (`ticketChoices`: 75, 150, 300 oder **1000** für lange Partien; Standard 300, gemerkt).
 - Alle `tickEvery` 10 s verliert jeder, der **weniger Flaggen hält als der Führende**, 1 Ticket; wer **gar keine** Flagge hält,
   zusätzlich `noFlagLoss` 1. Der Führende (auch mehrere bei Gleichstand) verliert nichts. Hält niemand eine Flagge, verliert niemand.
-- Fällt ein Kommandeur, kostet das sein Team 5 Tickets (statt Punkte für den Gegner).
+- Fällt ein Kommandeur, kostet das sein Team 5 Tickets (statt Punkte für den Gegner); bei 0 Tickets scheidet es aus, auch wenn es führt.
 - **Ausscheiden:** Wer keine Tickets mehr hat oder dessen Hauptstadt fällt, scheidet aus: seine Einheiten und Gebäude verschwinden
-  (ohne Prämie), seine Flaggen werden neutral, sein Viertel ist offen.
+  (ohne Prämie), seine Flaggen werden neutral, sein Viertel ist offen. Stadt, Forschung und Sicht dieses Teams stehen still.
 - **Sieg:** Der letzte Spieler mit Tickets gewinnt. Scheidet der Mensch aus, endet die Partie sofort als Niederlage (Sieger ist
   dann, wer die meisten Tickets hat). Der Sendemast-Sieg gilt weiter, wenn eingeschaltet.
 
@@ -53,12 +55,14 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
 - In ein **fremdes Viertel** kann niemand hineinfahren, hineinfliegen oder hineinschießen: Befehle mit Ziel dort werden abgelehnt
   („Gesperrtes Viertel eines anderen Spielers“), die Wegsuche behandelt es als unpassierbar, die Zielsuche übergeht Ziele dort, und
   Schaden wirkt dort nicht (auch nicht durch Granaten oder Flächenfeuer). Hubschrauber halten an der Grenze. **Nur das
-  Aufklärungsflugzeug (U-2)** darf darüber fliegen. Aus dem eigenen Viertel heraus darf in die Zone geschossen werden.
-- Kampfflugzeuge können in ihren Kurven kurz über ein fremdes Viertel geraten (Flugbahn), sie wirken dort aber nicht.
+  Aufklärungsflugzeug (U-2)** darf dort auch ein Ziel anfliegen. Aus dem eigenen Viertel heraus darf in die Zone geschossen werden.
+- Kampfflugzeuge und die C-130 werden auf ihrer Flugbahn nicht angehalten (Kurven und Überflug können ein fremdes Viertel streifen);
+  ihr Ziel dort wird abgelehnt, und sie wirken dort nicht.
 - **Die Sperre fällt:** Hält ein Spieler `lockGrace` 300 s lang keine Flagge, während ein anderer eine hält, ist sein Viertel **für den
   Rest der Partie offen** (Meldung an alle). Dann kann seine Stadt angegriffen und seine Hauptstadt zerstört werden.
-- Stadtgebäude baut jeder nur im **eigenen Viertel** (nicht in der Zone, nicht bei anderen). FOBs und Militärgebäude dürfen wie
-  bisher in die Zone.
+- Stadtgebäude baut jeder **immer** nur im **eigenen Viertel** (nicht in der Zone, nicht bei anderen), auch wenn der Schalter
+  „Baugebiet“ aus ist. FOBs und Militärgebäude dürfen wie bisher in die Zone. Ein Flaggenmast kann in einem Stadtgebäude stehen;
+  gezählt wird das Gebiet, nicht der Mast.
 - Auf der Karte: Grenzen gestrichelt, rot solange das Nachbarviertel für das eigene Team gesperrt ist; der Rand eines gesperrten
   Viertels zur Zone hin trägt die Farbe seines Besitzers.
 
@@ -66,7 +70,7 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
 
 - Ausbildungsgebäude für Bodeneinheiten (Kaserne, Fabrikhalle; ohne Stadt die Hauptstadt) haben im Infofeld die Auswahlliste
   **„Neue Einheiten erscheinen“**: **am Gebäude** (Standard) oder an einer **Flagge, die einem gerade gehört** (Befehl `spawnAt`).
-- Neue Einheiten erscheinen dann im Umkreis `spawnRing` 90 px um den Mast. Steht beim Abschluss der Ausbildung ein **Gegner im Gebiet**
+- Neue Einheiten erscheinen dann zufällig zwischen 40 % und 100 % von `spawnRing` (90 px) um den Mast (`spawnMin` 0,4). Steht beim Abschluss der Ausbildung ein **Gegner im Gebiet**
   („umkämpft“) oder ist die Flagge verloren, erscheint die Einheit am Gebäude und läuft zum Sammelpunkt; die Wahl bleibt bestehen.
 - Flugzeuge und Hubschrauber erscheinen immer an Stellplatz bzw. Heliport.
 
@@ -77,7 +81,11 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
   Entfernung, **Flaggen des Führenden wirken `CQ_LEADER` 1500 px näher** (der Führende wird gezielt angegriffen), neutrale `CQ_NEUTRAL`
   1000 px näher, je gegnerischer Einheit im Gebiet `CQ_GUARD` 220 px ferner.
 - In der Zone bleibt eine Gruppe auf einer fremden Flagge, bis sie eingenommen ist, und greift sichtbare Gegner im Gebiet an. Danach
-  bleiben `CQ_HOLD` 2 Einheiten als Wache, der Rest zieht zur nächsten Flagge.
+  bleiben `CQ_HOLD` 2 Einheiten als Wache, der Rest zieht zur nächsten Flagge. Marschbefehle an dieselbe Gruppe kommen höchstens
+  alle `CQ_EVERY` 6 s.
 - Ab Normal lässt sie neue Bodeneinheiten an der eigenen, unbestrittenen Flagge erscheinen, die ihrem nächsten Ziel am nächsten liegt
   (alle `CQ_SPAWN_EVERY` 15 s neu gewählt).
-- Überfälle der Stadt-KI gelten nur Städten, deren Viertel offen ist. Verteidigungsbauten und Festungen richten sich zur Zonenmitte.
+- Überfälle der Stadt-KI gelten nur Städten, deren Viertel offen ist. Die Zonen-FOB und Festungen richten ihre Verteidigung zur fernen Seite
+  der Zone (Punkt gegenüber der eigenen Ecke, `foeSpawn`), die übrigen Verteidigungsbauten wie bisher zur Zone.
+- Die Armee-KI der Eroberung ersetzt die klassische Armee (`army()`): Wellenstärke aus der Zonenbesatzung, Späher-Schätzung und
+  Flankenangriff gelten nur klassisch ([ki.md](ki.md)).

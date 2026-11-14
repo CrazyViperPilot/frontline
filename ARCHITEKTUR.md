@@ -24,12 +24,15 @@ Spielregeln: [PRD.md](PRD.md) (Einstieg) und die Themen-Dateien in [docs/prd/](d
 
 ## 2. Ablauf einer Partie
 
-1. `index.html` lädt `js/main.js`. Das Startmenü (`js/ui/menu.js` → `showStartMenu`) liefert Schwierigkeit, Siegpunkte, Karte und Schalter.
-2. `main.js` → `startGame` erzeugt `new Game({ seed, winPoints, startMoney, map, radio, weather, research, river, city })`, dazu
-   `AI` (Team 1), `Camera`, `Renderer`, `Controller`, `Hud`, `Input` und `Minimap`.
+1. `index.html` lädt `js/main.js`. Das Startmenü (`js/ui/menu.js` → `showStartMenu`) liefert Modus, Schwierigkeit je Gegner, Siegpunkte bzw. Tickets, Karte und Schalter.
+2. `main.js` → `startGame` erzeugt `new Game({ seed, winPoints, startMoney, map, radio, weather, research, river, city, conquest, players, tickets, buildRules })`,
+   dazu je Computergegner eine `AI` (Team 1, in der Eroberung bis Team 3, jede mit eigener Schwierigkeit), `Camera`, `Renderer`, `Controller`, `Hud`,
+   `Input` und `Minimap`. Ohne Angabe ist `new Game()` klassisch (`conquest: false`, zwei Teams, Tests verlassen sich darauf).
 3. `createLoop` (`js/core/loop.js`) ruft mit fester Schrittweite (`BALANCE.tickRate`) `ai.update(dt)` und `game.update(dt)`,
    und je Bildschirm-Frame einmal das Zeichnen. Pause und Tempo wirken nur auf die Schritte.
-4. Sieg: Punkte (`zone.js`), Sendemast (`radio.js`) oder Eliminierung (`game.js` → `checkElimination`). Dann zeigt `menu.js` den Endbildschirm.
+4. Sieg: klassisch Siegpunkte (`zone.js`), Sendemast (`radio.js`) oder Fall der Hauptstadt; Eroberung: Tickets (`conquest.js`, der letzte
+   Spieler mit Tickets gewinnt), Sendemast wie gehabt. Die Prüfung je Schritt ist `checkElimination` (`game.js`), sie ruft den Modus-Haken
+   `checkEnd` auf (`js/game/modes.js`). Dann zeigt `menu.js` den Endbildschirm.
 
 ## 3. Ein Simulationsschritt (`Game.update(dt)` in `js/game/game.js`)
 
@@ -55,23 +58,24 @@ Die Reihenfolge ist Absicht; ein neues System kommt an die Stelle, deren Ergebni
 | 11 | `separate` | `movement.js` | Einheiten auseinanderschieben |
 | 12 | `updateCommanders` | `commander.js` | Aura, Heilung |
 | 13 | `updateCombat` | `combat.js` | Zielsuche, Schüsse, Granaten, Flugabwehr, Schaden |
-| 14 | `updateZone` | `zone.js` | Kontrolle der Zone, Zonengeld, Punkte |
+| 14 | `updateZone` (klassisch) bzw. `updateConquest` (Eroberung), über den Modus-Haken `mode.update` | `zone.js` bzw. `conquest.js` | klassisch: Kontrolle der Zone, Zonengeld, Punkte; Eroberung: Einheiten je Flaggengebiet zählen, Flaggen einnehmen und neutralisieren, Flaggengeld, Ticket-Takt, Sperre der Viertel |
 | 15 | `updateHot` | `hotzone.js` | Hot Zone wandern lassen, Bohrer |
 | 16 | `updateRadio` | `radio.js` | Haltezeit des Sendemasts, Sieg |
 | 17 | `smoothIncome` | `economy.js` | geglättete Einkommensanzeige |
 | 18 | Nebel je Team (alle `BALANCE.fogInterval` s, Team 1 einen halben Takt versetzt, seit v5.93) | `fog.js` | Sicht je Team |
 | 19 | `updateAnimals`, `ageEffects`, `cleanup`, `updateScars` | `animals.js`, `game.js`, `scars.js` | Tiere, Effekte altern, Tote entfernen (Wracks, Ereignisse), Narben |
-| 20 | `checkElimination` | `game.js` | Sieg durch Eliminierung |
+| 20 | `checkElimination` | `game.js` (ruft `mode.checkEnd`) | klassisch: Fällt die Hauptstadt eines Teams, endet die Partie; Eroberung: Ausscheiden bei Fall der Hauptstadt oder 0 Tickets, Partie endet, wenn ein Team übrig bleibt |
 
 Startzustand im Konstruktor von `Game`: Karte (`generateMap` oder gespeicherte Karte), Raster, Höhengelände, Brücken, Stadtstraßen der Karte (`createRoads`, `game.roads`), Teams,
-Forschung, Zone, Hot Zone, Nebel, Hauptstädte und Startarmee, Häuser, Kisten, Tiere, Wetter. Jedes System hat dafür ein `create…(game)`.
+Forschung, Zone, Modus (`mode.create`: in der Eroberung Flaggen und Tickets), Hot Zone, Nebel, Hauptstädte und Startarmee, Häuser, Kisten, Tiere, Wetter. Jedes System hat dafür ein `create…(game)`.
 
 ## 4. Koordinaten
 
 - Welt in Pixeln, Ursprung links oben; Karte und Rastergröße in `BALANCE.map`. Zelle `(c, r)` = `Math.floor(x / tile)`, Index `r * cols + c`.
 - Winkel im Bogenmaß (0 = +x), Tempo in px/s, Zeiten in Sekunden.
 - Gebäude belegen Zellen ab `cx, cy` (links oben) mit Größe `w × h`; `x, y` ist der Mittelpunkt in der Welt.
-- Team 0 = Blau (Spieler), Team 1 = Rot (KI). Startpunkte sind punktsymmetrisch: zu jedem `(x, y)` gehört `(W − x, H − y)`.
+- Team 0 = Blau (Spieler), Team 1 = Rot (KI); in der Eroberung Team 2 = Grün, Team 3 = Gelb (2 bis 4 Teams, `BALANCE.teamNames`, `teamColors`).
+  Startpunkte sind punktsymmetrisch: zu jedem `(x, y)` gehört `(W − x, H − y)` (Blau/Rot und Grün/Gelb spiegeln sich).
 - Die Iso-Ansicht ist nur Darstellung (`js/render/iso.js`, `camera.js`); die Spiellogik bleibt 2D von oben.
 
 ## 5. Datenmodelle
@@ -79,20 +83,25 @@ Forschung, Zone, Hot Zone, Nebel, Hauptstädte und Startarmee, Häuser, Kisten, 
 Alle Objekte sind einfache JS-Objekte. IDs: fortlaufende Ganzzahlen ab 1 (`game.newId()`); 0 oder `null` = keins.
 Häuser und Kisten haben negative IDs. Vollständige Felder: `createUnit` und `createBuilding` in `js/game/entities.js`.
 
-**Game** (`js/game/game.js`): `seed, rng, map, grid, relief, time, teams[2], entities (Map id → Einheit/Gebäude), units[], buildings[],
-projectiles[], effects[], events[], zone, hot, fog[2], formations, winner (null | 0 | 1), winReason, winPoints, radioWin`,
+**Game** (`js/game/game.js`): `seed, rng, map, grid, relief, time, teams[2 bis 4], entities (Map id → Einheit/Gebäude), units[], buildings[],
+projectiles[], effects[], events[], zone, hot, fog[je Team], formations, winner (null | Team-Index), winReason, winPoints, radioWin`,
 dazu von den Systemen: `houses, crates, bridges, wrecks, animals, weather, research`.
+**Eroberung** (nur mit `conquest`, sonst `null`): `game.conquest = { startTickets, half, x0, y0, size, flags[16], quad[4], open[], held[], noFlag[], timer }`.
+Je Flagge `{ id, letter, x, y, owner (−1 = neutral), capTeam, p (Balken 0 bis 1), counts[] (Einheiten je Team im Gebiet), contested }`.
+`quad` nennt das Team je Viertel (9 = kein Spieler), `open` die gefallenen Sperren; `zone` bekommt `half` (die Zone ist dann ein Quadrat).
+Im Wegraster: `grid.lock` je Zelle das Viertel (Team, 9 = ohne Spieler, −1 = Zone) und `grid.lockOpen` (dasselbe Array wie `conquest.open`),
+gebunden von `bindLock` in `conquest.js`, auch nach dem Laden. `game.mode` (Getter) liefert den Modus-Eintrag aus `js/game/modes.js`.
 
 **Team:** `id, name, color, res { money, bm, mun, fuel }` (bm/mun/fuel = Summe der FOB-Lager, als Getter), `income`, `rate`, `flow`,
-`points, pointProgress, incomeMult, isAI, tech { tier, done, cur }`.
+`points, pointProgress, incomeMult, isAI, tech { tier, done, cur }`; Eroberung zusätzlich `tickets` und `out` (ausgeschieden).
 
 **Einheit** (`kind: 'unit'`): `id, type, team, def (= UNITS[type]), x, y, angle, hp, maxHp, alive, order { type, x, y, targetId }, path,
-targetId, weapons [{ spec, rounds, cd }], ammo (Getter), fuel, cargo { bm, mun, fuel }, preset, passengers, house, crate, speedMul, anchorX/Y`.
+targetId, weapons [{ spec, rounds, cd }], ammo (Getter), fuel, cargo { bm, mun, fuel }, preset, passengers, house, crate, speedMul, anchorX/Y`, `hitBy` (Team des letzten Treffers, `combat.hit`: Prämie und Statistik bei mehr als zwei Teams).
 
 **Gebäude** (`kind: 'building'`): `id, type, team, def (= BUILDINGS[type]), x, y, cx, cy, w, h, hp, maxHp, alive, built, progress,
-queue [{ unit, payerId }], queueTimes, rallyX/Y, main (Hauptstadt), store { bm, mun, fuel }, drill, fireTarget`.
+queue [{ unit, payerId }], queueTimes, rallyX/Y, main (Hauptstadt), store { bm, mun, fuel }, drill, fireTarget`; Eroberung: `spawnFlag` (Nummer der Flagge, an der neue Einheiten erscheinen; `null` = am Gebäude).
 
-**Stadt** (`game.city[team]`, nur mit Stadt, angelegt in `js/game/city/create.js`): Raster `cols, rows, cell`, je Zelle `kind[]` (Index in `KINDS`), `level[]`, `deposit[]`, `flee[]`, `blocked[]`, `felled`, `list` (belegte Zellen), `ver` (Zähler: steigt bei jeder Änderung an Zellen, Wege werden dann neu gerechnet), `hitLog`, `mapRoads` (Stadtstraßen der Karte). Vorräte im Stadtlager: `metal` (Stahl, Schlüssel bleibt `metal`), `kero` (Kerosin, seit v5.20). `stats` ist nur Anzeige: je Schritt neu gesetzt (Ausbeute `raw`, `cap`, `inp`, `gross`, `n`, Gewerbe-Versorgung `shopSupply`, `lost` = Waren ohne Weg je s, `jam` = kleinster Stau-Faktor).
+**Stadt** (`game.city[team]`, nur mit Stadt, angelegt in `js/game/city/create.js`): Raster `cols, rows, cell`, je Zelle `kind[]` (Index in `KINDS`), `level[]`, `deposit[]`, `flee[]`, `blocked[]`, `felled`, `list` (belegte Zellen), `ver` (Zähler: steigt bei jeder Änderung an Zellen, Wege werden dann neu gerechnet), `hitLog`, `mapRoads` (Stadtstraßen der Karte), Eroberung `own` (je Zelle 1 = eigenes Viertel; nur dort wird gebaut). Vorräte im Stadtlager: `metal` (Stahl, Schlüssel bleibt `metal`), `kero` (Kerosin, seit v5.20). `stats` ist nur Anzeige: je Schritt neu gesetzt (Ausbeute `raw`, `cap`, `inp`, `gross`, `n`, Gewerbe-Versorgung `shopSupply`, `lost` = Waren ohne Weg je s, `jam` = kleinster Stau-Faktor).
 **Straßentransport** (`transportOf(game, c)` in `js/game/transport.js`, seit v5.20): Zustand je Stadtobjekt in einer `WeakMap` (`STATE`). Er enthält `routes` (Lieferweg je Förderung und Werk: Ziel, Weg, Länge), `depot` (Wege zu Kerosintank und Munitionslager, seit v5.35), `commute` (Pendlerweg je Arbeitsstätte, `null` = keine Wohnung), `mun` und `shop` (Wege Munitionswerk bzw. Gewerbe und Markt zum Lager), `load`, `factor`, `cap` je Stadtzelle und `list` (Straßenzellen). Der Zustand liegt nicht im Objektgraphen und damit nicht im Spielstand; nach dem Laden wird er beim ersten Zugriff neu berechnet.
 
 **Effekt** (nur Darstellung, `game.effects`): `{ type, x, y, x2, y2, team, t, life }`, angelegt mit `game.addEffect`.
@@ -110,18 +119,18 @@ Neue Befehle: Rezept in [CLAUDE.md](CLAUDE.md).
 | `cmd.type` | Felder | Handler (`js/game/`) | Wirkung |
 |---|---|---|---|
 | `city` | `kind` (Zellenart aus `KINDS`, Register `js/data/citykinds.js`, z. B. `road`, `res`, `com`, `market`, `barracks`, `factory`, `heliport`, `smelter`, `kero`, oder `erase`), `c0, r0, c1, r1`, bei `erase` optional `demolish: true` | `city/commands.js` `cmdCity` | Stadtzellen im Rechteck ausweisen oder räumen (nur mit Stadt). `erase` lässt Rohstoffvorkommen und Förderanlagen stehen (seit v5.20); nur mit `demolish: true` (Abreißen eines gewählten Gebäudes) entfernt es eine Förderanlage |
-| `move`, `attackMove` | `ids, x, y, formation?` | `game.js` `cmdMove` | Marsch bzw. Angriffsmarsch, optional in Formation |
-| `attack` | `ids, targetId` | `game.js` `cmdAttack` | Ziel angreifen (auch Brücken) |
+| `move`, `attackMove` | `ids, x, y, formation?` | `cmd/units.js` `cmdMove` | Marsch bzw. Angriffsmarsch, optional in Formation |
+| `attack` | `ids, targetId` | `cmd/units.js` `cmdAttack` | Ziel angreifen (auch Brücken) |
 | `stop` | `ids` | `game.js` | Anhalten |
-| `build` | `building, x, y, ids` oder `siteId, ids` | `game.js` `cmdBuild` | Baustelle setzen bzw. an Baustelle helfen |
-| `buildWall` | `building, x1, y1, x2, y2, ids` | `game.js` `cmdBuildWall` | Mauer- oder Torlinie (Tor: je 2 Zellen ein Tor aus zwei Hälften `leaf` 0/1; `build` mit `building: 'gate'` setzt ebenfalls ein Zweier-Tor, optional `axis`) |
-| `deploy` | `ids`, optional `x, y` (≤ `fob.deploySnap` vom Fahrzeug) | `game.js` `cmdDeploy` | FOB-Fahrzeug wird an seiner Stelle (oder der nächsten freien) zur fertigen FOB (seit v5.09; `buildFob` antwortet nur noch mit einem Fehler) |
+| `build` | `building, x, y, ids` oder `siteId, ids` | `cmd/build.js` `cmdBuild` | Baustelle setzen bzw. an Baustelle helfen |
+| `buildWall` | `building, x1, y1, x2, y2, ids` | `cmd/build.js` `cmdBuildWall` | Mauer- oder Torlinie (Tor: je 2 Zellen ein Tor aus zwei Hälften `leaf` 0/1; `build` mit `building: 'gate'` setzt ebenfalls ein Zweier-Tor, optional `axis`) |
+| `deploy` | `ids`, optional `x, y` (≤ `fob.deploySnap` vom Fahrzeug) | `cmd/units.js` `cmdDeploy` | FOB-Fahrzeug wird an seiner Stelle (oder der nächsten freien) zur fertigen FOB (seit v5.09; `buildFob` antwortet nur noch mit einem Fehler) |
 | `repair` | `ids, targetId` | `construction.js` `cmdRepair` | Gebäude reparieren |
 | `repairBridge` | `ids, bridgeId` | `river.js` `cmdRepairBridge` | Brücke wieder aufbauen |
 | `load`, `unload` | `ids, fobId, preset?`; `load` auch `work` statt `fobId` (seit v5.69) | `logistics.js` | LKW an einer FOB laden / entladen; `work` (Zellindex eines eigenen Werks mit Ausgangslager, `CITY.pickup.kinds`) lädt dort nur die Ware des Werks |
 | `route` | `ids, fromId, toId, preset?`; `fromWork` statt `fromId` (seit v5.69) | `logistics.js` `cmdRoute` | LKW pendeln lassen, Start an einer FOB oder einem Werk |
 | `setPreset` | `ids, preset` | `logistics.js` | Ladungsart (`mix`, `bm`, `mun`, `fuel`) |
-| `mortarTarget` | `ids, x, y` | `game.js` `cmdMortarTarget` | Mörser auf einen Punkt richten |
+| `mortarTarget` | `ids, x, y` | `cmd/units.js` `cmdMortarTarget` | Mörser auf einen Punkt richten |
 | `layMine` | `ids, x, y` | `mines.js` `cmdLayMine` | Pionier legt an einer Stelle eine getarnte Panzermine (Munition aus dem Teamlager, höchstens `BALANCE.sapper.maxMines` je Pionier) |
 | `land` | `ids, airportId` | `aircraft.js` `cmdLand`, Heliport als Ziel `helipad.js` `cmdHeliLand` (seit v5.51) | Flugzeuge landen am Fliegerhorst des eigenen Stellplatzes `airportId` (seit v5.35; Anflug, Bahn, Ausrollen, Rollen zum Stellplatz; seit v5.15) |
 | `cityUpgrade` | `buildingId` | `city/commands.js` `cmdCityUpgrade` | Stellplatz eine Stufe ausbauen (Überdachung, Stahlbeton-Shelter) gegen Geld, BM und Stahl (seit v5.39) |
@@ -142,11 +151,11 @@ Neue Befehle: Rezept in [CLAUDE.md](CLAUDE.md).
 | `train`, `cancelTrain` | `buildingId, unit` / `buildingId` | `game.js` | Ausbildung in der Hauptstadt (mit Stadt: Kaserne, Fabrikhalle, Heliport = Stadt-Entities mit `produces`, `queue`) / letzten Eintrag abbrechen |
 | `research`, `cancelResearch` | `buildingId, key` / `key?` | `research.js` | Forschung starten oder einreihen (bis 3 wartend, bezahlt beim Einreihen) / abbrechen (ohne `key` die laufende; Abhängige fallen mit heraus, alles erstattet) |
 | `smoke`, `mine` | `ids` | `abilities.js` | Nebelwand (Fahrzeuge) / Mine (Baufahrzeug) |
-| `rally` | `buildingId, x, y` | `game.js` `cmdRally` | Sammelpunkt |
-| `spawnAt` | `buildingId, flag` (Nummer einer eigenen Flagge oder `null`) | `game.js` `cmdSpawnAt` | Eroberung: neue Bodeneinheiten des Gebäudes erscheinen an dieser Flagge (`null`: am Gebäude) |
-| `demolish` | `buildingId` | `game.js` `cmdDemolish` | Gebäude abreißen |
+| `rally` | `buildingId, x, y` | `cmd/units.js` `cmdRally` | Sammelpunkt |
+| `spawnAt` | `buildingId, flag` (Nummer einer eigenen Flagge oder `null`) | `cmd/units.js` `cmdSpawnAt` | Eroberung: neue Bodeneinheiten des Gebäudes erscheinen an dieser Flagge (`null`: am Gebäude) |
+| `demolish` | `buildingId` | `cmd/build.js` `cmdDemolish` | Gebäude abreißen |
 | `setDifficulty` | `difficulty` (`easy`, `normal`, `hard`) | `game.js` | KI meldet ihr Team an (seit v5.58, aus dem Konstruktor von `AI`): `isAI`, `incomeMult` aus `BALANCE.difficulty` |
-| `debug` | `money?`, `weather?`, `season?`, `hold?` | `game.js` `cmdDebug` | Nur mit `new Game({ debug: true })` (`?debug=1`, seit v5.58): Geld dazu (Taste M) / Wetter setzen, mit `hold` bleibt es |
+| `debug` | `money?`, `weather?`, `season?`, `hold?` | `commands.js` `cmdDebug` | Nur mit `new Game({ debug: true })` (`?debug=1`, seit v5.58): Geld dazu (Taste M) / Wetter setzen, mit `hold` bleibt es |
 
 ## 7. Dateien
 
@@ -166,7 +175,11 @@ seit v5.59). Die beiden Register importieren nichts; Simulation, UI und Darstell
 | `commands.js` | Befehlsregister `COMMANDS` (Handler, `drives`, `sound`), daraus `OWN_DRIVERS` (seit v5.63) |
 | `entities.js` | `createUnit`, `createBuilding`, `createShell`, Hilfen wie `isFoe`, `inRange` |
 | `economy.js` | Ausbildung, Nachschub, Einkommensanzeige |
-| `zone.js`, `hotzone.js` | Konfliktzone und Punkte; Hot Zone und Bohrer |
+| `zone.js`, `hotzone.js` | Konfliktzone und Punkte (klassisch, `updateZone`; die Eroberung hat `conquest.js`); Hot Zone und Bohrer |
+| `conquest.js` | Modus Eroberung (PRD §7): `createConquest` (Flaggen, Viertel, Tickets), `updateConquest` (Gebiete zählen, Flaggen einnehmen und neutralisieren, Flaggengeld, Ticket-Takt, Sperre), `lockedFor` (Sperre für Befehle, Wegsuche und Schaden), `eliminate` und `loseTickets` (Ausscheiden), `flagSpot` (Erscheinungsort), `bindLock` (Wegraster), `CONQUEST_MODE` (Eintrag im Register) |
+| `zonegeo.js` | Geometrie der Konfliktzone an einer Stelle: `inZone` (Kreis oder Quadrat, je nach `zone.half`), `zoneDist`, `zoneSize`. Ohne Importe; Simulation, KI, Darstellung und Kartenbau fragen hier |
+| `teams.js` | Beziehungen der Teams: `hostile`, `aliveTeams`, `enemiesOf`, `nearestOf`. Ohne Importe |
+| `modes.js` | Modus-Register `MODES` (`classic`, `conquest`): je Spielart die Haken `teamCount`, `create`, `restore`, `update`, `checkEnd`, `locked`, `slotCap`, `foeSpawn`, `commanderLost`, `freeReinforce`, `spawnSpot`, `score`, `aiArmy`; `game.mode` liefert den Eintrag der Partie (aus `game.conquest` abgeleitet) |
 | `movement.js`, `pathfinding.js`, `pathplan.js`, `grid.js`, `formation.js` | Bewegung, A*-Wegsuche (`findPath` für Kartenbau, `findUnitPath` für Einheiten), Wegplanung der Einheiten (Wegbudget je Schritt, Warteschlange, lange Suche über mehrere Schritte, geteilte Wege; Zustand `game.pathWork`, `pathBacklog`, `pathSeq`, `pathLong`, `pathShare`), Zellenraster, Formationen |
 | `combat.js` | Zielsuche (eine Suche `searchTarget` für Schützen und Einzelwaffen), Direktfeuer, Mörser, Flugabwehr, Schaden |
 | `logistics.js`, `construction.js` | LKW, Nachfüllen, Transport; Bauen und Reparieren |
@@ -176,7 +189,7 @@ seit v5.59). Die beiden Register importieren nichts; Simulation, UI und Darstell
 | `researchpanel.js` (UI) | Forschungsfenster: Äste, Stufen, Warteschlange |
 | `flow.js` (UI `js/ui/flowpanel.js`) | Ressourcenanzeige: Graph der Kette aus `CITY.chain` und `c.stats`, Verbrauchsmessung, Engpässe (liest nur) |
 | `weather.js`, `research.js`, `river.js` | Wetter und Jahreszeit, Forschungsbaum (seit v5.04: `team.tech = { tier, done, cur, queue }`, Wirkung je Gruppe über `modOf(game, e, stat)`, Daten `js/data/research.js`), Fluss mit Brücken und Furten |
-| `roads.js` | Stadtstraßen der Karte (seit v5.03): Zonenstraßen und Brückenfahrbahnen als Zellen im Stadtraster (`game.roads.kind`: 1 Straße, 2 Brücke), für beide Teams Straßenanschluss (`city.roadAt`), nicht ausweisbar (`canZone`) |
+| `roads.js` | Stadtstraßen der Karte (seit v5.03): Zonenstraßen und Brückenfahrbahnen als Zellen im Stadtraster (`game.roads.kind`: 1 Straße, 2 Brücke), für alle Teams Straßenanschluss (`city.roadAt`), nicht ausweisbar (`canZone`) |
 | `aircraft.js` | Fliegerhorst und Kampfflugzeuge (seit v5.35; vorher Flughafen): Bahnen aus Bahnzellen (`runwaysOf`, Cache je `c.ver`), Weg Stellplatz → Bahn über Straßen und Bahn (`standRoute`), Bahnsperre `c.runwayBusy`, `u.jet = { home, slot, ready, phase, route, rtb }` (slot: Platz 0/1 am Stellplatz, seit der Änderung „zwei Flugzeuge je Stellplatz“), `u.parked` (auf dem Stellplatz, angreifbar, Schutz `parkedArmor`, schießt nicht), Ausbildungsprüfung `trainCheck` (CITY.air.standJets Jets je Stellplatz) |
 | `helipad.js` | Heliport als Landeplatz (seit v5.51): `u.heli = { home, phase: landed/takeoff/air/landing, t, alt }`, Luftraumsperre `c.padBusy`, Ausbildungsprüfung `heliTrainCheck` (ein Hubschrauber je Heliport) |
 | `excavator.js` | Bagger (seit v5.35): Befehl `dig` (`cmdDig`), Fahren und Räumen (`updateDig`, nach `updateConstruction`); entfernte Zonenstraßen in `game.roads.dug` |
@@ -185,7 +198,7 @@ seit v5.59). Die beiden Register importieren nichts; Simulation, UI und Darstell
 | `map.js`, `landscape.js`, `relief.js`, `mapdata.js` | Zufallskarte (Stadt, Gehöfte, Kisten), Höhengelände, Höhenraster, Kartenformat für Editor und Speicher |
 | `scars.js`, `animals.js` | Wracks und Krater, Tiere (nur Optik, aber Teil der Simulation) |
 
-`js/ai/ai.js` – Klasse `AI`: `update(dt)` ruft im Takt `BALANCE.difficulty.<stufe>.think` die Methode `think()`; Werte aus `js/data/ai.js` und `BALANCE.difficulty`. Kern: Konstruktor, `update`, `think`, `snapshot`, `once`. Die übrigen Methoden stehen als Mixins in `js/ai/army/` (Objekte mit Methoden, über `Object.assign(AI.prototype, …)` eingehängt; Spielstände bleiben gleich, weil nur Methoden wandern): `build.js` (Stellungen, FOB-Fahrzeuge, Verteidigung, Mauer, Festung, Heliport, Brücken, Baufahrzeuge, Funkmast), `produce.js` (Ausbildung, Gegenmischung, Forschung, Kommandeur), `logistics.js` (LKW-Rollen, Pendler, Versorger, Kisten), `combat.js` (Armee, Angriffswellen, Rückzug, Artillerie, Späher, Flankenangriff, Häuserkampf, Jets); gemeinsame Konstanten und Hilfen in `army/util.js`. Die Module importieren `ai.js` nicht.
+`js/ai/ai.js` – Klasse `AI`: `update(dt)` ruft im Takt `BALANCE.difficulty.<stufe>.think` die Methode `think()`; Werte aus `js/data/ai.js` und `BALANCE.difficulty`. Kern: Konstruktor, `update`, `think`, `snapshot`, `once`. Die übrigen Methoden stehen als Mixins in `js/ai/army/` (Objekte mit Methoden, über `Object.assign(AI.prototype, …)` eingehängt; Spielstände bleiben gleich, weil nur Methoden wandern): `build.js` (Stellungen, FOB-Fahrzeuge, Verteidigung, Mauer, Festung, Heliport, Brücken, Baufahrzeuge, Funkmast), `produce.js` (Ausbildung, Gegenmischung, Forschung, Kommandeur), `logistics.js` (LKW-Rollen, Pendler, Versorger, Kisten), `combat.js` (Armee, Angriffswellen, Rückzug, Artillerie, Späher, Flankenangriff, Häuserkampf, Jets; die Armee `army()` gilt klassisch), `conquest.js` (Eroberung: `conquestArmy` statt `army()`, Flaggenziele, Erscheinungsort der Einheiten per `spawnAt`); gemeinsame Konstanten und Hilfen in `army/util.js`. Die Module importieren `ai.js` nicht.
 `js/ai/cityai.js` – Stadt-KI (seit v5.60 aus der Simulation hierher): `aiCity` (Ausbau), `aiRaid`, `aiDefend`; Werte aus `CITY.ai`, Buchhaltung `cityAiMemory()` in `AI.cityMem`, Befehle nur über `game.issue`.
 
 `js/render/` (Zeichnen, liest nur)
@@ -241,8 +254,8 @@ Wo jedes Feature liegt. „KI“ = Konstanten-Präfix in `js/data/ai.js`, Logik 
 |---|---|---|---|---|---|---|
 | Spielzustand, Befehle, Platzierung, Sieg, Statistik am Spielende | §2, §4, §9 „Endbildschirm“ | `fob`, `winPoints` | `game.js` (`newStats`, `sampleArmy`, Zählung in `cleanup`), `economy.js` (Ausbildung) | – | `menu.js` (`showEnd`) | `game.test.js`, `stats.test.js` |
 | Ausbildung, Einheitenlimit, Nachschub, Einkommen | §2, §3, §5 | `slotCap`, `trainSlots`, `reinforce`, `startRes` | `economy.js`, `game.js` (`cmdTrain`) | `MIX`, `COUNTER_*` | `controller.js`, `hud.js` | `economy.test.js` |
-| Eroberung: 2 bis 4 Teams, Flaggen, Tickets, Viertel-Sperre, Flaggen-Spawn | §7 „Eroberung“ | `conquest`, `CQ_*` | `conquest.js` (`updateConquest`, `lockedFor`, `eliminate`), `grid.js` (`lock`), `combat.js` (`hit`), `economy.js` (`flagSpot`), `game.js` (`issue`, `cmdSpawnAt`, `foeOf`) | `js/ai/army/conquest.js` | `renderer.js` (`drawConquest`), `minimap.js`, `hud.js` (`updateSpawnPick`), `menu.js` | `conquest.test.js` |
-| Konfliktzone, Punkte, Zonengeld | §7 | `zone`, `pointInterval` | `zone.js` | `WAVE_*`, `THREAT_*` | `renderer.js`, `hud.js` | `economy.test.js`, `game.test.js` |
+| Eroberung: 2 bis 4 Teams, Flaggen, Tickets, Viertel-Sperre, Flaggen-Spawn | §7 „Eroberung“ | `conquest`, `CQ_*` | `conquest.js` (`updateConquest`, `lockedFor`, `eliminate`, `flagSpot`), `zonegeo.js`, `teams.js`, `modes.js` (Haken), `grid.js` (`lock`), `combat.js` (`hit`), `game.js` (`issue`, `cmdSpawnAt`, `foeOf`) | `js/ai/army/conquest.js` | `renderer.js` (`drawConquest`), `render/minimap.js`, `hud.js` (`updateSpawnPick`), `menu.js` | `conquest.test.js`, `cmdfuzz.test.js` |
+| Konfliktzone, Punkte, Zonengeld (klassisch; Eroberung: Zeile oben) | §7 | `zone`, `pointInterval` | `zone.js` | `WAVE_*`, `THREAT_*` | `renderer.js`, `hud.js` | `economy.test.js`, `game.test.js` |
 | Hot Zone und Bohrer | §7 „Hot Zone“, „Bohrer“ | `hot`, `BUILDINGS.drill` | `hotzone.js` | – | `renderer.js`, `hud.js` | `game.test.js` |
 | Lager, LKW, Nachfüllen, Transport, Einsteigen; Werkslager und LKW am Werk (seit v5.69), Pendeln ab Werk (seit v5.70) | §3, §10, §15 „Werkslager“ | `logistics`, `CITY.pickup` | `logistics.js` (`ownWork`, `loadWork`), Ausgangslager `stockAtWork` in `city/economy.js` | `SUPPLY_*`, `SURPLUS_MIN`, `ROUTE_HOLD`, `WORK_SOURCE_NEAR`, `WORK_SOURCE_TRUCKS` (`pendlerPlan`, `workSource`, `pickupWorks` in `ai/army/logistics.js`, seit v5.70) | `renderer.js` (`drawRoutes`), `controller.js` (Rechtsklick auf Werk `pickWork`, Pendeln T ab Werk `confirmRouteFrom`), `hud.js` (`cityInfo`: Abholbereit) | `logistics.test.js`, `pickup.test.js`, `pickupai.test.js` |
 | Bauen, Reparieren, neue FOBs (FOB-Fahrzeug, Aufbauen) | §4, §5 | `construction`, `fob`, `UNITS.fobTruck` | `construction.js`, `game.js` (`canPlace`, `cmdBuild`, `cmdDeploy`) | `difficulty.fobCap`, `FOBV_*`, `DEPLOY_REACH`, `RELAY_STEP`, `FLANK_R`, `WALL_*` (`expand`, `driveFobTruck` in `ai/army/build.js`), `MAX_PLACE` (Platzsuche) | `controller.js` (Baumenü), `sprites.js`, `isobuild.js`, Hauptstadt als Regierungsgebäude `cityhall.js` mit Regierungsviertel `govquarter.js` | `game.test.js`, `govquarter.test.js` |
@@ -267,7 +280,7 @@ Wo jedes Feature liegt. „KI“ = Konstanten-Präfix in `js/data/ai.js`, Logik 
 | Anschlusspflicht ans Straßennetz (Paket „Straßen“, Teil 1; mit Baugebiet) | §15 „Baugebiet“ | `CITY.build.needRoad`, `roadFree`; KI `CITY.ai.linkSpare`, `linkBm`, `linkTries`, `linkRetry`, `linkOutlets`, `chainNear` | `js/game/city/cells.js` (`roadLinked`, `roadLinkWhy`, Grund `road` in `buildWhy`/`BUILD_BLOCK`, Großbauten in `fitBig`) | `js/ai/cityai.js` (`extendNet`, `connectNear`, `keepsOutlets`, `CHAIN_PARTNER`) | Baumodus dunkle Zellen über `buildAllowed` (`js/render/citylayer.js`), Hilfe `js/ui/helptext.js` | `buildrules.test.js` |
 | Versorgung der Ausbildung über das Straßennetz (Paket „Straßen“, Teil 2) | §15 „Straßentransport“ | `CITY.supply`, `CITY.transport.maxDist` | `js/game/transport.js` (`supply`-Wege, `supplyAccess` über Bahn und Rollfeld, `supplyOf`, `trainRate`), Tempo in `js/game/economy.js`, Last `supplyTrainers` in `js/game/city/economy.js`, Startviertel angeschlossen in `city/create.js` | `aiConnect` in `js/ai/cityai.js` (Ausbildungsgebäude ohne Weg) | Info `transportText` in `js/ui/hud.js`, rotes X `transportWarn` in `js/render/citylayer.js`, Hilfe | `supply.test.js`, angepasst `airbase.test.js`, `helipad.test.js` |
 | Straßen zerstören und räumen (Paket „Straßen“, Teil 3) | §15 „Straßentransport“, §6 „Bagger“ | `CITY.roadWar`, KI `ROAD_REPAIR_*` in `js/data/ai.js` | `js/game/roadwar.js`, Bagger in `excavator.js` (`diggable`, `dig`), Schutt sperrt `canZone` (`city/cells.js`) | `repairRoads` in `js/ai/army/logistics.js` | Befehlskarte „Straße beschießen“ (E), „Schutt räumen“ (R) in `js/ui/controller/cards.js`, Modi `shellRoad`/`clearRubble`, Schutt `drawRubble` in `js/render/renderer.js` (2D und Iso) | `roadwar.test.js` |
-| Stadtstraßen der Karte (Zonenstraßen, Brückenfahrbahnen; für beide Teams) | §7, §15 | `MAPGEN.town.block` | `roads.js` (`game.roads`, in der Stadt `c.mapRoads`, `roadAt`) | – | `citylayer.js` (`roadView`; Asphalt- und Plattenmuster aus `ways.js`), `bridge.js` (Fahrbahn) | `city.test.js` |
+| Stadtstraßen der Karte (Zonenstraßen, Brückenfahrbahnen; für alle Teams) | §7, §15 | `MAPGEN.town.block` | `roads.js` (`game.roads`, in der Stadt `c.mapRoads`, `roadAt`) | – | `citylayer.js` (`roadView`; Asphalt- und Plattenmuster aus `ways.js`), `bridge.js` (Fahrbahn) | `city.test.js` |
 | Großbauten mit gerader Kante (Kraftwerk 2 × 2, Kaserne 4 × 4, Fabrikhalle 5 × 5) | §15 | `CITY.size` | `city/cells.js` (`bigSpan`, `bigCenter`, `bigCells`, `fitBig`), `city/create.js` (Startviertel `startQuarter`) | `aiNeed` in `ai/cityai.js` | `bigbuild.js` (Kaserne, Fabrikhalle: Boden, 2D, Iso je Körper; Ausstellungsstücke `show` mit `SHOWROOM`-Lackierung aus `unitpaint.js`, seit v5.40), Kraftwerk seit v5.18 in `works.js`, `citylayer.js` | `city.test.js`, `bigbuild.test.js` |
 | Fliegerhorst, F-16, F-22 und Su-27 (seit v5.35: Bahn, Rollfeld (v5.37), Stellplatz, Tower, Kerosintank, Munitionslager; Rollen, Startlauf, Landung, Tanken, Befehl `land`) | §6, §15 | `CITY.air`, `BALANCE.jets`, `UNITS.f16`, `UNITS.f22`, `UNITS.su27` | `aircraft.js` (`runwaysOf`, `bestStrip`, `standRoute`, `updateAircraft`, `cmdLand`, `parkNew`, `trainCheck`, `parkedArmor`), Füllen der Lager `updateCity`/`transport.js` (`tr.depot`), Ausbau der Stellplätze `cmdCityUpgrade` in `city/commands.js` (seit v5.39), Ausbildung `economy.js` | `aiAirport` in `ai/cityai.js`, `jets()` in `ai/army/combat.js`, `CITY.ai.airportFrom`/`jets`, `JET_GROUP`, `JET_EVERY`, `JET_QUEUE` | `sprites.js` (`drawJet`), `airbase.js` (seit v5.42 gemalt: Stellplatz mit Überdachung und Shelter, Tower, Kerosintank, Munitionslager; Teile über `bigbuild.js`), `citylayer.js` (`drawAirfield`, Dächer über den Jets `drawCityRoofs`), `controller.js` (Staffel), `hud.js` | `airbase.test.js`, `airbasepaint.test.js` |
 | U-2 Höhenaufklärer (seit v5.83: belegt einen Stellplatz allein, `standSlots`; in der Luft `highAlt` und `airSight`, nur Waffen mit `antiHighAlt` treffen) | §6, §15 | `UNITS.u2`, `UNITS.f22.weapons[0].antiHighAlt`, `CITY.ai.f22Share`, `reconMax`, `reconFrom`, `reconEvery` | `aircraft.js` (`needOf`, `isHighAlt`, `sightOf`, `takeSlot`), `combat.js` (`searchTarget` mit `anti`, `weaponReaches`, `tryFire`, `impact`), `fog.js` (`sightOf`) | `ai/army/combat.js` (`jets`, `recon`), `ai.js` (`think`) | `test/u2.test.js` |

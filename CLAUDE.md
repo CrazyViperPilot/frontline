@@ -76,7 +76,7 @@ npm run metrics                   # KI-Kennzahlen: 3 Seeds × 15 min KI gegen KI
 - `test/golden.test.js` hält Prüfsummen je Seed (Karte, Startzustand, kurzer Lauf KI gegen KI). Reine Umbauten müssen sie
   unverändert lassen; nur bei gewollter Regeländerung neu setzen (`GOLDEN=print node --test test/golden.test.js`, Anleitung im Testkopf).
   `test/registry.test.js` prüft jede Stadtzellenart auf vollständige Einträge, `test/assets.test.js` die Liste in `sw.js`,
-  `test/imports.test.js`, dass `js/` keinen Importzyklus hat (Stadt: Blattmodul `js/game/city/cells.js`, Stadt-KI in `js/ai/cityai.js`).
+  `test/imports.test.js`, dass `js/` keinen Importzyklus hat (Stadt: Blattmodul `js/game/city/cells.js`, Stadt-KI in `js/ai/cityai.js`). `js/game/zonegeo.js` und `js/game/teams.js` haben ebenfalls keine Importe.
 - `test/config.test.js` findet Tippfehler in der Config (unbekannte Einheit, doppelte Taste, Taste auf einer festen Taste, Startarmee über dem Limit, NaN,
   tote Datenschlüssel …),
   `test/doctables.test.js` meldet veraltete PRD-Tabellen, `test/docs.test.js` u. a. eine Themen-Datei ohne Eintrag in der Übersicht von
@@ -106,7 +106,7 @@ Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 | Ich will … | Datei | Schlüssel |
 |---|---|---|
 | Eroberung (Standardmodus im Menü): Größe der quadratischen Zone, Zahl der Flaggen, Einnahmezeit, Flaggengeld, Tickets und Takt, Frist bis die Viertel-Sperre fällt, Einheitenlimit nach Spielerzahl | balance.js | `BALANCE.conquest` (Regeln: `docs/prd/eroberung.md`, Logik: `js/game/conquest.js`, KI: `js/ai/army/conquest.js` mit `CQ_*` in `js/data/ai.js`) |
-| Einheitenlimit (Plätze je Team) | balance.js | `QUICK.unitLimit` (im Code `BALANCE.slotCap`) |
+| Einheitenlimit (Plätze je Team) | balance.js | `QUICK.unitLimit` (im Code `BALANCE.slotCap`); Eroberung: `BALANCE.conquest.slotCap` (nach Spielerzahl, 500) |
 | Plätze, die eine Einheit belegt | units.js | `UNITS.<typ>.slots` (fehlt = 1) |
 | Geld pro Sekunde je Einheit in der Konfliktzone | balance.js | `QUICK.moneyPerUnitZone` (im Code `BALANCE.zone.unitIncome`) |
 | Geld pro Sekunde in der Hot Zone (statt, nicht zusätzlich) | balance.js | `QUICK.moneyPerUnitHot` |
@@ -114,9 +114,10 @@ Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 | Prämien für Abschüsse und Bauten | balance.js | `BALANCE.bounty` |
 | Startgeld / Obergrenze der Kasse, die von Runde zu Runde bleibt | balance.js | `QUICK.startMoney` / `QUICK.walletMax` |
 | Siegpunkte (Standard) / Takt der Punkte | balance.js | `QUICK.winPoints` / `QUICK.pointEvery` (Auswahl 25/50/100 in `js/ui/menu.js`) |
+| Tickets der Eroberung (Auswahl, Standard, Takt, Verlust je Takt, Verlust ohne Flagge), Kommandeur-Verlust | balance.js | `BALANCE.conquest.ticketChoices` / `ticketDefault` / `tickEvery` / `noFlagLoss`; Kommandeur: `BALANCE.commander.deathPoints` (in der Eroberung Tickets) |
 | Haltezeit des Sendemasts bis zum Sieg | balance.js | `QUICK.radioHold` |
 | Startarmee | balance.js | `QUICK.startUnits` |
-| Kostenloser Soldaten-Nachschub | balance.js | `QUICK.reinforceEvery`, weitere in `BALANCE.reinforce` |
+| Kostenloser Soldaten-Nachschub | balance.js | `QUICK.reinforceEvery`, weitere in `BALANCE.reinforce`; Eroberung aus: `BALANCE.conquest.reinforce` |
 | Zahl der FOBs / Bauradius, Mindestabstände | balance.js | `QUICK.maxFobs` / `BALANCE.fob` |
 | Startvorrat einer neuen FOB (Anteil des Lagers) / FOB-Fahrzeug (Preis, Tempo) / Bau- und Reparaturtempo | balance.js / units.js / balance.js | `QUICK.fobStartStock` / `UNITS.fobTruck` / `BALANCE.construction` |
 | Lagergröße vordere FOB / Hauptstadt, LKW-Ladung / Lade- und Nachfüllraten | balance.js | `QUICK.storeCap` / `QUICK.capitalCap`, `QUICK.truckLoad` / `BALANCE.logistics` |
@@ -150,7 +151,7 @@ Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 | Kurznamen in der Befehlskarte | units.js, buildings.js | `short` |
 | Standards im Startmenü (Schwierigkeit, Schalter) | balance.js | `BALANCE.menuDefaults` |
 | Takt, Startaufstellung, Warnabstände (Basis, Engpass), Tempo leerer Fahrzeuge, Abrisserstattung, Zielsuche, Ressourcennamen | balance.js | `BALANCE.tickRate`, `startLayout`, `baseAttackWarn`, `shortageWarn`, `fuelSlowMul`, `demolishRefund`, `scanInterval`, `resNames` |
-| Baugebiet der Stadt (Schalter im Startmenü, seit v5.78): Radius der FOB-Gebiete, Abstand zum Feind, Konfliktzone | js/data/city.js | `CITY.build` (`fobClaim`, `enemyR`, `noZone`); Regel in `buildWhy` (`js/game/city/cells.js`) |
+| Baugebiet der Stadt (Schalter im Startmenü, seit v5.78): Radius der FOB-Gebiete, Abstand zum Feind, Konfliktzone | js/data/city.js | `CITY.build` (`fobClaim`, `enemyR`, `noZone`); Regel in `buildWhy` (`js/game/city/cells.js`). Eroberung: Stadt immer nur im eigenen Viertel, auch ohne Schalter (`canZone`) |
 | Weitere Stadt-Abschnitte (Gebiet, Einwohner, Wachstum, Vorkommen, Kosten, Nachfrage, Ruinen, Abriss, Startwerte) | js/data/city.js | `CITY.cell`, `territory`, `flee`, `happy`, `housing`, `jobs*`, `immigration`, `startPop`, `taxPop`, `growTime`, `upgradeTime`, `ruinTime`, `maxLevel`, `demand`, `deposits`, `extract`, `metalCost`, `bountyBm`, `startMetal`, `startStock`, `fobMargin`, `clearable`, `retired` |
 | Teamnamen und -farben | balance.js | `BALANCE.teamNames`, `BALANCE.teamColors` |
 
@@ -175,15 +176,16 @@ Bei einem neuen Feature dort eine Zeile ergänzen.
 4. Aussehen: **eigenes Rezept [docs/rezept-einheiten.md](docs/rezept-einheiten.md)** (Maße, Bausteine, Stil, Vorschau-Schleife mit `node tools/unitpreview.mjs <typ>`, welches KI-Modell). Kurz: Modell in `js/render/unitpaint.js` (Funktion in `MODELS` bzw. `INFANTRY`, gilt für 2D und Iso; `test/unitpaint.test.js` prüft, dass jede Einheit eines hat). Ohne Modell zeichnen `js/render/sprites.js` (`drawUnit`) und der Renderer eine einfache Form.
 5. KI: Soll sie die Einheit bauen? Dann `MIX` in `js/data/ai.js` und die Ausbildung in `js/ai/army/produce.js` (`produce`, `counterMix`) ergänzen, sonst im PRD §10 vermerken, dass sie es nicht tut.
 6. Test in `test/` (Ausbildung über `game.issue(team, { type: 'train', … })`), Hilfe in `js/ui/menu.js`, `npm run docs` (Tabellen), PRD §6 (Rolle) und Eintrag in `docs/changes/`.
+7. Eroberung: Ein Kampfflugzeug nimmt keine Flagge ein (`!u.def.jet` in `updateConquest`); nur die U-2 (`highAlt`) darf über fremde Viertel fliegen (Sperre `mode.locked` in `movement.js`); Luftfahrzeuge erscheinen nie an einer Flagge (Ausbildung in `economy.js`).
 
 ### Neues Gebäude
 1. `js/data/buildings.js`: Eintrag mit `name`, `short` (Kurzname in der Befehlskarte), `w`, `h` (Zellen), `hp`, `sight`, `cost`, `buildTime`,
    `hotkey`; optional `weapon`, `aa`, `produces` (ausbildbare Einheiten, fehlt = keine). Mit `hotkey` erscheint es automatisch im Baumenü
    des Baufahrzeugs; die Taste darf keine feste Taste sein (J, H, V, Y, P, M; `test/config.test.js` prüft das).
-2. Sonderregeln beim Setzen in `game.js` (`canPlace`), Wirkung im passenden Modul oder in einem neuen Modul (Rezept „Neues Spielsystem“).
+2. Sonderregeln beim Setzen in `js/game/cmd/build.js` (`canPlace`), Wirkung im passenden Modul oder in einem neuen Modul (Rezept „Neues Spielsystem“).
 3. Aussehen: Maler in `js/render/milbuild.js` (Typ in `MIL_TYPES` eintragen), Höhe in `js/render/iso.js` (`BUILD_H`), Kürzel in
    `js/render/sprites.js` (`BUILD_ABBR`, 2D-Ansicht).
-4. KI optional in `js/ai/army/build.js` (`buildDefense`, `findSite`); Test, Baumenü-Zeile der Hilfe (`js/ui/menu.js`, Taste B), PRD §5 und Eintrag in `docs/changes/`.
+4. KI optional in `js/ai/army/build.js` (`buildDefense`, `findSite`); Test, Baumenü-Zeile der Hilfe (`js/ui/menu.js`, Taste B), PRD §5 und Eintrag in `docs/changes/`. Eroberung: Das Auswahlfeld „Neue Einheiten erscheinen“ erscheint von selbst bei Gebäuden, die Bodeneinheiten ausbilden (`produces`), nicht bei Flugzeugen (`js/ui/hud.js`).
 
 ### Neue Stadtzellenart
 1. `js/data/citykinds.js`: Eintrag in `CITY_KINDS` an der Stelle seiner Baumenü-Gruppe (`group`), mit der **nächsten freien `id`**
@@ -210,10 +212,10 @@ Neue Sorten der FOB-Lager und LKW (wie Baumaterial, Munition, Treibstoff) brauch
 4. `test/registry.test.js` und `test/flow.test.js` laufen lassen (sie prüfen Register, Kette und Stadtzahlen), PRD §15 und Eintrag in `docs/changes/`.
 
 ### Neuer Befehl
-1. Handler im zuständigen Modul: `export function cmdX(game, team, cmd)` → `{ ok: true }` oder `{ ok: false, reason: 'deutscher Text' }`. Nur eigene, lebende Einheiten akzeptieren.
+1. Handler im zuständigen Modul (Marsch, Angriff, Sammelpunkt: `js/game/cmd/units.js`; Bauen, Abriss: `js/game/cmd/build.js`; Ausbildung: `js/game/cmd/train.js`; sonst im Fachmodul): `export function cmdX(game, team, cmd)` → `{ ok: true }` oder `{ ok: false, reason: 'deutscher Text' }`. Nur eigene, lebende Einheiten akzeptieren.
 2. Eintrag im Befehlsregister `js/game/commands.js`: `x: { run: cmdX, drives: true, sound: true }` (`drives`: setzt einen Auftrag `x`, den das
    Modul selbst fährt, z. B. in seinem `update…`; `sound`: Befehlston). `game.issue` braucht nichts weiter. Den Befehl in
-   [ARCHITEKTUR.md](ARCHITEKTUR.md) §6 beschreiben (`test/docs.test.js` prüft das).
+   [ARCHITEKTUR.md](ARCHITEKTUR.md) §6 beschreiben (`test/docs.test.js` prüft das). Eroberung: Die Sperre prüft `game.issue` bei jedem Ziel auf der Karte; liegt `x`/`y` nicht auf der Karte (Stadtzelle, Flaggennummer), gehört der Typ in `WORLD_FREE` (`js/game/game.js`). Für `test/cmdfuzz.test.js` eine Vorlage in `TEMPLATES` anlegen (nur `spawnAt` ist ausgenommen).
 3. UI: Eintrag in der Befehlskarte (`js/ui/controller/cards.js`, `entry(label, hotkey, { action })`) und/oder Rechtsklick. Braucht er ein Ziel auf
    der Karte: Zeile in der Modustabelle `MODES` (`js/ui/controller/modes.js`: `hint`, `click`) plus `confirmX`-Methode (`js/ui/controller/targets.js`). Taste in der Hilfe (`js/ui/helptext.js`).
 4. Test über `game.issue` (`test/commands.test.js` prüft Register und Modi allgemein), PRD §8 (Steuerung) und Eintrag in `docs/changes/`.
@@ -225,11 +227,19 @@ Neue Sorten der FOB-Lager und LKW (wie Baumaterial, Munition, Treibstoff) brauch
 
 ### Neues Spielsystem (eigenes Modul)
 1. `js/game/<name>.js` mit Kopfkommentar (Zweck, „Kein DOM“), `create<Name>(game)` für den Startzustand und `update<Name>(game, dt)` für einen Schritt.
-2. In `js/game/game.js` importieren, `create…` im Konstruktor aufrufen und `update…` in `update()` an der passenden Stelle der Reihenfolge einfügen (siehe ARCHITEKTUR.md).
+2. In `js/game/game.js` importieren, `create…` im Konstruktor aufrufen und `update…` in `update()` an der passenden Stelle der Reihenfolge einfügen (siehe ARCHITEKTUR.md). Abgeleiteter Zustand, den der Spielstand nicht speichert (wie das Sperrraster `grid.lock`), wird in `restoreAccessors` (`game.js`) nach dem Laden neu gebunden.
 3. Werte als eigener Abschnitt in `js/data/balance.js`, Datei in `sw.js` → `ASSETS`, Test `test/<name>.test.js`, Zeile in der Feature-Landkarte (ARCHITEKTUR.md §9).
+
+### Neuer Spielmodus oder neue Flaggen-/Ticketregel
+1. Werte als eigener Block in `js/data/balance.js` (wie `BALANCE.conquest`), jede Zeile mit deutschem Kommentar; Regel in `docs/prd/eroberung.md` oder einer neuen Datei unter `docs/prd/` (Übersicht in PRD.md).
+2. Neuer Modus: Schalter in `new Game({ … })` mit Standard **aus** (Regel 9), Eintrag im Modus-Register `js/game/modes.js` (`MODES`, Haken wie bei `CONQUEST_MODE`); Startmenü und `js/main.js` wie im Rezept „Neue Option im Startmenü“.
+3. Regel in der Eroberung: `js/game/conquest.js` (`updateConquest`, `checkCapitals`, `eliminate`). Geometrie nur über `js/game/zonegeo.js` (`inZone`, `zoneDist`), Beziehungen nur über `js/game/teams.js` (`hostile`, `aliveTeams`, `enemiesOf`); nie eigene Kreis- oder Quadratrechnung und nie `1 - team` (bis zu vier Teams).
+4. Alle Stellen der Spielart prüfen: `foeSpawn`, `slotCap`, `checkEnd` und der Partieende-Text in `endGame` (`js/game/game.js`), Endbildschirm (`showEnd` in `js/ui/menu.js`), HUD (`js/ui/hud.js`), KI-Zweig (`aiArmy` in `js/ai/ai.js`), Punktewert (`score`).
+5. Tests: `test/conquest.test.js` ergänzen, neue Befehle in `test/cmdfuzz.test.js` (TEMPLATES). `test/golden.test.js` bleibt unverändert; ändert sich eine Zufallskarte mit 2 Spielern, ist das eine Regeländerung für Regel 4.
+6. Neue Datei, die der Browser lädt: unter `sw.js` → `ASSETS`. `npm run docs`, `npm run test:quick`; PRD, Hilfe (`js/ui/helptext.js`, `js/ui/menu.js`), Eintrag in `docs/changes/`.
 
 ### KI-Verhalten anpassen
 1. Schwellen und Takte zuerst über `BALANCE.difficulty` oder `js/data/ai.js` ändern.
 2. Neues Verhalten als Methode in einem der Module unter `js/ai/army/` (Bau, Ausbildung, Logistik, Kampf; seit v5.81 per Mixin an die
-   Klasse `AI` in `js/ai/ai.js` gehängt), aufgerufen aus `think()` (Denkschritt); die KI ändert das Spiel nur über `game.issue`.
+   Klasse `AI` in `js/ai/ai.js` gehängt), aufgerufen aus `think()` (Denkschritt); die KI ändert das Spiel nur über `game.issue`. Die Armee ist je Spielart verschieden (`game.mode.aiArmy`): in der Eroberung läuft `conquestArmy` (`js/ai/army/conquest.js`: Flaggenziele, Erscheinungsort), nicht `army()`. Wellenschätzung, Späher-Schätzung und Flankenangriff gelten nur klassisch.
 3. `test/ai.test.js` (KI gegen KI über feste Seeds) laufen lassen; PRD §10 und die Tabelle „KI-Konstanten“ aktualisieren.

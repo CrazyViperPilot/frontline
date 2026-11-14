@@ -169,8 +169,8 @@ export class Hud {
         <div class="res-row">${res}</div>
         <div class="pts">${pts}</div>
         <div class="zone" data-zone>neutral</div>
-        <div class="cap" title="Punktebalken: füllt sich für das Team mit mehr Spielern in der Konfliktzone (Hot Zone zählt doppelt). Voll = 1 Punkt."><i data-cap></i></div>
-        <div class="zone hotz" data-hot title="Hot Zone: kleiner Kreis in der Konfliktzone, zieht zu aktiven Bohrern. Einheiten darin bringen doppeltes Zonengeld und zählen bei der Punktewertung doppelt.">HOT</div>
+        <div class="cap" title="${g.conquest ? 'Eroberung: kein Punktebalken; es zählen Flaggen und Tickets (links).' : 'Punktebalken: füllt sich für das Team mit mehr Spielern in der Konfliktzone (Hot Zone zählt doppelt). Voll = 1 Punkt.'}"><i data-cap></i></div>
+        <div class="zone hotz" data-hot title="Hot Zone: kleiner Kreis in der Konfliktzone, zieht zu aktiven Bohrern. Einheiten darin bringen doppeltes Zonengeld${g.conquest ? '' : ' und zählen bei der Punktewertung doppelt'}.">HOT</div>
         <div class="zone radioz" data-radio hidden title="Sendemast: steht er die volle Zeit, gewinnt sein Team. Zerstören setzt die Zeit zurück."></div>
         <div class="clock">
           ${this.app.debug ? '<span class="dbg">DEBUG</span>' : ''}

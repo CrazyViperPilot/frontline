@@ -74,6 +74,7 @@ export const BALANCE = {
     fallback: { angle: 0, dist: 200, gap: 14 },
   },
   // Geld je Sekunde und lebende eigene Einheit in der Konfliktzone (auch umkämpft, ohne Deckel)
+  // zone.r: Radius des Kreises der klassischen Zone (px). In der Eroberung ist die Zone ein Quadrat mit dieser halben Kante (conquest.half).
   zone: { r: 3300, unitIncome: QUICK.moneyPerUnitZone },
   // Eroberung (seit dem Paket „Eroberung“, docs/prd/eroberung.md): 2 bis 4 Spieler, jeder gegen jeden. Die Konfliktzone ist ein Quadrat
   // aus grid × grid gleich großen Flaggengebieten, die Karte außerhalb ist in Viertel geteilt (je Startecke eines, für Fremde gesperrt).
@@ -81,7 +82,7 @@ export const BALANCE = {
     half: 3300, // halbe Kantenlänge der quadratischen Konfliktzone (px); gleich zone.r, damit Stadt und Hot Zone ganz darin liegen
     grid: 4, // Gebiete je Kante (4 × 4 = 16 Flaggen A bis P)
     capTime: 20, // Sekunden, um eine Flagge bei 1 Einheit Vorsprung zu neutralisieren bzw. danach einzunehmen
-    capMaxMul: 3, // höchstens so vielfach schneller bei größerem Vorsprung (je Einheit Vorsprung + 1 Tempo)
+    capMaxMul: 3, // Tempo der Einnahme = Vorsprung in Einheiten (2 Einheiten = 2 ×), höchstens so vielfach schneller
     flagIncome: 1.5, // Geld je Sekunde und gehaltener Flagge (kleines Zusatzeinkommen, vor dem Einkommensfaktor der KI)
     ticketMul: 3, // Start-Tickets ohne eigene Angabe (Tests, alte Stände) = Siegpunkte × ticketMul
     ticketChoices: [75, 150, 300, 1000], // Auswahl der Start-Tickets im Startmenü (1000 für lange Partien)
@@ -90,7 +91,7 @@ export const BALANCE = {
     noFlagLoss: 1, // zusätzlicher Ticket-Verlust je Takt, wenn ein Team gar keine Flagge hält (und ein anderes eine hält)
     lockGrace: 300, // so viele Sekunden ohne Flagge (während ein anderes Team eine hält), dann fällt die Sperre des eigenen Viertels für den Rest der Partie
     spawnMin: 0.4, // Anteil von spawnRing, ab dem Einheiten erscheinen (nicht direkt am Mast)
-    spawnRing: 90, // Einheiten erscheinen in diesem Umkreis um die Flagge (px)
+    spawnRing: 90, // Einheiten erscheinen zwischen spawnMin (40 %) und 100 % dieses Umkreises um den Flaggenmast (px)
     flagRing: 120, // Radius der Umkreislinie um den Flaggenmast (px, nur Darstellung)
     slotCap: { 2: 500, 3: 500, 4: 500 }, // Einheitenlimit je Team nach Spielerzahl (klassisch QUICK.unitLimit); viele Einheiten kosten Bildrate
     reinforce: false, // kostenloser Soldaten-Nachschub der Hauptstadt (BALANCE.reinforce): in der Eroberung aus, Truppen kosten immer Geld

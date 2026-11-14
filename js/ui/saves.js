@@ -28,7 +28,7 @@ let remoteOn = true; // false: nicht angemeldet (401 vom Webspace oder setRemote
 
 /**
  * Meta: { id, name, version (Spielversion), format (SAVE_FORMAT), createdAt, updatedAt (ms seit 1970), gameTime,
- *         points: [blau, rot], winPoints, difficulty, ended (bool), size (Bytes gepackt),
+ *         points: [je Team: Siegpunkte, in der Eroberung Tickets], winPoints, tickets (bool, nur Eroberung), difficulty, ended (bool), size (Bytes gepackt),
  *         match (optional, nur lokal: { token, w0 } einer gewerteten Partie, MS2; geht nie zum Webspace, siehe remoteMeta) }.
  * Rec (lokal und beim Laden): { meta, bytes (gzip) }. Liste (listSaves): { meta, source: 'lokal' | 'Webspace', inLocal, inRemote }.
  */
@@ -565,10 +565,11 @@ export function syncUp() {
   });
 }
 
-/** Eine Zeile für die Anzeige: Spielzeit, Punkte, Schwierigkeit, Spielversion, Zeitpunkt und Quelle. */
+/** Eine Zeile für die Anzeige: Spielzeit, Punkte (Eroberung: Tickets) aller Teams, Schwierigkeit, Spielversion, Zeitpunkt und Quelle. */
 export function describe(meta, source) {
   const t = Math.floor(meta.gameTime);
   const mm = `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
   const when = new Date(meta.updatedAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
-  return `Spielzeit ${mm} · Punkte ${meta.points[0]} : ${meta.points[1]} von ${meta.winPoints} · ${meta.difficulty} · ${meta.version} · gespeichert ${when} (${source})`;
+  const score = `${meta.tickets ? 'Tickets' : 'Punkte'} ${meta.points.join(' : ')}${meta.tickets ? '' : ` von ${meta.winPoints}`}`; // wie die Liste im Startmenü (menu.js)
+  return `Spielzeit ${mm} · ${score} · ${meta.difficulty} · ${meta.version} · gespeichert ${when} (${source})`;
 }

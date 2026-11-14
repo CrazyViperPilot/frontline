@@ -35,7 +35,7 @@ const SHORT = { money: 'G', bm: 'BM', mun: 'MUN', fuel: 'TS' };
 // Kurznamen für die Befehlskarte (der volle Name steht im Tooltip)
 const RADIO_TIP = `. Zweite Siegbedingung: steht er fertig ${Math.round(BALANCE.radio.hold / 60)} min, gewinnst du. Der Gegner sieht ihn dann überall. Nur einer je Team.`;
 const CMD = BALANCE.commander;
-const COMMANDER_TIP = `. Einmalig, belegt keinen Platz. Aura ${CMD.aura} px: eigene Einheiten schießen ${Math.round((CMD.fireRate - 1) * 100)} % schneller, verletzte Infanterie heilt. Fällt er, bekommt der Gegner ${CMD.deathPoints} Punkte.`;
+const COMMANDER_TIP = `. Einmalig, belegt keinen Platz. Aura ${CMD.aura} px: eigene Einheiten schießen ${Math.round((CMD.fireRate - 1) * 100)} % schneller, verletzte Infanterie heilt. Fällt er, bekommt der Gegner ${CMD.deathPoints} Punkte (Eroberung: das eigene Team verliert ${CMD.deathPoints} Tickets).`;
 
 // Ladungsart: Taste, Kurzname, Bezeichnung
 const PRESET_BTN = [

@@ -98,7 +98,7 @@ export function eliminate(game, t, why) {
   const team = game.teams[t];
   if (!game.conquest || team.out) return;
   team.out = true;
-  team.tickets = Math.min(team.tickets, 0);
+  team.tickets = 0;
   game.conquest.open[t] = true;
   for (const u of game.units) if (u.team === t) u.alive = false; // ohne Prämie und Wrack (cleanup)
   for (const b of game.buildings) {

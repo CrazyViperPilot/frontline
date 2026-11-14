@@ -153,7 +153,7 @@ export class Game {
   /** city: Zonenstadt hinter der Hauptstadt (js/game/city/; Standard seit S2a an; ohne Stadt nur noch in alten Tests mit `city: false`: Hauptstadt hat dann unendlich Material). */
   /** buildRules: Baugebiet der Stadt (seit v5.78): Gebäude nur im eigenen Gebiet, auf erkundetem Gelände, nicht nahe dem Feind und nicht in der Konfliktzone (js/game/city/cells.js `buildWhy`). Wirkt nur mit city; ohne Angabe aus. */
   /** river: Zufallskarte mit Flüssen, Brücken und Furten (river.js; ohne Angabe aus). Fertige Karten bringen ihre eigenen mit. */
-  constructor({ seed = 1, winPoints = BALANCE.winPoints, startMoney = BALANCE.startRes.money, map = null, radio = false, weather = 'off', research = false, river = false, city = true, buildRules = false, debug = false, conquest = false, players = 2 } = {}) {
+  constructor({ seed = 1, winPoints = BALANCE.winPoints, startMoney = BALANCE.startRes.money, map = null, radio = false, weather = 'off', research = false, river = false, city = true, buildRules = false, debug = false, conquest = false, players = 2, tickets = null } = {}) {
     this.seed = seed;
     this.debug = !!debug; // ?debug=1: erlaubt den Befehl `debug` (Geld, festes Wetter), seit v5.58
     this.rng = makeRng(seed);
@@ -217,7 +217,8 @@ export class Game {
     });
     createResearch(this, research); // Stufen und Verbesserungen je Team (team.tech)
     this.zone = { ...this.map.zone, owner: -1, contested: false, counts: this.teams.map(() => 0), weight: this.teams.map(() => 0), bar: { team: -1, p: 0 } };
-    createConquest(this, conquest); // Flaggen, Tickets, gesperrte Viertel (nur im Modus Eroberung)
+    createConquest(this, conquest, tickets); // tickets: Start-Tickets (ohne Angabe Siegpunkte × ticketMul)
+    // Flaggen, Tickets, gesperrte Viertel (nur im Modus Eroberung)
     this.hot = createHot(this);
     this.fog = this.teams.map(() => new Fog(W, H));
 

@@ -83,13 +83,15 @@ export const BALANCE = {
     capTime: 20, // Sekunden, um eine Flagge bei 1 Einheit Vorsprung zu neutralisieren bzw. danach einzunehmen
     capMaxMul: 3, // höchstens so vielfach schneller bei größerem Vorsprung (je Einheit Vorsprung + 1 Tempo)
     flagIncome: 1.5, // Geld je Sekunde und gehaltener Flagge (kleines Zusatzeinkommen, vor dem Einkommensfaktor der KI)
-    ticketMul: 3, // Start-Tickets = Siegpunkte des Startmenüs (25/50/100) × ticketMul
+    ticketMul: 3, // Start-Tickets ohne eigene Angabe (Tests, alte Stände) = Siegpunkte × ticketMul
+    ticketChoices: [75, 150, 300, 1000], // Auswahl der Start-Tickets im Startmenü (1000 für lange Partien)
+    ticketDefault: 300, // Vorauswahl im Startmenü
     tickEvery: 10, // Sekunden je Ticket-Takt: wer weniger Flaggen hält als der Führende, verliert 1 Ticket
     noFlagLoss: 1, // zusätzlicher Ticket-Verlust je Takt, wenn ein Team gar keine Flagge hält (und ein anderes eine hält)
     lockGrace: 300, // so viele Sekunden ohne Flagge (während ein anderes Team eine hält), dann fällt die Sperre des eigenen Viertels für den Rest der Partie
     spawnRing: 90, // Einheiten erscheinen in diesem Umkreis um die Flagge (px)
     flagRing: 120, // Radius der Umkreislinie um den Flaggenmast (px, nur Darstellung)
-    slotCap: { 2: 300, 3: 240, 4: 200 }, // Einheitenlimit je Team nach Spielerzahl (Bildrate bei vielen Spielern)
+    slotCap: { 2: 500, 3: 500, 4: 500 }, // Einheitenlimit je Team nach Spielerzahl (klassisch QUICK.unitLimit); viele Einheiten kosten Bildrate
     names: 'ABCDEFGHIJKLMNOP', // Buchstaben der Flaggen, zeilenweise von links oben
   },
   // Hot Zone: kleiner Kreis in der Konfliktzone, wandert zufällig oder zu aktiven Bohrern.

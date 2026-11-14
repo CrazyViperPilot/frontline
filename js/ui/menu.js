@@ -123,6 +123,7 @@ const WEATHER_KEY = 'frontline-wetter'; // Startmenü: Wetter aus, Zufall oder f
 const RESEARCH_KEY = 'frontline-forschung'; // Startmenü: Forschung an/aus
 const RIVER_KEY = 'frontline-fluss'; // Startmenü: Flüsse auf Zufallskarten an/aus
 const CONQUEST_KEY = 'frontline-eroberung'; // Startmenü: Modus Eroberung an/aus
+const TICKETS_KEY = 'frontline-tickets'; // Startmenü: Start-Tickets der Eroberung
 const OPP_KEY = 'frontline-gegner'; // Startmenü: Zahl der Computergegner (1 bis 3, nur Eroberung)
 const OPP_DIFF_KEY = 'frontline-ki-'; // + Nummer des Gegners: seine Schwierigkeit
 const BUILD_KEY = 'frontline-baugebiet'; // Startmenü: Baugebiet der Stadt an/aus (seit v5.78)
@@ -530,6 +531,8 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
   const D = BALANCE.menuDefaults; // Standards: js/data/balance.js
   // Eroberung: bis zu 3 Computergegner, jeder mit eigener Schwierigkeit (gemerkt); klassisch: ein Gegner
   let conquest = readFlag(CONQUEST_KEY, D.conquest);
+  const TIX = BALANCE.conquest.ticketChoices;
+  let tickets = Number(readChoice(TICKETS_KEY, TIX.map(String), String(BALANCE.conquest.ticketDefault)));
   let opponents = Number(readChoice(OPP_KEY, ['1', '2', '3'], String(D.opponents)));
   const diffs = [1, 2, 3].map((i) => readChoice(OPP_DIFF_KEY + i, DIFFS.map(([k]) => k), D.difficulty));
   let mapSel = readMapSel(); // 'random' | Karten-ID
@@ -569,8 +572,12 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
       </div>`,
         )
         .join('')}
-      <div class="field">
-        <span class="flabel" data-ptslabel>Siegpunkte</span>
+      <div class="field" data-tixfield>
+        <span class="flabel" title="Eroberung: wer weniger Flaggen hält als der Führende, verliert Tickets; ${TIX[TIX.length - 1]} für lange Partien">Tickets</span>
+        <div class="seg">${TIX.map((n) => `<button type="button" data-tix="${n}">${n}</button>`).join('')}</div>
+      </div>
+      <div class="field" data-ptsfield>
+        <span class="flabel">Siegpunkte</span>
         <div class="seg">${POINTS.map((p) => `<button type="button" data-pts="${p}">${p}</button>`).join('')}</div>
       </div>
       <div class="field">
@@ -792,12 +799,11 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
       const [i, k] = b.dataset.od.split(':');
       b.setAttribute('aria-pressed', String(diffs[i - 1] === k));
     });
-    // Eroberung: die Wahl 25/50/100 zählt als Tickets × ticketMul
-    root.querySelector('[data-ptslabel]').textContent = conquest ? 'Tickets' : 'Siegpunkte';
-    root.querySelectorAll('[data-pts]').forEach((b) => {
-      b.textContent = String(Number(b.dataset.pts) * (conquest ? BALANCE.conquest.ticketMul : 1));
-      b.setAttribute('aria-pressed', String(Number(b.dataset.pts) === winPoints));
-    });
+    // Eroberung: Tickets statt Siegpunkte
+    root.querySelector('[data-tixfield]').hidden = !conquest;
+    root.querySelector('[data-ptsfield]').hidden = conquest;
+    root.querySelectorAll('[data-tix]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.tix) === tickets)));
+    root.querySelectorAll('[data-pts]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.pts) === winPoints)));
     root.querySelectorAll('[data-radio]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.radio === '1') === radio)));
     root.querySelectorAll('[data-weather]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.weather === weather)));
     root.querySelectorAll('[data-mood]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mood === mood)));
@@ -919,6 +925,9 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
     } else if (b.dataset.opp) {
       opponents = Number(b.dataset.opp);
       writeChoice(OPP_KEY, String(opponents));
+    } else if (b.dataset.tix) {
+      tickets = Number(b.dataset.tix);
+      writeChoice(TICKETS_KEY, String(tickets));
     } else if (b.dataset.od) {
       const [i, k] = b.dataset.od.split(':');
       diffs[i - 1] = k;
@@ -965,7 +974,7 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
     } else if (b.dataset.act === 'start') {
       hideOverlay(root);
       // difficulties: Schwierigkeit je Computergegner (Team 1, 2, 3); difficulty: die des ersten (Spielstand-Liste, Statistik)
-      onStart({ conquest, difficulty: diffs[0], difficulties: diffs.slice(0, conquest ? opponents : 1), winPoints, mapId: mapSel, radio, weather, mood, research, river, city: true, buildRules });
+      onStart({ conquest, tickets, difficulty: diffs[0], difficulties: diffs.slice(0, conquest ? opponents : 1), winPoints, mapId: mapSel, radio, weather, mood, research, river, city: true, buildRules });
       return;
     }
     mark();

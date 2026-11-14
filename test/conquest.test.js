@@ -164,3 +164,12 @@ test('Eroberung [langsam]: 4 KIs spielen 12 Minuten ohne Ausnahme, alle nehmen F
   eliminate(g, 3, 'Test');
   run(g, 5, ais);
 });
+
+test('Eroberung: Start-Tickets nach Wahl (1000 für lange Partien), Einheitenlimit 500 je Spieler', () => {
+  assert.ok(Q.ticketChoices.includes(1000) && Q.ticketChoices.includes(Q.ticketDefault));
+  const g = new Game({ seed: 3, conquest: true, players: 4, tickets: 1000 });
+  assert.ok(g.teams.every((t) => t.tickets === 1000));
+  assert.equal(g.conquest.startTickets, 1000);
+  assert.equal(g.slotCap, 500);
+  assert.equal(new Game({ seed: 3 }).slotCap, BALANCE.slotCap);
+});

@@ -495,7 +495,7 @@ function startGame(opts) {
   const conquest = opts.conquest !== false;
   const diffs = (opts.difficulties?.length ? opts.difficulties : [opts.difficulty ?? 'normal']).slice(0, conquest ? 3 : 1);
   if (map && map.spawns.length < diffs.length + 1) diffs.length = Math.max(1, map.spawns.length - 1);
-  const game = new Game({ conquest, players: diffs.length + 1, seed, winPoints: opts.winPoints, startMoney: match ? match.w0 : BALANCE.startRes.money, map, radio: opts.radio !== false, weather, research: opts.research !== false, river, city: true, buildRules: opts.buildRules !== false, debug: DEBUG });
+  const game = new Game({ conquest, tickets: opts.tickets, players: diffs.length + 1, seed, winPoints: opts.winPoints, startMoney: match ? match.w0 : BALANCE.startRes.money, map, radio: opts.radio !== false, weather, research: opts.research !== false, river, city: true, buildRules: opts.buildRules !== false, debug: DEBUG });
   if (DEBUG && WEATHER_NAMES[params.get('wx')]) {
     const wx = params.get('wx');
     game.issue(HUMAN, { type: 'debug', weather: wx, season: wx === 'snow' ? 'winter' : game.weather.season, hold: true }); // Schnee nur im Winter; bleibt so (Grafik prüfen)

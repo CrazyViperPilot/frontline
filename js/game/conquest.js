@@ -7,7 +7,7 @@ const H = BALANCE.hot;
 const CLOSED = 9; // Viertel ohne Spieler: für alle gesperrt
 
 /** Startzustand; ohne `on` bleibt `game.conquest` null und die Partie klassisch (Punktebalken, 2 Teams). */
-export function createConquest(game, on) {
+export function createConquest(game, on, tickets = null) {
   game.conquest = null;
   if (!on) return;
   const z = game.map.zone;
@@ -29,9 +29,10 @@ export function createConquest(game, on) {
     quad[(sp.x >= z.x ? 1 : 0) + (sp.y >= z.y ? 2 : 0)] = t.id;
   });
   const open = new Array(CLOSED + 1).fill(false); // true = Sperre des Viertels gefallen
-  game.conquest = { half: Q.half, x0, y0, size, flags, quad, open, timer: 0, noFlag: game.teams.map(() => 0), held: game.teams.map(() => 0) };
+  const startTickets = Number.isFinite(tickets) && tickets > 0 ? Math.round(tickets) : Math.round(game.winPoints * Q.ticketMul);
+  game.conquest = { startTickets, half: Q.half, x0, y0, size, flags, quad, open, timer: 0, noFlag: game.teams.map(() => 0), held: game.teams.map(() => 0) };
   for (const t of game.teams) {
-    t.tickets = Math.round(game.winPoints * Q.ticketMul);
+    t.tickets = startTickets;
     t.out = false;
   }
   bindLock(game);

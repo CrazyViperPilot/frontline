@@ -14,7 +14,7 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
   eigene Schwierigkeit** (Leicht, Normal, Schwer; gemerkt). **Jeder gegen jeden**, keine Allianzen.
 - Jeder Spieler startet in einer Kartenecke mit Hauptstadt, Stadt und Startarmee wie bisher. Startecken: Blau unten links, Rot oben
   rechts, Grün oben links, Gelb unten rechts.
-- **Einheitenlimit** je Spieler nach Spielerzahl (`slotCap`): 300 bei 2, 240 bei 3, 200 bei 4 Spielern (Bildrate).
+- **Einheitenlimit** je Spieler nach Spielerzahl (`slotCap`): **500** bei 2, 3 und 4 Spielern (klassisch 300). Viele Einheiten kosten Bildrate, vor allem auf Tablet und Telefon.
 - Zufallskarten mit 2 Spielern sind je Seed dieselben wie klassisch. Mit 3 oder 4 Spielern bekommen auch die beiden anderen Ecken
   Bauland, flaches Gelände und eine Zufahrt; die Karte bleibt **punktsymmetrisch** (Blau/Rot und Grün/Gelb spiegeln sich, die beiden
   Paare haben verschiedenes Gelände; Flüsse liegen nur vor den Ecken von Blau und Rot). Gespeicherte Karten aus dem Editor haben
@@ -36,7 +36,7 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
 
 ### Tickets und Sieg
 
-- Jeder startet mit **Tickets** = Wahl im Startmenü × `ticketMul` 3 (75, 150 oder 300).
+- Jeder startet mit **Tickets** nach Wahl im Startmenü (`ticketChoices`: 75, 150, 300 oder **1000** für lange Partien; Standard 300, gemerkt).
 - Alle `tickEvery` 10 s verliert jeder, der **weniger Flaggen hält als der Führende**, 1 Ticket; wer **gar keine** Flagge hält,
   zusätzlich `noFlagLoss` 1. Der Führende (auch mehrere bei Gleichstand) verliert nichts. Hält niemand eine Flagge, verliert niemand.
 - Fällt ein Kommandeur, kostet das sein Team 5 Tickets (statt Punkte für den Gegner).

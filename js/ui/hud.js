@@ -285,7 +285,7 @@ export class Hud {
     // Forschungsknopf leuchtet, solange eine Forschung läuft
     this.researchBtn?.classList.toggle('on', !!t.tech?.cur);
     const cq = g.conquest;
-    const tickets0 = cq ? Math.round(g.winPoints * BALANCE.conquest.ticketMul) : 0;
+    const tickets0 = cq ? (cq.startTickets ?? Math.round(g.winPoints * BALANCE.conquest.ticketMul)) : 0;
     for (let i = 0; i < g.teams.length; i++) {
       const tm = g.teams[i];
       const p = this.pts[i];

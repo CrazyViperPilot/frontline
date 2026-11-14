@@ -1,56 +1,53 @@
 // Spielzustand, Befehle (issue), Platzierung, Lager, Spawn, Aufräumen und Sieg (docs/verlauf.md §4, §5, §11). Kein DOM.
 import { BALANCE } from '../data/balance.js';
 import { UNITS } from '../data/units.js';
-import { BUILDINGS } from '../data/buildings.js';
 import { makeRng } from '../core/rng.js';
 import { generateMap } from './map.js';
 import { terrainGrid } from './mapdata.js';
-import { lineCells } from './grid.js';
 import { reliefOf } from './relief.js';
-import { createUnit, createBuilding, defineAmmo, canAttack, inRange } from './entities.js';
+import { createUnit, createBuilding, defineAmmo } from './entities.js';
 import { Fog } from './fog.js';
 import { updateEconomy, smoothIncome } from './economy.js';
 import { createCity, ownCells } from './city/create.js';
 import { updateCity } from './city/economy.js';
-import { cityNoise, payMetal } from './city/state.js';
-import { freePop, crewOf, cityTrainers, trainerKind } from './city/query.js';
-import { KIND_NAME } from '../data/citykinds.js';
-import { updateMovement, nearestPassable, planPath, setIdle, separate, exitHouse } from './movement.js';
+import { cityNoise } from './city/state.js';
+import { cityTrainers } from './city/query.js';
+import { updateMovement, nearestPassable, separate } from './movement.js';
 import { updateCombat } from './combat.js';
 import { updateZone } from './zone.js';
 import { enemiesOf } from './teams.js';
 import { MODES, modeOf } from './modes.js';
 import { createHot, updateHot } from './hotzone.js';
 import { updateLogistics, cargoSum, storeCapOf } from './logistics.js';
-import { updateConstruction, canBuild, orderBuild, orderBuildSeq } from './construction.js';
+import { updateConstruction } from './construction.js';
 import { updateTowers, ejectCrew } from './tower.js';
-import { createHouses, updateGarrison, dropOccupant, houseCanFire } from './garrison.js';
+import { createHouses, updateGarrison, dropOccupant } from './garrison.js';
 import { createCrates, updateCrates, updateCrateIntel } from './crates.js';
 import { createScars, updateScars, updateScarIntel, addUnitWreck, addBuildingWreck, clearWrecksUnder } from './scars.js';
 import { createAnimals, updateAnimals } from './animals.js';
-import { FORMATIONS, formationSlots, updateFormations } from './formation.js';
-import { hasCommander, updateCommanders, commanderFallen } from './commander.js';
-import { updateRadio, radioStarted, radioLost } from './radio.js';
-import { createWeather, updateWeather, setWeather, WEATHER_NAMES } from './weather.js';
+import { updateFormations } from './formation.js';
+import { updateCommanders, commanderFallen } from './commander.js';
+import { updateRadio, radioLost } from './radio.js';
+import { createWeather, updateWeather } from './weather.js';
 import { updateAbilities } from './abilities.js';
 import { updateMedics } from './medic.js'; // Sanitäter heilen (Paket E1)
 import { updateRecovery } from './recovery.js'; // Bergepanzer repariert Fahrzeuge (Paket E7)
 import { updateFpv } from './fpv.js'; // Kamikazedrohnen explodieren am Ziel (Paket E11)
 import { createMines, updateMines } from './mines.js'; // Pionier-Minen (Paket E8)
-import { createResearch, updateResearch, rangeMul } from './research.js';
+import { createResearch, updateResearch } from './research.js';
 import { createBridges, updateBridges, updateBridgeLayers, bridgeUnder } from './river.js';
 import { createRoads } from './roads.js';
-import { updateAircraft, trainCheck, isHighAlt, canHitAltitude } from './aircraft.js';
+import { updateAircraft } from './aircraft.js';
 import { updateParadrop } from './paradrop.js'; // C-130 setzt Fallschirmjäger ab (Paket E13 b)
-import { updateHelis, heliTrainCheck } from './helipad.js';
+import { updateHelis } from './helipad.js';
 import { updateDig } from './excavator.js';
 import { updateRoadWar } from './roadwar.js';
 import { commandOf, OWN_DRIVERS } from './commands.js';
+import { STOCK_KEYS, covers, canPlace, gatePreview, deploySpot } from './cmd/build.js';
 
 const TILE = BALANCE.map.tile;
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;
-const STOCK_KEYS = ['bm', 'mun', 'fuel']; // Lagersorten (team.res.* sind Summen über FOB-Lager)
 const NOISY = new Set(['tracer', 'shell', 'explosion', 'muzzle']); // Effekte, die Stadtbewohner in der Konfliktzone vertreiben (cityNoise in js/game/city/state.js)
 const EFFECT_LIFE = { tracer: 0.12, shell: 0.3, explosion: 0.5, intercept: 0.4, muzzle: 0.1, death: 0.1 };
 const SHORTAGE_TEXT = {
@@ -58,7 +55,6 @@ const SHORTAGE_TEXT = {
   fuel: 'Fahrzeuge ohne Treibstoff',
   kero: 'Luftfahrzeuge ohne Kerosin (Stadtlager leer: Kerosin-Raffinerie bauen oder am Markt kaufen)', // seit v5.20, nur mit Stadt
 };
-const WALL_TYPES = new Set(['wall', 'gate']);
 
 const zeroRes = () => ({ money: 0, bm: 0, mun: 0, fuel: 0 });
 
@@ -111,40 +107,15 @@ function startFormation(grid, team, cx, cy, types) {
 }
 const fail = (reason) => ({ ok: false, reason });
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
-/** Hat das Lager (Gebäude-store oder LKW-cargo) die Kosten (Sorten bm/mun/fuel) ganz? */
-const covers = (stock, cost) => STOCK_KEYS.every((k) => stock[k] >= (cost[k] || 0));
-
-/** Bezahlt die Sorten aus dem Lager (Gebäude → store, LKW → cargo). Geld zahlt das Team separat. */
-function takeStock(e, cost) {
-  const stock = e.kind === 'building' ? e.store : e.cargo;
-  for (const k of STOCK_KEYS) stock[k] -= cost[k] || 0;
-}
-
-/** Tragen alle diese Bauer nur Baumaterial (Soldaten)? Dann zahlen sie Mauern und Tore aus ihrer Ladung. */
 /** Felder mit Koordinaten in Befehlen (Weltpunkt x/y, Linie x1…y2, Turmziel tx/ty, Stadtzellen c0…r1); game.issue prüft sie. */
 // Befehle, deren x/y keine Weltpunkte sind (Stadtzellen) oder die kein Ziel auf der Karte haben: keine Prüfung der Viertel-Sperre
 const WORLD_FREE = new Set(['city', 'cityUpgrade', 'trade', 'train', 'cancelTrain', 'research', 'cancelResearch', 'setDifficulty', 'debug', 'spawnAt']);
 const COORD_FIELDS = ['x', 'y', 'x1', 'y1', 'x2', 'y2', 'tx', 'ty', 'c0', 'r0', 'c1', 'r1'];
 
-const paysCarried = (list) => list.length > 0 && list.every((u) => u.def.builder === 'fort');
-const carriedBm = (list) => list.reduce((n, u) => n + u.cargo.bm, 0);
-function takeCarried(list, bm) {
-  let left = bm;
-  for (const u of list) {
-    const t = Math.min(u.cargo.bm, left);
-    u.cargo.bm -= t;
-    left -= t;
-    if (left <= 1e-9) break;
-  }
-}
 /** Zähler je Team für den Endbildschirm (seit v5.65). Reine Anzeige: die Simulation liest sie nicht. */
 export function newStats() {
   return { trained: 0, lost: 0, kills: 0, buildingsLost: 0, buildingsKilled: 0, peakUnits: 0 };
 }
-
-const NO_GATE_ROOM = 'Kein Platz für ein Tor (2 Felder)';
-const NO_CARRIED = 'Zu wenig getragenes Baumaterial (Soldaten laden es in einer FOB)';
-const ONE_COMMANDER = 'Nur ein Kommandeur je Team';
 
 export class Game {
   /** `map`: fertige Karte (Editor/gespeichert, siehe mapdata.js); ohne sie wird sie aus dem Seed erzeugt. */
@@ -578,83 +549,19 @@ export class Game {
   }
 
   // ---- Platzierung --------------------------------------------------------------
-
-  /**
-   * Prüft, ob Gebäude `type` mit Mitte (x, y) gebaut werden darf.
-   * Liefert { ok, reason, cx, cy, x, y, payer } (x, y = Mitte des Fußabdrucks).
-   * payer = { kind: 'fob'|'truck', id } – wer die Sorten zahlt (null bei FOBs).
-   * Mauer/Tor außerhalb eines FOB-Radius: eigener LKW mit Ladung ≤ truckSupplyRange.
-   * carried: Soldaten zahlen aus ihrem getragenen Baumaterial (nur Mauer/Tor, nur im Bauradius einer FOB; kein Lager zahlt).
-   */
-  canPlace(team, type, x, y, { carried = false } = {}) {
-    const def = BUILDINGS[type];
-    const g = this.grid;
-    if (!def) return { ok: false, reason: 'Unbekanntes Gebäude' };
-
-    const px = x;
-    const py = y;
-    const cx = g.toCell(px) - Math.floor(def.w / 2);
-    const cy = g.toCell(py) - Math.floor(def.h / 2);
-    const mx = (cx + def.w / 2) * TILE;
-    const my = (cy + def.h / 2) * TILE;
-    const bad = (reason) => ({ ok: false, reason, cx, cy, x: mx, y: my, payer: null });
-    if (def.radio && !this.radioWin) return bad('Sendemast ist in dieser Partie ausgeschaltet');
-    if (def.unique && this.buildings.some((b) => b.alive && b.team === team && b.type === type)) return bad(`Nur ein ${def.name} je Team`);
-
-    for (let r = cy; r < cy + def.h; r++) {
-      for (let c = cx; c < cx + def.w; c++) {
-        if (!g.inBounds(c, r)) return bad('Außerhalb der Karte');
-        const i = g.idx(c, r);
-        if (g.terrain[i]) return bad('Gelände blockiert');
-        if (g.struct[i]) return bad('Fläche bereits belegt');
-        if (g.ford?.[i] || g.deck?.[i]) return bad('Nicht auf Brücken und in Furten');
-      }
-    }
-
-    const x0 = cx * TILE;
-    const y0 = cy * TILE;
-    const x1 = x0 + def.w * TILE;
-    const y1 = y0 + def.h * TILE;
-    for (const u of this.units) {
-      if (u.alive && u.team !== team && u.x >= x0 && u.x < x1 && u.y >= y0 && u.y < y1) {
-        return bad('Gegnerische Einheit im Weg');
-      }
-    }
-
-    const p = this.placePayer(team, type, mx, my, carried);
-    if (p.reason) return bad(p.reason);
-    return { ok: true, reason: null, cx, cy, x: mx, y: my, payer: p.payer };
+  /** Bauplatz prüfen: Regeln in js/game/cmd/build.js (canPlace); hier für KI, UI und Tests. */
+  canPlace(team, type, x, y, opts) {
+    return canPlace(this, team, type, x, y, opts);
   }
 
-  /**
-   * Wer zahlt einen Bau mit Mitte (mx, my) (Teil von canPlace): { payer } oder { reason }. FOB: Abstände und Höchstzahl, kein Zahler;
-   * im Bauradius einer FOB zahlt deren Lager (getragenes Baumaterial: niemand); Mauer/Tor außerhalb: ein eigener LKW in Reichweite.
-   */
-  placePayer(team, type, mx, my, carried) {
-    const def = BUILDINGS[type];
-    if (type === 'fob') {
-      let count = 0;
-      for (const b of this.buildings) {
-        if (!b.alive || b.team !== team || b.type !== 'fob') continue;
-        count++;
-        if (dist(b.x, b.y, mx, my) < BALANCE.fob.minDistOwn) return { reason: 'Zu nah an einer eigenen FOB' };
-      }
-      if (count >= BALANCE.fob.max) return { reason: `Höchstens ${BALANCE.fob.max} FOBs möglich` };
-      for (const b of this.buildings) {
-        if (b.alive && b.team !== team && dist(b.x, b.y, mx, my) < BALANCE.fob.minDistEnemy) return { reason: 'Zu nah an einem gegnerischen Gebäude' };
-      }
-      return { payer: null };
-    }
-    if (this.fobsInRadius(team, mx, my).length) {
-      if (carried) return { payer: null };
-      const f = this.payerFor(team, mx, my, def.cost);
-      return f ? { payer: { kind: 'fob', id: f.id } } : { reason: this.stockReason(team, mx, my, def.cost) };
-    }
-    if (WALL_TYPES.has(type) && !carried) {
-      const tr = this.truckPayer(team, mx, my, def.cost);
-      if (tr) return { payer: { kind: 'truck', id: tr.id } };
-    }
-    return { reason: 'Außerhalb des Bauradius einer eigenen FOB' };
+  /** Vorschau eines Tors (js/game/cmd/build.js, gatePreview); für die Spieler-Steuerung. */
+  gatePreview(team, x, y, opts) {
+    return gatePreview(this, team, x, y, opts);
+  }
+
+  /** Platz für ein aufgebautes Gebäude (js/game/cmd/build.js, deploySpot); für die Befehlskarte. */
+  deploySpot(team, type, x, y) {
+    return deploySpot(this, team, type, x, y);
   }
 
   // ---- Befehle ------------------------------------------------------------------
@@ -682,18 +589,6 @@ export class Game {
     return c.run(this, team, cmd);
   }
 
-  /** Debug-Befehl (nur mit `debug` im Spiel, ?debug=1): money = Geld dazu; weather (+ season) = Wetter setzen, hold = es bleibt so. */
-  cmdDebug(team, cmd) {
-    if (!this.debug) return fail('Nur im Debug-Modus');
-    if (cmd.weather && !WEATHER_NAMES[cmd.weather]) return fail('Unbekanntes Wetter');
-    if (cmd.money) this.teams[team].res.money += cmd.money;
-    if (cmd.weather) {
-      setWeather(this, cmd.weather, cmd.season);
-      if (cmd.hold) this.weather.next = Infinity;
-    }
-    return { ok: true };
-  }
-
   ownUnits(team, ids = []) {
     const out = [];
     if (!Array.isArray(ids)) return out; // kaputter Befehl (Zahl, Objekt …): keine Einheiten statt Ausnahme
@@ -702,402 +597,6 @@ export class Game {
       if (e && e.alive && e.kind === 'unit' && e.team === team) out.push(e);
     }
     return out;
-  }
-
-  /**
-   * Bauer aus `ids` für Gebäude `type`. Ohne ids: leer (idle Bauer helfen automatisch).
-   * Mit ids, aber ohne passendes Baurecht: Fehlergrund.
-   */
-  pickBuilders(team, ids, type) {
-    if (!ids || !ids.length) return { list: [], reason: null };
-    const list = this.ownUnits(team, ids).filter((u) => canBuild(u.def, type));
-    if (list.length) return { list, reason: null };
-    return {
-      list,
-      reason: WALL_TYPES.has(type) ? 'Nur Infanterie und Baufahrzeuge bauen Mauern und Tore' : 'Nur Baufahrzeuge bauen das',
-    };
-  }
-
-  /** `{ type: 'build', ids, siteId }`: Bauer an eine bestehende eigene Baustelle schicken. */
-  cmdJoinSite(team, cmd) {
-    const site = this.getEntity(cmd.siteId);
-    if (!site || site.kind !== 'building' || site.team !== team || site.built) return fail('Keine eigene Baustelle');
-    const pick = this.pickBuilders(team, cmd.ids, site.type);
-    if (pick.reason) return fail(pick.reason);
-    if (!pick.list.length) return fail('Keine Bauer gewählt');
-    for (const u of pick.list) orderBuild(u, site);
-    return { ok: true, count: pick.list.length };
-  }
-
-  /** Freie Formationspunkte im 24-px-Raster um (x, y), nach Entfernung sortiert. */
-  formationSpots(team, x, y, n) {
-    const step = 24;
-    const R = Math.ceil(Math.sqrt(n)) + 4;
-    const cand = [];
-    for (let j = -R; j <= R; j++) {
-      for (let i = -R; i <= R; i++) {
-        const dx = i * step;
-        const dy = j * step;
-        cand.push({ dx, dy, d: Math.hypot(dx, dy) });
-      }
-    }
-    cand.sort((a, b) => a.d - b.d || a.dy - b.dy || a.dx - b.dx);
-    const out = [];
-    for (const c of cand) {
-      if (out.length >= n) break;
-      const px = x + c.dx;
-      const py = y + c.dy;
-      if (this.grid.passable(this.grid.toCell(px), this.grid.toCell(py), team)) out.push({ x: px, y: py });
-    }
-    while (out.length < n) {
-      const p = nearestPassable(this.grid, x, y, team) || { x, y };
-      out.push(p);
-    }
-    return out;
-  }
-
-  /**
-   * { type: 'move'|'attackMove', ids, x, y, formation? }: ohne Formation (oder 'loose') je Einheit der nächste freie Rasterpunkt um das
-   * Ziel; mit 'line', 'wedge' oder 'column' (ab zwei Bodeneinheiten) Plätze der Formation, die Gruppe fährt geschlossen (formation.js).
-   * Liefert die Zielpunkte (slots) für die Wegmarke.
-   */
-  cmdMove(team, cmd) {
-    const units = this.ownUnits(team, cmd.ids);
-    if (!units.length) return fail('Keine eigenen Einheiten gewählt');
-    if (!Number.isFinite(cmd.x) || !Number.isFinite(cmd.y)) return fail('Kein Ziel auf der Karte');
-    const tx = Math.min(Math.max(cmd.x, 0), W);
-    const ty = Math.min(Math.max(cmd.y, 0), H);
-    const go = (u, x, y, form) => {
-      u.targetId = null;
-      u.fireTarget = null; // Artillerie: neuer Marsch beendet das Feuer auf den Punkt
-      u.order = { type: cmd.type, x, y, targetId: null, ...(form ? { form } : {}) };
-      planPath(this, u, x, y);
-      if (u.path.length === 0) setIdle(u);
-    };
-    const kind = FORMATIONS.includes(cmd.formation) ? cmd.formation : 'loose';
-    if (kind !== 'loose' && units.filter((u) => !u.def.air).length >= 2) {
-      const { slots, speed } = formationSlots(this, team, units, tx, ty, kind);
-      const id = ++this.formationSeq;
-      this.formations.set(id, { id, speed, ids: slots.filter((p) => !p.u.def.air).map((p) => p.u.id) });
-      for (const p of slots) go(p.u, p.x, p.y, p.u.def.air ? 0 : id);
-      return { ok: true, count: units.length, formation: kind, slots: slots.map((p) => ({ x: p.x, y: p.y })) };
-    }
-    units.sort((a, b) => dist(a.x, a.y, tx, ty) - dist(b.x, b.y, tx, ty) || a.id - b.id);
-    const spots = this.formationSpots(team, tx, ty, units.length);
-    units.forEach((u, i) => go(u, spots[i].x, spots[i].y, 0));
-    return { ok: true, count: units.length, formation: 'loose', slots: spots };
-  }
-
-  /** { type: 'attack', ids, targetId }: gegnerische Einheit, Gebäude, besetztes Haus oder eine intakte Brücke (nur auf Befehl). */
-  cmdAttack(team, cmd) {
-    const t = this.getEntity(cmd.targetId);
-    if (!canAttack(team, t)) return fail('Ziel ungültig');
-    const armed = this.ownUnits(team, cmd.ids).filter((u) => u.def.range > 0);
-    const units = armed.filter((u) => !u.crate); // Kistenträger schießen nicht
-    if (!units.length) return fail(armed.length ? 'Kistenträger schießen nicht' : 'Keine bewaffnete Einheit gewählt');
-    // Hochfliegende Ziele (U-2 in der Luft) greifen nur Einheiten an, die sie treffen können (F-22); die übrigen bekommen keinen Befehl (seit v5.83)
-    const hitters = isHighAlt(t) ? units.filter((u) => canHitAltitude(u, t)) : units;
-    if (!hitters.length) return fail(`Die ${t.def.name} fliegt zu hoch: nur die F-22 kann sie abschießen`);
-    const aim = t.house ? this.getEntity(t.house) : t;
-    for (const u of hitters) {
-      // Besatzer bleiben im Haus, solange das Ziel aus den Fenstern erreichbar ist und durch eine Fensterseite liegt (houseCanFire, seit v5.67);
-      // sonst gehen sie hinaus und verfolgen es
-      const h = u.house ? this.getEntity(u.house) : null;
-      if (u.house && !(h && aim && inRange(u, aim, u.def.range * rangeMul(this, u) + h.reach) && houseCanFire(this, u, aim))) exitHouse(this, u, t.x, t.y);
-      u.order = { type: 'attack', x: t.x, y: t.y, targetId: t.id };
-      u.targetId = t.id;
-      u.path = [];
-      u.pathIndex = 0;
-      u.repathTimer = 0;
-    }
-    return { ok: true, count: hitters.length };
-  }
-
-  /**
-   * { type: 'build', ids?, building, x, y }: Gebäude als Baustelle (bezahlt aus dem Lager am Bauort).
-   * ids = Bauer, die sofort hinfahren; ohne ids helfen idle Bauer automatisch.
-   */
-  cmdBuild(team, cmd) {
-    if (cmd.siteId) return this.cmdJoinSite(team, cmd);
-    const def = BUILDINGS[cmd.building];
-    if (!def || def.buildable === false) return fail('Dieses Gebäude kann nicht gebaut werden');
-    const pick = this.pickBuilders(team, cmd.ids, cmd.building);
-    if (pick.reason) return fail(pick.reason);
-    const carried = paysCarried(pick.list);
-    if (cmd.building === 'gate') {
-      const c = this.grid.toCell(cmd.x);
-      const r = this.grid.toCell(cmd.y);
-      const res = this.placeGate(team, pick, carried, c, r, cmd.axis === 'x' || cmd.axis === 'y' ? cmd.axis : this.gateAxis(team, c, r), true);
-      if (!res.ok) return fail(res.reason);
-      orderBuildSeq(pick.list, res.sites);
-      return { ok: true, id: res.sites[0].id, ids: res.sites.map((b) => b.id) };
-    }
-    const p = this.canPlace(team, cmd.building, cmd.x, cmd.y, { carried });
-    if (!p.ok) return fail(p.reason);
-    if (!this.canAfford(team, def.cost)) return fail(this.missingMoney());
-    if (carried && carriedBm(pick.list) < (def.cost.bm || 0)) return fail(NO_CARRIED);
-    this.pay(team, def.cost);
-    const payer = p.payer ? this.getEntity(p.payer.id) : null;
-    if (payer) takeStock(payer, def.cost);
-    else if (carried) takeCarried(pick.list, def.cost.bm || 0);
-    const b = this.spawnBuilding(cmd.building, team, p.cx, p.cy, { built: false, payerId: payer ? payer.id : null });
-    if (def.radio) radioStarted(this, b);
-    for (const u of pick.list) orderBuild(u, b);
-    return { ok: true, id: b.id };
-  }
-
-  // ---- Tor aus zwei Hälften ------------------------------------------------------
-
-  /** Richtung eines Tors um Zelle (c, r) ohne Vorgabe: 'y', wenn nur oben/unten Mauer liegt, sonst 'x' (auch ohne Nachbarn). */
-  gateAxis(team, c, r) {
-    const wall = (cc, rr) => this.buildings.some((b) => b.alive && b.team === team && (b.type === 'wall' || b.type === 'gate') && b.cx === cc && b.cy === rr);
-    return !wall(c - 1, r) && !wall(c + 1, r) && (wall(c, r - 1) || wall(c, r + 1)) ? 'y' : 'x';
-  }
-
-  /**
-   * Plätze für ein Tor (2 Felder) um die Zelle (c, r) entlang `axis`: erst (c, c+1), mit `flex` danach (c−1, c).
-   * Liefert { ok, a, b } (canPlace-Ergebnisse der Hälften 0 und 1) oder { ok: false, reason, cells } (cells = die zwei Zellen für die Vorschau).
-   */
-  gateSpots(team, c, r, axis, carried, flex) {
-    const g = this.grid;
-    const dx = axis === 'y' ? 0 : 1;
-    const dy = 1 - dx;
-    const at = (k) => this.canPlace(team, 'gate', g.center(c + k * dx), g.center(r + k * dy), { carried });
-    const anchor = at(0);
-    const cells = [{ cx: c, cy: r }, { cx: c + dx, cy: r + dy }];
-    if (!anchor.ok) return { ok: false, reason: anchor.reason, cells };
-    const next = at(1);
-    if (next.ok) return { ok: true, a: anchor, b: next };
-    const prev = flex ? at(-1) : null;
-    if (prev?.ok) return { ok: true, a: prev, b: anchor };
-    const payerLike = /^(FOB|Außerhalb des Bau|Kein FOB|Zu wenig)/.test(next.reason || '');
-    return { ok: false, reason: payerLike ? next.reason : NO_GATE_ROOM, cells };
-  }
-
-  /** Vorschau eines Tors an Punkt (x, y): { ok, reason, cells: [{ cx, cy, ok }] } (Platz und Zahler, ohne Kasse). */
-  gatePreview(team, x, y, { carried = false } = {}) {
-    const g = this.grid;
-    const c = g.toCell(x);
-    const r = g.toCell(y);
-    const sp = this.gateSpots(team, c, r, this.gateAxis(team, c, r), carried, true);
-    if (sp.ok) return { ok: true, reason: null, cells: [{ cx: sp.a.cx, cy: sp.a.cy, ok: true }, { cx: sp.b.cx, cy: sp.b.cy, ok: true }] };
-    return { ok: false, reason: sp.reason, cells: sp.cells.map((q) => ({ ...q, ok: false })) };
-  }
-
-  /** Ein Tor (zwei Hälften nebeneinander) setzen und zweimal bezahlen. Liefert { ok, sites } oder { ok: false, reason }. */
-  placeGate(team, pick, carried, c, r, axis, flex) {
-    const def = BUILDINGS.gate;
-    const sp = this.gateSpots(team, c, r, axis, carried, flex);
-    if (!sp.ok) return sp;
-    const cost2 = {};
-    for (const k of Object.keys(def.cost)) cost2[k] = def.cost[k] * 2;
-    if (!this.canAfford(team, cost2)) return { ok: false, reason: this.missingMoney() };
-    if (carried && carriedBm(pick.list) < (cost2.bm || 0)) return { ok: false, reason: NO_CARRIED };
-    if (sp.a.payer && sp.b.payer && sp.a.payer.id === sp.b.payer.id) {
-      const e = this.getEntity(sp.a.payer.id);
-      if (!covers(e.kind === 'building' ? e.store : e.cargo, cost2)) return { ok: false, reason: this.stockReason(team, sp.a.x, sp.a.y, cost2) };
-    }
-    const sites = [];
-    [sp.a, sp.b].forEach((p, leaf) => {
-      this.pay(team, def.cost);
-      const payer = p.payer ? this.getEntity(p.payer.id) : null;
-      if (payer) takeStock(payer, def.cost);
-      else if (carried) takeCarried(pick.list, def.cost.bm || 0);
-      sites.push(this.spawnBuilding('gate', team, p.cx, p.cy, { built: false, payerId: payer ? payer.id : null, leaf, axis }));
-    });
-    return { ok: true, sites };
-  }
-
-  /** Torlinie: je zwei Zellen ein Tor (Richtung = längere Seite der Linie); ein einzelner Punkt wählt Richtung und freie Seite selbst. */
-  cmdBuildGateLine(team, pick, carried, c0, r0, c1, r1) {
-    const g = this.grid;
-    const axis = Math.abs(c1 - c0) >= Math.abs(r1 - r0) ? 'x' : 'y';
-    const n = (axis === 'x' ? Math.abs(c1 - c0) : Math.abs(r1 - r0)) + 1;
-    const sites = [];
-    let reason = 'Keine Zelle baubar';
-    if (n === 1) {
-      const res = this.placeGate(team, pick, carried, c0, r0, this.gateAxis(team, c0, r0), true);
-      if (res.ok) sites.push(...res.sites);
-      else reason = res.reason;
-    } else {
-      const step = (axis === 'x' ? c1 > c0 : r1 > r0) ? 1 : -1;
-      for (let i = 0; i + 1 < n; i += 2) {
-        // erste Zelle des Paars in Zugrichtung; Hälfte 0 liegt immer bei der kleineren Zelle
-        const k = step > 0 ? i : i + 1;
-        const c = axis === 'x' ? c0 + step * k : c0;
-        const r = axis === 'x' ? r0 : r0 + step * k;
-        const res = this.placeGate(team, pick, carried, c, r, axis, false);
-        if (res.ok) sites.push(...res.sites);
-        else {
-          reason = res.reason;
-          if (reason === this.missingMoney() || reason === NO_CARRIED) break;
-        }
-      }
-    }
-    if (!sites.length) return fail(reason);
-    if (pick.list.length) orderBuildSeq(pick.list, sites);
-    return { ok: true, count: sites.length };
-  }
-
-  /** { type: 'buildWall', building: 'wall'|'gate', ids?, x1, y1, x2, y2 }: Linie, Zelle für Zelle bezahlt (Tor: je 2 Zellen ein Tor, 2 × Kosten). */
-  cmdBuildWall(team, cmd) {
-    if (cmd.building !== 'wall' && cmd.building !== 'gate') return fail('Nur Mauer oder Tor als Linie');
-    const def = BUILDINGS[cmd.building];
-    const pick = this.pickBuilders(team, cmd.ids, cmd.building);
-    if (pick.reason) return fail(pick.reason);
-    const g = this.grid;
-    const c0 = g.toCell(cmd.x1);
-    const r0 = g.toCell(cmd.y1);
-    const c1 = g.toCell(cmd.x2);
-    const r1 = g.toCell(cmd.y2);
-    // Länge vor dem Aufzählen prüfen: weit entfernte (oder ungültige) Punkte erzeugten sonst Milliarden Zellen (Speicher voll)
-    if (Math.max(Math.abs(c1 - c0), Math.abs(r1 - r0)) + 1 > BALANCE.construction.wallMax) return fail(`Mauerzug zu lang (höchstens ${BALANCE.construction.wallMax} Zellen)`);
-    const cells = lineCells(c0, r0, c1, r1);
-    if (cells.length > BALANCE.construction.wallMax) return fail(`Mauerzug zu lang (höchstens ${BALANCE.construction.wallMax} Zellen)`);
-    const sites = [];
-    const carried = paysCarried(pick.list);
-    let lastReason = 'Keine Zelle baubar';
-    if (cmd.building === 'gate') return this.cmdBuildGateLine(team, pick, carried, c0, r0, c1, r1);
-    for (const [c, r] of cells) {
-      const p = this.canPlace(team, cmd.building, g.center(c), g.center(r), { carried });
-      if (!p.ok) {
-        lastReason = p.reason;
-        continue;
-      }
-      if (!this.canAfford(team, def.cost)) {
-        lastReason = this.missingMoney();
-        break;
-      }
-      if (carried && carriedBm(pick.list) < (def.cost.bm || 0)) {
-        lastReason = NO_CARRIED;
-        break;
-      }
-      this.pay(team, def.cost);
-      const payer = p.payer ? this.getEntity(p.payer.id) : null;
-      if (payer) takeStock(payer, def.cost);
-      else if (carried) takeCarried(pick.list, def.cost.bm || 0);
-      sites.push(this.spawnBuilding(cmd.building, team, p.cx, p.cy, { built: false, payerId: payer ? payer.id : null }));
-    }
-    if (sites.length === 0) return fail(lastReason);
-    if (pick.list.length) orderBuildSeq(pick.list, sites);
-    return { ok: true, count: sites.length };
-  }
-
-  /**
-   * { type: 'deploy', ids, x?, y? }: gewählte FOB-Fahrzeuge (UNITS.*.deploys) werden an ihrer Stelle sofort zur fertigen FOB
-   * (ohne Bauzeit, Regeln von canPlace: Abstände, Höchstzahl). Blockiert dort etwas (Baum, Haus), nimmt sie die nächste
-   * freie Stelle bis BALANCE.fob.deploySnap px entfernt. Mit x, y (KI: geplanter Standort) zählt dieser Punkt statt der
-   * Stelle des Fahrzeugs; er darf höchstens deploySnap px vom Fahrzeug entfernt sein. Die FOB startet mit BALANCE.fob.startStock ihres Lagers je Sorte;
-   * das Fahrzeug verschwindet (kein Wrack). Liefert { ok, ids } (neue FOBs) oder den Grund des ersten Fehlschlags.
-   */
-  cmdDeploy(team, cmd) {
-    const list = this.ownUnits(team, cmd.ids).filter((u) => u.def.deploys && !u.house);
-    if (!list.length) return fail('Kein FOB-Fahrzeug gewählt');
-    const ids = [];
-    let reason = '';
-    for (const u of list) {
-      const at = Number.isFinite(cmd.x) && Number.isFinite(cmd.y) ? { x: cmd.x, y: cmd.y } : u;
-      const p = dist(at.x, at.y, u.x, u.y) <= BALANCE.fob.deploySnap ? this.deploySpot(team, u.def.deploys, at.x, at.y) : { ok: false, reason: 'Zu weit vom FOB-Fahrzeug' };
-      if (!p.ok) {
-        reason ||= p.reason;
-        continue;
-      }
-      const f = this.spawnBuilding(u.def.deploys, team, p.cx, p.cy, { built: true });
-      for (const k of STOCK_KEYS) f.store[k] = Math.round(BALANCE.logistics.storeCap * BALANCE.fob.startStock);
-      setIdle(u);
-      u.alive = false; // hp bleibt: cleanup entfernt es ohne Wrack und ohne Abschussprämie
-      ids.push(f.id);
-      this.message(team, `${f.def.name} aufgebaut`, f.x, f.y);
-    }
-    if (!ids.length) return fail(reason);
-    return { ok: true, ids };
-  }
-
-  /** Platz für ein aufgebautes Gebäude: (x, y) selbst, sonst die nächste zulässige Stelle in Ringen bis fob.deploySnap px. */
-  deploySpot(team, type, x, y) {
-    const first = this.canPlace(team, type, x, y);
-    if (first.ok) return first;
-    for (let r = TILE; r <= BALANCE.fob.deploySnap; r += TILE) {
-      for (let k = 0; k < 8; k++) {
-        const a = (k * Math.PI) / 4;
-        const p = this.canPlace(team, type, x + Math.cos(a) * r, y + Math.sin(a) * r);
-        if (p.ok) return p;
-      }
-    }
-    return first;
-  }
-
-  /**
-   * { type: 'mortarTarget', ids, x, y }: gewählte eigene Mörser feuern auf den Punkt (ohne x/y: Ziel löschen).
-   * Nur Mörser in Reichweite (zwischen minRange und range) nehmen das Ziel an.
-   */
-  cmdMortarTarget(team, cmd) {
-    const mortars = [];
-    const guns = []; // Artillerie-Einheiten (Panzerhaubitze, seit v5.19)
-    for (const id of new Set(Array.isArray(cmd.ids) ? cmd.ids : [])) {
-      const b = this.getEntity(id);
-      if (b && b.kind === 'building' && b.team === team && b.def.weapon && b.def.weapon.shell) mortars.push(b);
-      else if (b && b.kind === 'unit' && b.alive && b.team === team && b.def.indirect) guns.push(b);
-    }
-    if (!mortars.length && !guns.length) return fail('Kein Mörser und keine Artillerie gewählt');
-    if (!Number.isFinite(cmd.x) || !Number.isFinite(cmd.y)) {
-      for (const b of [...mortars, ...guns]) b.fireTarget = null;
-      return { ok: true, count: mortars.length + guns.length };
-    }
-    let n = 0;
-    let reason = 'Ziel außer Reichweite';
-    for (const u of guns) {
-      const w = u.weapons.find((x) => x.spec.shell)?.spec;
-      const d = dist(u.x, u.y, cmd.x, cmd.y);
-      const max = w.range * rangeMul(this, u);
-      if (d > max) reason = `Ziel außer Reichweite (max. ${Math.round(max)} px)`;
-      else if (d < w.minRange) reason = `Ziel zu nah (min. ${w.minRange} px)`;
-      else {
-        setIdle(u);
-        u.fireTarget = { x: cmd.x, y: cmd.y };
-        n++;
-      }
-    }
-    for (const b of mortars) {
-      if (!b.built) {
-        reason = 'Mörser ist noch im Bau';
-        continue;
-      }
-      const d = dist(b.x, b.y, cmd.x, cmd.y);
-      const w = b.def.weapon;
-      if (d > w.range) reason = `Ziel außer Reichweite (max. ${w.range} px)`;
-      else if (d < w.minRange) reason = `Ziel zu nah (min. ${w.minRange} px)`;
-      else {
-        b.fireTarget = { x: cmd.x, y: cmd.y };
-        n++;
-      }
-    }
-    if (!n) return fail(reason);
-    return { ok: true, count: n };
-  }
-
-  /** { type: 'train', buildingId, unit }: Hauptstadt, mit Stadt Kaserne/Fabrikhalle/Heliport; Einheiten kosten Geld (mit Forschung erst ab ihrer Stufe). */
-  cmdTrain(team, cmd) {
-    const b = this.getEntity(cmd.buildingId);
-    if (!b || b.kind !== 'building' || b.team !== team) return fail('Kein eigenes Gebäude gewählt');
-    if (!b.built) return fail('Gebäude ist noch im Bau');
-    if (!UNITS[cmd.unit] || !b.produces?.includes(cmd.unit)) { // Stadtgebäude ohne Ausbildung haben kein produces
-      const k = this.city && trainerKind(cmd.unit);
-      return fail(k ? `${UNITS[cmd.unit]?.name ?? 'Einheit'}: nur in der ${KIND_NAME[k]} der Stadt` : 'Nur die Hauptstadt bildet Einheiten aus');
-    }
-    const jetNo = trainCheck(this, b, cmd.unit) ?? (UNITS[cmd.unit].air && !UNITS[cmd.unit].jet ? heliTrainCheck(this, b) : null); // Stellplatz bzw. Heliport: ein Luftfahrzeug je Platz
-    if (jetNo) return fail(jetNo);
-    if (b.queue.length >= BALANCE.queueMax) return fail('Warteschlange ist voll');
-    if (this.slotsUsed(team) + (UNITS[cmd.unit].slots ?? 1) > this.slotCap) return fail('Einheitenlimit erreicht');
-    if (UNITS[cmd.unit].hero && hasCommander(this, team)) return fail(ONE_COMMANDER);
-    if (this.city && freePop(this, team) < crewOf(cmd.unit)) return fail('Zu wenig freie Einwohner (Stadt: Wohnen ausbauen)');
-    const cost = UNITS[cmd.unit].cost;
-    if (!this.canAfford(team, cost)) return fail(this.missingMoney());
-    if (!payMetal(this, team, cmd.unit)) return fail('Zu wenig Stahl (Stadt: Erzmine, Hütte und Stahlwerk oder Markt)');
-    this.pay(team, cost);
-    b.queue.push({ unit: cmd.unit, payerId: b.id });
-    b.queueTimes.push(0);
-    return { ok: true };
   }
 
   /** Belegte Plätze eines Teams: lebende Einheiten, Passagiere und Warteschlangen, je nach `slots` der Sorte. */
@@ -1142,75 +641,7 @@ export class Game {
     return this.city ? out.concat(cityTrainers(this, team)) : out;
   }
 
-  cmdCancelTrain(team, cmd) {
-    const b = this.getEntity(cmd.buildingId);
-    if (!b || b.kind !== 'building' || b.team !== team) return fail('Kein eigenes Gebäude gewählt');
-    if (b.queue.length === 0) return fail('Nichts in der Warteschlange');
-    const entry = b.queue.pop();
-    b.queueTimes.pop();
-    const cost = UNITS[entry.unit].cost;
-    this.refund(team, cost);
-    this.refundStock(team, entry.payerId, cost, 1, b.x, b.y);
-    payMetal(this, team, entry.unit, -1); // Stahl zurück ins Stadtlager
-    return { ok: true };
-  }
 
-  /** Eroberung: Erscheinungsort neuer Bodeneinheiten dieses Gebäudes: `flag` = Nummer einer eigenen Flagge, null = am Gebäude. */
-  cmdSpawnAt(team, cmd) {
-    if (!this.conquest) return fail('Nur im Modus Eroberung');
-    const b = this.getEntity(cmd.buildingId);
-    if (!b || b.kind !== 'building' || b.team !== team) return fail('Kein eigenes Gebäude gewählt');
-    if (!b.produces?.some((t) => !UNITS[t].air)) return fail('Dieses Gebäude bildet keine Bodeneinheiten aus');
-    if (cmd.flag === null || cmd.flag === undefined) {
-      b.spawnFlag = null;
-      return { ok: true };
-    }
-    const f = this.conquest.flags[cmd.flag];
-    if (!f || f.owner !== team) return fail('Diese Flagge gehört dir nicht');
-    b.spawnFlag = f.id;
-    return { ok: true };
-  }
-
-  cmdRally(team, cmd) {
-    const b = this.getEntity(cmd.buildingId);
-    if (!b || b.kind !== 'building' || b.team !== team) return fail('Kein eigenes Gebäude gewählt');
-    if (!Number.isFinite(cmd.x) || !Number.isFinite(cmd.y)) return fail('Kein gültiger Sammelpunkt');
-    b.rallyX = cmd.x;
-    b.rallyY = cmd.y;
-    return { ok: true };
-  }
-
-  /**
-   * Abriss: Gebäude erstatten 25 % Baumaterial an den Zahler (fertige), Baustellen 100 %.
-   * Ein abgerissenes FOB-Lager geht an die nächste andere eigene FOB (FOBs erstatten kein Material).
-   */
-  cmdDemolish(team, cmd) {
-    const b = this.getEntity(cmd.buildingId);
-    if (!b || b.kind !== 'building' || b.team !== team) return fail('Kein eigenes Gebäude gewählt');
-    if (b.main) return fail('Die Hauptstadt kann nicht abgerissen werden');
-    if (b.type === 'city') {
-      // Stadtgebäude reißt der Stadtbefehl ab (wie der Knopf „Abreißen“ im Spiel), sie haben kein Lager
-      const c = this.city?.[team];
-      if (!c) return fail('Kein eigenes Gebäude gewählt');
-      const col = b.cityCell % c.cols;
-      const row = Math.floor(b.cityCell / c.cols);
-      return this.issue(team, { type: 'city', kind: 'erase', c0: col, r0: row, c1: col, r1: row, demolish: true });
-    }
-    const factor = b.built ? BALANCE.demolishRefund : 1;
-    const stock = { bm: b.store?.bm ?? 0, mun: b.store?.mun ?? 0, fuel: b.store?.fuel ?? 0 };
-    b.demolished = true;
-    b.alive = false; // vor den Erstattungen, damit die FOB selbst nicht als Ziel gilt
-    b.hp = 0;
-    this.grid.release(b); // Fläche sofort frei (cleanup gibt sie nur idempotent erneut frei)
-    if (b.type === 'fob') {
-      // FOBs werden nicht von einem Lager bezahlt: nur das eigene Lager geht an die nächste FOB
-      this.refundStock(team, null, stock, 1, b.x, b.y);
-    } else {
-      this.refund(team, b.def.cost, factor);
-      this.refundStock(team, b.payerId, b.def.cost, factor, b.x, b.y);
-    }
-    return { ok: true };
-  }
 
   // ---- Simulation ---------------------------------------------------------------
 

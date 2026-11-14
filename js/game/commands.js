@@ -1,6 +1,6 @@
 // Befehlsregister (Review E-04, seit v5.63): jeder Befehl von game.issue(team, cmd) steht hier genau einmal. Kein DOM.
 // Felder je Eintrag:
-//   run(game, team, cmd) → { ok: true, … } | { ok: false, reason }  Handler (im Fachmodul oder als Methode von Game)
+//   run(game, team, cmd) → { ok: true, … } | { ok: false, reason }  Handler (im Fachmodul; Bewegen, Bauen, Ausbilden in js/game/cmd/)
 //   drives: true   Der Befehl setzt einen Auftrag gleichen Namens (u.order.type), den sein Modul selbst fährt;
 //                  updateMovement (movement.js) lässt solche Einheiten aus (früher die Liste OWN_DRIVERS).
 //   sound: true    Die Spieler-Steuerung (js/ui/controller.js) quittiert den erfolgreichen Befehl mit dem Befehlston.
@@ -23,6 +23,10 @@ import { cmdDig } from './excavator.js';
 import { cmdShellRoad, cmdClearRubble } from './roadwar.js';
 import { cmdLayMine } from './mines.js';
 import { cmdParadrop } from './paradrop.js';
+import { setWeather, WEATHER_NAMES } from './weather.js';
+import { cmdMove, cmdAttack, cmdDeploy, cmdMortarTarget, cmdRally, cmdSpawnAt } from './cmd/units.js';
+import { cmdBuild, cmdBuildWall, cmdDemolish } from './cmd/build.js';
+import { cmdTrain, cmdCancelTrain } from './cmd/train.js';
 
 const fail = (reason) => ({ ok: false, reason });
 
@@ -46,22 +50,34 @@ function cmdSetDifficulty(game, team, cmd) {
   return { ok: true };
 }
 
+/** Debug-Befehl (nur mit `debug` im Spiel, ?debug=1): money = Geld dazu; weather (+ season) = Wetter setzen, hold = es bleibt so. */
+function cmdDebug(game, team, cmd) {
+  if (!game.debug) return fail('Nur im Debug-Modus');
+  if (cmd.weather && !WEATHER_NAMES[cmd.weather]) return fail('Unbekanntes Wetter');
+  if (cmd.money) game.teams[team].res.money += cmd.money;
+  if (cmd.weather) {
+    setWeather(game, cmd.weather, cmd.season);
+    if (cmd.hold) game.weather.next = Infinity;
+  }
+  return { ok: true };
+}
+
 export const COMMANDS = {
-  move: { run: (g, t, c) => g.cmdMove(t, c), sound: true },
-  attackMove: { run: (g, t, c) => g.cmdMove(t, c), sound: true },
-  attack: { run: (g, t, c) => g.cmdAttack(t, c), sound: true },
+  move: { run: cmdMove, sound: true },
+  attackMove: { run: cmdMove, sound: true },
+  attack: { run: cmdAttack, sound: true },
   stop: { run: cmdStop },
-  build: { run: (g, t, c) => g.cmdBuild(t, c), drives: true, sound: true },
-  buildWall: { run: (g, t, c) => g.cmdBuildWall(t, c), sound: true },
+  build: { run: cmdBuild, drives: true, sound: true },
+  buildWall: { run: cmdBuildWall, sound: true },
   buildFob: { run: () => fail('Baufahrzeuge bauen keine FOB mehr: FOB-Fahrzeug ausbilden und dort aufbauen') },
-  deploy: { run: (g, t, c) => g.cmdDeploy(t, c), sound: true },
+  deploy: { run: cmdDeploy, sound: true },
   repair: { run: cmdRepair, drives: true, sound: true },
   repairBridge: { run: cmdRepairBridge, drives: true, sound: true },
   load: { run: cmdLoad, drives: true, sound: true },
   unload: { run: cmdUnload, drives: true, sound: true },
   route: { run: cmdRoute, drives: true, sound: true },
   setPreset: { run: cmdSetPreset },
-  mortarTarget: { run: (g, t, c) => g.cmdMortarTarget(t, c), sound: true },
+  mortarTarget: { run: cmdMortarTarget, sound: true },
   layMine: { run: cmdLayMine, drives: true, sound: true },
   board: { run: cmdBoard, drives: true, sound: true },
   garrison: { run: cmdGarrison, drives: true, sound: true },
@@ -85,17 +101,17 @@ export const COMMANDS = {
   city: { run: cmdCity },
   cityUpgrade: { run: cmdCityUpgrade },
   trade: { run: cmdTrade },
-  train: { run: (g, t, c) => g.cmdTrain(t, c) },
-  cancelTrain: { run: (g, t, c) => g.cmdCancelTrain(t, c) },
+  train: { run: cmdTrain },
+  cancelTrain: { run: cmdCancelTrain },
   research: { run: cmdResearch },
   smoke: { run: cmdAbility },
   mine: { run: cmdAbility },
   cancelResearch: { run: cmdCancelResearch },
-  rally: { run: (g, t, c) => g.cmdRally(t, c) },
-  spawnAt: { run: (g, t, c) => g.cmdSpawnAt(t, c) }, // Eroberung: Einheiten an einer eigenen Flagge erscheinen lassen
-  demolish: { run: (g, t, c) => g.cmdDemolish(t, c) },
+  rally: { run: cmdRally },
+  spawnAt: { run: cmdSpawnAt }, // Eroberung: Einheiten an einer eigenen Flagge erscheinen lassen
+  demolish: { run: cmdDemolish },
   setDifficulty: { run: cmdSetDifficulty },
-  debug: { run: (g, t, c) => g.cmdDebug(t, c) },
+  debug: { run: cmdDebug },
 };
 
 /** Auftragsarten, die ihr Modul selbst fährt (updateMovement lässt sie aus). */

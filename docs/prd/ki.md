@@ -46,6 +46,8 @@ Verhalten: FOB-Fahrzeuge gründen FOBs (eins zur Zeit, die KI spart darauf, auß
 
 ### KI-Konstanten (Quelle: `js/data/ai.js` (Armee), `CITY.ai` in `js/data/city.js` (Stadt), `BALANCE.difficulty` in `js/data/balance.js`; hier zum Nachschlagen für Erweiterungen)
 
+Seit dem Paket „Struktur“ stehen auch die übrigen Stellwerte der Armee-KI (Abstände, Schwellen, Takte; 76 Konstanten wie `RETREAT_*`, `CLUMP_*`, `DEF_RING_*`, `PEND_*`) in `js/data/ai.js`, je Zeile mit Kommentar; die Tabelle nennt nur die wichtigsten.
+
 | Bereich | Konstante | Wert |
 |---|---|---|
 | Takt | Denkschritt `think` | Leicht 3 s · Normal 2 s · Schwer 1 s |

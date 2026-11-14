@@ -5,7 +5,7 @@ import { CITY } from '../../data/city.js';
 import { KINDS } from '../../data/citykinds.js';
 import { ownWork } from '../../game/logistics.js';
 import { BALANCE } from '../../data/balance.js';
-import { SUPPLY_FROM, PEND_PER, PEND_MAX, FOB_WANT, SUPPLY_BEHIND, SUPPLY_MIN, SURPLUS_MIN, ROUTE_HOLD, WORK_SOURCE_NEAR, WORK_SOURCE_TRUCKS, WORK_SOURCE_MIN_RATE, CRATE_EVERY, CRATE_RANGE, FORT_WANT } from '../../data/ai.js';
+import { SUPPLY_FROM, PEND_PER, PEND_MAX, FOB_WANT, SUPPLY_BEHIND, SUPPLY_MIN, SURPLUS_MIN, ROUTE_HOLD, WORK_SOURCE_NEAR, WORK_SOURCE_TRUCKS, WORK_SOURCE_MIN_RATE, CRATE_EVERY, CRATE_RANGE, FORT_WANT, PEND_NEED_MIN, PEND_ZONE_BOOST, PEND_HOME_BOOST, SURPLUS_KEEP, ROUTE_LOAD, ROUTE_STOCK, ROUTE_NEED_MIN, VERS_STOCK_MIN, VERS_LOAD_EVERY, VERS_MOVE_DIST, VERS_MOVE_EVERY, CRATE_ZONE_PEN } from '../../data/ai.js';
 import { DEF_RANGE, dist, unitVec } from './util.js';
 import { inZone } from '../../game/zonegeo.js';
 
@@ -119,14 +119,14 @@ export const logisticsMethods = {
       for (const k of KEYS) {
         if (taken.has(to.id + k)) continue;
         const need = (wTo[k] - to.store[k]) / wTo[k];
-        if (need < 0.3) continue;
-        const score = need * (to === s.zoneFob ? 1.5 : to === s.home ? 1.2 : 1);
+        if (need < PEND_NEED_MIN) continue;
+        const score = need * (to === s.zoneFob ? PEND_ZONE_BOOST : to === s.home ? PEND_HOME_BOOST : 1);
         if (best && score <= best.score) continue;
         let src = null;
         let sv = SURPLUS_MIN - 1;
         for (const f of s.builtFobs) {
           if (f === to) continue;
-          const sur = f.store[k] - 0.5 * this.wantOf(s, f)[k];
+          const sur = f.store[k] - SURPLUS_KEEP * this.wantOf(s, f)[k];
           if (sur > sv) {
             sv = sur;
             src = f;
@@ -183,7 +183,7 @@ export const logisticsMethods = {
       if (active && from && to && to.built) {
         const need = (this.wantOf(s, to)[cur.k] - to.store[cur.k]) / this.wantOf(s, to)[cur.k];
         // Quelle Werk (type 'city', kein Lager der FOB): gilt, solange es liefert oder der LKW schon über 50 geladen hat; Quelle FOB wie bisher
-        const valid = from.type === 'city' ? (this.workRuns(from) || tr.cargo[cur.k] > 50) && need > 0.1 : (tr.cargo[cur.k] > 50 || from.store[cur.k] >= 60) && need > 0.1;
+        const valid = from.type === 'city' ? (this.workRuns(from) || tr.cargo[cur.k] > ROUTE_LOAD) && need > ROUTE_NEED_MIN : (tr.cargo[cur.k] > ROUTE_LOAD || from.store[cur.k] >= ROUTE_STOCK) && need > ROUTE_NEED_MIN;
         if (valid || g.time - cur.t0 < ROUTE_HOLD) {
           taken.add(cur.toId + cur.k);
           return;
@@ -194,7 +194,7 @@ export const logisticsMethods = {
     if (!plan) {
       if (o.type === 'route' && cur) {
         // nichts mehr zu tun: Ladung (falls vorhanden) abliefern, sonst anhalten
-        if (cargoTotal(tr) > 50) g.issue(this.team, { type: 'unload', ids: [tr.id], fobId: cur.toId });
+        if (cargoTotal(tr) > ROUTE_LOAD) g.issue(this.team, { type: 'unload', ids: [tr.id], fobId: cur.toId });
         else g.issue(this.team, { type: 'stop', ids: [tr.id] });
         this.routes.delete(tr.id);
       }
@@ -230,8 +230,8 @@ export const logisticsMethods = {
       }
       const k = dMun >= dFuel ? 'mun' : 'fuel';
       const src = this.richest(s, k);
-      if (src && src.store[k] >= 100) {
-        if (this.once(`vld${tr.id}`, 6)) g.issue(this.team, { type: 'load', ids: [tr.id], fobId: src.id, preset: k });
+      if (src && src.store[k] >= VERS_STOCK_MIN) {
+        if (this.once(`vld${tr.id}`, VERS_LOAD_EVERY)) g.issue(this.team, { type: 'load', ids: [tr.id], fobId: src.id, preset: k });
         return;
       }
     }
@@ -239,9 +239,9 @@ export const logisticsMethods = {
     const v = f ? unitVec(f.x - cx, f.y - cy) : { x: 0, y: 0 };
     const p = this.freeNear(cx + v.x * SUPPLY_BEHIND, cy + v.y * SUPPLY_BEHIND);
     const last = this.supplyAt.get(tr.id);
-    const moved = !last || dist(last.x, last.y, p.x, p.y) > 120;
-    if (!(moved || (o === 'idle' && dist(tr.x, tr.y, p.x, p.y) > 120))) return;
-    if (!this.once(`vmv${tr.id}`, 4)) return;
+    const moved = !last || dist(last.x, last.y, p.x, p.y) > VERS_MOVE_DIST;
+    if (!(moved || (o === 'idle' && dist(tr.x, tr.y, p.x, p.y) > VERS_MOVE_DIST))) return;
+    if (!this.once(`vmv${tr.id}`, VERS_MOVE_EVERY)) return;
     this.supplyAt.set(tr.id, p);
     g.issue(this.team, { type: 'move', ids: [tr.id], x: p.x, y: p.y });
   },
@@ -282,7 +282,7 @@ export const logisticsMethods = {
       let bd = CRATE_RANGE;
       for (const u of pool) {
         // Soldaten in der Zone verdienen dort Geld: sie zählen, als stünden sie weiter weg
-        const d = dist(u.x, u.y, c.x, c.y) + (inZone(z, u.x, u.y) ? 800 : 0);
+        const d = dist(u.x, u.y, c.x, c.y) + (inZone(z, u.x, u.y) ? CRATE_ZONE_PEN : 0);
         if (d < bd) {
           best = u;
           bd = d;

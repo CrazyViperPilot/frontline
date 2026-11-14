@@ -1,6 +1,6 @@
 // Armee-KI im Modus Eroberung (PRD §7 „Eroberung“): Flaggen einnehmen und halten, jeder gegen jeden. Mixin für AI (ai.js). Kein DOM.
 import { UNITS } from '../../data/units.js';
-import { WAVE_MIN, WAVE_PATIENCE, RESERVE, RESERVE_FROM, CQ_HOLD, CQ_EVERY, CQ_LEADER, CQ_NEUTRAL, CQ_GUARD, CQ_SPAWN_EVERY } from '../../data/ai.js';
+import { WAVE_MIN, WAVE_PATIENCE, RESERVE, RESERVE_FROM, CQ_HOLD, CQ_EVERY, CQ_LEADER, CQ_NEUTRAL, CQ_GUARD, CQ_SPAWN_EVERY, CQ_TAKEN_MALUS, CQ_CONTACT, CQ_MAST_SHARE } from '../../data/ai.js';
 import { flagAt, inSquare, spawnFlags } from '../../game/conquest.js';
 import { dist } from './util.js';
 import { enemiesOf } from '../../game/teams.js';
@@ -29,7 +29,7 @@ export const conquestMethods = {
       let score = dist(x, y, f.x, f.y) + foes * CQ_GUARD;
       if (f.owner === lead) score -= CQ_LEADER;
       if (f.owner < 0) score -= CQ_NEUTRAL;
-      if (skip?.has(f.id)) score += 2 * g.conquest.size; // andere Gruppe ist schon unterwegs: lieber verteilen
+      if (skip?.has(f.id)) score += CQ_TAKEN_MALUS * g.conquest.size; // andere Gruppe ist schon unterwegs: lieber verteilen
       if (score < bestScore) {
         bestScore = score;
         best = f;
@@ -97,7 +97,7 @@ export const conquestMethods = {
       const foes = s.enemies.filter((e) => flagAt(g, e.x, e.y) === f);
       if (foes.length) {
         // sichtbare Gegner im Gebiet: wer keinen Kontakt hat, rückt auf sie zu
-        const lone = list.filter((u) => !foes.some((e) => dist(e.x, e.y, u.x, u.y) < 300)).map((u) => u.id);
+        const lone = list.filter((u) => !foes.some((e) => dist(e.x, e.y, u.x, u.y) < CQ_CONTACT)).map((u) => u.id);
         if (lone.length && this.once(`cq-f${id}`, CQ_EVERY)) {
           const x = foes.reduce((a, e) => a + e.x, 0) / foes.length;
           const y = foes.reduce((a, e) => a + e.y, 0) / foes.length;
@@ -107,7 +107,7 @@ export const conquestMethods = {
       }
       if (f.owner !== t || f.p < 1) {
         // einnehmen: wer weit vom Mast steht, rückt heran (sonst reicht die Anwesenheit im Gebiet)
-        const far = list.filter((u) => dist(u.x, u.y, f.x, f.y) > g.conquest.size * 0.35).map((u) => u.id);
+        const far = list.filter((u) => dist(u.x, u.y, f.x, f.y) > g.conquest.size * CQ_MAST_SHARE).map((u) => u.id);
         if (far.length && this.once(`cq-c${id}`, CQ_EVERY)) g.issue(t, { type: 'attackMove', ids: far, x: f.x, y: f.y });
         continue;
       }

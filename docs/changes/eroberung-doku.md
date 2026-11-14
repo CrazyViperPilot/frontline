@@ -1,1 +1,0 @@
-**Doku zur Eroberung an den Code angeglichen** (PRD §7 und Themen-Dateien, Hilfe F1, Startmenü, Spielstandsliste, CLAUDE.md, ARCHITEKTUR.md): Nachschub-Takt klassisch 6 s, Stadtbau immer nur im eigenen Viertel, Flug über fremde Viertel, Erscheinungsring 40 bis 100 %, Tickets bei Kommandeurverlust, Fluss nur vor Blau und Rot, Tickets in der Spielstandsanzeige.

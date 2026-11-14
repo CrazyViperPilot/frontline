@@ -1,9 +1,10 @@
 // KI-Gegner: gemeinsame Konstanten und Hilfsfunktionen der Armee-Module (js/ai/army/). Kein DOM.
 
 import { BALANCE } from '../../data/balance.js';
+import { ZONE_FOB_SHARE } from '../../data/ai.js';
 
 export const DEF_RANGE = BALANCE.fob.buildRadius; // Bauradius = Verteidigungsradius einer FOB
-export const ZONE_FOB_R = BALANCE.zone.r * 0.6; // Zonen-FOB: Mittelpunkt höchstens so weit von der Zonenmitte
+export const ZONE_FOB_R = BALANCE.zone.r * ZONE_FOB_SHARE; // Zonen-FOB: Mittelpunkt höchstens so weit von der Zonenmitte
 
 export const TWO_PI = Math.PI * 2;
 

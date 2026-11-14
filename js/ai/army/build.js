@@ -5,11 +5,11 @@ import { BALANCE } from '../../data/balance.js';
 import { UNITS } from '../../data/units.js';
 import { BUILDINGS } from '../../data/buildings.js';
 import { CITY } from '../../data/city.js';
-import { ZONE_REACH, WALL_RETRY, RELAY_STEP, FLANK_R, FOBV_MAX, DEPLOY_REACH, FOBV_RETRY, BAD_TIME, WALL_OFFSET, WALL_HALF, ENG_NEAR, RADIO_SITE, BRIDGE_EVERY, ROAD_REPAIR_EVERY, ROAD_REPAIR_SAFE, BRIDGE_RESERVE, FORT_EVERY, FORT_BM_MIN, FORT_CREW_RANGE, FORT_ROOFS, FORT_CLEAR } from '../../data/ai.js';
+import { ZONE_REACH, WALL_RETRY, RELAY_STEP, FLANK_R, FOBV_MAX, DEPLOY_REACH, FOBV_RETRY, BAD_TIME, WALL_OFFSET, WALL_HALF, ENG_NEAR, RADIO_SITE, BRIDGE_EVERY, ROAD_REPAIR_EVERY, ROAD_REPAIR_SAFE, BRIDGE_RESERVE, FORT_EVERY, FORT_BM_MIN, FORT_CREW_RANGE, FORT_ROOFS, FORT_CLEAR, ZONE_CAND_STEP, ZONE_CAND_MARGIN, ZONE_CAND_RING_N, ZONE_HELD_MIN, RELAY_STOP, FRONT_SITE_R, FRONT_SITE_ANGLES, FLANK_ANGLES, SITE_ANGLES_DEG, SITE_RING_STEP, FREE_SEARCH_CELLS, BAD_SITE_R, CORRIDOR_FROM, CORRIDOR_TO, CORRIDOR_HALF, HIGH_CENTER_BONUS, DEF_FULL_FOBS, DEF_BUSY_MAX, DEF_PER_FOB, DEF_ZONE_MORTARS, DEF_RING_MIN, DEF_RING_MAX, WALL_EVERY, WALL_BUILDERS_R, WALL_BUILDERS, ENG_EVERY, ENG_GAP, ENG_TAKEN_PEN } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
 
 const DEG = Math.PI / 180;
-const SITE_ANGLES = [0, 30, -30, 60, -60, 90, -90, 120, -120, 150, -150, 180].map((d) => d * DEG);
+const SITE_ANGLES = SITE_ANGLES_DEG.map((d) => d * DEG);
 
 const TILE = BALANCE.map.tile;
 
@@ -29,12 +29,12 @@ export const buildMethods = {
     const ry = y - c.y;
     const along = rx * c.dx + ry * c.dy;
     const lat = Math.abs(-rx * c.dy + ry * c.dx);
-    return along > 60 && along < 300 && lat < 130;
+    return along > CORRIDOR_FROM && along < CORRIDOR_TO && lat < CORRIDOR_HALF;
   },
 
   isBad(x, y) {
     const now = this.game.time;
-    return this.badSites.some((b) => b.until > now && dist(b.x, b.y, x, y) < 120);
+    return this.badSites.some((b) => b.until > now && dist(b.x, b.y, x, y) < BAD_SITE_R);
   },
 
   /**
@@ -42,7 +42,7 @@ export const buildMethods = {
    * corridor: Gasse vor der Hauptstadt meiden. Liefert {x, y} (Mitte des Fußabdrucks) oder null.
    */
   findSite(type, cx, cy, rMin, rMax, { angle = 0, corridor = false } = {}) {
-    for (let r = rMin; r <= rMax; r += 32) {
+    for (let r = rMin; r <= rMax; r += SITE_RING_STEP) {
       for (const o of SITE_ANGLES) {
         if (this.budget <= 0) return null;
         const a = angle + o;
@@ -62,7 +62,7 @@ export const buildMethods = {
     const g = this.game.grid;
     const c0 = g.toCell(x);
     const r0 = g.toCell(y);
-    for (let rad = 0; rad <= 8; rad++) {
+    for (let rad = 0; rad <= FREE_SEARCH_CELLS; rad++) {
       for (let dr = -rad; dr <= rad; dr++) {
         for (let dc = -rad; dc <= rad; dc++) {
           if (Math.max(Math.abs(dc), Math.abs(dr)) !== rad) continue;
@@ -85,7 +85,7 @@ export const buildMethods = {
       const px = x + Math.cos(a) * d;
       const py = y + Math.sin(a) * d;
       if (!g.grid.passable(g.grid.toCell(px), g.grid.toCell(py), this.team)) continue;
-      const h = g.relief.heightAt(px, py) + (k === 8 ? 4 : 0); // bei Gleichstand die Mitte
+      const h = g.relief.heightAt(px, py) + (k === 8 ? HIGH_CENTER_BONUS : 0); // bei Gleichstand die Mitte
       if (h > bestH) {
         bestH = h;
         best = { x: px, y: py };
@@ -138,7 +138,7 @@ export const buildMethods = {
     }
     if (goal) return;
     // Zonen-FOB zuerst – nicht kurz nach einem Verlust und nicht mitten in einer gegnerischen Übermacht
-    const zoneHeld = Math.max(...s.zone.counts.filter((_, i) => i !== this.team)) >= 4; // Besatzung der Zone ist öffentlich (wie bei der Zonenwertung)
+    const zoneHeld = Math.max(...s.zone.counts.filter((_, i) => i !== this.team)) >= ZONE_HELD_MIN; // Besatzung der Zone ist öffentlich (wie bei der Zonenwertung)
     const zoneWanted = !s.zoneFob && g.time >= this.zoneBan && !zoneHeld;
     let site = zoneWanted ? this.zoneSite(s) : null;
     if (!site && s.zoneFob) site = this.frontSite(s);
@@ -154,8 +154,8 @@ export const buildMethods = {
   zoneSite(s) {
     const z = s.zone;
     const cands = [];
-    for (let r = 0; r <= ZONE_FOB_R - 20; r += 110) {
-      const n = r === 0 ? 1 : 12;
+    for (let r = 0; r <= ZONE_FOB_R - ZONE_CAND_MARGIN; r += ZONE_CAND_STEP) {
+      const n = r === 0 ? 1 : ZONE_CAND_RING_N;
       const a0 = Math.atan2(s.ay - z.y, s.ax - z.x);
       for (let k = 0; k < n; k++) {
         const a = a0 + (k * TWO_PI) / n;
@@ -184,18 +184,18 @@ export const buildMethods = {
     const total = dist(from.x, from.y, to.x, to.y);
     const v = unitVec(to.x - from.x, to.y - from.y);
     const anchors = [];
-    for (let d = RELAY_STEP; d < total - 700; d += RELAY_STEP) anchors.push({ x: from.x + v.x * d, y: from.y + v.y * d });
+    for (let d = RELAY_STEP; d < total - RELAY_STOP; d += RELAY_STEP) anchors.push({ x: from.x + v.x * d, y: from.y + v.y * d });
     if (s.zoneFob) {
       const a0 = Math.atan2(s.ay - to.y, s.ax - to.x);
-      for (const o of [90, -90, 135, -135, 180]) {
+      for (const o of FLANK_ANGLES) {
         const a = a0 + o * DEG;
         anchors.push({ x: to.x + Math.cos(a) * FLANK_R, y: to.y + Math.sin(a) * FLANK_R });
       }
     }
     for (const an of anchors) {
       if (dist(an.x, an.y, s.zone.x, s.zone.y) > s.zone.r + ZONE_REACH) continue;
-      for (const r of [0, 120, 240]) {
-        for (const o of [0, 60, -60, 120, -120, 180]) {
+      for (const r of FRONT_SITE_R) {
+        for (const o of FRONT_SITE_ANGLES) {
           if (this.budget <= 0) return null;
           const x = an.x + Math.cos(o * DEG) * r;
           const y = an.y + Math.sin(o * DEG) * r;
@@ -215,7 +215,7 @@ export const buildMethods = {
    * Ausnahme: Angriff auf die Basis – dann genau eine Flugabwehr oder ein Mörser.
    */
   defenseMode(s) {
-    if (s.builtFobs.length >= 2) return 'full';
+    if (s.builtFobs.length >= DEF_FULL_FOBS) return 'full';
     if (s.alarm) return 'alarm';
     return null;
   },
@@ -228,7 +228,7 @@ export const buildMethods = {
     const mode = this.defenseMode(s);
     if (!mode) return;
     if (mode === 'alarm' && s.own.some((b) => b.type === 'mortar' || b.type === 'aa')) return;
-    if (s.own.filter((b) => !b.built && b.type !== 'fob').length >= 2) return; // Baufahrzeug ausgelastet
+    if (s.own.filter((b) => !b.built && b.type !== 'fob').length >= DEF_BUSY_MAX) return; // Baufahrzeug ausgelastet
     const z = s.zone;
     const fobs = [...s.builtFobs].sort((a, b) => dist(a.x, a.y, z.x, z.y) - dist(b.x, b.y, z.x, z.y));
     const toZone = Math.atan2(s.dir.y, s.dir.x);
@@ -238,11 +238,11 @@ export const buildMethods = {
 
     for (const f of fobs) {
       for (const type of ['aa', 'mortar']) {
-        const want = type === 'mortar' && f === s.zoneFob ? 2 : 1;
+        const want = type === 'mortar' && f === s.zoneFob ? DEF_ZONE_MORTARS : DEF_PER_FOB;
         const have = s.own.filter((b) => b.type === type && dist(b.x, b.y, f.x, f.y) < DEF_RANGE).length >= want;
         if (have) continue;
         if (g.fobsInRadius(t, f.x, f.y).every((o) => o.store.bm < BUILDINGS[type].cost.bm || o.store.mun < BUILDINGS[type].cost.mun)) continue;
-        const p = this.findSite(type, f.x, f.y, this.cfg.fort.fobs ? FORT_CLEAR : 130, 330, {
+        const p = this.findSite(type, f.x, f.y, this.cfg.fort.fobs ? FORT_CLEAR : DEF_RING_MIN, DEF_RING_MAX, {
           angle: towardFoe(f),
           corridor: f === s.home,
         });
@@ -263,7 +263,7 @@ export const buildMethods = {
     const t = this.team;
     const h = s.home;
     if (this.difficulty === 'easy' || !h || this.defenseMode(s) !== 'full') return;
-    if (!this.once('wall', 10)) return;
+    if (!this.once('wall', WALL_EVERY)) return;
 
     const grid = g.grid;
     const mc = h.cx + Math.floor(h.w / 2);
@@ -293,9 +293,9 @@ export const buildMethods = {
     const mx = (x1 + x2) / 2;
     const my = (y1 + y2) / 2;
     const ids = s.units
-      .filter((u) => u.type === 'rifleman' && u.order.type === 'idle' && !this.dryKind(u) && u.cargo.bm >= BUILDINGS.wall.cost.bm && dist(u.x, u.y, mx, my) <= 700)
+      .filter((u) => u.type === 'rifleman' && u.order.type === 'idle' && !this.dryKind(u) && u.cargo.bm >= BUILDINGS.wall.cost.bm && dist(u.x, u.y, mx, my) <= WALL_BUILDERS_R)
       .sort((a, b) => dist(a.x, a.y, mx, my) - dist(b.x, b.y, mx, my) || a.id - b.id)
-      .slice(0, 3)
+      .slice(0, WALL_BUILDERS)
       .map((u) => u.id);
     // Tor zuerst; danach die Linie – das Torfeld ist dann belegt und wird übersprungen (idempotent)
     // Tor = 2 Felder entlang der Mauer (senkrechte Mauer: untereinander, sonst nebeneinander)
@@ -380,7 +380,7 @@ export const buildMethods = {
         const taken = s.engineers.some(
           (e) => e !== u && ((e.order.type === 'build' && e.order.targetId === b.id) || (e.order.type === 'move' && this.engTarget.get(e.id) === b.id)),
         );
-        const key = dist(u.x, u.y, b.x, b.y) + (taken ? 1000 : 0);
+        const key = dist(u.x, u.y, b.x, b.y) + (taken ? ENG_TAKEN_PEN : 0);
         if (key < bestKey) {
           bestKey = key;
           best = b;
@@ -389,8 +389,8 @@ export const buildMethods = {
       if (!best) continue;
       const half = (Math.max(best.w, best.h) * TILE) / 2;
       if (dist(u.x, u.y, best.x, best.y) - half <= ENG_NEAR) continue;
-      if (!this.once(`eng${u.id}:${best.id}`, 8)) continue;
-      const near = this.freeNear(best.x, best.y + half + 40);
+      if (!this.once(`eng${u.id}:${best.id}`, ENG_EVERY)) continue;
+      const near = this.freeNear(best.x, best.y + half + ENG_GAP);
       g.issue(this.team, { type: 'move', ids: [u.id], x: near.x, y: near.y });
       this.engTarget.set(u.id, best.id);
     }

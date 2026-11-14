@@ -8,7 +8,7 @@ import { UNITS } from '../../data/units.js';
 import { hasCommander } from '../../game/commander.js';
 import { researchBlock, RESEARCH_KEYS } from '../../game/research.js';
 import { RESEARCH } from '../../data/research.js';
-import { COUNTER_FLOOR, QUEUE_RICH, QUEUE_LONG, QUEUE_SHORT, MIX, COUNTER_MIN, COUNTER_WEIGHT, AIR_PER, AIR_MAX, AIR_SPLIT, AIR_MEMORY, SNIPER_FROM, SNIPER_ARMY, SNIPER_SHARE, SHARE_CAP, MEDIC_EVERY, MEDIC_MAX, MANPADS_SPLIT, MANPADS_MAX, FLAMER_MAX, RECON_ARMY, RECOVERY_VEH, JAM_TARGETS, ESCORT_TYPES, ESCORT_EVERY, ESCORT_DIST, ART_SHARE,ART_FROM, ARTY_ARMY, ARTY_MONEY, MORTAR_MAX, MLRS_MAX, CMD_RESERVE, CMD_FROM, UPGRADES, UPGRADE_RESERVE, HELI_MIN_MONEY } from '../../data/ai.js';
+import { COUNTER_FLOOR, QUEUE_RICH, QUEUE_LONG, QUEUE_SHORT, MIX, COUNTER_MIN, COUNTER_WEIGHT, AIR_PER, AIR_MAX, AIR_SPLIT, AIR_MEMORY, SNIPER_FROM, SNIPER_ARMY, SNIPER_SHARE, SHARE_CAP, MEDIC_EVERY, MEDIC_MAX, MANPADS_SPLIT, MANPADS_MAX, FLAMER_MAX, RECON_ARMY, RECOVERY_VEH, JAM_TARGETS, ESCORT_TYPES, ESCORT_EVERY, ESCORT_DIST, ART_SHARE,ART_FROM, ARTY_ARMY, ARTY_MONEY, MORTAR_MAX, MLRS_MAX, CMD_RESERVE, CMD_FROM, UPGRADES, UPGRADE_RESERVE, HELI_MIN_MONEY, ENG_BASE, ENG_MORE, ENG_MORE_FOBS, TRUCK_QUEUE_MAX, TRAIN_PER_THINK, SAVE_DEFICIT, COUNTER_ARMOR_W, UPGRADE_QUEUE, UPGRADE_LEAN_MUL } from '../../data/ai.js';
 import { dist } from './util.js';
 
 export const produceMethods = {
@@ -75,7 +75,7 @@ export const produceMethods = {
     this.escort(s); // Sanitäter und Störsender rücken zur Armee nach (K1)
 
     // Baufahrzeuge: 1 (2 ab 3 FOBs)
-    const engWant = s.fobs.length >= 3 ? 2 : 1;
+    const engWant = s.fobs.length >= ENG_MORE_FOBS ? ENG_MORE : ENG_BASE;
     const engHave = s.engineers.length + this.queued(s, 'engineer');
     if (engHave < engWant) {
       if (res.money >= UNITS.engineer.cost.money) {
@@ -90,7 +90,7 @@ export const produceMethods = {
     const quota = this.truckQuota(s);
     const truckHave = s.trucks.length + this.queued(s, 'truck');
     if (truckHave < quota.total && res.money >= UNITS.truck.cost.money) {
-      const b = this.pickProducer(s, 'truck', 2, false);
+      const b = this.pickProducer(s, 'truck', TRUCK_QUEUE_MAX, false);
       if (b) g.issue(t, { type: 'train', buildingId: b.id, unit: 'truck' });
     }
 
@@ -127,7 +127,7 @@ export const produceMethods = {
     // fehlt es nur im Lager der Produktionsstätten, kommt der nächste Typ dran (Pendler füllen auf).
     // Scheitert ein Auftrag (z. B. Stahl fehlt, seit dem Paket „Balance-Preise“ öfter), kommt der nächste Typ dran, statt die ganze Runde abzubrechen.
     const failed = new Set();
-    for (let k = 0, tries = 0; k < 4 && tries < avail.size; tries++) {
+    for (let k = 0, tries = 0; k < TRAIN_PER_THINK && tries < avail.size; tries++) {
       const entries = [];
       for (const u of avail) if (!failed.has(u)) entries.push({ u, deficit: (mix[u] / sumW) * (total + 1) - counts[u] });
       entries.sort((a, c) => c.deficit - a.deficit);
@@ -138,7 +138,7 @@ export const produceMethods = {
           pick = { b, u: e.u };
           break;
         }
-        if (b && e.deficit > 0.5) break; // sparen
+        if (b && e.deficit > SAVE_DEFICIT) break; // sparen
       }
       if (!pick) break;
       const r = this.trainOrWant(pick.b, pick.u);
@@ -276,7 +276,7 @@ export const produceMethods = {
     // Gepanzerte Gegner: PAK und Panzer rauf (doppelt gewichtet), Schützen und Schützenpanzer runter; bei Infanterie umgekehrt.
     const shift = COUNTER_WEIGHT * (2 * armored - 1);
     const f = (u, k) => Math.max(COUNTER_FLOOR, MIX[u] * (1 + k * shift));
-    return { rifleman: f('rifleman', -1), at: f('at', 2), ifv: f('ifv', -1), tank: f('tank', 2) };
+    return { rifleman: f('rifleman', -1), at: f('at', COUNTER_ARMOR_W), ifv: f('ifv', -1), tank: f('tank', COUNTER_ARMOR_W) };
   },
 
   /**
@@ -290,12 +290,12 @@ export const produceMethods = {
     this.saveForResearch = false;
     if (!g.research || !s.home || !s.home.built || g.time < this.cfg.research[0]) return;
     const tech = g.teams[t].tech;
-    if (tech.cur && tech.queue.length >= 1) return;
+    if (tech.cur && tech.queue.length >= UPGRADE_QUEUE) return;
     const items = RESEARCH.items;
     const key = RESEARCH_KEYS.filter((k) => !researchBlock(g, t, k)).sort(
       (a, b) => items[a].tier - items[b].tier || UPGRADES.indexOf(items[a].lane) - UPGRADES.indexOf(items[b].lane),
     )[0];
-    const reserve = UPGRADE_RESERVE * (this.cfg.upgrades ? 1 : 2);
+    const reserve = UPGRADE_RESERVE * (this.cfg.upgrades ? 1 : UPGRADE_LEAN_MUL);
     if (key && g.teams[t].res.money >= items[key].money + reserve) g.issue(t, { type: 'research', buildingId: s.home.id, key });
   },
 

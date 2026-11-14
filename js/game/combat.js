@@ -12,7 +12,6 @@ import { armorMul, modOf, rangeMul, sightMul, dealtMul, smokeMul, hasUnlock } fr
 const autoTurret = (game, team) => hasUnlock(game, team, 'autoturret');
 import { damageBridge, deckDist } from './river.js';
 import { forEnemyCity } from './city/query.js';
-import { lockedFor } from './conquest.js';
 import { jetGrounded, parkedArmor, isHighAlt, canHitAltitude } from './aircraft.js';
 import { UNITS } from '../data/units.js';
 
@@ -132,7 +131,7 @@ function warnBase(game, target) {
 export function hit(game, target, amount, occMul = 1, by = -1) {
   if (!target.alive || !(amount > 0)) return;
   // by = Team des Schützen (-1 = unbekannt: Tests, Unfälle). Eroberung: in ein gesperrtes fremdes Viertel wirkt kein Schaden.
-  if (game.conquest && by >= 0 && lockedFor(game, by, target.x, target.y)) return;
+  if (by >= 0 && game.mode.locked(game, by, target.x, target.y)) return;
   game.hitBy = by; // gilt, bis dieser Treffer abgewickelt ist (Besatzer eines Hauses: garrison.js)
   if (target.kind !== 'house' && target.kind !== 'bridge') target.hitBy = by; // letzter Treffer: Prämie und Statistik bei mehr als zwei Teams
   if (target.kind === 'house') {
@@ -163,12 +162,13 @@ export function hit(game, target, amount, occMul = 1, by = -1) {
  */
 function searchTarget(game, hash, s, R, dmg, { minRange = 0, prefer = null, unitsFirst = false, buildings = true, anti = false }) {
   const team = s.team;
+  const locked = game.mode.locked; // Eroberung: gesperrte fremde Viertel
   const leashed = s.kind === 'unit' && s.order.type === 'idle';
   let best = null;
   let bestScore = Infinity;
   const consider = (e) => {
     if (!e.alive || !isFoe(team, e) || e.house) return;
-    if (game.conquest && lockedFor(game, team, e.x, e.y)) return; // Eroberung: kein Feuer in ein gesperrtes Viertel
+    if (locked(game, team, e.x, e.y)) return; // Eroberung: kein Feuer in ein gesperrtes Viertel
     if (!(dmgVs(dmg, e) > 0)) return; // z. B. Mörser und Panzer können keine Hubschrauber treffen, Soldaten keine Flugzeuge
     if (!anti && isHighAlt(e)) return; // hochfliegende U-2 nur für Waffen mit antiHighAlt (seit v5.83)
     if (s.house && !houseCanFire(game, s, e)) return; // Besatzer sehen und zielen nur durch Fensterseiten (seit v5.67)

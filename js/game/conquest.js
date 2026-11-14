@@ -3,6 +3,7 @@
 import { BALANCE } from '../data/balance.js';
 import { inZone } from './zonegeo.js';
 import { aliveTeams } from './teams.js';
+import { nearestPassable } from './movement.js';
 
 const Q = BALANCE.conquest;
 const H = BALANCE.hot;
@@ -242,3 +243,43 @@ export function updateConquest(game, dt) {
     }
   }
 }
+
+/** Platz an der gewählten Flagge des Gebäudes (b.spawnFlag), wenn sie dem Team gehört und kein Gegner im Gebiet steht; sonst null. */
+function flagSpot(game, b) {
+  if (b.spawnFlag === null || b.spawnFlag === undefined) return null;
+  const f = game.conquest.flags[b.spawnFlag];
+  if (!f || f.owner !== b.team || f.contested) return null;
+  const a = game.rng.next() * Math.PI * 2;
+  const r = Q.spawnRing * (Q.spawnMin + (1 - Q.spawnMin) * game.rng.next());
+  const p = nearestPassable(game.grid, f.x + Math.cos(a) * r, f.y + Math.sin(a) * r, b.team);
+  return p ? { x: p.x, y: p.y, letter: f.letter } : null;
+}
+
+/** Der Modus „Eroberung“ für das Modus-Register (js/game/modes.js): alle Stellen, an denen er von der klassischen Partie abweicht. */
+export const CONQUEST_MODE = {
+  id: 'conquest',
+  teamCount: (players) => Math.max(2, Math.min(4, Math.floor(players) || 2)),
+  create: (game, opts) => createConquest(game, true, opts.tickets),
+  restore: bindLock,
+  update: updateConquest,
+  checkEnd: checkCapitals,
+  locked: lockedFor,
+  slotCap: slotCapOf,
+  foeSpawn(game, team) {
+    // der Punkt gegenüber der eigenen Startecke (durch die Zonenmitte gespiegelt): dort liegt die ferne Seite der Zone
+    const z = game.map.zone;
+    const sp = game.map.spawns[team];
+    return { x: 2 * z.x - sp.x, y: 2 * z.y - sp.y };
+  },
+  commanderLost(game, u, points) {
+    game.message(u.team, `Unser Kommandeur ist gefallen: −${points} Tickets`, u.x, u.y);
+    game.messageFoes(u.team, `Kommandeur von ${game.teams[u.team].name} gefallen`, u.x, u.y);
+    loseTickets(game, u.team, points); // bei 0 Tickets scheidet das Team aus, auch wenn es führt
+    return true;
+  },
+  freeReinforce: Q.reinforce,
+  spawnSpot: flagSpot,
+  score: (team) => Math.max(0, team.tickets),
+  scoreName: 'Tickets',
+  aiArmy: 'conquestArmy',
+};

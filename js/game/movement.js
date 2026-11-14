@@ -1,5 +1,4 @@
 // Bewegung: Wegfolgen, Verfolgung, Fahrhelfer für LKW/Bauer und Trennung (docs/verlauf.md §5, §11). Kein DOM.
-import { lockedFor } from './conquest.js';
 import { BALANCE } from '../data/balance.js';
 import { lineOfSight } from './pathfinding.js';
 import { planUnitPath, pathPending, planPending } from './pathplan.js';
@@ -173,7 +172,7 @@ function followAir(game, u, dt) {
     const step = Math.min(d, budget);
     u.angle = Math.atan2(wp.y - u.y, wp.x - u.x);
     // Eroberung: über ein gesperrtes fremdes Viertel fliegt nur das Aufklärungsflugzeug; alle anderen halten an der Grenze
-    if (game.conquest && !u.def.highAlt && lockedFor(game, u.team, u.x + ((wp.x - u.x) / d) * step, u.y + ((wp.y - u.y) / d) * step)) {
+    if (!u.def.highAlt && game.mode.locked(game, u.team, u.x + ((wp.x - u.x) / d) * step, u.y + ((wp.y - u.y) / d) * step)) {
       u.pathIndex = u.path.length;
       break;
     }

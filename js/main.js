@@ -145,7 +145,7 @@ async function captureSave(s, ended = false, copyName = null) {
     createdAt: s.createdAt,
     updatedAt: Date.now(),
     gameTime: g.time,
-    points: g.teams.map((t) => (g.conquest ? Math.max(0, t.tickets) : t.points)),
+    points: g.teams.map((t) => g.mode.score(t)),
     tickets: !!g.conquest, // Eroberung: `points` sind Tickets je Team
     winPoints: g.winPoints,
     difficulty: s.settings.difficulty ?? 'normal',
@@ -469,7 +469,7 @@ function frame(s) {
         reason: g.winReason,
         stats: {
           time: g.time,
-          points: g.teams.map((t) => (g.conquest ? Math.max(0, t.tickets) : t.points)),
+          points: g.teams.map((t) => g.mode.score(t)),
           tickets: !!g.conquest,
           winPoints: g.winPoints,
           teams: g.teams.map((t) => ({ ...t.stats, earned: t.earned || 0, used: { ...t.used } })), // Statistik je Team (seit v5.65)

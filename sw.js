@@ -90,6 +90,7 @@ const ASSETS = [
   './js/game/helipad.js',
   './js/game/zone.js',
   './js/game/conquest.js',
+  './js/game/modes.js',
   './js/game/zonegeo.js',
   './js/game/teams.js',
   './js/game/hotzone.js',

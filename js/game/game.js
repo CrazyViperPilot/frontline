@@ -19,7 +19,7 @@ import { updateMovement, nearestPassable, planPath, setIdle, separate, exitHouse
 import { updateCombat } from './combat.js';
 import { updateZone } from './zone.js';
 import { enemiesOf } from './teams.js';
-import { createConquest, updateConquest, checkCapitals, bindLock, lockedFor, slotCapOf } from './conquest.js';
+import { MODES, modeOf } from './modes.js';
 import { createHot, updateHot } from './hotzone.js';
 import { updateLogistics, cargoSum, storeCapOf } from './logistics.js';
 import { updateConstruction, canBuild, orderBuild, orderBuildSeq } from './construction.js';
@@ -159,7 +159,8 @@ export class Game {
     this.debug = !!debug; // ?debug=1: erlaubt den Befehl `debug` (Geld, festes Wetter), seit v5.58
     this.rng = makeRng(seed);
     // conquest: Modus Eroberung (js/game/conquest.js; ohne Angabe aus, Regel 9); players: 2 bis 4 Teams (mehr als 2 nur in der Eroberung)
-    const teamCount = conquest ? Math.max(2, Math.min(4, Math.floor(players) || 2)) : 2;
+    const mode = MODES[conquest ? 'conquest' : 'classic']; // Modus-Register js/game/modes.js
+    const teamCount = mode.teamCount(players);
     this.map = map ?? generateMap(seed, { river, players: teamCount });
     if (this.map.spawns.length < teamCount) throw new Error(`Karte hat nur ${this.map.spawns.length} Startpunkte`);
     this.relief = reliefOf(this.map); // Höhengelände oder null (flache Karte); im Spielstand nur das Grobraster (savegame.js)
@@ -219,7 +220,8 @@ export class Game {
     });
     createResearch(this, research); // Stufen und Verbesserungen je Team (team.tech)
     this.zone = { ...this.map.zone, owner: -1, contested: false, counts: this.teams.map(() => 0), weight: this.teams.map(() => 0), bar: { team: -1, p: 0 } };
-    createConquest(this, conquest, tickets); // tickets: Start-Tickets (ohne Angabe Siegpunkte × ticketMul)
+    this.conquest = null; // Zustand der Eroberung (conquest.js) oder null; daraus leitet sich `mode` ab
+    mode.create(this, { tickets }); // tickets: Start-Tickets der Eroberung (ohne Angabe Siegpunkte × ticketMul)
     // Flaggen, Tickets, gesperrte Viertel (nur im Modus Eroberung)
     this.hot = createHot(this);
     this.fog = this.teams.map(() => new Fog(W, H));
@@ -263,7 +265,7 @@ export class Game {
     }
     this.statTimer = this.statTimer || 0;
     this.fogTimers ??= [0, BALANCE.fogInterval / 2];
-    bindLock(this); // Eroberung: Viertel-Sperre wieder ins Wegeraster hängen // Stände vor v5.93 hatten einen gemeinsamen fogTimer
+    this.mode.restore(this); // Eroberung: Viertel-Sperre wieder ins Wegeraster hängen // Stände vor v5.93 hatten einen gemeinsamen fogTimer
     // Ruinenliste fehlt in Ständen vor v5.66: aus den eingestürzten Häusern neu aufbauen
     if (!this.ruins) this.ruins = (this.houses || []).filter((h) => h.ruined);
     // Nachrüstungen für ältere Stände (Straßen, Forschungsbaum, Stadt, FOB-Baustellen) gibt es seit v5.56 nicht mehr: Stände eines
@@ -299,16 +301,17 @@ export class Game {
 
   /** Richtung „zum Gegner“: bei zwei Teams dessen Startpunkt, in der Eroberung die ferne Seite der Zone (dorther kommen die Gegner). */
   foeSpawn(team) {
-    if (!this.conquest) return this.map.spawns[1 - team];
-    // Eroberung: der Punkt gegenüber der eigenen Startecke (durch die Zonenmitte gespiegelt); dort liegt die ferne Seite der Zone
-    const z = this.map.zone;
-    const sp = this.map.spawns[team];
-    return { x: 2 * z.x - sp.x, y: 2 * z.y - sp.y };
+    return this.mode.foeSpawn(this, team);
+  }
+
+  /** Spielart der Partie (Modus-Register js/game/modes.js): Haken für alles, worin sich klassisch und Eroberung unterscheiden. */
+  get mode() {
+    return modeOf(this);
   }
 
   /** Einheitenlimit je Team (Eroberung: nach Spielerzahl). */
   get slotCap() {
-    return slotCapOf(this);
+    return this.mode.slotCap(this);
   }
 
   /**
@@ -665,17 +668,15 @@ export class Game {
     // Koordinaten (Weltpunkt oder Stadtzelle): angegeben, aber keine endliche Zahl, heißt kaputter Befehl. Sonst liefen Einheiten
     // „nach NaN“ und ihre Position würde selbst NaN (Zeichnen, Wegsuche, Sicht brächen später). Fehlende Felder prüft der Befehl selbst.
     for (const k of COORD_FIELDS) if (cmd[k] !== undefined && !Number.isFinite(cmd[k])) return fail('Ungültige Koordinaten');
-    if (this.conquest) {
-      if (this.teams[team].out) return fail('Ausgeschieden');
-      // Gesperrtes Viertel: kein Ziel dort (Punkt oder Entity); nur das Aufklärungsflugzeug (highAlt) darf darüber fliegen
-      if (!WORLD_FREE.has(cmd.type)) {
-        const e = cmd.targetId !== undefined ? this.getEntity(cmd.targetId) : null;
-        const px = e ? e.x : cmd.x;
-        const py = e ? e.y : cmd.y;
-        if (Number.isFinite(px) && Number.isFinite(py) && lockedFor(this, team, px, py)) {
-          const ids = Array.isArray(cmd.ids) ? this.ownUnits(team, cmd.ids) : [];
-          if (!(ids.length && !e && ids.every((u) => u.def.highAlt))) return fail('Gesperrtes Viertel eines anderen Spielers');
-        }
+    if (this.teams[team].out) return fail('Ausgeschieden');
+    // Gesperrtes Viertel (Eroberung, mode.locked): kein Ziel dort (Punkt oder Entity); nur das Aufklärungsflugzeug (highAlt) darf darüber fliegen
+    if (!WORLD_FREE.has(cmd.type)) {
+      const e = cmd.targetId !== undefined ? this.getEntity(cmd.targetId) : null;
+      const px = e ? e.x : cmd.x;
+      const py = e ? e.y : cmd.y;
+      if (Number.isFinite(px) && Number.isFinite(py) && this.mode.locked(this, team, px, py)) {
+        const ids = Array.isArray(cmd.ids) ? this.ownUnits(team, cmd.ids) : [];
+        if (!(ids.length && !e && ids.every((u) => u.def.highAlt))) return fail('Gesperrtes Viertel eines anderen Spielers');
       }
     }
     return c.run(this, team, cmd);
@@ -1222,12 +1223,7 @@ export class Game {
 
   /** Fällt die Hauptstadt eines Teams, ist es verloren (nur sie bildet Einheiten aus). */
   checkElimination() {
-    if (this.conquest) return checkCapitals(this); // Eroberung: das Team scheidet aus, die Partie läuft weiter
-    const lost = [];
-    for (let t = 0; t < 2; t++) if (!this.mainFob(t)) lost.push(t);
-    if (lost.length === 0) return;
-    const winner = lost.length === 1 ? 1 - lost[0] : this.teams[0].points >= this.teams[1].points ? 0 : 1;
-    this.endGame(winner, 'eliminated');
+    this.mode.checkEnd(this);
   }
 
   ageEffects(dt) {
@@ -1354,8 +1350,7 @@ export class Game {
     updateFpv(this, dt); // Kamikazedrohnen explodieren bei Kontakt mit ihrem Ziel (Paket E11)
     updateMines(this, dt); // Pionier-Minen lösen aus und werden geräumt (Paket E8)
     updateCombat(this, dt);
-    if (this.conquest) updateConquest(this, dt);
-    else updateZone(this, dt);
+    this.mode.update(this, dt); // klassisch updateZone, Eroberung updateConquest
     updateHot(this, dt);
     updateRadio(this, dt);
     smoothIncome(this, dt);

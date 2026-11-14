@@ -105,7 +105,7 @@ export class AI {
     this.garrisonZone(s);
     this.stormHouses(s); // Häuser stürmen (seit v5.67)
     this.fortifyHouses(); // eigene Besatzungshäuser ausbauen (seit v5.67)
-    if (!this.attackRadio(s)) this.game.conquest ? this.conquestArmy(s) : this.army(s); // steht ein gegnerischer Sendemast, gilt ihm der ganze Angriff
+    if (!this.attackRadio(s)) this[this.game.mode.aiArmy](s); // Armee je Spielart (modes.js: army bzw. conquestArmy); // steht ein gegnerischer Sendemast, gilt ihm der ganze Angriff
     this.guardCommander(s);
     this.collectCrates(s); // nach der Welle: Kisten holen nur, die zurückbleiben (Reserve, Nachschub)
   }

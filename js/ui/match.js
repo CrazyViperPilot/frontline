@@ -8,6 +8,7 @@
 // für die Spielstatistik, gameInfo) und holt die Statistik (matchStats). Kein DOM; geprüft in test/match.test.js.
 import { apiRequest, MATCH_URL, accountEmail, accountWallet, noteWallet } from './saves.js';
 import { BALANCE } from '../data/balance.js';
+import { modeOf } from '../game/modes.js';
 
 const VORRAT_KEY = 'frontline-match-vorrat'; // { email, tokens: [{ token, w0, iat }] }: ungenutzte Tokens des Kontos
 const AUSSTEHEND_KEY = 'frontline-match-ausstehend'; // [{ email, token, wallet, game? }]: Endstände, die der Server noch nicht bestätigt hat
@@ -166,7 +167,7 @@ export function gameInfo(game, difficulty, human = 0) {
     duration: game.time,
     difficulty,
     seed: game.seed,
-    points: game.conquest ? [Math.max(0, me.tickets), Math.max(0, foe.tickets)] : [me.points, foe.points], // Eroberung: Tickets (eigene, erster Gegner)
+    points: [modeOf(game).score(me), modeOf(game).score(foe)], // Punkte bzw. Tickets (eigene, erster Gegner)
     kills: me.stats?.kills,
   };
 }

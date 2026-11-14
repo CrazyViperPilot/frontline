@@ -1,6 +1,7 @@
 // Stadt (PRD §15), Erzeugung: Raster je Team über die ganze Karte, gesperrte Zellen, Konfliktzone, Rohstoffvorkommen, Startviertel.
 // Nur aktiv, wenn das Spiel mit `city: true` startet. Kein DOM, deterministisch.
-import { inSquare, quarterAt } from '../conquest.js';
+import { quarterAt } from '../conquest.js';
+import { inZone } from '../zonegeo.js';
 import { CITY } from '../../data/city.js';
 import { KINDS, KIND_ID } from '../../data/citykinds.js';
 import { makeRng } from '../../core/rng.js';
@@ -45,8 +46,8 @@ function zoneCells(game, cols, rows) {
     for (let col = 0; col < cols; col++) {
       const x = (col + 0.5) * S;
       const y = (row + 0.5) * S;
-      // Eroberung: die Zone ist das Quadrat der Flaggengebiete
-      if (game.conquest ? inSquare(game, x, y) : Math.hypot(x - z.x, y - z.y) <= z.r) out[row * cols + col] = 1;
+      // Kreis oder (Eroberung) Quadrat der Flaggengebiete: zonegeo.js
+      if (inZone(z, x, y)) out[row * cols + col] = 1;
     }
   }
   return out;

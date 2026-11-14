@@ -89,6 +89,7 @@ export const BALANCE = {
     tickEvery: 10, // Sekunden je Ticket-Takt: wer weniger Flaggen hält als der Führende, verliert 1 Ticket
     noFlagLoss: 1, // zusätzlicher Ticket-Verlust je Takt, wenn ein Team gar keine Flagge hält (und ein anderes eine hält)
     lockGrace: 300, // so viele Sekunden ohne Flagge (während ein anderes Team eine hält), dann fällt die Sperre des eigenen Viertels für den Rest der Partie
+    spawnMin: 0.4, // Anteil von spawnRing, ab dem Einheiten erscheinen (nicht direkt am Mast)
     spawnRing: 90, // Einheiten erscheinen in diesem Umkreis um die Flagge (px)
     flagRing: 120, // Radius der Umkreislinie um den Flaggenmast (px, nur Darstellung)
     slotCap: { 2: 500, 3: 500, 4: 500 }, // Einheitenlimit je Team nach Spielerzahl (klassisch QUICK.unitLimit); viele Einheiten kosten Bildrate

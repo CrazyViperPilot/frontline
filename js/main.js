@@ -56,6 +56,12 @@ const overlay = document.getElementById('overlay');
 const sound = new Sound(); // Ton (PRD §14): ein Sound-Objekt für alle Partien, der AudioContext entsteht erst bei der ersten Geste
 const levelCtl = { get: (kind) => sound.getLevel(kind), set: (kind, v) => sound.setLevel(kind, v) }; // Regler im Pausenmenü (seit v5.68)
 for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => sound.unlock(), { capture: true });
+// F3: Messanzeige an/aus, im ganzen Fenster und jederzeit (auch im Start- und Pausenmenü); sonst öffnet der Browser seine Suche
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'F3' || e.repeat) return;
+  e.preventDefault();
+  app.togglePerf();
+}, { capture: true });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) sound.ctx?.suspend?.().catch?.(() => {});
   else if (sound.on) sound.ctx?.resume?.().catch?.(() => {});

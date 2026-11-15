@@ -352,6 +352,8 @@ export class Input {
     const app = this.app;
     const k = e.key;
 
+    if (k === 'F3') return; // Messanzeige: fängt main.js für das ganze Fenster ab (auch im Startmenü)
+
     if (app.overlayOpen && app.overlayOpen()) {
       if (k === 'Escape') {
         e.preventDefault();
@@ -422,10 +424,6 @@ export class Input {
       case 'F2':
         e.preventDefault();
         app.toggleSound?.();
-        return;
-      case 'F3': // Messanzeige an/aus (ui/perfmeter.js); der Browser-Suchen-Knopf bleibt aus
-        e.preventDefault();
-        app.togglePerf?.();
         return;
       case 'F1':
       case '?':

@@ -146,6 +146,7 @@ const ASSETS = [
   './js/ui/controller/targets.js',
   './js/ui/controller/util.js',
   './js/ui/input.js',
+  './js/ui/perfmeter.js',
   './js/ui/hud.js',
   './js/ui/menu.js',
   './js/ui/helptext.js',

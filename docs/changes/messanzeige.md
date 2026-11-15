@@ -1,0 +1,1 @@
+**Messanzeige** (§8 „Steuerung“ und §9 „Messanzeige“): F3 oder `?perf=1` zeigt Bildrate, Bildzeit, Simulations- und Zeichenzeit je Ebene sowie die Eingabeverzögerung, um Ruckler und träge Befehle auf dem eigenen Gerät zu finden.

@@ -34,6 +34,7 @@
 | Leertaste / H | Kamera auf Auswahl / Hauptstadt |
 | P | Pause; `+` / `-` Spielgeschwindigkeit 1×–3× |
 | F2 / Lautsprecher-Knopf oben | Ton an/aus (wird gemerkt, §14) |
+| F3 | Messanzeige an/aus: Bildrate, Bildzeit, Zeit je Ebene, Eingabeverzögerung (wird gemerkt; `?perf=1` startet damit, §9 „Messanzeige“) |
 | F1 / ? | Hilfe |
 | Minimap | Linksklick = Kamera, Rechtsklick = Bewegen |
 
@@ -73,6 +74,7 @@
 - **Forschung** (§7): Knopf „🔬 Forschung“ rechts oben (unter „Stadt“) öffnet das Forschungsmenü mit dem ganzen Baum. Die Auswahl der Hauptstadt zeigt „Stufe n von 3“ mit den erforschten Verbesserungen und die laufende Forschung mit Fortschrittsbalken; der Knopf „Forschung“ leuchtet, solange sie läuft. Gesperrte Einheiten sind ausgegraut mit Grund.
 - Hilfe (F1) listet alle Tasten, auch V und Drehen.
 - **Vollbild**: Das Manifest steht auf `display: fullscreen`, die installierte App läuft also ohne Status- und Navigationsleiste. Im Browser-Tab (oder solange Android das geänderte Manifest einer schon installierten App noch nicht übernommen hat) gibt es im Start- und im Pausenmenü den Schalter „Vollbild An/Aus“ (Fullscreen API); läuft die App schon per Manifest im Vollbild, ist er ausgeblendet. Zurück-Geste bzw. Esc beendet das Vollbild des Browsers. Am Rand mit Kameraloch (Pixel 8a quer) rückt das HUD um `env(safe-area-inset-left/right)` ein, das Spielfeld bleibt randlos.
+- **Messanzeige** (F3 oder `?perf=1`, `js/ui/perfmeter.js`): kleines Textfeld oben links unter der Kopfleiste, nur Anzeige. Zeigt Bildrate und Bildzeit (Mittel und langsamstes Bild der letzten 2 s), Simulationszeit je Bild und Schritte, Zeichenzeit gesamt und je Ebene (2D: Boden, Objekte, Effekte, Nebel, Wetter, Balken, Anzeigen; Iso zusätzlich Markierungen, Sortierung, Schatten, Flieger, Schilder; Rest als „Minimap, HUD“), die Eingabeverzögerung (von Tippen oder Taste bis zum Beginn des nächsten Bildes, Mittel und Höchstwert der letzten 10 Eingaben), die Zahl lebender Einheiten und Gebäude sowie Ansicht, Pixeldichte und Canvas-Größe. Aktualisiert höchstens 4× je s. Aus heißt: keine Messung, keine Kosten. Der Zustand steht im Browser (`localStorage` `frontline-perf`). Zweck: Ruckeln und träge Befehle auf dem eigenen Gerät einordnen.
 
 ## 9a. Karten und Karteneditor
 

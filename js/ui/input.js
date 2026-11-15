@@ -423,6 +423,10 @@ export class Input {
         e.preventDefault();
         app.toggleSound?.();
         return;
+      case 'F3': // Messanzeige an/aus (ui/perfmeter.js); der Browser-Suchen-Knopf bleibt aus
+        e.preventDefault();
+        app.togglePerf?.();
+        return;
       case 'F1':
       case '?':
         e.preventDefault();

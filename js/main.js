@@ -1,5 +1,5 @@
 // Bootstrap (docs/verlauf.md §5 main.js): Startmenü, Spiel erzeugen, Schleife, URL-Parameter, Service Worker.
-// URL: ?seed=N (feste Karte) · ?river=0|1 (Fluss) · ?speed=N (Startgeschwindigkeit) · ?debug=1 (Karte aufgedeckt, M = +1000, bis 10×).
+// URL: ?seed=N (feste Karte) · ?river=0|1 (Fluss) · ?speed=N (Startgeschwindigkeit) · ?debug=1 (Karte aufgedeckt, M = +1000, bis 10×) · ?perf=1 (Messanzeige, F3).
 // Debug: ?mood=morning|day|evening|night (Lichtstimmung) · ?weather=summer|autumn|winter (Jahreszeit) · ?wx=clear|rain|fog|snow (Wetter sofort, ohne Wechsel).
 import { BALANCE } from './data/balance.js';
 import { Game } from './game/game.js';
@@ -24,6 +24,7 @@ import * as saves from './ui/saves.js';
 import { matchStart, matchResume, finishMatch, gameInfo } from './ui/match.js';
 import { GAME_VERSION } from './version.js';
 import { WEATHER_NAMES, WEATHER_SETTINGS } from './game/weather.js';
+import { PerfMeter, PerfPanel, watchInput } from './ui/perfmeter.js';
 
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === '1';
@@ -279,6 +280,61 @@ async function quitAndSave() {
   quitToMenu();
 }
 
+// ---- Messanzeige (F3 oder ?perf=1, ui/perfmeter.js; die Taste merkt sich der Browser) ----------------------------------
+
+const PERF_KEY = 'frontline-perf';
+const perf = new PerfMeter();
+let perfOn = params.get('perf') === '1' || readPerfFlag();
+let perfPanel = null;
+let perfDetach = null;
+
+function readPerfFlag() {
+  try {
+    return localStorage.getItem(PERF_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** Angaben zur Partie für das Messfeld: Ansicht, lebende Einheiten und Gebäude, Pixeldichte, Canvas-Größe. */
+function perfInfo() {
+  const s = session;
+  if (!s) return null;
+  let units = 0;
+  let buildings = 0;
+  for (const u of s.game.units) if (u.alive) units++;
+  for (const b of s.game.buildings) if (b.alive) buildings++;
+  const c = s.renderer.canvas;
+  return { view: s.camera.iso ? 'Iso' : '2D', units, buildings, dpr: s.renderer.dpr, canvas: `${c.width}×${c.height}` };
+}
+
+/** Messung in einer Partie anschalten oder abschalten: Renderer (Ebenen) und Schleife (Simulation, Bildzeit). */
+function attachPerf(s) {
+  s.renderer.perf = perfOn ? perf : null;
+  s.loop.onFrame = perfOn
+    ? (f) => {
+        perf.endFrame(f);
+        perfPanel?.update(f.now);
+      }
+    : null;
+}
+
+/** Messfeld und Eingabe-Messung ein- oder ausschalten (ohne den gemerkten Zustand zu ändern). */
+function showPerf(on) {
+  perfOn = on;
+  if (on) {
+    perf.reset();
+    if (!perfDetach) perfDetach = watchInput(perf);
+    if (!perfPanel) perfPanel = new PerfPanel(hudRoot.parentElement ?? document.body, perf, perfInfo);
+  } else {
+    perfDetach?.();
+    perfDetach = null;
+    perfPanel?.destroy();
+    perfPanel = null;
+  }
+  if (session) attachPerf(session);
+}
+
 /** Aktionen für Hilfe, Tastatur und HUD. */
 const app = {
   debug: DEBUG,
@@ -419,6 +475,17 @@ const app = {
     const on = sound.toggle();
     session?.hud.pushMessage(on ? 'Ton an (F2)' : 'Ton aus (F2)');
     session?.hud.refresh();
+  },
+  /** F3: Messanzeige an/aus; der Zustand bleibt im Browser gemerkt (Schlüssel frontline-perf). */
+  togglePerf() {
+    const on = !perfOn;
+    showPerf(on);
+    try {
+      localStorage.setItem(PERF_KEY, on ? '1' : '0');
+    } catch {
+      /* ohne Speicher: gilt nur für diese Sitzung */
+    }
+    session?.hud.pushMessage(on ? 'Messanzeige an (F3)' : 'Messanzeige aus (F3)');
   },
   debugMoney() {
     const s = session;
@@ -571,11 +638,13 @@ function buildSession(game, ai, opts, view) {
   });
   s.loop.speed = view?.speed ?? startSpeed();
   session = s;
+  attachPerf(s);
   if (DEBUG) window.frontlineSound = sound;
   if (DEBUG) window.frontline = s; // Konsole/Tests: Zugriff auf Spielzustand
   s.loop.start();
 }
 
+if (perfOn) showPerf(true); // ?perf=1 oder gemerkt: Messfeld gleich beim Start
 showStartMenu(overlay, startGame, { resume: resumeOffer });
 
 // Beim Verlassen/Wegwischen der App sichern (lokal sicher, Webspace, wenn die Zeit reicht)

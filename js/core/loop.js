@@ -1,12 +1,14 @@
 // Haupt-Schleife (docs/verlauf.md §5 core/loop.js): feste Schrittweite für update(), render() pro Frame. DOM: requestAnimationFrame.
+// Messanzeige (ui/perfmeter.js): setzt jemand loop.onFrame, misst die Schleife Simulations- und Bildzeit je Frame und ruft den Haken
+// am Bildende auf. Ohne Haken (null) läuft alles wie vorher, ohne Zeitmessung.
 
 const MAX_STEPS = 10; // max. Simulationsschritte pro Frame
 
 /**
- * @param {{ update(dt: number): void, render(): void, tickRate?: number }} opts
- * @returns {{ start(): void, stop(): void, speed: number, paused: boolean, running: boolean }}
+ * @param {{ update(dt: number): void, render(): void, tickRate?: number, onFrame?: Function | null }} opts
+ * @returns {{ start(): void, stop(): void, speed: number, paused: boolean, running: boolean, onFrame: Function | null }}
  */
-export function createLoop({ update, render, tickRate = 20 } = {}) {
+export function createLoop({ update, render, tickRate = 20, onFrame = null } = {}) {
   const step = 1 / tickRate;
   let acc = 0;
   let last = null;
@@ -16,6 +18,7 @@ export function createLoop({ update, render, tickRate = 20 } = {}) {
     speed: 1,
     paused: false,
     running: false,
+    onFrame, // ({ now, simMs, steps, renderMs }) je Bild, nur mit Messanzeige; null = keine Messung
 
     start() {
       if (loop.running) return;
@@ -52,11 +55,17 @@ export function createLoop({ update, render, tickRate = 20 } = {}) {
     const elapsed = last === null ? 0 : Math.min((now - last) / 1000, 0.25);
     last = now;
 
+    const hook = loop.onFrame; // nur mit Messanzeige werden Zeiten gemessen
+    let n = 0;
+    let simMs = 0;
     if (!loop.paused) {
       acc += elapsed * loop.speed;
-      let n = 0;
       while (acc >= step && n < MAX_STEPS) {
-        guard(update, step);
+        if (hook) {
+          const t0 = performance.now();
+          guard(update, step);
+          simMs += performance.now() - t0;
+        } else guard(update, step);
         acc -= step;
         n++;
       }
@@ -64,7 +73,11 @@ export function createLoop({ update, render, tickRate = 20 } = {}) {
       if (acc > step) acc = step;
     }
 
-    guard(render);
+    if (hook) {
+      const t0 = performance.now();
+      guard(render);
+      guard(hook, { now, simMs, steps: n, renderMs: performance.now() - t0 });
+    } else guard(render);
   }
 
   return loop;

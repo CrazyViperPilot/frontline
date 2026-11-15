@@ -228,6 +228,7 @@ export class Renderer {
     this.team = team;
     this.revealAll = false; // Debug: kein Nebel, alle Gegner sichtbar
     this.mood = null; // Lichtstimmung (mood.js), main.js setzt sie nach der Wahl im Startmenü
+    this.perf = null; // Messanzeige (ui/perfmeter.js, F3): Zeiten je Ebene; null = keine Messung
     this.season = game.weather?.season ?? 'summer'; // Herbst- und Winterfarben (season.js)
     this.terrain = seasonal(buildTerrain(game.map), this.season);
     this.terrainIso = null; // Boden ohne Gebäude/Bäume, erst beim ersten Wechsel in die isometrische Ansicht
@@ -263,6 +264,8 @@ export class Renderer {
    * moveMarker: { x, y, t } mit t = performance.now() beim Klick (Marker verblasst nach 0,8 s).
    */
   render(view = null) {
+    const pf = this.perf; // Messanzeige: Zeichenzeit des ganzen Bildes
+    const t0 = pf ? performance.now() : 0;
     const v = view || {};
     if (this.canvas.clientWidth && (this.canvas.clientWidth !== this.cssW || this.canvas.clientHeight !== this.cssH)) {
       this.resize();
@@ -277,6 +280,7 @@ export class Renderer {
     const f = this.frameOf(v, now);
     if (this.camera.iso) this.renderIso(f);
     else this.renderTop(f);
+    if (pf) pf.addRender(performance.now() - t0);
   }
 
   /**
@@ -325,15 +329,24 @@ export class Renderer {
     ctx.fillRect(0, 0, this.cssW, this.cssH);
     this.worldTransform(f);
     ctx.imageSmoothingEnabled = true;
+    const pf = this.perf; // Messanzeige: je Ebene (sonst ohne Kosten)
+    let t = pf ? performance.now() : 0;
     this.topGround(f);
+    if (pf) t = pf.lap('Boden', t);
     this.topObjects(f);
+    if (pf) t = pf.lap('Objekte', t);
     this.topEffects(f);
+    if (pf) t = pf.lap('Effekte', t);
     this.topFog(f);
+    if (pf) t = pf.lap('Nebel', t);
     // Regen, Schnee und Nebel über der Welt (Bildschirmkoordinaten), danach wieder die Welt-Transformation
     this.drawSky(f);
+    if (pf) t = pf.lap('Wetter', t);
     this.worldTransform(f);
     this.topBars(f);
+    if (pf) t = pf.lap('Balken', t);
     this.topScreen(f);
+    if (pf) pf.lap('Anzeigen', t);
   }
 
   /** 2D, Boden: Gelände, Wege, Kartenstadt, Brücken, Krater, Stadt (Straßen, Dächer, Schilder), Natur, Zone und Hot Zone. */
@@ -824,19 +837,33 @@ export class Renderer {
   renderIso(f) {
     const { ctx, cam, dpr } = f;
     f.relief = cam.relief; // gesetzt nur mit WebGL-Boden
+    const pf = this.perf; // Messanzeige: je Ebene (sonst ohne Kosten)
+    let t = pf ? performance.now() : 0;
     this.isoGround(f);
+    if (pf) t = pf.lap('Boden', t);
     this.isoMarks(f);
+    if (pf) t = pf.lap('Markierungen', t);
     const { items, air } = this.isoItems(f);
+    if (pf) t = pf.lap('Sortierung', t);
     this.isoShadows(f, items);
+    if (pf) t = pf.lap('Schatten', t);
     this.isoObjects(f, items);
+    if (pf) t = pf.lap('Objekte', t);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawCityBadges(this, ctx, f.team, f.known, f.inRect, true); // Stadt: Schilder über den Dächern (über allen Gebäuden)
+    if (pf) t = pf.lap('Schilder', t);
     for (const u of air) this.drawUnitIsoAt(f, u);
+    if (pf) t = pf.lap('Flieger', t);
     this.isoEffects(f);
+    if (pf) t = pf.lap('Effekte', t);
     this.isoFog(f);
+    if (pf) t = pf.lap('Nebel', t);
     this.drawSky(f);
+    if (pf) t = pf.lap('Wetter', t);
     this.isoBars(f);
+    if (pf) t = pf.lap('Balken', t);
     this.isoScreen(f);
+    if (pf) pf.lap('Anzeigen', t);
   }
 
   /** Iso, Boden: Gelände (WebGL oder flaches Bild), Parks, Wege, Krater, Brücken, Stadtstraßen, Zone und Hot Zone. */

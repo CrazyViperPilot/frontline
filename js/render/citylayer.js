@@ -2,7 +2,7 @@
 // Liest nur game.city (und ren.cityUi, die Stadtleiste). 2D: flach von oben; isometrisch: Boden hier, Gebäude als Stadthäuser
 // über drawTownBuilding (renderer.js).
 import { cellRect, buildAllowed, hasRoad, sizeOf, fitBig, bigCenter, bigSpan, cellsOf } from '../game/city/cells.js';
-import { BIG_KINDS, bigPlan, drawBigGround, drawBigTop, partFoot, bigTop } from './bigbuild.js';
+import { BIG_KINDS, bigPlan, drawBigGround, drawBigTop, partFoot, bigTop, stationBit } from './bigbuild.js';
 import { drawWorksTop, worksLift, WORKS_GROUND, WORKS_KINDS } from './works.js';
 import { CITY } from '../data/city.js';
 import { KIND_COLOR as CITY_COLORS, KIND_ICON as CITY_ICON, FLAT_KINDS as FLAT_LIST, SUPPLIER_KINDS as SUPPLIERS, KINDS, KIND_ID } from '../data/citykinds.js'; // Register (seit v5.59), nicht mehr aus der UI
@@ -468,11 +468,16 @@ function railArms(c, i) {
   return m;
 }
 
-/** Seiten (Bits wie railArms), an denen ein Gleis an den Güterbahnhof mit Anker a anschließt; sein Bild zeichnet dort das Gleis. */
-export function stationOpen(c, a) {
+/**
+ * Gleisanschlüsse des Güterbahnhofs mit Anker a als Bits (bigbuild.js stationBit: Seite und Zelle entlang der Seite). Ein Gleis an der
+ * Westseite, untere Zelle, ergibt stationBit(3, 1); so zeichnet das Bild das Gleis an der richtigen Höhe.
+ */
+export function stationLinks(c, a) {
   const RL = KIND_ID.rail;
   const cells = cellsOf(c, a);
   const inside = new Set(cells);
+  const ac = a % c.cols;
+  const ar = (a - ac) / c.cols;
   let m = 0;
   for (const j of cells) {
     const col = j % c.cols;
@@ -482,15 +487,16 @@ export function stationOpen(c, a) {
       const r = row + dy;
       if (q < 0 || r < 0 || q >= c.cols || r >= c.rows) return;
       const n = r * c.cols + q;
-      if (!inside.has(n) && c.kind[n] === RL) m |= 1 << k;
+      if (inside.has(n) || c.kind[n] !== RL) return;
+      m |= stationBit(k, k % 2 === 0 ? col - ac : row - ar); // Nord/Süd: Spalte entlang der Seite, Ost/West: Zeile
     });
   }
   return m;
 }
 
-/** Seiten-Bits für bigPlan: nur der Güterbahnhof hat welche (0 sonst). */
+/** Bits der Gleisanschlüsse für bigPlan: nur der Güterbahnhof hat welche (0 sonst). */
 function openOf(c, k, i) {
-  return k === 'station' ? stationOpen(c, i) : 0;
+  return k === 'station' ? stationLinks(c, i) : 0;
 }
 
 /**
@@ -528,7 +534,7 @@ function railCell(out, S, cx, cy, m) {
 }
 
 /** Gleise der sichtbaren Städte (eigene immer, fremde nur, wo erkundet): { rails, discs, bars } in Weltkoordinaten. */
-function cityRailPieces(g, team, known) {
+export function cityRailPieces(g, team, known) {
   const out = { rails: [], discs: [], bars: [] };
   const RL = KIND_ID.rail;
   for (const c of g.city ?? []) {
@@ -1459,11 +1465,12 @@ function siteBar(ren, ctx, c, i, r, n, iso) {
 
 /** Arten, die etwas an ein Ziel liefern (Förderung, Werke, Munitionswerk). */
 const SUPPLIER_KINDS = new Set(SUPPLIERS);
-/** Warnung am Schild: Lieferant ohne Lieferweg, Arbeitsstätte ohne erreichbare Wohnung (Pendlerweg fehlt) oder Ausbildungsgebäude ohne Weg zum Lager. */
+/** Warnung am Schild: Werk ohne Einfuhrpunkt, Lieferant ohne Lieferweg, Arbeitsstätte ohne erreichbare Wohnung (Pendlerweg fehlt) oder Ausbildungsgebäude ohne Weg zum Lager. */
 function transportWarn(tr, k, i) {
   const r = tr.routes.get(i);
   const noRoute = SUPPLIER_KINDS.has(k) && (!r || r.to === null);
   const noHome = tr.commute.has(i) && tr.commute.get(i) === null;
   const noSupply = tr.supply?.has(i) && tr.supply.get(i) === null; // Ausbildung ohne Straßenweg zum Lager (Paket „Straßen“)
-  return noRoute || noHome || noSupply;
+  const noImport = tr.imports?.has(i) && tr.imports.get(i) === null; // Werk ohne Einfuhrpunkt (Paket „Import“): es steht still
+  return noRoute || noHome || noSupply || noImport;
 }

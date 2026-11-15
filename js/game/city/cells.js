@@ -8,6 +8,7 @@ import { KINDS, KIND_ID, FLAT_KINDS } from '../../data/citykinds.js';
 const FLAT_ID = new Uint8Array(KINDS.length + 1);
 for (const k of FLAT_KINDS) FLAT_ID[KIND_ID[k]] = 1;
 export const isFlat = (id) => FLAT_ID[id] === 1;
+const RAIL_ID = KIND_ID.rail;
 
 /** Liegt die Zelle mit linker oberer Ecke (cx0, cy0) unter oder am Rand einer Hauptstadt (CITY.fobMargin)? */
 export function nearMain(mains, T, cx0, cy0) {
@@ -167,7 +168,9 @@ export function releaseCell(game, c, col, row) {
 
 /** Eigene Straße oder Stadtstraße der Karte (Zone, Brücke; seit v5.03) in Zelle i? */
 export function roadAt(c, i) {
-  return isFlat(c.kind[i]) || !!c.mapRoads?.[i]; // seit v5.35 auch die Start-/Landebahn (Rollen, Anschluss)
+  // seit v5.35 auch die Start-/Landebahn (Rollen, Anschluss); ein Gleis (Paket „Import“) ist keine Straße: darauf fährt keine Ware,
+  // also darf es auch keinen Bauanschluss und kein Wachstum geben
+  return (isFlat(c.kind[i]) && c.kind[i] !== RAIL_ID) || !!c.mapRoads?.[i];
 }
 
 /** Hat die Zelle eine Straße als direkten Nachbarn (4er-Nachbarschaft)? Stadtstraßen der Karte zählen mit. */

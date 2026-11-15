@@ -7,7 +7,7 @@ import { CITY } from '../js/data/city.js';
 import { GOODS, IMPORTS } from '../js/data/goods.js';
 import { BALANCE } from '../js/data/balance.js';
 import { KIND_ID } from '../js/data/citykinds.js';
-import { canZone, cellFree, cellAt, isPart } from '../js/game/city/cells.js';
+import { canZone, cellFree, cellAt, isPart, roadAt } from '../js/game/city/cells.js';
 import { placeBuilt, placeBuiltBig, rebuildList } from '../js/game/city/state.js';
 import { connectRoad } from '../js/game/city/roadnet.js';
 import { transportOf, transportInfo } from '../js/game/transport.js';
@@ -265,4 +265,17 @@ test('Preisregel: Einführen und Verkaufen druckt kein Geld, Einführen ist viel
     assert.ok(cost >= GOODS[L.to].sell / CITY.market.lot - 1e-9, `${L.to}: ${cost}`);
     assert.ok(cost < GOODS[L.to].buy / CITY.market.lot / 2, `${L.to}: ${cost}`);
   }
+});
+
+test('Gleis ist keine Straße: ein Gleis bis zum Kartenrand allein bringt einem Werk keinen Einfuhrpunkt', () => {
+  const s = site();
+  for (let q = 0; q <= 8; q++) placeBuilt(s.g, s.c, s.at(q, s.r), 'rail'); // Gleis statt Straße vom Rand bis vor das Werk
+  rebuildList(s.c);
+  assert.equal(roadAt(s.c, s.at(3, s.r)), false, 'Gleiszelle zählt nicht als Straße');
+  const a = works(s, 'bm', 4);
+  settle(s);
+  run(s.g, 20);
+  const tr = transportOf(s.g, s.c);
+  assert.equal(tr.imports.get(a), null, 'kein Einfuhrpunkt über das Gleis');
+  assert.equal(s.c.stats.importCost, 0);
 });

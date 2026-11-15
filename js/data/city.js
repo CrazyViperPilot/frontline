@@ -310,8 +310,10 @@ export const CITY = {
     linkOutlets: 2, // so viele Ausgänge (freie Zelle am Netz mit freiem Nachbarn außerhalb) lässt die KI beim Bauen offen, damit ihr Netz nicht eingeschlossen wird
     // Güterbahnhof der KI (Paket „Import“, Logik aiStation in js/ai/cityai.js): baut sie, wenn die Einfuhr über Straßen zu knapp ist (Stau,
     // nicht Geld). Ein Güterbahnhof wächst mit den Einwohnern selbst (keine Aufwertung durch Befehl), deshalb baut die KI bei anhaltendem
-    // Mangel einen zweiten (stationMax).
-    stationFrom: { easy: null, normal: 300, hard: 240 }, // Spielsekunde, ab der sie einen Güterbahnhof baut (null = nie)
+    // Mangel einen zweiten (stationMax). AUS (null) seit der Messung: Güterbahnhöfe am Kartenrand (der Platz in der dichten Werkszone
+    // ist belegt) brachten keinen messbaren Gewinn (Seeds 3, 7, 11; normal: Einfuhr 46 → 47 %, Ausbildung und Abschüsse leicht darunter;
+    // hard: Einfuhr 50 → 54 %, Einheiten gleich), kosten 300 Geld und 200 Baumaterial. Zum Einschalten: normal 300, hard 240 (Spielsekunden).
+    stationFrom: { easy: null, normal: null, hard: null }, // Spielsekunde, ab der sie einen Güterbahnhof baut (null = nie)
     stationWorks: 4, // so viele Werke mit Leistung braucht sie zuerst (vorher lohnt der Güterbahnhof nicht)
     importLow: 0.7, // Einfuhr-Anteil (tatsächlich ÷ Leistung der Werke, ohne volle Lager) darunter gilt die Einfuhr als knapp
     importScaleMin: 0.9, // Einfuhrskala (1 = Geld reicht) darüber: der Mangel liegt an Straßen und Stau, nicht am Geld
@@ -320,7 +322,7 @@ export const CITY = {
     stationMoney: 300, // Geld, das nach dem Bau über der Reserve bleibt (die Armee geht vor)
     stationBm: 200, // Baumaterial, das im Lager der Hauptstadt nach dem Bau bleibt
     railMax: 40, // längste Gleiskette (Zellen) bis zum Kartenrand
-    stationNear: 0.5, // Gewicht der Entfernung zum nächsten Werk gegen die Gleislänge bei der Wahl des Platzes (je Zelle)
+    stationNear: 3, // Gewicht der Entfernung zum nächsten Werk gegen die Gleislänge bei der Wahl des Platzes (je Zelle)
     stationRetry: 120, // s: eine Stelle, an der der Bau scheiterte, und eine Suche ohne Platz werden so lange nicht wiederholt
   },
 };

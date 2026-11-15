@@ -370,6 +370,10 @@ function stationSite(game, c, mem) {
       let touch = false;
       for (let y = row - 1; y <= row + 1 && !touch; y++) for (let x = col - 1; x <= col + 1; x++) if (linked[y * c.cols + x]) touch = true;
       if (!touch) continue;
+      // Quadrat frei und ausweisbar (vor dem Ranking: nur gültige Plätze zählen)
+      let fits = true;
+      for (let y = row - 1; y <= row + 1 && fits; y++) for (let x = col - 1; x <= col + 1 && fits; x++) fits = free(y * c.cols + x) && buildAllowed(game, c, y * c.cols + x, 'station');
+      if (!fits) continue;
       let rail = Infinity;
       for (let y = Math.max(0, row - 2); y <= Math.min(c.rows - 1, row + 2); y++) {
         for (let x = Math.max(0, col - 2); x <= Math.min(c.cols - 1, col + 2); x++) {
@@ -388,26 +392,26 @@ function stationSite(game, c, mem) {
     }
   }
   cands.sort((p, o) => p.score - o.score || p.center - o.center);
-  for (const { center } of cands.slice(0, 25)) {
+  for (const { center } of cands) {
     const col = center % c.cols;
     const row = (center - col) / c.cols;
     const foot = [];
     for (let y = row - 1; y <= row + 1; y++) for (let x = col - 1; x <= col + 1; x++) foot.push(y * c.cols + x);
-    if (!foot.every((j) => free(j) && buildAllowed(game, c, j, 'station'))) continue;
-    // Gleisende: der Randzelle am nächsten (dist) in der Zone um das Quadrat
-    let end = -1;
+    // Gleisende: die Randzellen um das Quadrat, nächste zuerst; der erste Weg zum Rand, der nicht über das Quadrat führt
+    const ends = [];
     for (let y = Math.max(0, row - 2); y <= Math.min(c.rows - 1, row + 2); y++) {
       for (let x = Math.max(0, col - 2); x <= Math.min(c.cols - 1, col + 2); x++) {
         if (!adjRing(x, y, col, row)) continue;
         const j = y * c.cols + x;
-        if (dist[j] >= 0 && (end < 0 || dist[j] < dist[end])) end = j;
+        if (dist[j] >= 0) ends.push(j);
       }
     }
-    if (end < 0) continue;
-    const path = [];
-    for (let i = end; i >= 0; i = dist[i] > 0 ? prev[i] : -1) path.push(i);
-    if (path.some((j) => foot.includes(j))) continue;
-    return { center, rail: path };
+    ends.sort((p, o) => dist[p] - dist[o] || p - o);
+    for (const end of ends) {
+      const path = [];
+      for (let i = end; i >= 0; i = dist[i] > 0 ? prev[i] : -1) path.push(i);
+      if (!path.some((j) => foot.includes(j))) return { center, rail: path };
+    }
   }
   return null;
 }

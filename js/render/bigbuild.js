@@ -38,7 +38,13 @@ export const VEH_COLOR = '#5f6b3e';
 
 // ---- Anlagen: Boden und Körper je Art und Stufe (lokal, Mitte 0/0) ----
 
-/** Boden einer Anlage: [{ t: 'rect', x0, y0, x1, y1, c } | { t: 'line', x0, y0, x1, y1, c, w } | { t: 'disc', x, y, r, c }]. open = Seiten mit Gleis (Güterbahnhof). */
+/**
+ * Anschluss eines Gleises am Güterbahnhof als Bit: Seite side (0 N, 1 E, 2 S, 3 W) und Zelle off (−1, 0, 1) entlang dieser Seite,
+ * von der Ecke aus gezählt wie die Zellen der Seite (Mitte = 0). Die Bits liefert citylayer.js (stationLinks).
+ */
+export const stationBit = (side, off) => 1 << (side * 3 + off + 1);
+
+/** Boden einer Anlage: [{ t: 'rect', x0, y0, x1, y1, c } | { t: 'line', x0, y0, x1, y1, c, w } | { t: 'disc', x, y, r, c }]. open = Gleisanschlüsse (stationBit) des Güterbahnhofs. */
 function groundOf(k, lv, half, open = 0) {
   const g = [];
   const rect = (x0, y0, x1, y1, c) => g.push({ t: 'rect', x0, y0, x1, y1, c });
@@ -99,13 +105,16 @@ const PLAT_SNOW = '#e4e7ea';
 const YELLOW = '#d9b73a';
 
 /**
- * Boden des Güterbahnhofs: Betonhof, Hauptgleis (von Kante zu Kante, sonst ein Prellbock), Stichgleis an jeder offenen Seite (Bits N 1,
- * E 2, S 4, W 8) zur Mitte, Ladegleis mit Schwellen im Süden, Bahnsteig mit gelben Kanten, Laderampe. h = halbe Kantenlänge.
+ * Boden des Güterbahnhofs: Betonhof, Hauptgleis quer durch (Prellbock an einer Seite ohne Anschluss in der Mitte), Stichgleise an
+ * Nord und Süd an den Zellen mit Anschluss, Anschlüsse an Ost und West auf anderer Höhe über einen Arm und eine Verbindung zum
+ * Hauptgleis, Ladegleis mit Schwellen im Süden, Bahnsteig mit gelben Kanten, Laderampe. links = Anschlüsse (stationBit), h = halbe Kante.
  */
-function stationGround(lv, h, open) {
+function stationGround(lv, h, links) {
   const g = [];
   const rect = (x0, y0, x1, y1, c, snow) => g.push({ t: 'rect', x0, y0, x1, y1, c, snow });
   const line = (x0, y0, x1, y1, c, w, snow) => g.push({ t: 'line', x0, y0, x1, y1, c, w, snow });
+  const on = (side, off) => (links & stationBit(side, off)) !== 0;
+  const CELL = 64; // Zellbreite: Anschlüsse liegen auf den Zellmitten −1, 0, 1
   const B = h - 3; // Rand der Fläche
   rect(-B, -B, B, B, '#a9a69c', '#e2e5e8'); // Betonhof
   // Hauptgleis quer durch
@@ -113,16 +122,33 @@ function stationGround(lv, h, open) {
   for (let x = -B + 6; x < B - 4; x += 12) line(x, -18, x, 18, SLEEP, 2.2, SLEEP_SNOW);
   line(-B, -11.2, B, -11.2, RAIL, 2.3);
   line(-B, 11.2, B, 11.2, RAIL, 2.3);
-  if (!(open & 8)) rect(-B, -20, -B + 6, 20, BUFFER); // Prellbock West
-  if (!(open & 2)) rect(B - 6, -20, B, 20, BUFFER); // Prellbock Ost
-  // Stichgleise zu den offenen Seiten Nord und Süd (zur Mitte, auf das Hauptgleis)
-  const stub = (y0, y1) => {
-    rect(-20, Math.min(y0, y1), 20, Math.max(y0, y1), BED, BED_SNOW);
-    for (let y = Math.min(y0, y1) + 6; y < Math.max(y0, y1) - 4; y += 12) line(-18, y, 18, y, SLEEP, 2.2, SLEEP_SNOW);
-    for (const x of [-11.2, 11.2]) line(x, y0, x, y1, RAIL, 2.3);
+  if (!on(3, 0)) rect(-B, -20, -B + 6, 20, BUFFER); // Prellbock West, wenn in der Mitte kein Gleis anschließt
+  if (!on(1, 0)) rect(B - 6, -20, B, 20, BUFFER); // Prellbock Ost
+  // Stichgleise Nord und Süd: senkrecht zum Hauptgleis, an der Zelle, an der das Gleis anschließt
+  const vStub = (x, y0, y1) => {
+    rect(x - 20, Math.min(y0, y1), x + 20, Math.max(y0, y1), BED, BED_SNOW);
+    for (let y = Math.min(y0, y1) + 6; y < Math.max(y0, y1) - 4; y += 12) line(x - 18, y, x + 18, y, SLEEP, 2.2, SLEEP_SNOW);
+    for (const xx of [x - 11.2, x + 11.2]) line(xx, y0, xx, y1, RAIL, 2.3);
   };
-  if (open & 1) stub(-h, -11.2);
-  if (open & 4) stub(h, 11.2);
+  // Anschluss West/Ost auf anderer Höhe: Arm von der Kante bis zu einer Verbindung, die zum Hauptgleis führt
+  const hArm = (side, off) => {
+    const y = off * CELL;
+    const xc = side === 3 ? -60 : 60; // Verbindung zum Hauptgleis
+    const xe = side === 3 ? -h : h; // Kante
+    const a = Math.min(xe, xc);
+    const b = Math.max(xe, xc);
+    rect(a, y - 20, b, y + 20, BED, BED_SNOW);
+    for (let x = a + 6; x < b - 4; x += 12) line(x, y - 18, x, y + 18, SLEEP, 2.2, SLEEP_SNOW);
+    for (const yy of [y - 11.2, y + 11.2]) line(a, yy, b, yy, RAIL, 2.3);
+    rect(xc - 20, Math.min(y, 0), xc + 20, Math.max(y, 0), BED, BED_SNOW);
+    for (const xx of [xc - 11.2, xc + 11.2]) line(xx, Math.min(y, 0), xx, Math.max(y, 0), RAIL, 2.3);
+  };
+  for (const o of [-1, 0, 1]) {
+    if (on(0, o)) vStub(o * CELL, -h, -11.2);
+    if (on(2, o)) vStub(o * CELL, h, 11.2);
+    if (o && on(3, o)) hArm(3, o);
+    if (o && on(1, o)) hArm(1, o);
+  }
   // Ladegleis (Süden): Bett, Schwellen und zwei Schienen, Waggons stehen darauf
   rect(-B, 46, B, 70, BED, BED_SNOW);
   for (let x = -B + 6; x < B - 4; x += 12) line(x, 48, x, 68, SLEEP, 2.2, SLEEP_SNOW);
@@ -163,7 +189,7 @@ function stationBodies(lv) {
     box(84, 78, 88, 82, 36, '#d9a21b', '#e8b52c');
     box(36, 79, 88, 81, 4, '#d9a21b', '#e8b52c', 36);
     box(60, 79, 64, 81, 2, '#55585b', '#6d7174', 30);
-    box(-88, -30, -74, -14, 20, '#e4e0d4', '#7b7f82', 0, { win: [[6, 12]], wg: 6, ww: 4 });
+    box(-86, -36, -72, -24, 20, '#e4e0d4', '#7b7f82', 0, { win: [[6, 12]], wg: 6, ww: 4 }); // Stellwerk über dem Gleis, nicht auf dem Prellbock
     box(66, 76, 84, 88, 8, '#3c6e9e', '#2f5a82', 8); // dritte Lage Container
   }
   b.push({ t: 'flag', x: -92, y: -92, h: 46 }); // Teamfarbe am Eingang (Fahne)

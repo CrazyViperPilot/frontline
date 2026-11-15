@@ -128,7 +128,7 @@ export class CityPanel {
     this.drag = null;
     const res = this.game.issue(this.team, { type: 'city', kind: this.tool, ...d });
     if (!res.ok) this.onMessage(res.reason);
-    else if (res.broke) this.onMessage(this.tool === 'road' ? 'Zu wenig Baumaterial für alle Zellen' : 'Zu wenig Geld für alle Zellen');
+    else if (res.broke) this.onMessage(this.tool === 'road' ? 'Zu wenig Baumaterial für alle Zellen' : CITY.costBm[this.tool] && CITY.cost[this.tool] ? 'Zu wenig Geld oder Baumaterial für alle Zellen' : 'Zu wenig Geld für alle Zellen'); // Gleis: Geld und Baumaterial
     else if (res.occupied) this.onMessage('Belegte Zellen bleiben, wie sie sind: erst räumen');
     else if (res.felled) this.onMessage(`Bäume gefällt: ${res.felled} ${res.felled === 1 ? 'Zelle' : 'Zellen'} frei zum Bauen`);
     else if (res.noRoad) this.onMessage('Gebäude wachsen nur mit Straße daneben (Wohnen/Gewerbe auch über eine Zelle gleicher Art)');

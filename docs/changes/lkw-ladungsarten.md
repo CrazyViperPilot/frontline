@@ -1,1 +1,0 @@
-**LKW-Ladungsarten** (§8 „Steuerung“, Zeile „LKW gewählt“): Die Knöpfe Baumaterial, Munition und Treibstoff (W/E/R) schalten ihre Sorte an oder ab; so lädt ein LKW zum Beispiel Munition und Treibstoff zugleich. Gemischt (Q) lädt wie bisher alle drei.

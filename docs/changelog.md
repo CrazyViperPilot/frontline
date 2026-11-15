@@ -3,6 +3,8 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.176: **Messanzeige** (§8 „Steuerung“ und §9 „Messanzeige“): F3 oder `?perf=1` zeigt Bildrate, Bildzeit, Simulations- und Zeichenzeit je Ebene sowie die Eingabeverzögerung, um Ruckler und träge Befehle auf dem eigenen Gerät zu finden. Cache v245.
+- v5.175: **LKW-Ladungsarten** (§8 „Steuerung“, Zeile „LKW gewählt“): Die Knöpfe Baumaterial, Munition und Treibstoff (W/E/R) schalten ihre Sorte an oder ab; so lädt ein LKW zum Beispiel Munition und Treibstoff zugleich. Gemischt (Q) lädt wie bisher alle drei. Cache v245.
 - v5.174: **Turm ohne Zucken** (§6 „Einheiten“, nur Bild): Turm und Waffe drehen mit begrenztem Tempo zum Ziel, halten nach einem Zielverlust 1,5 s die Richtung und drehen dann weich zur Fahrtrichtung zurück; vorher sprang das Rohr bei jedem Zielwechsel. Cache v244.
 - v5.173: **Sprit Fahrzeuge** (§6 „Einheiten“): Bodenfahrzeuge verbrauchen 20 % weniger Treibstoff (z. B. Kampfpanzer 0,48 statt 0,6 je s Fahrt); Luftfahrzeuge unverändert. Cache v244.
 - v5.172: **Flaggengebiet** (§7 „Eroberung“): Das Gebiet jeder Flagge, in dem Einheiten für die Einnahme zählen, ist als Quadrat in der Farbe des Besitzers auf dem Boden eingezeichnet (gestrichelt, solange umkämpft); der irreführende Kreis um den Mast ist nur noch ein kleiner Sockel. Cache v243.

@@ -346,7 +346,9 @@ function runWorks(x) {
       c.workOut[i] = 0; // Ausstoß je s am Anker (seit v5.70, Pendlerquelle der KI); unten gesetzt
       const im = tr.imports.get(i) ?? null;
       if (!im && cap > 0) s.importNone++;
-      const want = im && cap > 0 && !storeFull(x, prod) ? cap : 0;
+      // ohne Weg zum Lager oder bei vollem Lager fordert es nichts an (niemand bezahlt Rohwaren für Ware, die verloren ginge)
+      const r0 = tr.routes.get(i);
+      const want = im && cap > 0 && r0?.to === 'main' && !storeFull(x, prod) ? cap : 0;
       list.push({ i, k, prod, cap, im, want, eff: im ? pathEff(tr, im.path) : 0 });
       if (want > 0 && typeof im.from === 'number') atStation.set(im.from, (atStation.get(im.from) ?? 0) + want * NEED_SUM[k]);
     }

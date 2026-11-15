@@ -1,0 +1,1 @@
+**Turm ohne Zucken** (§6 „Einheiten“, nur Bild): Turm und Waffe drehen mit begrenztem Tempo zum Ziel, halten nach einem Zielverlust 1,5 s die Richtung und drehen dann weich zur Fahrtrichtung zurück; vorher sprang das Rohr bei jedem Zielwechsel.

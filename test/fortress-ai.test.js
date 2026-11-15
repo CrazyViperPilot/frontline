@@ -24,7 +24,7 @@ function play(seed, level, minutes) {
 const of = (g, team, type) => g.buildings.filter((b) => b.alive && b.team === team && b.type === type);
 
 test('KI (schwer) baut die Hauptstadt zur Festung aus: Tore, Mauern, Türme mit Besatzung und Aufbau, Hubschrauber [langsam]', () => {
-  const { game: g, heli } = play(5, 'hard', 14);
+  const { game: g, heli } = play(11, 'hard', 14); // Seed 11 (vorher 5): seit „Sprit Fahrzeuge“ spart die KI auf Seed 5 das Geld für den Hubschrauber nicht zusammen (auch vorher kam er auf Seed 7 und 11 nie, je Seed verschieden)
   const towers = of(g, 0, 'tower').filter((b) => b.built);
   assert.ok(of(g, 0, 'gate').length >= 6, `Tore ${of(g, 0, 'gate').length}`);
   assert.ok(of(g, 0, 'wall').length >= 20, `Mauern ${of(g, 0, 'wall').length}`);

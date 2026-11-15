@@ -226,7 +226,9 @@ test('Durchsatz des Güterbahnhofs: zu viel Anforderung wird anteilig gekürzt',
 });
 
 test('eine verstopfte Straße liefert weniger als ein Güterbahnhof bei gleichem Bedarf', () => {
-  const measure = (useStation) => withValue(CITY.chain.steel.need, 'ore', 120, () => {
+  // Testbedarf 240 Erz je Stahl (vorher 120): seit Paket „Industriepark“ trägt eine Straßenspur 24 statt 12, der Bedarf muss mit
+  // wachsen, damit die Straße verstopft (CITY.chain.steel.need steht im Spiel bei 2)
+  const measure = (useStation) => withValue(CITY.chain.steel.need, 'ore', 240, () => {
     const s = site();
     if (useStation) {
       road(s, 1, 12);
@@ -235,7 +237,7 @@ test('eine verstopfte Straße liefert weniger als ein Güterbahnhof bei gleichem
     works(s, 'steel', 7); // grenzt an den Bahnhof (Spalten 9 … 11): Lieferung ohne Straße
     settle(s);
     run(s.g, 15);
-    return { raw: s.c.stats.raw.ore, want: s.c.stats.cap.metal * 120, jam: s.c.stats.jam };
+    return { raw: s.c.stats.raw.ore, want: s.c.stats.cap.metal * 240, jam: s.c.stats.jam };
   });
   const edge = measure(false);
   const st = measure(true);
@@ -244,7 +246,7 @@ test('eine verstopfte Straße liefert weniger als ein Güterbahnhof bei gleichem
   assert.ok(st.raw > edge.raw * 1.5, `Bahnhof ${st.raw} gegen Straße ${edge.raw}`);
 });
 
-test('Startviertel: Raffinerie führt ab Sekunde 0 Öl ein (mehrere Seeds, auch Eroberung)', () => {
+test('[langsam] Startviertel: Raffinerie führt ab Sekunde 0 Öl ein (mehrere Seeds, auch Eroberung)', () => {
   for (const opt of [{}, { river: true }, { conquest: true, players: 4 }]) {
     for (const seed of [1, 2, 5, 9, 17]) {
       const g = new Game({ seed, city: true, ...opt });

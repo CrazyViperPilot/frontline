@@ -551,7 +551,9 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .bar { height: 5px; margin: 3px 0; }
   /* Befehlskarte: Ausbildung (data-g=t) in der oberen Zeile, Aktionen (a) darunter; eine gemeinsame Wischleiste links/rechts.
      Ohne Ausbildung (data-rows=1) stehen alle Aktionen in der einen Zeile. Tippen bildet aus, Wischen nicht (hud.js, Klick). */
-  .cmd-wrap { flex: 0 1 auto; }
+  /* Schmal: drei Knöpfe breit (3 × 50 px + Abstände), der Rest wird gewischt; rechts frei für die Knopfspalte (Stadt, Forschung, Ressourcen,
+     Bauer), die bei niedriger Höhe (Handy mit Adressleiste) bis in die Kartenzeile reicht */
+  .cmd-wrap { flex: none; width: 164px; margin-right: calc(160px + env(safe-area-inset-right, 0px)); }
   .cmd-wrap::before, .cmd-wrap::after { content: ''; position: absolute; top: 0; bottom: 0; width: 18px; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 1; }
   .cmd-wrap::before { left: 0; border-radius: 8px 0 0 8px; background: linear-gradient(to right, #1d231d, #1d231d00); }
   .cmd-wrap::after { right: 0; border-radius: 0 8px 8px 0; background: linear-gradient(to left, #1d231d, #1d231d00); }

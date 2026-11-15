@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.181: **Wischleiste auf dem Telefon** (§9 „Telefon quer“): Die Befehlskarte bildet im Telefon-Querformat die Ausbildung eines Gebäudes in einer wischbaren Zeile ab, die übrigen Aktionen darunter; sie liegt nicht mehr unter der Knopfspalte (Bauer, Ressourcen). Am Desktop und Tablet unverändert. Cache v249.
 - v5.180: **Detailstufen beim Herauszoomen** (§9 „Oberfläche“): Unter Zoom 0,8 (2D) bzw. 0,6 (Iso) zeichnen Bodeneinheiten als Keil oder Dreieck in Teamfarbe, Iso ohne Schatten; Leuchtspur, Mündungsfeuer und Fahrzeugrauch entfallen, Lebensbalken nur für gewählte oder beschädigte Einheiten. Cache v248.
 - v5.179: **Bildauflösung** (§9 „Oberfläche“, Start- und Pausenmenü, `?lowres=1`): Schalter „Scharf“ (bis 2× Pixel, wie bisher) oder „Leistung“ (1× Pixel) für schwache Geräte; im Pausenmenü sofort wirksam, Partie und Spielstand bleiben unberührt. Cache v248.
 - v5.178: **Doku Flak und Gepard** (§6 „Einheiten“, nur Doku): Beschreibung des Gepard korrigiert (1000 Geld, 180 Stahl, Taste L), bei der Flak Preis, Taste und Wirkung gegen Kampfflugzeuge ergänzt. Cache v247.

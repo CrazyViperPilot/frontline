@@ -1,1 +1,0 @@
-**Wischleiste auf dem Telefon** (§9 „Telefon quer“): Die Befehlskarte bildet im Telefon-Querformat die Ausbildung eines Gebäudes in einer wischbaren Zeile ab, die übrigen Aktionen darunter; sie liegt nicht mehr unter der Knopfspalte (Bauer, Ressourcen). Am Desktop und Tablet unverändert.

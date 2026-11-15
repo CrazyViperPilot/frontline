@@ -100,6 +100,9 @@ export class Hud {
     this.msgEl = q('[data-msgs]');
     this.selEl = q('[data-sel]');
     this.cmdEl = q('[data-cmd]');
+    this.cmdWrap = q('.cmd-wrap');
+    this.cmdKey = ''; // gewählte Gebäude/Einheiten: Wischposition bleibt nur bei gleicher Auswahl erhalten
+    this.cmdEl.addEventListener('scroll', () => this.cmdHints(), { passive: true });
     this.timeEl = q('[data-time]');
     this.zoneEl = q('[data-zone]');
     this.hotEl = q('[data-hot]');
@@ -194,7 +197,7 @@ export class Hud {
         <div class="panel mm"><canvas aria-label="Übersicht"></canvas></div>
         <button type="button" class="fold" data-act="fold" title="Auswahl und Befehle ein-/ausklappen" aria-label="Auswahl und Befehle ein-/ausklappen">▾</button>
         <div class="panel sel" data-sel></div>
-        <div class="panel cmd" data-cmd></div>
+        <div class="cmd-wrap"><div class="panel cmd" data-cmd></div></div>
       </div>`;
   }
 
@@ -811,6 +814,16 @@ export class Hud {
     );
   }
 
+  /** Telefon quer: Schatten am linken/rechten Rand, wenn links bzw. rechts noch Knöpfe hinter dem Rand liegen. */
+  cmdHints() {
+    const el = this.cmdEl;
+    const max = el.scrollWidth - el.clientWidth;
+    if (this.cmdWrap) {
+      this.cmdWrap.dataset.hintL = el.scrollLeft > 4 ? '1' : '0';
+      this.cmdWrap.dataset.hintR = el.scrollLeft < max - 4 ? '1' : '0';
+    }
+  }
+
   /**
    * Befehlskarte. Neu aufgebaut (innerHTML) wird sie nur, wenn sich Knöpfe, Beschriftung, Kosten oder Tasten ändern. Ändern sich nur
    * Tooltip oder Zustand (z. B. „Fehlt: 99 Geld“, das mit jedem Geldzuwachs wechselt), werden die vorhandenen Knöpfe angepasst: sonst
@@ -824,16 +837,23 @@ export class Hud {
     const html = entries
       .map(
         (e, i) =>
-          `<button type="button" class="cbtn" data-i="${i}">` +
+          `<button type="button" class="cbtn" data-i="${i}" data-g="${e.group === 'train' ? 't' : 'a'}">` +
           `<span class="cl">${esc(e.label)}</span>` +
           `${e.cost ? `<span class="cc">${esc(e.cost)}</span>` : ''}` +
           `${e.hotkey ? `<span class="ck">${esc(e.hotkey)}</span>` : ''}</button>`,
       )
       .join('');
+    // Telefon quer: Ausbildung in der Wischzeile oben, die übrigen Aktionen darunter (ohne Ausbildung nur eine Zeile)
+    this.cmdEl.dataset.rows = entries.some((e) => e.group === 'train') ? '2' : '1';
+    const key = [...this.controller.view.selection].join(',');
     if (html !== this.cmdHtml) {
+      const x = this.cmdEl.scrollLeft; // Wischposition: bleibt beim Neuaufbau, solange dasselbe Gebäude gewählt ist
       this.cmdHtml = html;
       this.cmdEl.innerHTML = html;
+      this.cmdEl.scrollLeft = key === this.cmdKey ? x : 0;
     }
+    this.cmdKey = key;
+    this.cmdHints();
     const btns = this.cmdEl.children;
     for (let i = 0; i < entries.length && i < btns.length; i++) {
       const el = btns[i];

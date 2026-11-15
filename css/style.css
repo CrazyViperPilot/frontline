@@ -276,8 +276,10 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .bar i { display: block; height: 100%; background: #7dd38b; }
 .bar.prog i { background: var(--accent); }
 
+.cmd-wrap { display: flex; flex: none; min-width: 0; position: relative; }
 .cmd {
   flex: none;
+  align-self: stretch;
   display: grid;
   grid-template-columns: repeat(5, 56px); /* LKW-Karte hat 10 Befehle: 5 × 2 statt 4 × 3 (passt in 190 px Höhe) */
   grid-auto-rows: 56px;
@@ -547,7 +549,19 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .sel .hint { font-size: 11px; margin-bottom: 3px; }
   .sel .small, .sel .gauge .gl, .sel .srow { font-size: 10.5px; }
   .bar { height: 5px; margin: 3px 0; }
-  .cmd { grid-template-columns: repeat(6, 50px); grid-auto-rows: 48px; gap: 3px; padding: 4px; background: #1d231dd9; }
+  /* Befehlskarte: Ausbildung (data-g=t) in der oberen Zeile, Aktionen (a) darunter; eine gemeinsame Wischleiste links/rechts.
+     Ohne Ausbildung (data-rows=1) stehen alle Aktionen in der einen Zeile. Tippen bildet aus, Wischen nicht (hud.js, Klick). */
+  .cmd-wrap { flex: 0 1 auto; }
+  .cmd-wrap::before, .cmd-wrap::after { content: ''; position: absolute; top: 0; bottom: 0; width: 18px; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 1; }
+  .cmd-wrap::before { left: 0; border-radius: 8px 0 0 8px; background: linear-gradient(to right, #1d231d, #1d231d00); }
+  .cmd-wrap::after { right: 0; border-radius: 0 8px 8px 0; background: linear-gradient(to left, #1d231d, #1d231d00); }
+  .cmd-wrap[data-hint-l="1"]::before, .cmd-wrap[data-hint-r="1"]::after { opacity: 1; }
+  .cmd { flex: 1 1 auto; min-width: 0; grid-template-columns: none; grid-auto-flow: column dense; grid-auto-columns: 50px; grid-template-rows: auto auto; grid-auto-rows: auto; gap: 3px; padding: 4px; background: #1d231dd9; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; touch-action: pan-x; scrollbar-width: none; }
+  .cmd::-webkit-scrollbar { display: none; }
+  .cmd .cbtn { scroll-snap-align: start; }
+  .cmd .cbtn[data-g="t"] { grid-row: 1; } /* Ausbildung: genau eine Zeile (ohne feste Zeile fließen die Knöpfe spaltenweise in beide Zeilen) */
+  .cmd .cbtn[data-g="a"] { grid-row: 2; }
+  .cmd[data-rows="1"] .cbtn { grid-row: 1; }
   .cbtn { width: 50px; height: 48px; padding: 3px 1px 2px; }
   .cbtn .cl { font-size: 8.2px; }
   .cbtn .cc { font-size: 8.5px; }
@@ -567,7 +581,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     pointer-events: auto;
     cursor: pointer;
   }
-  .hud.folded .sel, .hud.folded .cmd { display: none; }
+  .hud.folded .sel, .hud.folded .cmd, .hud.folded .cmd-wrap { display: none; }
   .hud.folded .fold { transform: scaleY(-1); }
   .hud.folded .bottom { background: none; }
 }

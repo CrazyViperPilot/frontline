@@ -68,6 +68,7 @@ function entry(label, hotkey, o = {}) {
     enabled: o.enabled !== false,
     reason: o.reason || '',
     active: !!o.active,
+    group: o.group || '', // 'train': Ausbildung (eigene Wischzeile auf dem Telefon, css/style.css), sonst Aktionen
     action: o.action,
   };
 }
@@ -547,6 +548,7 @@ export const cardMethods = {
       else reason = trainCheck(this.game, ready, u) ?? (def.air && !def.jet ? heliTrainCheck(this.game, ready) : null) ?? this.trainReason(def.cost); // Stellplatz bzw. Heliport: ein Luftfahrzeug je Platz
       card.push(
         entry(def.short || def.name, def.hotkey, {
+          group: 'train',
           cost: costText(def.cost),
           tip: `${def.name}: ${longCost(def.cost)}${this.game.city && CITY.metalCost[u] ? `, ${CITY.metalCost[u]} Stahl, ${crewOf(u)} Einwohner` : this.game.city ? `, ${crewOf(u)} Einwohner` : ''}${def.hero ? COMMANDER_TIP : ''}`,
           enabled: !reason,

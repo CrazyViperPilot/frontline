@@ -73,16 +73,16 @@ Die Tabellen „Werte“ und „Waffen und Schaden“ erzeugt `npm run docs` aus
 | Panzerabwehrsoldat | W | 1 | 90 | 40 | 260 | 240 | 120 Geld | 8 s | – |
 | Scharfschütze | T | 1 | 70 | 38 | 440 | 480 | 220 Geld | 10 s | – |
 | Kommandeur | C | 0 | 300 | 42 | 340 | 180 | 400 Geld | 20 s | – |
-| LKW | E | 1 | 250 | 110 | 220 | – | 80 Geld | 6 s | 30 / 0,2 |
-| Aufklärungsfahrzeug | K | 1 | 200 | 160 | 520 | 220 | 100 Geld | 7 s | 30 / 0,2 |
-| Baufahrzeug | R | 1 | 400 | 70 | 260 | – | 150 Geld | 9 s | 40 / 0,3 |
-| Bergepanzer | W | 1 | 350 | 60 | 260 | – | 130 Geld | 8 s | 40 / 0,3 |
-| Störsender | U | 1 | 300 | 60 | 260 | – | 150 Geld | 8 s | 40 / 0,3 |
-| Brückenleger | C | 2 | 600 | 46 | 240 | – | 300 Geld | 14 s | 45 / 0,35 |
-| Bagger | X | 2 | 650 | 48 | 240 | 34 | 320 Geld | 14 s | 45 / 0,35 |
-| FOB-Fahrzeug | B | 2 | 600 | 60 | 260 | – | 500 Geld | 30 s | 50 / 0,4 |
-| Schützenpanzer | A | 3 | 450 | 85 | 300 | 240 | 450 Geld | 12 s | 40 / 0,4 |
-| Kampfpanzer | S | 5 | 1100 | 60 | 320 | 300 | 1000 Geld | 20 s | 60 / 0,6 |
+| LKW | E | 1 | 250 | 110 | 220 | – | 80 Geld | 6 s | 30 / 0,16 |
+| Aufklärungsfahrzeug | K | 1 | 200 | 160 | 520 | 220 | 100 Geld | 7 s | 30 / 0,16 |
+| Baufahrzeug | R | 1 | 400 | 70 | 260 | – | 150 Geld | 9 s | 40 / 0,24 |
+| Bergepanzer | W | 1 | 350 | 60 | 260 | – | 130 Geld | 8 s | 40 / 0,24 |
+| Störsender | U | 1 | 300 | 60 | 260 | – | 150 Geld | 8 s | 40 / 0,24 |
+| Brückenleger | C | 2 | 600 | 46 | 240 | – | 300 Geld | 14 s | 45 / 0,28 |
+| Bagger | X | 2 | 650 | 48 | 240 | 34 | 320 Geld | 14 s | 45 / 0,28 |
+| FOB-Fahrzeug | B | 2 | 600 | 60 | 260 | – | 500 Geld | 30 s | 50 / 0,32 |
+| Schützenpanzer | A | 3 | 450 | 85 | 300 | 240 | 450 Geld | 12 s | 40 / 0,32 |
+| Kampfpanzer | S | 5 | 1100 | 60 | 320 | 300 | 1000 Geld | 20 s | 60 / 0,48 |
 | Little Bird | D | 1 | 220 | 170 | 380 | – | 650 Geld | 15 s | 60 / 0,5 |
 | Aufklärungsdrohne | R | 1 | 120 | 130 | 450 | – | 300 Geld | 12 s | 40 / 0,5 |
 | Kamikazedrohne | X | 1 | 60 | 190 | 250 | 15 | 300 Geld | 12 s | 40 / 0,5 |
@@ -94,11 +94,11 @@ Die Tabellen „Werte“ und „Waffen und Schaden“ erzeugt `npm run docs` aus
 | C-130 | C | 3 | 900 | 200 | 400 | – | 3000 Geld | 60 s | 90 / 1 |
 | Su-27 | S | 3 | 480 | 450 | 560 | 640 | 2800 Geld | 45 s | 75 / 1 |
 | U-2 | O | 3 | 400 | 300 | 300 | – | 2600 Geld | 50 s | 180 / 1 |
-| Flakpanzer | Z | 2 | 300 | 70 | 380 | 330 | 300 Geld | 10 s | 40 / 0,4 |
-| SAM-Startrampe | N | 2 | 350 | 65 | 440 | 420 | 400 Geld | 12 s | 40 / 0,4 |
-| Flakpanzer Gepard | L | 3 | 450 | 62 | 480 | 420 | 1000 Geld | 16 s | 45 / 0,35 |
-| Panzerhaubitze | O | 4 | 500 | 50 | 280 | 1400 | 1500 Geld | 22 s | 40 / 0,35 |
-| Raketenwerfer | T | 4 | 500 | 50 | 280 | 1600 | 1700 Geld | 26 s | 40 / 0,35 |
+| Flakpanzer | Z | 2 | 300 | 70 | 380 | 330 | 300 Geld | 10 s | 40 / 0,32 |
+| SAM-Startrampe | N | 2 | 350 | 65 | 440 | 420 | 400 Geld | 12 s | 40 / 0,32 |
+| Flakpanzer Gepard | L | 3 | 450 | 62 | 480 | 420 | 1000 Geld | 16 s | 45 / 0,28 |
+| Panzerhaubitze | O | 4 | 500 | 50 | 280 | 1400 | 1500 Geld | 22 s | 40 / 0,28 |
+| Raketenwerfer | T | 4 | 500 | 50 | 280 | 1600 | 1700 Geld | 26 s | 40 / 0,28 |
 <!-- auto:units:end -->
 
 <!-- auto:buildings:start -->

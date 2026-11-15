@@ -6,6 +6,7 @@
 // cost: fehlende Schlüssel = 0. Ausbildung in der Hauptstadt (ohne Stadt) oder in Kaserne, Fabrikhalle, Heliport (mit Stadt); hotkey: Taste im Ausbildungsmenü.
 // buildTime: Ausbildungszeit in Sekunden je Ausbildungsplatz (QUICK.trainSlots).
 // fuelMax: Treibstoffvorrat. Die Kosten sind Geld, mit Stadt zusätzlich Metall (CITY.metalCost); alle Einheiten starten voll munitioniert und betankt.
+// fuelPerSec: Treibstoff je Sekunde Fahrt (Kreisen bei Flugzeugen). Bodenfahrzeuge seit Paket „Sprit Fahrzeuge“ 20 % sparsamer (× 0,8).
 // builder: 'all' = darf alle Gebäude bauen und reparieren, 'fort' = nur Mauer und Tor, fehlt = kein Bauen.
 // Treffer bis zum Abschuss je Ziel (Einheitentyp, sonst Panzerklasse): Zahl oder SIDES(vorn, seitlich, hinten).
 const SIDES = (front, side, rear) => ({ front, side, rear });
@@ -212,7 +213,7 @@ export const UNITS = {
     cost: { money: 80 },
     buildTime: 6,
     ammoPerShot: 0,
-    fuelPerSec: 0.2,
+    fuelPerSec: 0.16, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.2
     fuelMax: 30,
     cargoCap: 400, // Ladung (Summe aller Sorten)
     seats: 2,
@@ -235,7 +236,7 @@ export const UNITS = {
     ],
     cost: { money: 100 },
     buildTime: 7,
-    fuelPerSec: 0.2,
+    fuelPerSec: 0.16, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.2
     fuelMax: 30,
     seats: 2,
     hotkey: 'K', // Fabrikhalle: Taste im Fabrikmenü frei (E R X B A S Z N L O belegt)
@@ -254,7 +255,7 @@ export const UNITS = {
     cost: { money: 150 },
     buildTime: 9,
     ammoPerShot: 0,
-    fuelPerSec: 0.3,
+    fuelPerSec: 0.24, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.3
     fuelMax: 40,
     builder: 'all',
     canRide: true,
@@ -277,7 +278,7 @@ export const UNITS = {
     cost: { money: 130 },
     buildTime: 8,
     ammoPerShot: 0,
-    fuelPerSec: 0.3,
+    fuelPerSec: 0.24, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.3
     fuelMax: 40,
     canRide: false,
     repairRate: 15, // HP je Sekunde für jedes eigene Fahrzeug im Umkreis
@@ -303,7 +304,7 @@ export const UNITS = {
     cost: { money: 150 },
     buildTime: 8,
     ammoPerShot: 0,
-    fuelPerSec: 0.3,
+    fuelPerSec: 0.24, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.3
     fuelMax: 40,
     canRide: false,
     jam: 0.35, // Abzug der Trefferchance gegnerischer Lenkwaffen (×(1 − jam))
@@ -329,7 +330,7 @@ export const UNITS = {
     weapons: [],
     cost: { money: 300 },
     buildTime: 14,
-    fuelPerSec: 0.35,
+    fuelPerSec: 0.28, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.35
     fuelMax: 45,
     canRide: false,
     hotkey: 'C',
@@ -349,7 +350,7 @@ export const UNITS = {
     ],
     cost: { money: 320 },
     buildTime: 14,
-    fuelPerSec: 0.35,
+    fuelPerSec: 0.28, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.35
     fuelMax: 45,
     canRide: false,
     hotkey: 'X',
@@ -369,7 +370,7 @@ export const UNITS = {
     cost: { money: 500 },
     buildTime: 30,
     ammoPerShot: 0,
-    fuelPerSec: 0.4,
+    fuelPerSec: 0.32, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.4
     fuelMax: 50,
     // Knopf „Aufbauen“ (Befehl deploy): wird an seiner Stelle sofort zur fertigen FOB (ohne Bauzeit);
     // sie startet mit BALANCE.fob.startStock (QUICK.fobStartStock) ihres Lagers je Sorte. Seit v5.09 das einzige Mittel für neue FOBs.
@@ -393,7 +394,7 @@ export const UNITS = {
     ],
     cost: { money: 450 }, // seit Paket Balance-Preise (vorher 250)
     buildTime: 12,
-    fuelPerSec: 0.4,
+    fuelPerSec: 0.32, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.4
     fuelMax: 40,
     seats: 6,
     hotkey: 'A',
@@ -415,7 +416,7 @@ export const UNITS = {
     ],
     cost: { money: 1000 }, // seit Paket Balance-Preise (vorher 500)
     buildTime: 20,
-    fuelPerSec: 0.6,
+    fuelPerSec: 0.48, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.6
     fuelMax: 60,
     hotkey: 'S',
   },
@@ -698,7 +699,7 @@ export const UNITS = {
     ],
     cost: { money: 300 }, // seit Paket Balance-Preise (vorher 220)
     buildTime: 10,
-    fuelPerSec: 0.4,
+    fuelPerSec: 0.32, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.4
     fuelMax: 40,
     hotkey: 'Z', // Z wie Flugabwehr im Baumenü (seit v5.57; J ist die feste Taste „Bauer“)
   },
@@ -718,7 +719,7 @@ export const UNITS = {
     ],
     cost: { money: 400 }, // seit Paket Balance-Preise (vorher 300)
     buildTime: 12,
-    fuelPerSec: 0.4,
+    fuelPerSec: 0.32, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.4
     fuelMax: 40,
     hotkey: 'N',
   },
@@ -738,7 +739,7 @@ export const UNITS = {
     ],
     cost: { money: 1000 }, // seit Paket Balance-Preise (vorher 650)
     buildTime: 16,
-    fuelPerSec: 0.35,
+    fuelPerSec: 0.28, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.35
     fuelMax: 45,
     hotkey: 'L', // seit v5.57 (P ist Pause)
   },
@@ -760,7 +761,7 @@ export const UNITS = {
     ],
     cost: { money: 1500 }, // seit Paket Balance-Preise (vorher 900)
     buildTime: 22,
-    fuelPerSec: 0.35,
+    fuelPerSec: 0.28, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.35
     fuelMax: 40,
     hotkey: 'O',
   },
@@ -782,7 +783,7 @@ export const UNITS = {
     ],
     cost: { money: 1700 }, // seit Paket Balance-Preise (vorher 1000)
     buildTime: 26,
-    fuelPerSec: 0.35,
+    fuelPerSec: 0.28, // Paket „Sprit Fahrzeuge“: −20 %, vorher 0.35
     fuelMax: 40,
     hotkey: 'T', // nur Fabrikhalle: im Fabrikmenü frei (E R B A S Z N L O X K belegt)
   },

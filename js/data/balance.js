@@ -92,7 +92,7 @@ export const BALANCE = {
     lockGrace: 300, // so viele Sekunden ohne Flagge (während ein anderes Team eine hält), dann fällt die Sperre des eigenen Viertels für den Rest der Partie
     spawnMin: 0.4, // Anteil von spawnRing, ab dem Einheiten erscheinen (nicht direkt am Mast)
     spawnRing: 90, // Einheiten erscheinen zwischen spawnMin (40 %) und 100 % dieses Umkreises um den Flaggenmast (px)
-    flagRing: 120, // Radius der Umkreislinie um den Flaggenmast (px, nur Darstellung)
+    flagRing: 120, // Freiraum um den Flaggenmast (px, Kartenbau); der Sockel am Mast ist ein Drittel davon (nur Darstellung). Das Gebiet (Quadrat) zeigt die Bodenlinie
     slotCap: { 2: 500, 3: 500, 4: 500 }, // Einheitenlimit je Team nach Spielerzahl (klassisch QUICK.unitLimit); viele Einheiten kosten Bildrate
     reinforce: false, // kostenloser Soldaten-Nachschub der Hauptstadt (BALANCE.reinforce): in der Eroberung aus, Truppen kosten immer Geld
     names: 'ABCDEFGHIJKLMNOP', // Buchstaben der Flaggen, zeilenweise von links oben

@@ -327,6 +327,7 @@ export const CITY = {
     railMax: 40, // längste Gleiskette (Zellen) bis zum Kartenrand
     stationNear: 1, // Gewicht der Entfernung zum nächsten Werk gegen die Gleislänge bei der Wahl des Platzes (je Zelle; Paket „Industriepark“ 1, vorher 3)
     stationRetry: 120, // s: eine Stelle, an der der Bau scheiterte, und eine Suche ohne Platz werden so lange nicht wiederholt
+    stationWait: 20, // s: Platz gefunden, aber Geld oder Baumaterial reichen noch nicht für Park, Zufahrt und Gleis: so lange keine neue Suche
     // Industriepark (Paket „Industriepark“, Logik aiStation/parkSite in js/ai/cityai.js): statt eines einzelnen Bahnhofs legt die KI einen
     // Park an: Güterbahnhof (3 × 3) mit Straße an drei Seiten, vier 2 × 2-Werksplätze daneben (grenzen an den Bahnhof, Direktlieferung
     // ohne Straße, und an die Parkstraße, über die das Produkt zum Lager fährt), Zufahrt zum Netz des Lagers und Gleis zum Kartenrand.

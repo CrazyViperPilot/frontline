@@ -327,7 +327,10 @@ function aiStation(game, c, main, money, reserve, difficulty, mem) {
   const roads = site.link.length + site.roads.length;
   const rails = site.rail.length;
   if (money < reserve + A.stationMoney + CITY.cost.station + rails * CITY.cost.rail + roads * CITY.cost.road
-    || main.store.bm < CITY.costBm.station + rails * CITY.costBm.rail + roads * CITY.costBm.road + A.stationBm) return false;
+    || main.store.bm < CITY.costBm.station + rails * CITY.costBm.rail + roads * CITY.costBm.road + A.stationBm) {
+    mem.importNext = game.time + A.stationWait; // Platz da, Geld oder Baumaterial noch nicht: die Suche nicht jeden Takt wiederholen
+    return false;
+  }
   // Reihenfolge: Zufahrt vom Netz aus, Straßen des Parks, Gleis (flach, sofort fertig), zuletzt der Bahnhof (hängt dann an Straße und Gleis)
   const fail = () => {
     mem.importNext = game.time + A.stationRetry; // abgelehnt: nicht jeden Takt neu (gebaute Straßen und Gleise bleiben stehen)

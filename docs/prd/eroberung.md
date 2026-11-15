@@ -31,8 +31,11 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
   eigene auf voll (**Besitz**). Jede Phase dauert `capTime` 20 s bei einer Einheit Vorsprung; das Tempo ist der Vorsprung in Einheiten
   (2 Einheiten = 2 ×), höchstens `capMaxMul` 3 ×. Flugzeuge im Überflug zählen nicht, Hubschrauber und Besatzer in Häusern schon.
   Die Hot Zone wandert wie bisher im eingeschriebenen Kreis (Radius 3300 px) des Quadrats; in ihr bringt eine Einheit 0,8 statt 0,4 Geld/s.
-- **Farben:** Die Flagge, ihre **Umkreislinie** und ihr Gebiet auf der Minimap tragen die Farbe des Besitzers, neutral grau. Solange
-  Gegner im Gebiet stehen, ist die Umkreislinie gestrichelt („umkämpft“); ein äußerer Bogen zeigt den Fortschritt der Einnahme.
+- **Farben:** Die Flagge, ihr **Gebiet** und ihr Gebiet auf der Minimap tragen die Farbe des Besitzers, neutral grau. Das Gebiet ist auf
+  dem Boden als Quadrat eingezeichnet (Linie etwas nach innen gesetzt, damit zwei Nachbarn beide sichtbar bleiben, leicht getönt, mindestens
+  3 Bildschirmpixel breit, in 2D und Iso); es zeigt genau den Bereich, in dem Einheiten für die Einnahme zählen (Paket „Flaggengebiet“,
+  vorher nur ein Kreis von 120 px um den Mast). Solange Gegner im Gebiet stehen, ist die Linie gestrichelt („umkämpft“). Am Mast steht ein
+  kleiner Sockel in der Farbe des Besitzers; ein Bogen darum zeigt den Fortschritt der Einnahme.
   Die Leiste oben zeigt alle 16 Buchstaben in der Farbe ihres Besitzers.
 - **Geld:** Jede gehaltene Flagge bringt `flagIncome` 1,5 Geld/s. Das Zonengeld je Einheit (0,4/s, Hot Zone 0,8/s) bleibt, es gilt
   im ganzen Quadrat. Hot Zone, Kisten, Häuserkampf, Bohrer und Sendemast bleiben unverändert.

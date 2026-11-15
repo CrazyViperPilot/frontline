@@ -610,6 +610,29 @@ export class Renderer {
     }
   }
 
+  /** Geschlossenes Vieleck auf dem Boden (wie groundLine, ein durchgehender Linienzug, füllbar). Ohne beginPath. */
+  groundPoly(ctx, pts) {
+    if (!this.draping()) {
+      pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+      ctx.closePath();
+      return;
+    }
+    const cam = this.camera;
+    let first = true;
+    for (let s = 0; s < pts.length; s++) {
+      const [x1, y1] = pts[s];
+      const [x2, y2] = pts[(s + 1) % pts.length];
+      const n = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 48));
+      for (let i = 0; i < n; i++) {
+        const p = cam.worldToScreen(x1 + ((x2 - x1) * i) / n, y1 + ((y2 - y1) * i) / n);
+        if (first) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+        first = false;
+      }
+    }
+    ctx.closePath();
+  }
+
   /** Bodenebene für eine Markierung am Weltpunkt (isometrisch auf dessen Geländehöhe). */
   groundAt(ctx, x, y) {
     const cam = this.camera;
@@ -1433,25 +1456,47 @@ export class Renderer {
       ctx.lineWidth = lw(5);
       ctx.stroke();
     }
-    // Flaggen: Umkreislinie und Fortschritt
+    // Gebiet jeder Flagge (seit Paket „Flaggengebiet“): gezählt werden alle Einheiten im ganzen Quadrat, nicht nur am Mast. Deshalb
+    // trägt das Quadrat selbst die Farbe des Besitzers (Rand etwas nach innen gesetzt, damit zwei Nachbarn beide sichtbar bleiben, dazu
+    // eine leichte Tönung); gestrichelt, solange es umkämpft ist (Gegner im Gebiet).
+    const inset = 28;
+    // Linienbreite: mindestens 3 Bildschirmpixel, auch weit herausgezoomt (2D zeichnet in Weltkoordinaten)
+    const areaW = drape ? Math.max(3, 6 * z) : Math.max(6, 3 / (this.camera.zoom || 1));
     for (const f of cq.flags) {
       const col = colOf(f.owner);
-      this.groundArc(ctx, f.x, f.y, C.flagRing);
-      ctx.fillStyle = hexA(col, f.owner >= 0 ? 0.22 : 0.1);
-      ctx.fill();
-      ctx.strokeStyle = hexA(col, 0.95);
-      ctx.lineWidth = lw(4);
-      if (f.contested) ctx.setLineDash([14 * k, 10 * k]);
+      const x0 = f.x - cq.size / 2 + inset;
+      const y0 = f.y - cq.size / 2 + inset;
+      const x1 = f.x + cq.size / 2 - inset;
+      const y1 = f.y + cq.size / 2 - inset;
+      ctx.beginPath();
+      this.groundPoly(ctx, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]);
+      if (f.owner >= 0) {
+        ctx.fillStyle = hexA(col, 0.07);
+        ctx.fill();
+      }
+      ctx.strokeStyle = hexA(col, f.owner >= 0 ? 0.9 : 0.75);
+      ctx.lineWidth = areaW;
+      if (f.contested) ctx.setLineDash([areaW * 7, areaW * 4]);
       ctx.stroke();
       ctx.setLineDash([]);
+    }
+    // Flaggen: kleiner Sockel am Mast (nur Markierung, nicht das Gebiet) und Fortschritt
+    for (const f of cq.flags) {
+      const col = colOf(f.owner);
+      this.groundArc(ctx, f.x, f.y, C.flagRing / 3);
+      ctx.fillStyle = hexA(col, f.owner >= 0 ? 0.35 : 0.15);
+      ctx.fill();
+      ctx.strokeStyle = hexA(col, 0.95);
+      ctx.lineWidth = lw(3);
+      ctx.stroke();
       if (f.p > 0 && f.p < 1 && f.capTeam >= 0) {
         // Einnahme läuft: äußerer Ring in der Farbe des Balkens, Länge = Fortschritt
         const n = Math.max(2, Math.round(40 * f.p));
         ctx.beginPath();
         for (let i = 0; i <= n; i++) {
           const a = -Math.PI / 2 + (i / 40) * Math.PI * 2;
-          const wx = f.x + Math.cos(a) * (C.flagRing + 14);
-          const wy = f.y + Math.sin(a) * (C.flagRing + 14);
+          const wx = f.x + Math.cos(a) * (C.flagRing / 3 + 18);
+          const wy = f.y + Math.sin(a) * (C.flagRing / 3 + 18);
           const p = drape ? this.camera.worldToScreen(wx, wy) : { x: wx, y: wy };
           if (i) ctx.lineTo(p.x, p.y);
           else ctx.moveTo(p.x, p.y);

@@ -34,7 +34,7 @@ function spotFor(g, c, m, n) {
       const p = bigCenter(c, a, n);
       const d = Math.hypot(p.x - m.x, p.y - m.y);
       if (d >= bd || d < 500) continue;
-      if (!bigFits(g, c, a, n + 2, (j) => !c.kind[j] && !c.mapRoads[j] && !c.deposit[j])) continue; // Quadrat plus Rand frei
+      if (!bigFits(g, c, a, n + 2, (j) => !c.kind[j] && !c.mapRoads[j])) continue; // Quadrat plus Rand frei
       best = a;
       bd = d;
     }

@@ -25,7 +25,9 @@ const CLASSES = { Game, Fog, AI };
 // 4 seit v5.58: Buchhaltung der Stadt-KI in der KI-Instanz (AI.cityMem) statt im Stadtzustand.
 // 5 seit v5.62: ohne Abgeleitetes (Review-Paket P9): Gelände (game.relief) nur als Grobraster oder gar nicht, Raster (game.grid) nur
 // als Unterschied zum Raster der Karte; Sichtfelder der Entities nur als Ort der Berechnung (fog.js), Arbeitsspeicher des Nebels gar nicht.
-export const SAVE_FORMAT = 5;
+// 6 seit Paket „Import“: Rohwaren kommen von außerhalb der Karte; Förderanlage und Hütte sind Platzhalter, Gleis und Güterbahnhof neu,
+// die Stadt hat kein Vorkommen-Raster mehr und andere Stadtzahlen (alte Stände laden nicht).
+export const SAVE_FORMAT = 6;
 
 /**
  * Grundraster je Karte (terrainGrid), damit Autospeichern es nicht jedes Mal neu rastert (rund 10 ms); nur zum Vergleichen, nie

@@ -42,7 +42,7 @@ function freeArea(g, c, m, W, H) {
       for (let y = r - 1; ok && y <= r + H; y++) {
         for (let x = q - 1; ok && x <= q + W; x++) {
           const j = y * c.cols + x;
-          ok = canZone(g, c, j) && !c.kind[j] && !roadAt(c, j) && !c.deposit[j];
+          ok = canZone(g, c, j) && !c.kind[j] && !roadAt(c, j);
         }
       }
       if (ok) best = { q, r, d };

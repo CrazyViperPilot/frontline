@@ -14,7 +14,7 @@ import { MAPGEN } from '../js/data/mapgen.js';
 import { WEATHER_SETTINGS } from '../js/game/weather.js';
 import { CITY } from '../js/data/city.js';
 import { KIND_ID, KIND_NAME, WORKS } from '../js/data/citykinds.js';
-import { MARKET_GOODS } from '../js/data/goods.js';
+import { MARKET_GOODS, GOODS, IMPORTS } from '../js/data/goods.js';
 
 const RES = Object.keys(BALANCE.resNames);
 const positive = (v) => typeof v === 'number' && v > 0;
@@ -141,13 +141,22 @@ test('Forschung, Schwierigkeit, KI-Mischung und Startmenü', () => {
   assert.ok(WEATHER_SETTINGS.includes(m.weather), `menuDefaults.weather = ${m.weather}`);
 });
 
-test('Stadt (v5.20): Zellenarten stabil, Hütte und Kerosin-Raffinerie vollständig, Ketten und Märkte passen', () => {
+test('Stadt (v5.20, Paket „Import“): Zellenarten stabil, Kerosin-Raffinerie und Güterbahnhof vollständig, Ketten und Märkte passen', () => {
   // IDs bestehender Zellenarten bleiben (Speicherstände); neue Arten stehen hinten
   assert.equal(KIND_ID.road, 1);
   assert.equal(KIND_ID.airport, 17, 'Flughafen bleibt Nummer 17');
-  assert.equal(KIND_ID.smelter, 18, 'Hütte hinten angehängt');
+  assert.equal(KIND_ID.smelter, 18, 'Hütte bleibt Nummer 18 (Platzhalter seit Paket „Import“)');
   assert.equal(KIND_ID.kero, 19, 'Kerosin-Raffinerie hinten angehängt');
-  for (const k of ['smelter', 'kero']) {
+  assert.equal(KIND_ID.rail, 26, 'Gleis hinten angehängt');
+  assert.equal(KIND_ID.station, 27, 'Güterbahnhof hinten angehängt');
+  for (const k of ['station']) {
+    assert.ok(KIND_NAME[k], `KIND_NAME.${k} fehlt`);
+    assert.ok(CITY.size[k] >= 2, `CITY.size.${k} (Großbau)`);
+    assert.ok(CITY.cost[k] > 0, `CITY.cost.${k}`);
+    assert.ok(CITY.power.use[k] > 0, `CITY.power.use.${k}`);
+  }
+  assert.ok(CITY.import.station.length === CITY.maxLevel + 1 && CITY.import.station.slice(1).every((v) => v > CITY.transport.cap), 'Güterbahnhof: Durchsatz je Stufe, weit über einer Straße');
+  for (const k of ['kero']) {
     assert.ok(KIND_NAME[k], `KIND_NAME.${k} fehlt`);
     assert.ok(CITY.size[k] >= 2, `CITY.size.${k} (Werke sind 2 × 2)`);
     assert.ok(CITY.cost[k] > 0, `CITY.cost.${k}`);
@@ -155,7 +164,11 @@ test('Stadt (v5.20): Zellenarten stabil, Hütte und Kerosin-Raffinerie vollstän
     assert.ok(WORKS.includes(k), `${k} gehört zu WORKS`);
   }
   for (const w of WORKS) assert.ok(CITY.yield[CITY.chain[w].to] > 0, `Werk ${w}: keine Ausbeute für ${CITY.chain[w].to}`);
-  for (const g of ['iron', 'kero']) assert.ok(CITY.yield[g] > 0 && CITY.convert[g] > 0, `yield/convert ${g}`);
+  for (const w of WORKS) {
+    const need = CITY.chain[w].need;
+    assert.ok(Object.keys(need).length > 0, `Werk ${w}: kein Bedarf an Rohwaren`);
+    for (const [g, n] of Object.entries(need)) assert.ok(IMPORTS[g] && n > 0, `CITY.chain.${w}.need.${g} = ${n}`);
+  }
   assert.ok(CITY.startKero >= 0 && Number.isFinite(CITY.startKero), 'startKero');
   for (const g of MARKET_GOODS) assert.ok(CITY.market.sell[g] > 0 && CITY.market.buy[g] > 0, `Markt: Preis für ${g} fehlt`);
   assert.ok(CITY.ai.lowKero > 0, 'ai.lowKero');
@@ -168,7 +181,7 @@ test('Stadt (v5.20): Zellenarten stabil, Hütte und Kerosin-Raffinerie vollstän
 // die niemand mehr liest. Verzeichnisse mit erzeugten Schlüsseln (Forschungen je Ast) sind ausgenommen. UNUSED listet die heute
 // bekannten toten Schlüssel; wer einen löscht oder wieder liest, streicht ihn hier (der Test meldet das).
 const UNUSED = [];
-const SKIP = new Set(['RESEARCH.items', 'RESEARCH.lanes']);
+const SKIP = new Set(['RESEARCH.items', 'RESEARCH.lanes', 'CITY.import.price', 'CITY.chain']); // Preise und Bedarf je Rohware: Schlüssel aus dem Register IMPORTS (test/registry.test.js prüft sie)
 test('Datenschlüssel: jeder wird im Code gelesen (außer der Liste bekannter toter Schlüssel)', () => {
   const root = fileURLToPath(new URL('../js/', import.meta.url));
   const files = readdirSync(root, { recursive: true }).filter((f) => f.endsWith('.js') && !f.startsWith('data'));
@@ -190,4 +203,18 @@ test('Datenschlüssel: jeder wird im Code gelesen (außer der Liste bekannter to
   for (const k of Object.keys(AI_DATA)) if (!new RegExp(`\\b${k}\\b`).test(src)) dead.push(`ai.${k}`);
   assert.deepEqual(dead.filter((p) => !UNUSED.includes(p)), [], 'Schlüssel, die kein Code liest: löschen oder lesen');
   assert.deepEqual(UNUSED.filter((p) => !dead.includes(p)), [], 'wird jetzt gelesen oder ist gelöscht: aus UNUSED streichen');
+});
+
+// Paket „Import“: Einführen und am Markt verkaufen darf kein Geld drucken, und Einführen muss sich gegenüber dem Kauf am Markt lohnen.
+test('Einfuhrpreise: Rohwaren je Einheit Produkt ≥ Verkaufspreis je Einheit und deutlich unter dem Kaufpreis je Einheit', () => {
+  for (const g of Object.keys(IMPORTS)) assert.ok(positive(IMPORTS[g].price) && CITY.import.price[g] === IMPORTS[g].price, `Preis ${g}`);
+  for (const w of WORKS) {
+    const L = CITY.chain[w];
+    const cost = Object.entries(L.need).reduce((a, [g, n]) => a + n * CITY.import.price[g], 0); // Geld je Einheit Produkt
+    const lot = CITY.market.lot;
+    const sell = GOODS[L.to].sell / lot;
+    const buy = GOODS[L.to].buy / lot;
+    assert.ok(cost >= sell - 1e-9, `${w}: Rohwaren ${cost} je Einheit unter dem Verkaufspreis ${sell} (Geld drucken)`);
+    assert.ok(cost <= buy * 0.5, `${w}: Rohwaren ${cost} je Einheit nicht deutlich unter dem Kaufpreis ${buy}`);
+  }
 });

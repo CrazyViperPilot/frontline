@@ -159,7 +159,7 @@ export function cmdCity(game, team, cmd) {
   if (!city) return { ok: false, reason: 'Die Stadt ist in dieser Partie ausgeschaltet' };
   const erase = cmd.kind === 'erase';
   if (!erase && !KIND_ID[cmd.kind]) return { ok: false, reason: 'Unbekannte Zellenart' };
-  if (CITY.retired?.includes(cmd.kind)) return { ok: false, reason: `${KIND_NAME[cmd.kind]}: nicht mehr baubar (seit v5.35 Fliegerhorst aus Bahn, Stellplätzen, Tower, Kerosintank und Munitionslager)` };
+  if (CITY.retired?.includes(cmd.kind)) return { ok: false, reason: `${KIND_NAME[cmd.kind]}: nicht mehr baubar` };
   const c0 = Math.max(0, Math.min(cmd.c0, cmd.c1) | 0);
   const c1 = Math.min(city.cols - 1, Math.max(cmd.c0, cmd.c1) | 0);
   const r0 = Math.max(0, Math.min(cmd.r0, cmd.r1) | 0);
@@ -173,29 +173,24 @@ export function cmdCity(game, team, cmd) {
   }
   const id = erase ? 0 : KIND_ID[cmd.kind];
   // Ergebnis je Rechteck: gesetzte Zellen und Gründe, warum andere nicht gingen
-  const f = { placed: 0, broke: false, outside: false, rule: null, noDeposit: false, occupied: false, felled: 0, stuck: false, manned: false, razed: 0, kept: false };
+  const f = { placed: 0, broke: false, outside: false, rule: null, occupied: false, felled: 0, stuck: false, manned: false, razed: 0 };
   const S = city.cell;
   const scan = erase ? woodScan(game, c0 * S, r0 * S, (c1 + 1) * S, (r1 + 1) * S) : null;
   for (let row = r0; row <= r1; row++) {
     for (let col = c0; col <= c1; col++) {
       const i = idx(city, col, row);
-      if (erase && city.deposit[i] && !cmd.demolish) {
-        // Räumen lässt Rohstoffvorkommen (und Förderanlagen darauf) stehen; nur „Abreißen“ eines gewählten Gebäudes entfernt sie
-        f.kept = true;
-        continue;
-      }
       if (erase && city.blocked[i]) clearMapCell(game, city, col, row, scan, f);
       else zoneCell(game, team, city, col, row, cmd, id, f);
     }
   }
-  if (!f.placed) return { ok: false, reason: failReason(f, erase) };
+  if (!f.placed) return { ok: false, reason: failReason(f) };
   rebuildList(city);
-  // Zonen ohne Straße daneben wachsen nicht (auch Förderanlagen): melden
+  // Zonen ohne Straße daneben wachsen nicht: melden
   let noRoad = false;
   if (!erase && !isFlat(KIND_ID[cmd.kind])) {
     for (let row = r0; row <= r1 && !noRoad; row++) for (let col = c0; col <= c1; col++) if (city.kind[idx(city, col, row)] === id && !hasRoad(city, col, row)) noRoad = true;
   }
-  return { ok: true, placed: f.placed, broke: !!f.broke, noRoad, occupied: f.occupied, felled: f.felled, razed: f.razed, manned: f.manned, kept: f.kept };
+  return { ok: true, placed: f.placed, broke: !!f.broke, noRoad, occupied: f.occupied, felled: f.felled, razed: f.razed, manned: f.manned };
 }
 
 /** Räumen auf einer gesperrten Zelle: Gebäude der Karte abreißen (seit v5.16), dann Bäume fällen (seit v5.13); beides kostenlos. */
@@ -246,10 +241,6 @@ function zoneCell(game, team, city, col, row, cmd, id, f) {
       return;
     }
   }
-  if (cmd.kind === 'mine' && !city.deposit[i]) {
-    f.noDeposit = true; // Förderanlagen nur auf Rohstoffvorkommen
-    return;
-  }
   if (!erase) {
     const t = game.teams[team];
     const main = game.mainFob(team);
@@ -274,7 +265,7 @@ function zoneCell(game, team, city, col, row, cmd, id, f) {
 }
 
 /** Meldung, wenn kein Feld gesetzt wurde (wichtigster Grund zuerst). */
-function failReason(f, erase) {
+function failReason(f) {
   const poor = f.broke === 'bm' ? 'Zu wenig Baumaterial im Lager der Hauptstadt' : 'Zu wenig Geld';
-  return f.kept && erase ? 'Rohstoffvorkommen werden beim Räumen nicht angetastet' : f.broke ? poor : f.occupied ? 'Dort steht schon etwas: erst räumen' : f.noDeposit ? 'Förderanlagen nur auf Rohstoffvorkommen' : f.outside ? 'Nur im eigenen Gebiet bauen' : f.rule ? BUILD_BLOCK[f.rule] : f.manned ? 'Besetzte Häuser lassen sich nicht räumen' : f.stuck ? 'Nur Bäume und Häuser lassen sich räumen, kein Fels, Wasser, Turm oder Mauer' : 'Nichts zu ändern';
+  return f.broke ? poor : f.occupied ? 'Dort steht schon etwas: erst räumen' : f.outside ? 'Nur im eigenen Gebiet bauen' : f.rule ? BUILD_BLOCK[f.rule] : f.manned ? 'Besetzte Häuser lassen sich nicht räumen' : f.stuck ? 'Nur Bäume und Häuser lassen sich räumen, kein Fels, Wasser, Turm oder Mauer' : 'Nichts zu ändern';
 }

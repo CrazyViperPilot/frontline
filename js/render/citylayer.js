@@ -1,7 +1,7 @@
 // Stadt auf der Karte (PRD §15): Straßen, ausgewiesene Zonen, Gebäude, Gebietsgrenzen und im Baumodus das gezogene Rechteck.
 // Liest nur game.city (und ren.cityUi, die Stadtleiste). 2D: flach von oben; isometrisch: Boden hier, Gebäude als Stadthäuser
 // über drawTownBuilding (renderer.js).
-import { DEPOSITS, cellRect, buildAllowed, hasRoad, sizeOf, fitBig, bigCenter, bigSpan } from '../game/city/cells.js';
+import { cellRect, buildAllowed, hasRoad, sizeOf, fitBig, bigCenter, bigSpan } from '../game/city/cells.js';
 import { BIG_KINDS, bigPlan, drawBigGround, drawBigTop, partFoot, bigTop } from './bigbuild.js';
 import { drawWorksTop, worksLift, WORKS_GROUND, WORKS_KINDS } from './works.js';
 import { CITY } from '../data/city.js';
@@ -11,8 +11,6 @@ import { drawTownTop, townLift } from './townhouses.js';
 import { transportOf } from '../game/transport.js';
 import { runwaysOf } from '../game/aircraft.js';
 import { laneGrid } from '../game/roads.js';
-import { depositSprite } from './nature.js';
-import { blit, spriteDpr } from './spritecache.js';
 import { groundPattern, patternMatrix } from './ways.js';
 import { railList } from './terrain.js';
 import { drawSiteTop, siteStep, siteTall, siteWall } from './citysite.js';
@@ -25,15 +23,9 @@ const LOT_BUILT = Object.fromEntries(Object.entries(LOT).map(([k, c]) => [k, mix
 const LOT_SITE = Object.fromEntries(Object.entries(LOT).map(([k, c]) => [k, mix(c, '#8f7a5c', 0.84)])); // Baustelle: Erde, leicht getönt (seit v5.45)
 const FLAT_KINDS = new Set(FLAT_LIST); // sofort fertig, nie Baustelle
 // Schilder über den Gebäuden (seit v4.96): Funktionsgebäude groß mit Symbol, Wohnen und Gewerbe klein (privat ⌂ grün, kommerziell ▣ blau)
-const MINE_ICON = { wood: '🌲', stone: '⛰', ore: '⛏', oil: '🛢' };
-const MINE_COLOR = { wood: '#3f8a3f', stone: '#8f8f88', ore: '#c4612f', oil: '#34343a' };
 const SMALL = { res: 1, com: 1 };
 // Höhe des Schilds über dem Boden je Gebäudeform (Weltpixel, isometrisch)
 const BIG_LIFT = [0, 76, 98, 106]; // Universität je Stufe: über der Kuppel
-// Rohstoffvorkommen: Bodenfarbe und Farbe der Tupfen (Bäume, Steine, Erzbrocken, Öllachen)
-const DEP_GROUND = { wood: 'rgba(30,70,30,0.55)', stone: 'rgba(120,120,115,0.55)', ore: 'rgba(140,70,40,0.55)', oil: 'rgba(20,20,24,0.6)' };
-const DEP_DOT = { wood: '#1f5a24', stone: '#b9b9b0', ore: '#c4612f', oil: '#0b0b0e' };
-const DOTS = [[0.25, 0.3, 0.16], [0.68, 0.25, 0.13], [0.45, 0.62, 0.18], [0.78, 0.7, 0.12], [0.2, 0.75, 0.11]];
 
 /** Sichtbare Stadtzellen beider Teams: eigene immer, fremde nur, wo das Gelände erkundet ist. */
 function* cells(game, team, known) {
@@ -69,7 +61,7 @@ const townObj = (c, k, lv, r, i, color, damage) => ({
   level: lv,
   color,
   variant: variantOf(i),
-  dep: k === 'mine' ? DEPOSITS[c.deposit[i] - 1] ?? null : null,
+  dep: null, // Vorkommen gibt es seit Paket „Import“ nicht mehr
   damage,
 });
 
@@ -164,7 +156,6 @@ export function drawCityGround(ren, ctx, team, known, inRect) {
     ctx.restore();
     return;
   }
-  drawDeposits(ren, ctx, known);
   drawClearings(ren, ctx, known);
   for (const { c, k, lv, r, ruin, big, ctr } of cells(g, team, known)) {
     if (!inRect(ctr.x, ctr.y, big ? (sizeOf(k) * c.cell) / 2 + 32 : 64)) continue;
@@ -1024,53 +1015,6 @@ function groundDot(ren, ctx, x, y, rad, color) {
   ctx.fill();
 }
 
-/**
- * Rohstoffvorkommen (Kartenmerkmal, wo erkundet): seit v5.28 ein gemaltes Bodenbild je Zelle (nature.js: Stümpfe und Holzstapel,
- * Steinblöcke, rostiges Erz, Ölpfützen), mit Gelände an die Zellecken angepasst; fehlt das Bild noch, getönter Boden mit Tupfen.
- * Zellen mit Förderanlage zeigt die Stadt.
- */
-function drawDeposits(ren, ctx, known) {
-  const g = ren.game;
-  const c = g.city[0];
-  const cam = ren.camera;
-  const V = cam.visibleRect();
-  const S = c.cell;
-  const drape = ren.draping();
-  const dpr = ren.dpr;
-  const scale = cam.zoom * spriteDpr();
-  for (let r = Math.max(0, Math.floor(V.y0 / S) - 1); r <= Math.min(c.rows - 1, Math.ceil(V.y1 / S) + 1); r++) {
-    for (let q = Math.max(0, Math.floor(V.x0 / S) - 1); q <= Math.min(c.cols - 1, Math.ceil(V.x1 / S) + 1); q++) {
-      const i = r * c.cols + q;
-      const d = DEPOSITS[c.deposit[i] - 1];
-      if (!d || !known((q + 0.5) * S, (r + 0.5) * S)) continue;
-      if (g.city.some((o) => o.level[i])) continue;
-      const e = depositSprite(d, hashXY(q + 7, r + 3) & 3, ren.season, scale * (S / 64));
-      if (e) {
-        if (drape) {
-          // Bild auf die Zelle legen: Ecken mit Gelände (drei Ecken bestimmen die Lage, die vierte folgt)
-          const A = cam.worldToScreen(q * S, r * S);
-          const B = cam.worldToScreen((q + 1) * S, r * S);
-          const C = cam.worldToScreen(q * S, (r + 1) * S);
-          ctx.setTransform((dpr * (B.x - A.x)) / 64, (dpr * (B.y - A.y)) / 64, (dpr * (C.x - A.x)) / 64, (dpr * (C.y - A.y)) / 64, dpr * A.x, dpr * A.y);
-          blit(ctx, e, 0, 0, 1);
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        } else {
-          ctx.save();
-          ctx.translate(q * S, r * S);
-          ctx.scale(S / 64, S / 64);
-          blit(ctx, e, 0, 0, 1);
-          ctx.restore();
-        }
-        continue;
-      }
-      groundRect(ren, ctx, q * S, r * S, (q + 1) * S, (r + 1) * S);
-      ctx.fillStyle = DEP_GROUND[d];
-      ctx.fill();
-      for (const [fx, fy, fr] of DOTS) groundDot(ren, ctx, (q + fx) * S, (r + fy) * S, fr * S * 0.7, DEP_DOT[d]);
-    }
-  }
-}
-
 /** Baumstümpfe einer Lichtung (Lage in der Zelle 0..1, Radius in Zellen). */
 const STUMPS = [[0.28, 0.32, 0.07], [0.7, 0.4, 0.06], [0.42, 0.74, 0.08]];
 
@@ -1341,8 +1285,7 @@ export function drawCityBadges(ren, ctx, team, known, inRect, iso) {
     if (!lv && !ruin && c.team === team && k !== 'mine' && !FLAT_KINDS.has(k) && whole !== 'part' && inRect(r.x, r.y, 64)) siteBar(ren, ctx, c, i, r, whole ? sizeOf(k) : 1, iso);
     if (k === 'road' || !lv || whole === 'part' || !inRect(r.x, r.y, 64)) continue;
     const sm = !!SMALL[k];
-    const d = k === 'mine' ? DEPOSITS[c.deposit[i] - 1] : null;
-    const img = badgeImage(sm ? k : d ? MINE_ICON[d] : CITY_ICON[k], d ? MINE_COLOR[d] : CITY_COLORS[k], sm);
+    const img = badgeImage(sm ? k : CITY_ICON[k], CITY_COLORS[k], sm);
     const px = sm ? small : big;
     let bx;
     let by;

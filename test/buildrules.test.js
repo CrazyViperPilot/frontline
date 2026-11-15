@@ -74,7 +74,7 @@ test('mit Schalter: unerkundetes Gelände sperrt Gebäude und Straße, nach dem 
   rich(g);
   const c = g.city[0];
   g.fog[0].explored.fill(0);
-  const i = find(c, (j) => c.claim[j] && canZone(g, c, j) && !c.kind[j] && !c.deposit[j] && roadLinked(g, c)[j]); // an einer Straße zum Lager
+  const i = find(c, (j) => c.claim[j] && canZone(g, c, j) && !c.kind[j] && roadLinked(g, c)[j]); // an einer Straße zum Lager
   assert.ok(i >= 0);
   assert.equal(buildWhy(g, c, i, 'res'), 'unexplored');
   const r = cmd(g, 0, 'res', i);
@@ -92,7 +92,7 @@ test('mit Schalter: sichtbare Bodeneinheit des Feindes in der Nähe sperrt, weit
   rich(near);
   near.fog[0].visible.fill(1);
   const c = near.city[0];
-  const i = find(c, (j) => c.claim[j] && canZone(near, c, j) && !c.kind[j] && !c.deposit[j] && roadLinked(near, c)[j]);
+  const i = find(c, (j) => c.claim[j] && canZone(near, c, j) && !c.kind[j] && roadLinked(near, c)[j]);
   assert.ok(i >= 0);
   const [x, y] = cellXY(c, i);
   near.spawnUnit('tank', 1, x + 200, y);
@@ -119,7 +119,7 @@ test('mit Schalter: auch ein gegnerisches Gebäude in der Nähe sperrt', () => {
   reveal(g);
   rich(g);
   const c = g.city[0];
-  const i = find(c, (j) => c.claim[j] && canZone(g, c, j) && !c.kind[j] && !c.deposit[j]);
+  const i = find(c, (j) => c.claim[j] && canZone(g, c, j) && !c.kind[j]);
   const [x, y] = cellXY(c, i);
   g.spawnBuilding('fob', 1, g.grid.toCell(x + 150), g.grid.toCell(y), { built: true });
   assert.equal(buildWhy(g, c, i, 'res'), 'enemy');
@@ -189,7 +189,7 @@ test('mit Schalter (seit v5.91): Fabrikhalle 5 × 5 passt an den Gebietsrand, Ba
     if (a >= 0 && bigCells(c, a, 5).some((j) => !c.claim[j])) fits++;
   }
   assert.ok(fits > 0, 'eine Fabrikhalle ragt am Rand über die Grenze');
-  const out = c.claim.findIndex((v, i) => !v && canZone(g, c, i) && !c.kind[i] && !c.deposit[i]);
+  const out = c.claim.findIndex((v, i) => !v && canZone(g, c, i) && !c.kind[i]);
   assert.equal(buildWhy(g, c, out, 'runway'), null, 'Bahn außerhalb des Gebiets erlaubt');
   assert.equal(buildWhy(g, c, out, 'res'), 'territory', 'Wohnen außerhalb nicht');
 }));
@@ -204,10 +204,10 @@ function linkSetup(seed = 3) {
   g.mainFob(0).store.bm = 100000;
   const c = g.city[0];
   const mask = roadLinked(g, c);
-  const ok = (j) => c.claim[j] && canZone(g, c, j) && !c.kind[j] && !c.deposit[j] && !buildWhy(g, c, j, 'road');
+  const ok = (j) => c.claim[j] && canZone(g, c, j) && !c.kind[j] && !buildWhy(g, c, j, 'road');
   for (let i = 0; i < c.kind.length; i++) {
     if (!mask[i] || !ok(i)) continue;
-    const k = nbrsOf(c, i).find((j) => ok(j) && !mask[j] && !buildWhy(g, c, j, 'mine'));
+    const k = nbrsOf(c, i).find((j) => ok(j) && !mask[j] && !buildWhy(g, c, j, 'rail'));
     if (k !== undefined) return { g, c, i, k };
   }
   throw new Error('kein Zellenpaar gefunden');
@@ -229,7 +229,7 @@ test('Anschlusspflicht: Gebäude nur an einer Straße zum Lager; nach einer Stra
 test('Anschlusspflicht: eine Straße ohne Verbindung zum Lager reicht nicht', () => {
   const { g, c, k } = linkSetup();
   // Nachbar von k, der selbst nicht ans Netz grenzt: eine Straße dort hängt nicht am Lager
-  const far = nbrsOf(c, k).find((j) => !roadLinked(g, c)[j] && c.claim[j] && canZone(g, c, j) && !c.kind[j] && !c.deposit[j] && !buildWhy(g, c, j, 'road'));
+  const far = nbrsOf(c, k).find((j) => !roadLinked(g, c)[j] && c.claim[j] && canZone(g, c, j) && !c.kind[j] && !buildWhy(g, c, j, 'road'));
   assert.ok(far !== undefined);
   assert.equal(cmd(g, 0, 'road', far).ok, true);
   assert.equal(roadLinked(g, c)[k], 0, 'k grenzt nur an die lose Straße');
@@ -244,7 +244,7 @@ test('Anschlusspflicht: Wohnen darf über ein Wohnhaus an der Straße angeschlos
   assert.equal(cmd(g, 0, 'res', k).ok, true);
 });
 
-test('Anschlusspflicht: Großbau braucht nur eine Randzelle an der Straße zum Lager; Förderanlagen sind frei', () => {
+test('Anschlusspflicht: Großbau braucht nur eine Randzelle an der Straße zum Lager; Gleise sind frei', () => {
   const { g, c, i } = linkSetup();
   const a = fitBig(g, c, i % c.cols, Math.floor(i / c.cols), 'bm', undefined, (j) => buildAllowed(g, c, j, 'bm'));
   assert.ok(a >= 0, 'Werk am Netz passt');
@@ -259,12 +259,11 @@ test('Anschlusspflicht: Großbau braucht nur eine Randzelle an der Straße zum L
     assert.equal(r.ok, false);
     assert.equal(r.reason, BUILD_BLOCK.road);
   }
-  // Förderanlage auf einem Vorkommen ohne Straße: erlaubt (CITY.build.roadFree)
-  const dep = find(c, (j) => c.deposit[j] && !c.kind[j] && c.claim[j] && canZone(g, c, j) && !mask[j]);
-  if (dep >= 0) {
-    assert.equal(buildWhy(g, c, dep, 'mine'), null);
-    assert.equal(buildWhy(g, c, dep, 'res'), 'road');
-  }
+  // Gleis ohne Straße (Paket „Import“): erlaubt wie jede flache Zelle, Wohnen dort nicht
+  const free = find(c, (j) => !c.kind[j] && c.claim[j] && canZone(g, c, j) && !mask[j] && !buildWhy(g, c, j, 'road'));
+  assert.ok(free >= 0, 'freie Zelle ohne Anschluss im Gebiet');
+  assert.equal(buildWhy(g, c, free, 'rail'), null);
+  assert.equal(buildWhy(g, c, free, 'res'), 'road');
   withValue(CITY.build, 'needRoad', false, () => assert.equal(buildWhy(g, c, linkSetup().k, 'res'), null, 'Schalter aus: keine Anschlusspflicht'));
 });
 

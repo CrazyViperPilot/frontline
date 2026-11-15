@@ -1,9 +1,10 @@
 // Stadt (PRD §15), Straßennetz (seit v5.20, AP4): Erreichbarkeit über Straßen, Anschluss eines Gebäudes ans Lager der Hauptstadt
-// oder an ein Zielnetz (connectRoad; Startviertel und Stadt-KI). Kein DOM, deterministisch.
+// oder an ein Zielnetz (connectRoad; Startviertel und Stadt-KI), seit Paket „Import“ Straße zum Kartenrand (connectEdge) und das Netz
+// der Einfuhrpunkte (importReach). Kein DOM, deterministisch.
 import { CITY } from '../../data/city.js';
-import { KINDS } from '../../data/citykinds.js';
+import { KIND_ID } from '../../data/citykinds.js';
 import { mainAccess } from '../transport.js';
-import { DEPOSITS, anchorOf, isPart, cellsOf, cellRect, cellFree, roadAt, accessCells, canZone, buildAllowed, nbrsOf } from './cells.js';
+import { atEdge, stationLinked, anchorOf, isPart, cellsOf, cellRect, cellFree, roadAt, accessCells, canZone, buildAllowed, nbrsOf } from './cells.js';
 import { rebuildList, placeBuilt } from './state.js';
 
 /**
@@ -63,9 +64,9 @@ function mainZone(game, c) {
 
 /**
  * Straßenanschluss für das Gebäude mit Anker a (seit v5.20, AP4): legt Straßen von seinen freien Nachbarzellen bis zur nächsten
- * Straßenzelle, die mit dem Lager verbunden ist. Nur ausweisbare, leere, freie Zellen ohne Vorkommen; höchstens
+ * Straßenzelle, die mit dem Lager verbunden ist. Nur ausweisbare, leere, freie Zellen; höchstens
  * CITY.transport.connectMax neue Zellen. Mit `pay` über game.issue (kostet Baumaterial je Zelle), sonst direkt wie beim Startviertel.
- * Optional `goal` (Uint8Array wie roadReach): Ziel statt des Lagers, z. B. das Netz eines Stahlwerks für eine Erzmine (Ausbau der KI).
+ * Optional `goal` (Uint8Array wie roadReach): Ziel statt des Lagers, z. B. das Netz der Einfuhrpunkte für ein Werk (Ausbau der KI).
  * Rückgabe: Zahl der gelegten Zellen; 0, wenn der Anschluss schon besteht; −1, wenn es keinen Weg gibt oder das Baumaterial fehlt.
  */
 export function connectRoad(game, c, a, pay, goal = null) {
@@ -78,7 +79,7 @@ export function connectRoad(game, c, a, pay, goal = null) {
   const max = CITY.transport.connectMax;
   const n = c.cols * c.rows;
   // Baugebiet (seit v5.78) gilt für Anschlüsse, die der Spieler oder die KI bezahlen (pay); das Startviertel (pay false) baut ohne Regel
-  const ok = (j) => (pay ? buildAllowed(game, c, j, 'road') : canZone(game, c, j)) && !c.kind[j] && !c.deposit[j] && cellFree(game, c, j % c.cols, Math.floor(j / c.cols));
+  const ok = (j) => (pay ? buildAllowed(game, c, j, 'road') : canZone(game, c, j)) && !c.kind[j] && cellFree(game, c, j % c.cols, Math.floor(j / c.cols));
   const prev = new Int32Array(n).fill(-1);
   const seen = new Uint8Array(n);
   const cells = cellsOf(c, anchor);
@@ -90,9 +91,9 @@ export function connectRoad(game, c, a, pay, goal = null) {
       frontier.push(j);
     }
   }
-  // Auch vom Straßennetz aus, an dem das Gebäude schon hängt (seit v5.82): Liegt eine Mine mitten im Vorkommen, sind ihre freien
-  // Nachbarn oft schon Straße oder Vorkommen; der neue Anschluss muss dann am Rand dieses Netzes beginnen (sonst findet die KI nie einen
-  // Weg zur Hütte, wenn Minen- und Hüttennetz nur über die Hauptstadt zusammenhängen, durch die keine Ware fährt).
+  // Auch vom Straßennetz aus, an dem das Gebäude schon hängt (seit v5.82): Sind seine freien Nachbarn schon Straße, muss der neue
+  // Anschluss am Rand dieses Netzes beginnen (sonst findet die KI nie einen Weg zu einem Zielnetz, das mit dem Netz des Gebäudes nur über
+  // die Hauptstadt zusammenhängt, durch die keine Ware fährt).
   // Nur für bezahlte Anschlüsse (KI, Spieler); das Startviertel (pay false) baut wie bisher, damit Startzustände je Seed gleich bleiben.
   const own = pay ? roadReach(c, accessCells(c, anchor)) : null;
   for (let i = 0; own && i < n; i++) {
@@ -140,20 +141,75 @@ export function connectRoad(game, c, a, pay, goal = null) {
   return path.length;
 }
 
-// ---- KI: baut in Ringen um die Hauptstadt nach außen, dazu kleine Viertel an vorderen FOBs (seit v4.82),
-// Förderanlagen auf Vorkommen im Gebiet, Markt und Angriffe auf die gegnerische Stadt (seit v4.83) ----
-
 /**
- * Ziel des Anschlusses einer Förderanlage oder eines Werks mit Lieferweg (seit v5.20, AP4): das Straßennetz der Werke, an die es liefert
- * (Erz → Hütte, Holz und Stein → BM-Werk, Öl → Raffinerie, Roheisen → Stahlwerk). Gibt es keines, null (das Lager gilt).
+ * Straßenzellen, die über Straßen von einem Einfuhrpunkt aus erreichbar sind (Paket „Import“): eigene Straßen am Kartenrand und die
+ * Straßen an fertigen Güterbahnhöfen mit Gleis zum Kartenrand. Ziel für den Anschluss eines Werks (Ausbau der KI). null ohne Einfuhrpunkt.
  */
-export function goalOf(c, a, k) {
-  const want = k === 'mine' ? { wood: ['bm'], stone: ['bm'], ore: ['smelter'], oil: ['fuel', 'kero'] }[DEPOSITS[c.deposit[a] - 1]] : k === 'smelter' ? ['steel'] : null;
-  if (!want) return null;
+export function importReach(c) {
   const starts = [];
+  const RD = KIND_ID.road;
+  const ST = KIND_ID.station;
   for (const i of c.list) {
-    if (isPart(c, i) || !c.level[i] || !want.includes(KINDS[c.kind[i] - 1])) continue;
-    for (const j of accessCells(c, i)) starts.push(j);
+    if (c.kind[i] === RD && atEdge(c, i)) starts.push(i);
+    else if (c.kind[i] === ST && !isPart(c, i) && c.level[i] && stationLinked(c, i)) for (const j of accessCells(c, i)) starts.push(j);
   }
   return starts.length ? roadReach(c, starts) : null;
+}
+
+/**
+ * Straße zum Kartenrand (Paket „Import“): legt den kürzesten Weg aus neuen Straßenzellen vom Netz, das von den Straßenzellen `starts`
+ * aus über Straßen erreichbar ist, bis zu einer Zelle in der äußersten Zeile oder Spalte. Nur ausweisbare, leere, freie Zellen, höchstens
+ * `max` neue Zellen. Mit `pay` über game.issue (Baumaterial je Zelle, Baugebiet), sonst direkt (Startviertel). Rückgabe: Zahl der
+ * gelegten Zellen; 0, wenn das Netz den Rand schon erreicht; −1 ohne Weg oder ohne Baumaterial.
+ */
+export function connectEdge(game, c, starts, pay, max = c.cols + c.rows) {
+  const reach = roadReach(c, starts);
+  const n = c.cols * c.rows;
+  for (let i = 0; i < n; i++) if (reach[i] && c.kind[i] === KIND_ID.road && atEdge(c, i)) return 0;
+  const ok = (j) => (pay ? buildAllowed(game, c, j, 'road') : canZone(game, c, j)) && !c.kind[j] && cellFree(game, c, j % c.cols, Math.floor(j / c.cols));
+  const prev = new Int32Array(n).fill(-1);
+  const seen = new Uint8Array(n);
+  let frontier = [];
+  for (let i = 0; i < n; i++) {
+    if (!reach[i]) continue;
+    for (const j of nbrsOf(c, i)) {
+      if (seen[j] || !ok(j)) continue;
+      seen[j] = 1;
+      frontier.push(j);
+    }
+  }
+  // Breitensuche in Schichten (feste Reihenfolge: Zellindex aufsteigend als Startreihenfolge), Ende an der ersten Randzelle
+  let end = -1;
+  for (let d = 1; d <= max && frontier.length && end < 0; d++) {
+    const next = [];
+    for (const i of frontier) {
+      if (atEdge(c, i)) {
+        end = i;
+        break;
+      }
+      for (const j of nbrsOf(c, i)) {
+        if (seen[j] || !ok(j)) continue;
+        seen[j] = 1;
+        prev[j] = i;
+        next.push(j);
+      }
+    }
+    frontier = next;
+  }
+  if (end < 0) return -1;
+  const path = [];
+  for (let i = end; i >= 0; i = prev[i]) path.push(i);
+  if (pay) {
+    const main = game.mainFob(c.team);
+    if (!main || main.store.bm < CITY.costBm.road * path.length || game.teams[c.team].res.money < CITY.cost.road * path.length) return -1;
+    for (const i of path) {
+      const col = i % c.cols;
+      const row = (i - col) / c.cols;
+      game.issue(c.team, { type: 'city', kind: 'road', c0: col, r0: row, c1: col, r1: row });
+    }
+  } else {
+    for (const i of path) placeBuilt(game, c, i, 'road');
+    rebuildList(c);
+  }
+  return path.length;
 }

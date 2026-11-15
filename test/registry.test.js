@@ -7,11 +7,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { CITY_KINDS, KIND, KINDS, KIND_ID, KIND_NAME, WORKS, SUPPLIER_KINDS, WORKPLACE_KINDS, FLAT_KINDS, BUILD_MENU } from '../js/data/citykinds.js';
-import { GOODS, STORED_GOODS, MID_GOODS, CITY_STORE_GOODS, MARKET_GOODS } from '../js/data/goods.js';
+import { GOODS, STORED_GOODS, CITY_STORE_GOODS, MARKET_GOODS, IMPORTS, IMPORT_GOODS } from '../js/data/goods.js';
 import { isFlat } from '../js/game/city/cells.js';
 import { CITY } from '../js/data/city.js';
 import { CITY_COLORS, CITY_ICON, CITY_TIP, TOOL_GROUPS } from '../js/ui/citypanel.js';
-import { FLOW_GOODS, FLOW_MIDS } from '../js/game/flow.js';
+import { FLOW_GOODS } from '../js/game/flow.js';
 import { Game } from '../js/game/game.js';
 
 const LIVE = KINDS.filter((k) => !CITY.retired?.includes(k)); // baubare Arten
@@ -22,10 +22,11 @@ const FIELDS = new Set(['key', 'id', 'name', 'short', 'icon', 'color', 'group', 
 test('KINDS: Reihenfolge festgeschrieben (Zell-IDs im Spielstand), neue Arten nur hinten', () => {
   assert.deepEqual(KINDS, [
     'road', 'res', 'com', 'bm', 'mun', 'fuel', 'steel', 'mine', 'market', 'power', 'uni', 'dc', 'barracks', 'factory', 'heliport',
-    'hospital', 'airport', 'smelter', 'kero', 'runway', 'stand', 'atc', 'ktank', 'mdepot', 'taxi',
+    'hospital', 'airport', 'smelter', 'kero', 'runway', 'stand', 'atc', 'ktank', 'mdepot', 'taxi', 'rail', 'station',
   ]);
   assert.equal(KIND_ID.airport, 17, 'Platzhalter Flughafen bleibt Nummer 17');
   assert.ok(KIND.airport.retired, 'Flughafen ist nicht mehr baubar');
+  assert.ok(KIND.mine.retired && KIND.smelter.retired, 'Förderanlage und Hütte sind nicht mehr baubar (Paket „Import“)');
   for (const k of CITY.retired ?? []) assert.ok(KINDS.includes(k), `CITY.retired: unbekannte Art ${k}`);
 });
 
@@ -96,8 +97,8 @@ test('Jede baubare Zellenart: Farbe, Symbol, Kurzname und Werkzeug in einer bena
 });
 
 test('Rollen: Werke, Lieferanten, Arbeitsstätten, flache Zellen passen zu Kette und Arbeitsplatz-Tabellen', () => {
-  assert.deepEqual(WORKS, ['bm', 'mun', 'fuel', 'steel', 'smelter', 'kero']);
-  assert.deepEqual(FLAT_KINDS, ['road', 'runway', 'taxi']);
+  assert.deepEqual(WORKS, ['bm', 'mun', 'fuel', 'steel', 'kero']);
+  assert.deepEqual(FLAT_KINDS, ['road', 'runway', 'taxi', 'rail']);
   for (const w of WORKS) {
     assert.ok(CITY.chain[w], `Werk ${w}: Eintrag in CITY.chain fehlt`);
     assert.equal(KIND[w].jobs, 'jobs', `Werk ${w}: Arbeitsplätze aus CITY.jobs`);
@@ -123,18 +124,15 @@ test('Warenregister: jede Ware vollständig; Listen, Markt, Ertrag und Kette aus
     assert.ok(d.name && d.short, `${g}: name/short`);
     assert.match(d.color ?? '', /^#[0-9a-f]{6}$/i, `${g}: color`);
     assert.ok(['main', 'city', null].includes(d.store), `${g}: store ${d.store}`);
-    assert.ok(num(d.yield) && d.yield > 0 && num(d.convert) && d.convert > 0, `${g}: yield/convert`);
+    assert.ok(num(d.yield) && d.yield > 0, `${g}: yield`);
     assert.equal(CITY.yield[g], d.yield);
-    assert.equal(CITY.convert[g], d.convert);
     assert.ok(Object.values(CITY.chain).some((L) => L.to === g), `${g}: kein Werk in CITY.chain macht sie`);
     if (d.sell !== undefined) assert.ok(d.buy > d.sell && d.sell > 0, `${g}: Markt kauft teurer, als er zahlt`);
     if (d.store === 'city') assert.ok(d.full, `${g}: Hinweis bei vollem Stadtlager`);
   }
   assert.deepEqual(STORED_GOODS, ['bm', 'mun', 'fuel', 'metal', 'kero']);
-  assert.deepEqual(MID_GOODS, ['iron']);
   assert.deepEqual(CITY_STORE_GOODS, ['metal', 'kero']);
   assert.equal(FLOW_GOODS, STORED_GOODS);
-  assert.equal(FLOW_MIDS, MID_GOODS);
   assert.deepEqual(CITY.market.sell, Object.fromEntries(MARKET_GOODS.map((g) => [g, GOODS[g].sell])));
   assert.deepEqual(CITY.market.buy, Object.fromEntries(MARKET_GOODS.map((g) => [g, GOODS[g].buy])));
 });
@@ -155,4 +153,16 @@ test('Schichten (A-02): Register ohne Imports, Stadtkarte der Darstellung liest 
     assert.doesNotMatch(readFileSync(new URL(`../js/data/${f}`, import.meta.url), 'utf8'), /^import /m, `js/data/${f} importiert nichts`);
   }
   assert.doesNotMatch(readFileSync(new URL('../js/render/citylayer.js', import.meta.url), 'utf8'), /from '\.\.\/ui\//, 'citylayer.js importiert aus js/ui');
+});
+
+test('Rohwaren (Paket „Import“): Register vollständig, nicht gelagert und nicht gehandelt, jede wird von einem Werk gebraucht', () => {
+  assert.deepEqual(IMPORT_GOODS, ['raw', 'ore', 'oil', 'expl']);
+  for (const [g, d] of Object.entries(IMPORTS)) {
+    assert.ok(d.name && d.short, `${g}: name/short`);
+    assert.match(d.color ?? '', /^#[0-9a-f]{6}$/i, `${g}: color`);
+    assert.ok(num(d.price) && d.price > 0, `${g}: price`);
+    assert.ok(!(g in GOODS) && !MARKET_GOODS.includes(g), `${g}: keine Ware mit Lager oder Markt`);
+    assert.ok(Object.values(CITY.chain).some((L) => L.need[g] > 0), `${g}: kein Werk braucht sie`);
+  }
+  for (const [w, L] of Object.entries(CITY.chain)) for (const g of Object.keys(L.need)) assert.ok(IMPORTS[g], `CITY.chain.${w}.need.${g}: keine Rohware`);
 });

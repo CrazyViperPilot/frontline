@@ -41,7 +41,7 @@ function rect(g, W, H) {
       for (let y = r; ok && y < r + H; y++) {
         for (let x = q; ok && x < q + W; x++) {
           const j = y * c.cols + x;
-          ok = canZone(g, c, j) && !c.kind[j] && !roadAt(c, j) && !c.deposit[j];
+          ok = canZone(g, c, j) && !c.kind[j] && !roadAt(c, j);
         }
       }
       if (ok) best = { q, r, d };

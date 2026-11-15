@@ -1,14 +1,12 @@
-// Stadt (PRD §15), Erzeugung: Raster je Team über die ganze Karte, gesperrte Zellen, Konfliktzone, Rohstoffvorkommen, Startviertel.
+// Stadt (PRD §15), Erzeugung: Raster je Team über die ganze Karte, gesperrte Zellen, Konfliktzone, Startviertel (seit Paket „Import“
+// mit Straße zum Kartenrand; Rohstoffvorkommen gibt es nicht mehr).
 // Nur aktiv, wenn das Spiel mit `city: true` startet. Kein DOM, deterministisch.
 import { quarterAt } from '../conquest.js';
 import { inZone } from '../zonegeo.js';
 import { CITY } from '../../data/city.js';
 import { KINDS, KIND_ID } from '../../data/citykinds.js';
-import { makeRng } from '../../core/rng.js';
-import { RELIEF } from '../relief.js';
-import { bridgeUnder } from '../river.js';
-import { DEPOSITS, nearMain, cellAt, sizeOf, isPart, bigSpan, bigCenter, bigFits, cellFree, canZone } from './cells.js';
-import { connectRoad, goalOf } from './roadnet.js';
+import { nearMain, cellAt, sizeOf, isPart, bigSpan, bigCenter, bigFits, cellFree, canZone, accessCells, mainAccess } from './cells.js';
+import { connectRoad, connectEdge } from './roadnet.js';
 import { zeroStats, updateClaim, rebuildList, placeBuilt, placeBuiltBig } from './state.js';
 
 /**
@@ -62,88 +60,9 @@ export function ownCells(game, team, cols, rows) {
   return out;
 }
 
-/**
- * Liegt Stadtzelle (q, r) ganz oder teilweise auf Wasser, einer Furt, einer Brücke oder einer Stadtstraße der Karte?
- * Dort entstehen keine Vorkommen (seit v5.15): Brücken und Furten sind begehbar und darum nicht gesperrt (blockedCells),
- * seichtes Wasser am Zellrand kann durchrutschen.
- */
-function wetCell(game, q, r) {
-  const S = CITY.cell;
-  const g = game.grid;
-  const T = g.tile;
-  if (game.roads?.kind[r * game.roads.cols + q]) return true; // Zonenstraße oder Brückenfahrbahn
-  const rel = game.relief;
-  const m = CITY.deposits.shore; // Abstand zum Ufer (px), auch über den Zellrand hinaus
-  for (let y = r * S - m; y <= (r + 1) * S + m; y += T / 4) {
-    for (let x = q * S - m; x <= (q + 1) * S + m; x += T / 4) {
-      if (g.isFord(Math.floor(x / T), Math.floor(y / T))) return true;
-      if (rel && rel.heightAt(x, y) < RELIEF.water) return true;
-    }
-  }
-  for (const [dx, dy] of [[0.5, 0.5], [0, 0], [1, 0], [0, 1], [1, 1]]) if (bridgeUnder(game, (q + dx) * S, (r + dy) * S)) return true;
-  return false;
-}
-
-/**
- * Rohstoffvorkommen (seit v4.83): je Hauptstadt eine Gruppe jeder Sorte in ihrer Nähe, dazu umkämpfte Gruppen rund um die
- * Konfliktzone, punktgespiegelt um ihre Mitte (beide Seiten gleich weit). Eigener Zufall aus dem Seed: die Karte bleibt unverändert.
- */
-function genDeposits(game, cols, rows, blocked) {
-  const dep = new Uint8Array(cols * rows);
-  const rng = makeRng(((game.seed | 0) * 2654435761 + 0x5eed) >>> 0);
-  const D = CITY.deposits;
-  const S = CITY.cell;
-  const free = (q, r) => q >= 1 && r >= 1 && q < cols - 1 && r < rows - 1 && !blocked[r * cols + q] && !dep[r * cols + q] && !wetCell(game, q, r);
-  // Gruppe ab (q, r) zufällig wachsen lassen; gibt die Zahl der Zellen zurück
-  const cluster = (q, r, type, size) => {
-    if (!free(q, r)) return 0;
-    const cells = [[q, r]];
-    dep[r * cols + q] = type;
-    for (let tries = 0; cells.length < size && tries < size * 8; tries++) {
-      const [a, b] = cells[Math.floor(rng.next() * cells.length)];
-      const [dq, dr] = [[1, 0], [-1, 0], [0, 1], [0, -1]][Math.floor(rng.next() * 4)];
-      if (!free(a + dq, b + dr)) continue;
-      dep[(b + dr) * cols + a + dq] = type;
-      cells.push([a + dq, b + dr]);
-    }
-    return cells.length;
-  };
-  const z = game.zone ?? game.map.zone;
-  for (const b of game.buildings) {
-    if (!b.main) continue;
-    const away = Math.atan2(b.y - z.y, b.x - z.x); // von der Zone weg zeigt die Stadt
-    DEPOSITS.forEach((_, k) => {
-      for (let tries = 0; tries < 40; tries++) {
-        const a = away + Math.PI * (rng.next() * 1.6 - 0.8) + (k - 1.5) * 0.5;
-        const d = rng.range(D.home.dist[0], D.home.dist[1] + tries / 8) * S;
-        if (cluster(Math.floor((b.x + Math.cos(a) * d) / S), Math.floor((b.y + Math.sin(a) * d) / S), k + 1, D.home.size)) break;
-      }
-    });
-  }
-  const order = [3, 4, 2, 1]; // Erz, Öl, Stein, Holz
-  for (let n = 0; n < D.neutral.count / 2; n++) {
-    const type = order[n % order.length];
-    for (let tries = 0; tries < 40; tries++) {
-      const a = rng.next() * Math.PI * 2;
-      const d = z.r + rng.range(D.neutral.ring[0], D.neutral.ring[1]) * S;
-      const x = z.x + Math.cos(a) * d;
-      const y = z.y + Math.sin(a) * d;
-      const q1 = Math.floor(x / S);
-      const r1 = Math.floor(y / S);
-      const q2 = Math.floor((2 * z.x - x) / S);
-      const r2 = Math.floor((2 * z.y - y) / S);
-      if (!free(q1, r1) || !free(q2, r2)) continue;
-      cluster(q1, r1, type, D.neutral.size);
-      cluster(q2, r2, type, D.neutral.size);
-      break;
-    }
-  }
-  return dep;
-}
-
 /** Stadt eines Teams: eigenes Zonenraster über die ganze Karte (gemeinsame Sperren), Gebiet, Einwohner. */
 function createTeamCity(game, team, shared) {
-  const { cols, rows, blocked, inZone, deposit, felled } = shared;
+  const { cols, rows, blocked, inZone, felled } = shared;
   const n = cols * rows;
   return {
     team,
@@ -155,7 +74,6 @@ function createTeamCity(game, team, shared) {
     felled, // 1 = Bäume gefällt (Räumen, seit v5.13; beide Teams)
     inZone, // 1 = Zelle in der Konfliktzone
     own: ownCells(game, team, cols, rows), // Eroberung: 1 = eigenes Viertel (nur dort wird gebaut); klassisch null
-    deposit, // Rohstoffvorkommen je Zelle (Index in DEPOSITS + 1), für beide Teams gleich
     mapRoads: game.roads?.kind ?? null, // Stadtstraßen der Karte (roads.js, seit v5.03): zählen als Straße, für beide Teams gleich
     metal: CITY.startMetal, // Stahl im Stadtlager (nur hier, LKW fahren es nicht)
     kero: CITY.startKero, // Kerosin im Stadtlager (seit v5.20)
@@ -189,7 +107,7 @@ export function createCity(game, enabled) {
   const cols = Math.floor((game.grid.cols * game.grid.tile) / CITY.cell);
   const rows = Math.floor((game.grid.rows * game.grid.tile) / CITY.cell);
   const blocked = blockedCells(game, cols, rows);
-  const shared = { cols, rows, blocked, inZone: zoneCells(game, cols, rows), deposit: genDeposits(game, cols, rows, blocked), felled: new Uint8Array(cols * rows) };
+  const shared = { cols, rows, blocked, inZone: zoneCells(game, cols, rows), felled: new Uint8Array(cols * rows) };
   game.city = game.teams.map((t) => createTeamCity(game, t.id, shared));
   for (const b of game.buildings) {
     if (!b.main) continue;
@@ -206,15 +124,16 @@ export function createCity(game, enabled) {
 
 /**
  * Startviertel (CITY.startQuarter): Straße nahe der Hauptstadt, darunter Wohnen und Raffinerie, darüber (seit v5.03) die Großbauten
- * Kaserne und Fabrikhalle nebeneinander mit der Unterkante an der Straße; Ölquelle auf dem nächsten Öl. Passt das ganze Viertel
- * nirgends, stehen die Großbauten so nah wie möglich an der Hauptstadt; seit dem Paket „Straßen“ bekommen sie danach eine Straße zum Lager.
+ * Kaserne und Fabrikhalle nebeneinander mit der Unterkante an der Straße. Passt das ganze Viertel nirgends, stehen die Großbauten so
+ * nah wie möglich an der Hauptstadt; seit dem Paket „Straßen“ bekommen sie danach eine Straße zum Lager. Seit Paket „Import“ führt
+ * eine Straße vom Netz des Viertels zum nächsten Kartenrand: dort führt die Raffinerie ab Sekunde 0 Öl ein.
  */
 function startQuarter(game, c) {
   const m = game.mainFob(c.team);
   if (!m) return;
   const Q = CITY.startQuarter;
   const [fc, fr] = cellAt(c, m.x, m.y);
-  const ok = (i) => canZone(game, c, i) && !c.kind[i] && !c.deposit[i] && cellFree(game, c, i % c.cols, Math.floor(i / c.cols));
+  const ok = (i) => canZone(game, c, i) && !c.kind[i] && cellFree(game, c, i % c.cols, Math.floor(i / c.cols));
   const big = Q.big ?? [];
   const best = quarterSpot(game, c, fc, fr, ok);
   if (best) {
@@ -225,15 +144,16 @@ function startQuarter(game, c) {
     }
     for (const [kind, off] of big) placeBuiltBig(game, c, cornerAnchor(c, kind, best.q + off, best.r - sizeOf(kind)), kind);
   } else looseQuarter(game, c, m, fc, fr, ok);
-  const oil = nearestOil(game, c, fc, fr);
-  if (oil >= 0) placeBuilt(game, c, oil, 'mine');
   rebuildList(c);
-  // Anschluss ans Lager (seit v5.20, AP4): erst die Raffinerie, dann die Ölquelle an deren Netz (ein Weg zur Raffinerie); ohne Kosten
+  // Anschluss ans Lager (seit v5.20, AP4): die Raffinerie; ohne Kosten
   for (const i of [...c.list]) if (!isPart(c, i) && c.level[i] && KINDS[c.kind[i] - 1] === 'fuel') connectRoad(game, c, i, false);
-  if (oil >= 0 && c.kind[oil]) connectRoad(game, c, oil, false, goalOf(c, oil, 'mine'));
   // Kaserne und Fabrikhalle ebenso (Paket „Straßen“, Teil 2: Ausbildung nur mit Straßenweg zum Lager); besteht der Anschluss schon, bleibt alles gleich
   for (const i of [...c.list]) if (!isPart(c, i) && c.level[i] && CITY.produces[KINDS[c.kind[i] - 1]]) connectRoad(game, c, i, false);
   rebuildList(c);
+  // Straße zum Kartenrand (Paket „Import“): vom Netz der Raffinerie aus (sie hängt am Lager), sonst vom Netz am Lager; ohne Kosten
+  const fuel = c.list.find((i) => !isPart(c, i) && c.level[i] && KINDS[c.kind[i] - 1] === 'fuel');
+  const starts = fuel !== undefined ? accessCells(c, fuel) : [];
+  connectEdge(game, c, starts.length ? starts : mainAccess(game, c), false);
 }
 
 /** Anker eines Großbaus, dessen linke obere Ecke bei (q, r) liegt. */
@@ -278,8 +198,7 @@ function quarterSpot(game, c, fc, fr, ok) {
 }
 
 /**
- * Kein Platz für das ganze Viertel: die Großbauten einzeln so nah wie möglich an der Hauptstadt m (größter zuerst; notfalls auch
- * auf Rohstoffvorkommen), dazu Straße an der Seite zur Hauptstadt und die Zellen darunter an der Straße der Kaserne.
+ * Kein Platz für das ganze Viertel: die Großbauten einzeln so nah wie möglich an der Hauptstadt m (größter zuerst), dazu Straße an der Seite zur Hauptstadt und die Zellen darunter an der Straße der Kaserne.
  */
 function looseQuarter(game, c, m, fc, fr, ok) {
   const Q = CITY.startQuarter;
@@ -296,10 +215,7 @@ function looseQuarter(game, c, m, fc, fr, ok) {
       }
     }
     cand.sort((p, o) => p.d - o.d || p.a - o.a);
-    // lieber ohne Rohstoffvorkommen, aber höchstens vier Zellen weiter weg als der nächste Platz überhaupt
-    const near = cand.find((k) => bigFits(game, c, k.a, sz, loose));
-    const clean = near && cand.find((k) => k.d <= near.d + 4 * c.cell && bigFits(game, c, k.a, sz, ok));
-    const a = (clean ?? near)?.a ?? -1;
+    const a = cand.find((k) => bigFits(game, c, k.a, sz, loose))?.a ?? -1;
     if (a < 0) continue;
     placeBuiltBig(game, c, a, kind);
     // Straße entlang der Seite, die zur Hauptstadt zeigt
@@ -325,21 +241,4 @@ function looseQuarter(game, c, m, fc, fr, ok) {
     });
     void hi;
   }
-}
-
-/** Nächstes freies Ölvorkommen im eigenen Gebiet (Zellindex oder -1) für die Ölquelle des Startviertels. */
-function nearestOil(game, c, fc, fr) {
-  let oil = -1;
-  let od = Infinity;
-  const D = DEPOSITS.indexOf('oil') + 1;
-  for (let i = 0; i < c.deposit.length; i++) {
-    if (c.deposit[i] !== D || !c.claim[i] || !canZone(game, c, i) || c.kind[i]) continue;
-    const q = i % c.cols;
-    const d = Math.hypot(q - fc, (i - q) / c.cols - fr);
-    if (d < od) {
-      od = d;
-      oil = i;
-    }
-  }
-  return oil;
 }

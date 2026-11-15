@@ -16,30 +16,29 @@
 //   size   Kantenlänge in Zellen (Großbau, CITY.size; fehlt = 1)
 //   power  Strombedarf je Stufe (CITY.power.use; Pflicht außer bei flachen Zellen)
 //   target Zielwert für Angriffe der KI (CITY.ai.targetValue; fehlt = 1)
-//   jobs   Tabelle der Arbeitsplätze je Stufe in CITY ('jobs', 'jobsCom', 'jobsMine', 'jobsUni', 'jobsDc'): Arbeitsstätte mit
+//   jobs   Tabelle der Arbeitsplätze je Stufe in CITY ('jobs', 'jobsCom', 'jobsUni', 'jobsDc'): Arbeitsstätte mit
 //          Pendlerweg zur nächsten Wohnung (Straßentransport)
 //   works  Werk: verarbeitet nach CITY.chain (Eintrag dort Pflicht) mit CITY.jobs Arbeitsplätzen; liefert über die Straße
-//   supply liefert über die Straße an ein Werk oder das Lager (Förderanlage; Werke liefern immer)
+//   supply liefert über die Straße an ein Werk oder das Lager (früher die Förderanlage; Werke liefern immer; heute ohne Nutzer)
 //   flat   flache Zelle wie Straße: sofort fertig, kein Gebäude, kein Ziel, kein Strom, zählt als Straßenanschluss
 //   retired nicht mehr baubar, nur Platzhalter für die Nummer (keine weiteren Felder)
 export const CITY_KINDS = [
   // ---- Grundlagen ----
   { key: 'road', id: 1, name: 'Straße', short: 'Straße', icon: '▬', color: '#8a8f86', group: 'Grundlagen', flat: true, cost: 0, bm: 10, tip: 'Kostet Baumaterial aus dem Lager der Hauptstadt' },
+  { key: 'rail', id: 26, name: 'Gleis', short: 'Gleis', icon: '═', color: '#6b5a4a', group: 'Grundlagen', flat: true, cost: 5, bm: 5, tip: 'Gleis (Paket „Import“): Zellen wie eine Straße ziehen, sofort fertig. Eine durchgehende Kette aus Gleisen (Nachbarn links, rechts, oben, unten) von einem Güterbahnhof bis an den Kartenrand schließt den Bahnhof an; Waren fahren hier nicht, weiter geht es nur über Straßen' },
   { key: 'erase', name: 'Räumen', short: 'Räumen', icon: '✕', color: '#d05050', group: 'Grundlagen', tip: 'Entfernt eigene Stadtzellen (ohne Erstattung), fällt Bäume und Wald und reißt leere Häuser, Hallen und Fabriken der Karte ab, damit dort gebaut werden kann (Fels, Wasser, Türme, besetzte Häuser bleiben)' },
   // ---- Wohnen & Gewerbe (Wohnen grün = privat, Gewerbe blau = kommerziell, Markt gold) ----
   { key: 'res', id: 2, name: 'Wohnen', short: 'Wohnen', icon: '⌂', color: '#4f9a5a', group: 'Wohnen & Gewerbe', cost: 20, power: 1, target: 0.5 },
   { key: 'com', id: 3, name: 'Gewerbe', short: 'Gewerbe', icon: '▣', color: '#3f7fd0', group: 'Wohnen & Gewerbe', cost: 30, power: 3, target: 1, jobs: 'jobsCom' },
   { key: 'market', id: 9, name: 'Markt', short: 'Markt', icon: '⚖', color: '#e6b422', group: 'Wohnen & Gewerbe', cost: 60, power: 3, target: 2, jobs: 'jobsCom', tip: 'Handel: Überschuss verkaufen, Knappes teuer kaufen (Knopf Handel, Markt antippen oder Geldanzeige oben)' },
-  // ---- Förderung ----
-  { key: 'mine', id: 8, name: 'Förderanlage', short: 'Förderung', icon: '⛏', color: '#c9a14a', group: 'Förderung', cost: 30, power: 4, target: 2.5, jobs: 'jobsMine', supply: true, tip: 'Nur auf Rohstoffvorkommen: Holzfäller, Steinbruch, Erzmine oder Ölquelle; braucht eine Straße zum passenden Werk (Holz, Stein → BM-Werk, Erz → Hütte, Öl → Raffinerie)' },
   // ---- Ressourcen: Werke (erdig) und Kraftwerk ----
-  { key: 'bm', id: 4, name: 'Baumaterial-Werk', short: 'BM-Werk', icon: '⚒', color: '#b0743c', group: 'Ressourcen', cost: 40, size: 2, power: 8, target: 2, jobs: 'jobs', works: true, tip: 'Großbau 2 × 2 (Ziegelei mit Holzlager): Baumaterial aus Holz und Stein (Holzfäller, Steinbruch)' },
-  { key: 'smelter', id: 18, name: 'Hütte', short: 'Hütte', icon: '🔥', color: '#a0522d', group: 'Ressourcen', cost: 50, size: 2, power: 10, target: 3, jobs: 'jobs', works: true, tip: (C) => `Großbau ${C.size.smelter} × ${C.size.smelter} Zellen (Hochofen mit Glut und Schornstein): Roheisen aus Erz (Erzmine); das Roheisen fährt zum Stahlwerk` },
-  { key: 'steel', id: 7, name: 'Stahlwerk', short: 'Stahlwerk', icon: '⛓', color: '#7f8c99', group: 'Ressourcen', cost: 50, size: 2, power: 10, target: 3, jobs: 'jobs', works: true, tip: 'Großbau 2 × 2 (Stahlwerk mit Walzstraße): Stahl aus Roheisen (Hütte)' },
-  { key: 'mun', id: 5, name: 'Munitionswerk', short: 'Mun.-Werk', icon: '✸', color: '#8b96a8', group: 'Ressourcen', cost: 40, size: 2, power: 8, target: 3, jobs: 'jobs', works: true, tip: 'Großbau 2 × 2 (Bunker mit Riesenpatrone): Munition aus Stahl' },
-  { key: 'fuel', id: 6, name: 'Raffinerie', short: 'Raffinerie', icon: '⛽', color: '#9b7bc4', group: 'Ressourcen', cost: 40, size: 2, power: 8, target: 3, jobs: 'jobs', works: true, tip: 'Großbau 2 × 2 (großer Öltank, Destillationstürme): Treibstoff aus Öl (Ölquelle)' },
-  { key: 'kero', id: 19, name: 'Kerosin-Raffinerie', short: 'Kerosin-Raf.', icon: '🛢', color: '#56b3e6', group: 'Ressourcen', cost: 50, size: 2, power: 8, target: 3, jobs: 'jobs', works: true, tip: (C) => `Großbau ${C.size.kero} × ${C.size.kero} Zellen (Kugeltanks mit blauen Tankringen): Kerosin aus Öl (Ölquelle), Vorrat im Stadtlager; für den Kerosintank des Fliegerhorsts (F-16 und Hubschrauber)` },
-  { key: 'power', id: 10, name: 'Kraftwerk', short: 'Kraftwerk', icon: '⚡', color: '#e0c040', group: 'Ressourcen', cost: 80, size: 2, power: 0, target: 3, jobs: 'jobs', tip: (C) => `Großbau ${C.size.power} × ${C.size.power} Zellen: Strom für Werke, Förderung, Uni und Rechenzentrum (stadtweit); ohne genug Strom arbeiten sie langsamer` },
+  { key: 'bm', id: 4, name: 'Baumaterial-Werk', short: 'BM-Werk', icon: '⚒', color: '#b0743c', group: 'Ressourcen', cost: 40, size: 2, power: 8, target: 2, jobs: 'jobs', works: true, tip: 'Großbau 2 × 2 (Ziegelei mit Holzlager): Baumaterial aus eingeführtem Rohmaterial; braucht eine Straße zum Kartenrand oder zu einem angeschlossenen Güterbahnhof (Rohware kostet Geld)' },
+  { key: 'steel', id: 7, name: 'Stahlwerk', short: 'Stahlwerk', icon: '⛓', color: '#7f8c99', group: 'Ressourcen', cost: 50, size: 2, power: 10, target: 3, jobs: 'jobs', works: true, tip: 'Großbau 2 × 2 (Stahlwerk mit Walzstraße): Stahl aus eingeführtem Eisen; braucht eine Straße zum Kartenrand oder zu einem angeschlossenen Güterbahnhof (Rohware kostet Geld)' },
+  { key: 'mun', id: 5, name: 'Munitionswerk', short: 'Mun.-Werk', icon: '✸', color: '#8b96a8', group: 'Ressourcen', cost: 40, size: 2, power: 8, target: 3, jobs: 'jobs', works: true, tip: 'Großbau 2 × 2 (Bunker mit Riesenpatrone): Munition aus eingeführtem Eisen und Sprengstoff (beides nötig); braucht eine Straße zum Kartenrand oder zu einem angeschlossenen Güterbahnhof (Rohware kostet Geld)' },
+  { key: 'fuel', id: 6, name: 'Raffinerie', short: 'Raffinerie', icon: '⛽', color: '#9b7bc4', group: 'Ressourcen', cost: 40, size: 2, power: 8, target: 3, jobs: 'jobs', works: true, tip: 'Großbau 2 × 2 (großer Öltank, Destillationstürme): Treibstoff aus eingeführtem Öl; braucht eine Straße zum Kartenrand oder zu einem angeschlossenen Güterbahnhof (Rohware kostet Geld)' },
+  { key: 'kero', id: 19, name: 'Kerosin-Raffinerie', short: 'Kerosin-Raf.', icon: '🛢', color: '#56b3e6', group: 'Ressourcen', cost: 50, size: 2, power: 8, target: 3, jobs: 'jobs', works: true, tip: (C) => `Großbau ${C.size.kero} × ${C.size.kero} Zellen (Kugeltanks mit blauen Tankringen): Kerosin aus eingeführtem Öl (Straße zum Kartenrand oder Güterbahnhof), Vorrat im Stadtlager; für den Kerosintank des Fliegerhorsts (F-16 und Hubschrauber)` },
+  { key: 'power', id: 10, name: 'Kraftwerk', short: 'Kraftwerk', icon: '⚡', color: '#e0c040', group: 'Ressourcen', cost: 80, size: 2, power: 0, target: 3, jobs: 'jobs', tip: (C) => `Großbau ${C.size.power} × ${C.size.power} Zellen: Strom für Werke, Güterbahnhof, Uni und Rechenzentrum (stadtweit); ohne genug Strom arbeiten sie langsamer` },
+  { key: 'station', id: 27, name: 'Güterbahnhof', short: 'Bahnhof', icon: '🚉', color: '#8a6d4a', group: 'Ressourcen', cost: 300, bm: 200, size: 3, power: 6, target: 3, jobs: 'jobs', tip: (C) => `Großbau ${C.size.station} × ${C.size.station} Zellen (Paket „Import“): führt Rohwaren ein, bis ${C.import.station[1]}/${C.import.station[2]}/${C.import.station[3]} je s (Stufe 1/2/3, alle Sorten zusammen, mal Besetzung und Strom), weit mehr als eine Straße trägt. Braucht eine durchgehende Gleiskette bis an den Kartenrand und eine Straße zu den Werken; ohne Gleis führt er nichts ein` },
   // ---- Einheiten (Militär oliv; Ausbildung CITY.produces, Pflege CITY.care.by) ----
   { key: 'barracks', id: 13, name: 'Kaserne', short: 'Kaserne', icon: '⚔', color: '#7d8f45', group: 'Einheiten', cost: 80, bm: 100, size: 4, power: 2, target: 2.5, tip: (C) => `Großbau ${C.size.barracks} × ${C.size.barracks} Zellen: bildet Soldaten aus (Schützen, Panzerabwehr, Scharfschützen, Kommandeur); bezahlt direkt aus der Stadt. Heilt Soldaten im Umkreis von ${C.care.by.barracks.radius} Feldern` },
   { key: 'factory', id: 14, name: 'Fabrikhalle', short: 'Fabrikhalle', icon: '🔧', color: '#7d8f45', group: 'Einheiten', cost: 150, bm: 200, size: 5, power: 8, target: 3, tip: (C) => `Großbau ${C.size.factory} × ${C.size.factory} Zellen: baut alle Fahrzeuge (LKW, Baufahrzeug, Schützen- und Kampfpanzer, Flak, SAM); bezahlt direkt aus der Stadt. Repariert Bodenfahrzeuge im Umkreis von ${C.care.by.factory.radius} Feldern (kostet Stahl)` },
@@ -58,7 +57,11 @@ export const CITY_KINDS = [
   // ---- Nicht mehr baubar ----
   // Flughafen 10 × 10 (bis v5.34), ersetzt durch den Fliegerhorst aus Bausteinen; bleibt nur, damit die Nummern der späteren Arten
   // gleich bleiben (Werkzeug, Bild und Daten seit v5.56 weg, alte Stände laden nicht).
+  // Förderanlage (Nummer 8) und Hütte (18) bis Paket „Import“: Rohstoffe kommen seitdem von außerhalb der Karte, Vorkommen gibt es
+  // nicht mehr. Reihenfolge der Platzhalter nach Nummer (CITY.retired).
+  { key: 'mine', id: 8, name: 'Förderanlage', retired: true },
   { key: 'airport', id: 17, name: 'Flughafen', retired: true },
+  { key: 'smelter', id: 18, name: 'Hütte', retired: true },
 ];
 
 /** Eintrag je Schlüssel (auch das Werkzeug Räumen). */

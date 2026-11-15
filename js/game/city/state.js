@@ -4,8 +4,9 @@ import { BALANCE } from '../../data/balance.js';
 import { CITY } from '../../data/city.js';
 import { KINDS, KIND_ID, KIND_NAME, WORKS } from '../../data/citykinds.js';
 import { UNITS } from '../../data/units.js';
+import { IMPORT_GOODS } from '../../data/goods.js';
 import { nearestPassable } from '../movement.js';
-import { isFlat, DEPOSITS, MINE_NAME, cellAt, sizeOf, isPart, bigCenter, bigCells, fitBig, cellRect, eachTile, cellFree } from './cells.js';
+import { isFlat, cellAt, sizeOf, isPart, bigCenter, bigCells, fitBig, cellRect, eachTile, cellFree } from './cells.js';
 import { trainersOf } from './query.js';
 
 /** Waren, die Werke erzeugen (Ertrag CITY.yield): je eine Rate in den Stadtzahlen und in cap/inp/gross. */
@@ -13,17 +14,17 @@ const MADE_GOODS = Object.keys(CITY.yield);
 
 export const zeroGoods = (list) => Object.fromEntries(list.map((g) => [g, 0]));
 
-export const zeroStats = () => ({ powerSupply: 0, powerUse: 0, powerRatio: 1, happy: 1, shop: 0, shopSupply: 1, shopBm: 0, pop: 0, housing: 0, jobs: 0, jobsCom: 0, workers: 0, drafted: 0, free: 0, fled: 0, ...zeroGoods(MADE_GOODS), money: 0, taxRaw: 0, lost: 0, jam: 1, raw: { wood: 0, stone: 0, ore: 0, oil: 0 }, cap: zeroGoods(MADE_GOODS), inp: zeroGoods(MADE_GOODS), gross: zeroGoods(MADE_GOODS) });
+export const zeroStats = () => ({ powerSupply: 0, powerUse: 0, powerRatio: 1, happy: 1, shop: 0, shopSupply: 1, shopBm: 0, pop: 0, housing: 0, jobs: 0, jobsCom: 0, workers: 0, drafted: 0, free: 0, fled: 0, ...zeroGoods(MADE_GOODS), money: 0, taxRaw: 0, lost: 0, jam: 1, raw: zeroGoods(IMPORT_GOODS), importCost: 0, importCostBy: zeroGoods(IMPORT_GOODS), importNone: 0, importScale: 1, cap: zeroGoods(MADE_GOODS), inp: zeroGoods(MADE_GOODS), gross: zeroGoods(MADE_GOODS) });
 
 /**
  * Fertige Zelle setzen (Stufe 1) ohne Kosten und ohne Wartezeit: Startviertel. Großbau (seit v5.08 die 2 × 2-Raffinerie): ein Quadrat,
- * das die Zelle enthält (am liebsten mit ihr als Anker, also nach rechts unten), nur auf leeren Zellen ohne Vorkommen.
+ * das die Zelle enthält (am liebsten mit ihr als Anker, also nach rechts unten), nur auf leeren Zellen.
  */
 export function placeBuilt(game, c, i, kind) {
   const col = i % c.cols;
   const row = (i - col) / c.cols;
   if (sizeOf(kind) > 1) {
-    const a = fitBig(game, c, col, row, kind, (j) => !c.kind[j] && !c.deposit[j]);
+    const a = fitBig(game, c, col, row, kind, (j) => !c.kind[j]);
     if (a >= 0) placeBuiltBig(game, c, a, kind);
     return;
   }
@@ -139,18 +140,16 @@ export function occupyCell(game, c, col, row) {
 
 /** Summen (Wohnplätze, Arbeitsplätze je Art) aus den gebauten Zellen; geflohene Wohnzellen zählen nicht. */
 export function totals(c) {
-  const t = { housing: 0, fled: 0, jobsCom: 0, ...zeroGoods(WORKS), mine: { wood: 0, stone: 0, ore: 0, oil: 0 }, market: 0, power: 0, powerJobs: 0, uni: 0, dc: 0, jobsOther: 0, use: 0 }; // je Werk seine Arbeitsplätze
-  t.n = { ...zeroGoods(WORKS), mine: { wood: 0, stone: 0, ore: 0, oil: 0 } }; // fertige Gebäude je Art (Flussanzeige)
+  const t = { housing: 0, fled: 0, jobsCom: 0, ...zeroGoods(WORKS), market: 0, power: 0, powerJobs: 0, uni: 0, dc: 0, jobsOther: 0, use: 0 }; // je Werk seine Arbeitsplätze
+  t.n = { ...zeroGoods(WORKS), station: 0 }; // fertige Gebäude je Art (Flussanzeige; Güterbahnhof seit Paket „Import“)
   for (const i of c.list) {
     const lv = c.level[i];
     if (!lv || isPart(c, i)) continue; // ein Großbau zählt einmal (über seine Mitte)
     const k = KINDS[c.kind[i] - 1];
-    if (k === 'mine') {
-      const d = DEPOSITS[c.deposit[i] - 1];
-      if (d) t.n.mine[d]++;
-    } else if (k in t.n) t.n[k]++;
+    if (k in t.n) t.n[k]++;
     t.use += (CITY.power.use[k] ?? 0) * lv; // Strombedarf
-    if (k === 'power') {
+    if (k === 'station') t.jobsOther += CITY.jobs[lv]; // Güterbahnhof (Paket „Import“): Arbeitsplätze wie ein Werk
+    else if (k === 'power') {
       t.power += CITY.power.supply[lv];
       t.powerJobs += CITY.jobs[lv];
       t.jobsOther += CITY.jobs[lv];
@@ -167,12 +166,8 @@ export function totals(c) {
     else if (k === 'market') {
       t.jobsCom += CITY.jobsCom[lv]; // der Markt arbeitet und zahlt Steuern wie Gewerbe
       t.market = Math.max(t.market, lv);
-    } else if (k === 'mine') {
-      const d = DEPOSITS[c.deposit[i] - 1];
-      if (d) t.mine[d] += CITY.jobsMine[lv];
     } else if (WORKS.includes(k)) t[k] += CITY.jobs[lv];
   }
-  t.mineJobs = t.mine.wood + t.mine.stone + t.mine.ore + t.mine.oil;
   return t;
 }
 
@@ -187,7 +182,7 @@ export function syncEntity(game, c, i) {
   }
   const n = c.part?.[i] ? sizeOf(k) : 1; // Großbau: ein Ziel über das ganze Quadrat
   const hp = CITY.hp[lv] * n;
-  const name = k === 'mine' ? MINE_NAME[DEPOSITS[c.deposit[i] - 1]] ?? KIND_NAME.mine : KIND_NAME[k];
+  const name = KIND_NAME[k];
   if (!e) {
     const col = i % c.cols;
     const r = n > 1 ? bigCenter(c, i, n) : cellRect(c, col, (i - col) / c.cols); // Großbau: Mitte des Quadrats (gerade n: zwischen Zellen)

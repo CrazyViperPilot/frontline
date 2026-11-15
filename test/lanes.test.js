@@ -57,7 +57,7 @@ test('Transport: Kapazität einer Straße × Spuren je Richtung', () => {
   let a = null;
   for (let r = 2; r < c.rows - 6 && !a; r++) for (let q = 2; q < c.cols - 12 && !a; q++) {
     let ok = true;
-    for (let y = r - 1; ok && y <= r + 3; y++) for (let x = q - 1; ok && x <= q + 10; x++) { const j = y * c.cols + x; ok = canZone(g, c, j) && !c.kind[j] && !roadAt(c, j) && !c.deposit[j]; }
+    for (let y = r - 1; ok && y <= r + 3; y++) for (let x = q - 1; ok && x <= q + 10; x++) { const j = y * c.cols + x; ok = canZone(g, c, j) && !c.kind[j] && !roadAt(c, j); }
     if (ok && Math.hypot(q * c.cell - m.x, r * c.cell - m.y) < 2500) a = { q, r };
   }
   assert.ok(a, 'Platz');

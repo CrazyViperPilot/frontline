@@ -1,12 +1,12 @@
-// Stadt (PRD §15), Wirtschaftsschritt updateCity: Gebiet, Ruinen, Einwohner, Wachstum, Gewerbe, Zufriedenheit, Förderung, Werke in
-// Kettenfolge, Lager, Munitionswerke, Fliegerhorst, Steuern und Pflege. Lieferwege aus transport.js. Kein DOM, deterministisch.
+// Stadt (PRD §15), Wirtschaftsschritt updateCity: Gebiet, Ruinen, Einwohner, Wachstum, Gewerbe, Zufriedenheit, Einfuhr der Rohwaren
+// und Werke (seit Paket „Import“), Lager, Fliegerhorst, Steuern und Pflege. Lieferwege aus transport.js. Kein DOM, deterministisch.
 import { BALANCE } from '../../data/balance.js';
 import { CITY } from '../../data/city.js';
 import { KIND, KINDS, KIND_ID, WORKS } from '../../data/citykinds.js';
-import { STORED_GOODS } from '../../data/goods.js';
+import { STORED_GOODS, GOODS } from '../../data/goods.js';
 import { transportOf, pathEff, addLoad, beginLoads, settleLoads, minFactor, supplyOf } from '../transport.js';
 import { updateCare } from './care.js';
-import { isFlat, DEPOSITS, isPart, cellsOf, cellFree, releaseCell, hasRoad } from './cells.js';
+import { isFlat, isPart, cellsOf, cellFree, releaseCell, hasRoad } from './cells.js';
 import { draftedCount, freePop, trainersOf } from './query.js';
 import { UNITS } from '../../data/units.js';
 import { zeroGoods, zeroStats, updateClaim, occupyCell, totals, syncEntity, dropEntity } from './state.js';
@@ -18,14 +18,18 @@ function scratchOf(c) {
   let w = SCRATCH.get(c);
   if (!w) {
     const n = c.cols * c.rows;
-    w = { arr: new Float64Array(n), eff: new Float64Array(n), room: new Float64Array(n), anchors: new Int32Array(n) };
+    w = { eff: new Float64Array(n), anchors: new Int32Array(n) };
     SCRATCH.set(c, w);
   }
   return w;
 }
 
-/** Werke in der Reihenfolge der Verarbeitung (Hütte liefert Roheisen ans Stahlwerk, bevor dieses rechnet). */
-const WORK_ORDER = ['smelter', 'steel', 'bm', 'fuel', 'kero'];
+/** Werke in fester Reihenfolge (Register: alle Arten mit `works`); seit Paket „Import“ alle gleich: Rohwaren ein, Produkt ins Lager. */
+const WORK_ORDER = WORKS;
+/** Rohwaren je Einheit Produkt und ihr Preis je Einheit Produkt, je Werk (aus CITY.chain und CITY.import.price, einmal gerechnet). */
+const NEED = Object.fromEntries(WORKS.map((k) => [k, Object.entries(CITY.chain[k].need)]));
+const NEED_SUM = Object.fromEntries(WORKS.map((k) => [k, NEED[k].reduce((a, [, n]) => a + n, 0)]));
+const NEED_PRICE = Object.fromEntries(WORKS.map((k) => [k, NEED[k].reduce((a, [g, n]) => a + n * CITY.import.price[g], 0)]));
 
 /** Werke mit Ausgangslager (CITY.pickup, seit v5.69): Art-Schlüssel. */
 const PICKUP = new Set(CITY.pickup.kinds);
@@ -44,9 +48,8 @@ function stockAtWork(c, i, prod, out, dt) {
   return put / dt;
 }
 
-/** Arbeitsplätze eines fertigen Gebäudes (wie totals; Förderanlage nur mit Vorkommen). */
+/** Arbeitsplätze eines fertigen Gebäudes (wie totals). */
 function jobsOf(c, i, k, lv) {
-  if (k === 'mine') return DEPOSITS[c.deposit[i] - 1] ? CITY.jobsMine[lv] : 0;
   const table = KIND[k]?.jobs; // Register: Tabelle der Arbeitsplätze je Stufe
   return table ? CITY[table][lv] : 0;
 }
@@ -64,7 +67,7 @@ function calmMarket(c, dt) {
 /**
  * Ein Simulationsschritt der Stadt beider Teams. Nach updateEconomy aufrufen. Die Phasen laufen in fester Reihenfolge (seit v5.60
  * zerlegt, Review Q-06; Rechenreihenfolge unverändert): Gebiet und Rückkehr, Ruinen, Treffer, Einwohner, Wachstum, Wirtschaft
- * (Gewerbe, Zufriedenheit, Förderung, Werke, Lager, Munition, Fliegerhorst, Stau, Steuern), Pflege.
+ * (Gewerbe, Zufriedenheit, Einfuhr und Werke, Lager, Fliegerhorst, Stau, Steuern), Pflege.
  */
 export function updateCity(game, dt) {
   if (!game.city) return;
@@ -81,7 +84,7 @@ export function updateCity(game, dt) {
     c.stats = s;
 
     team.res.money += s.money * dt;
-    team.rate.money += s.money;
+    team.rate.money += s.money - s.importCost; // Einfuhr (Paket „Import“) ist in produce schon bezahlt, zählt aber in der Rate mit
     updateCare(game, c, dt);
   });
 }
@@ -138,7 +141,7 @@ function population(game, c, id, dt) {
   c.drafted = drafted;
 
   const t = totals(c);
-  const jobs = t.jobsCom + WORKS.reduce((n, w) => n + t[w], 0) + t.mineJobs + t.jobsOther; // ganze Zahlen: Reihenfolge egal
+  const jobs = t.jobsCom + WORKS.reduce((n, w) => n + t[w], 0) + t.jobsOther; // ganze Zahlen: Reihenfolge egal
 
   const target = jobs > 0 ? t.housing : Math.min(t.housing, CITY.startPop);
   if (c.popF < target) c.popF = Math.min(target, c.popF + CITY.immigration * (0.5 + (c.stats.happy ?? 1)) * dt); // zufriedene Städte ziehen schneller an
@@ -148,7 +151,7 @@ function population(game, c, id, dt) {
   return { t, jobs, drafted, pop, pool };
 }
 
-/** Wachstum der Zellen: Gebäude entstehen nur mit Straßenanschluss (auch Förderanlagen), Ausbau nur bei Bedarf. */
+/** Wachstum der Zellen: Gebäude entstehen nur mit Straßenanschluss, Ausbau nur bei Bedarf. */
 function growCells(game, c, P, dt) {
   const { t, jobs, pool } = P;
   let built = false;
@@ -157,7 +160,7 @@ function growCells(game, c, P, dt) {
     const kind = KINDS[c.kind[i] - 1];
     const col = i % c.cols;
     const row = (i - col) / c.cols;
-    if (isFlat(c.kind[i]) || !hasRoad(c, col, row)) continue; // seit v5.20 auch Förderanlagen: ohne Straße wachsen sie nicht
+    if (isFlat(c.kind[i]) || !hasRoad(c, col, row)) continue; // ohne Straße wächst nichts
     const lv = c.level[i];
     if (lv >= CITY.maxLevel) continue;
     if (lv >= 1 && kind === 'stand') continue; // Stellplatz: Ausbau nur über den Befehl cityUpgrade (seit v5.39)
@@ -182,7 +185,7 @@ function growCells(game, c, P, dt) {
 }
 
 /**
- * Arbeit, Förderung, Verarbeitung, Lager, Steuern (seit v5.20, AP3, PLAN 1.4): Rechnung je Gebäude über seinen Lieferweg.
+ * Arbeit, Einfuhr, Verarbeitung, Lager, Steuern (seit v5.20, AP3, PLAN 1.4): Rechnung je Gebäude über seinen Lieferweg.
  * Pendler und Lieferwege kommen aus js/game/transport.js; Last und Stau laufen je Schritt (beginLoads … settleLoads).
  * Ergebnis: die Stadtzahlen des Schritts (c.stats).
  */
@@ -201,19 +204,18 @@ function produce(game, c, id, P, dt) {
   s.market = t.market;
   s.fill = fill;
   s.n = t.n; // fertige Gebäude je Art (Flussanzeige)
-  // Strom (Stufe 3): Angebot aus Notstrom und Kraftwerken; Mangel bremst Förderung und Werke
+  // Strom (Stufe 3): Angebot aus Notstrom und Kraftwerken; Mangel bremst Werke und Güterbahnhof
   s.powerSupply = CITY.power.base + t.power * fill;
   s.powerUse = t.use;
   s.powerRatio = t.use > 0 ? Math.min(1, s.powerSupply / t.use) : 1;
   const tr = transportOf(game, c);
   const W = scratchOf(c);
-  // Arbeitsstand des Schritts für die Phasen unten: eff je Gebäude, arr = Ankunft am Eingang je Gebäude (Rate je s, nur für Werke und
-  // Förderung gelesen), anchors = fertige Gebäude (Anker, ohne Straßen und Teile von Großbauten), einmal gesammelt
-  const x = { c, s, tr, dt, fill, eff: W.eff, arr: W.arr, room: W.room, anchors: W.anchors, nA: 0, main: null, credit: false };
+  // Arbeitsstand des Schritts für die Phasen unten: eff je Gebäude, anchors = fertige Gebäude (Anker, ohne Straßen und Teile von
+  // Großbauten), einmal gesammelt; team = Kasse für die Einfuhr
+  const x = { c, s, tr, dt, fill, eff: W.eff, anchors: W.anchors, nA: 0, main: null, credit: false, team: game.teams[id] };
   for (const i of c.list) {
     if (!c.level[i] || isPart(c, i) || isFlat(c.kind[i])) continue;
     x.anchors[x.nA++] = i;
-    x.arr[i] = 0; // Lieferziele sind fertige Gebäude (Anker)
   }
   beginLoads(tr);
   x.main = game.mainFob(id);
@@ -231,11 +233,8 @@ function produce(game, c, id, P, dt) {
   s.uni = t.uni;
   s.dc = t.dc;
   workEffect(x, fill * s.powerRatio * mood);
-  intakeRoom(x);
-  extract(x);
   runWorks(x);
-  s.iron = s.gross.iron;
-  storeAndMunitions(x);
+  storeGoods(x);
   fillAirbase(x);
   supplyTrainers(game, x);
   // Stau: kleinster Stau-Faktor auf den in diesem Schritt benutzten Straßen (1 ohne Stau), dann Glättung für den nächsten Schritt
@@ -314,153 +313,108 @@ function workEffect(x, base) {
   }
 }
 
-/** Freie Abnahme je Werk (seit v5.75): Rohstoff bzw. Roheisen je s, den es bei voller Leistung verarbeitet (vor der Förderung). */
-function intakeRoom(x) {
-  const { c, eff, room, anchors, nA } = x;
-  for (let m = 0; m < nA; m++) {
-    const i = anchors[m];
-    const k = KINDS[c.kind[i] - 1];
-    if (!WORK_ORDER.includes(k)) continue;
-    const prod = CITY.chain[k].to;
-    room[i] = CITY.jobs[c.level[i]] * eff[i] * CITY.yield[prod] * CITY.convert[prod];
-  }
+/** Ist das Lager für das Produkt `prod` voll (Hauptstadt bzw. Stadtlager, Stand am Anfang des Schritts)? Ohne fertiges Lager: ja. */
+function storeFull(x, prod) {
+  const { c, main, credit } = x;
+  if (GOODS[prod].store === 'city') return c[prod] >= BALANCE.logistics.storeCap;
+  return !credit || main.store[prod] >= BALANCE.logistics.capitalCap;
 }
 
 /**
- * Lieferung auf die Zielwerke verteilen (seit v5.75, Daniels Wunsch „nach vorhandener Abnahmekapazität“): rate je s des Lieferanten a
- * geht anteilig nach freier Abnahme (room) an alle erreichbaren Zielwerke, höchstens so viel, wie jedes noch nimmt; was alle voll
- * übrig lassen, fährt wie bisher zum nächsten. Last auf jedem benutzten Weg. Rückgabe: verlorene Menge (ohne erreichbares Werk alles).
+ * Einfuhr und Werke (Paket „Import“, PRD §15): Jedes Werk fordert für seine Leistung (Arbeiter × Wirkung × Ertrag) die Rohwaren an
+ * (CITY.chain[Werk].need je Einheit Produkt), beim nächsten Einfuhrpunkt über die Straße (transport.js imports); ohne Einfuhrpunkt
+ * oder mit vollem Lager fordert es nichts. Ein Güterbahnhof liefert höchstens CITY.import.station[Stufe] × seine Wirkung je s; fordern
+ * seine Werke mehr, bekommt jedes anteilig weniger. Bezahlt wird je angekommener Einheit (CITY.import.price); reicht das Geld nicht, sinkt
+ * die ganze Einfuhr des Schritts im selben Verhältnis (die Kasse fällt dadurch nie unter 0). Die Rohwaren fahren als Last über den Weg
+ * (Stau: es kommt gesendet × Wirkung des Wegs an). Ausstoß = was die angekommenen Rohwaren hergeben (alle Sorten im Verhältnis need),
+ * höchstens die Leistung; er fährt wie bisher zum Lager der Hauptstadt (Ausgangslager des Werks zuerst, CITY.pickup).
  */
-function distribute(x, a, rate) {
-  const { tr, arr, room } = x;
-  const list = tr.alts?.get(a) ?? [];
-  if (!list.length) return rate;
-  if (rate <= 0) return 0;
-  let free = 0;
-  for (const r of list) free += room[r.to];
-  let left = rate;
-  if (free > 1e-9) {
-    const part = Math.min(1, rate / free);
-    for (const r of list) {
-      const amt = room[r.to] * part;
-      if (amt <= 0) continue;
-      room[r.to] -= amt;
-      left -= amt;
-      addLoad(tr, r.path, amt);
-      arr[r.to] += amt * pathEff(tr, r.path);
-    }
-  }
-  if (left > 1e-12) {
-    const r = list[0]; // Überschuss: zum nächsten Werk (es staut sich dort wie bisher)
-    addLoad(tr, r.path, left);
-    arr[r.to] += left * pathEff(tr, r.path);
-  }
-  return 0;
-}
-
-/** Förderung: Rohstoff je Förderanlage, verteilt auf die erreichbaren Zielwerke (distribute); ohne Weg geht er verloren. */
-function extract(x) {
-  const { c, s, eff, anchors, nA } = x;
-  const MINE = KIND_ID.mine;
-  for (let m = 0; m < nA; m++) {
-    const i = anchors[m];
-    if (c.kind[i] !== MINE) continue;
-    const lv = c.level[i];
-    const d = DEPOSITS[c.deposit[i] - 1];
-    if (!d) continue;
-    const rawRate = CITY.jobsMine[lv] * eff[i] * CITY.extract[d];
-    s.raw[d] += rawRate;
-    s.lost += distribute(x, i, rawRate);
-  }
-}
-
-/** Werke in Kettenfolge (Hütte → Stahlwerk, dann BM, Raffinerien): Ausstoß = min(Leistung, Eingang / Verbrauch), Fluss zum Ziel. */
 function runWorks(x) {
-  const { c, s, tr, dt, eff, arr, anchors, nA, credit } = x;
+  const { c, s, tr, dt, eff, anchors, nA, credit, team } = x;
   const Y = CITY.yield;
-  const K = CITY.convert;
+  // 1. Bedarf je Werk (Produkt je s) und Summe je Güterbahnhof (Rohwaren je s)
+  const list = [];
+  const atStation = new Map(); // Anker des Güterbahnhofs → angeforderte Rohwaren je s
   for (const k of WORK_ORDER) {
-    const prod = CITY.chain[k].to;
     const kid = KIND_ID[k];
+    const prod = CITY.chain[k].to;
     for (let m = 0; m < nA; m++) {
       const i = anchors[m];
       if (c.kind[i] !== kid) continue;
-      const lv = c.level[i];
-      const cap = CITY.jobs[lv] * eff[i] * Y[prod]; // Leistung je s
-      const inp = arr[i] / K[prod]; // Produkt je s, das der Eingang hergibt
-      const out = Math.min(cap, inp);
-      c.workOut[i] = out; // Ausstoß je s am Anker (seit v5.70, Pendlerquelle der KI)
+      const cap = CITY.jobs[c.level[i]] * eff[i] * Y[prod]; // Leistung je s
       s.cap[prod] += cap;
-      s.inp[prod] += inp;
-      s.gross[prod] += out;
-      // Ausgangslager (seit v5.69): ein Anteil geht ohne Straßenweg dorthin, der Rest läuft wie bisher
-      const kept = PICKUP.has(k) ? stockAtWork(c, i, prod, out, dt) : 0;
-      const rest = out - kept;
-      const r = tr.routes.get(i);
-      if (r && r.to !== 'main' && r.to !== null) {
-        s.lost += distribute(x, i, rest); // Roheisen auf die Stahlwerke verteilt (seit v5.75)
-        continue;
-      }
-      const p = r && (r.to !== 'main' || credit) ? r.path : null;
-      addLoad(tr, p, rest);
-      if (!p) s.lost += rest;
-      else s[prod] += rest * pathEff(tr, p); // Ankunft im Lager (bm, fuel, kero, metal = Stahl)
+      c.workOut[i] = 0; // Ausstoß je s am Anker (seit v5.70, Pendlerquelle der KI); unten gesetzt
+      const im = tr.imports.get(i) ?? null;
+      if (!im && cap > 0) s.importNone++;
+      const want = im && cap > 0 && !storeFull(x, prod) ? cap : 0;
+      list.push({ i, k, prod, cap, im, want, eff: im ? pathEff(tr, im.path) : 0 });
+      if (want > 0 && typeof im.from === 'number') atStation.set(im.from, (atStation.get(im.from) ?? 0) + want * NEED_SUM[k]);
     }
   }
+  // 2. Durchsatz der Güterbahnhöfe: zu viel Anforderung wird anteilig gekürzt
+  const scaleOf = new Map();
+  for (const [st, raw] of atStation) {
+    const most = (CITY.import.station[c.level[st]] ?? 0) * eff[st];
+    scaleOf.set(st, raw > most ? most / raw : 1);
+  }
+  // 3. Kosten (je s, nach Ankunft) und Deckel durch die Kasse
+  let cost = 0;
+  for (const w of list) {
+    if (!(w.want > 0)) continue;
+    if (typeof w.im.from === 'number') w.want *= scaleOf.get(w.im.from);
+    cost += w.want * w.eff * NEED_PRICE[w.k];
+  }
+  const money = Math.max(0, team.res.money);
+  const pay = cost * dt;
+  const afford = pay > money ? money / pay : 1;
+  s.importScale = afford;
+  // 4. Einfuhr ausführen, Werke rechnen, Produkt zum Lager
+  let paid = 0;
+  for (const w of list) {
+    const { i, k, prod, cap, im } = w;
+    let inp = 0; // Produkt je s, das die angekommenen Rohwaren hergeben
+    if (w.want > 0) {
+      const sent = w.want * afford; // Produkt-Gegenwert der gesendeten Rohwaren
+      addLoad(tr, im.path, sent * NEED_SUM[k]);
+      inp = sent * w.eff;
+      for (const [g, n] of NEED[k]) {
+        const got = inp * n; // angekommene Rohware je s
+        s.raw[g] += got;
+        s.importCostBy[g] += got * CITY.import.price[g];
+      }
+      paid += inp * NEED_PRICE[k];
+    }
+    const out = Math.min(cap, inp);
+    c.workOut[i] = out;
+    s.inp[prod] += inp;
+    s.gross[prod] += out;
+    // Ausgangslager (seit v5.69): ein Anteil geht ohne Straßenweg dorthin, der Rest läuft zum Lager der Hauptstadt
+    const kept = PICKUP.has(k) ? stockAtWork(c, i, prod, out, dt) : 0;
+    const rest = out - kept;
+    const r = tr.routes.get(i);
+    const p = r && r.to === 'main' && credit ? r.path : null;
+    addLoad(tr, p, rest);
+    if (!p) s.lost += rest;
+    else s[prod] += rest * pathEff(tr, p); // Ankunft im Lager (bm, mun, fuel, kero, metal = Stahl)
+  }
+  s.importCost = paid;
+  team.res.money = Math.max(0, team.res.money - paid * dt);
 }
 
-/**
- * Lager gutschreiben (vor den Munitionswerken, die den Stahl daraus ziehen), dann Munitionswerke: ziehen Stahl aus dem Stadtlager
- * über ihren Weg (Hin: Stahl, zurück: Munition), höchstens was da ist; Munition ins Lager der Hauptstadt.
- */
-function storeAndMunitions(x) {
-  const { c, s, tr, dt, eff, anchors, nA, main, credit } = x;
-  const Y = CITY.yield;
-  const K = CITY.convert;
+/** Lager gutschreiben: Baumaterial, Munition, Treibstoff ins Lager der Hauptstadt, Stahl und Kerosin ins Stadtlager. */
+function storeGoods(x) {
+  const { c, s, dt, main, credit } = x;
   const made = (c.made ??= zeroGoods(STORED_GOODS)); // Summe, die wirklich ins Lager kam (Flussanzeige misst damit den Verbrauch)
-  const metal0 = c.metal;
-  const kero0 = c.kero;
-  if (credit) {
-    for (const k of ['bm', 'fuel']) {
-      const v0 = main.store[k];
-      main.store[k] = Math.min(BALANCE.logistics.capitalCap, v0 + s[k] * dt);
-      made[k] += Math.max(0, main.store[k] - v0);
+  for (const g of STORED_GOODS) {
+    if (GOODS[g].store === 'city') {
+      const v0 = c[g];
+      c[g] = Math.max(0, Math.min(BALANCE.logistics.storeCap, v0 + s[g] * dt));
+      made[g] += Math.max(0, c[g] - v0);
+    } else if (credit) {
+      const v0 = main.store[g];
+      main.store[g] = Math.min(BALANCE.logistics.capitalCap, v0 + s[g] * dt);
+      made[g] += Math.max(0, main.store[g] - v0);
     }
-  }
-  c.metal = Math.max(0, Math.min(BALANCE.logistics.storeCap, metal0 + s.metal * dt));
-  c.kero = Math.max(0, Math.min(BALANCE.logistics.storeCap, kero0 + s.kero * dt));
-  made.kero += Math.max(0, c.kero - kero0);
-  const stock = c.metal / Math.max(dt, 1e-6); // Stahl je s im Stadtlager
-  s.inp.mun = stock / K.mun;
-  let drawn = 0; // Stahl je s, den die Munitionswerke ziehen
-  const MUN = KIND_ID.mun;
-  for (let m = 0; m < nA; m++) {
-    const i = anchors[m];
-    if (c.kind[i] !== MUN) continue;
-    const lv = c.level[i];
-    const cap = CITY.jobs[lv] * eff[i] * Y.mun; // Munition je s
-    c.workOut[i] = 0; // Ausstoß je s am Anker (seit v5.70); unten gesetzt, wenn Munition fließt
-    s.cap.mun += cap;
-    const p = tr.mun.get(i) ?? null;
-    if (!p || !credit) continue; // ohne Weg zum Lager (oder ohne fertiges Lager): kein Stahl, keine Munition
-    const steelUse = Math.min(cap * K.mun, Math.max(0, stock - drawn));
-    const w = pathEff(tr, p);
-    addLoad(tr, p, steelUse);
-    const mun = (steelUse * w) / K.mun; // Munition je s am Werk
-    c.workOut[i] = mun;
-    const kept = PICKUP.has('mun') ? stockAtWork(c, i, 'mun', mun, dt) : 0; // Ausgangslager (seit v5.69)
-    addLoad(tr, p, mun - kept);
-    s.gross.mun += mun;
-    s.mun += (mun - kept) * w; // Ankunft im Lager
-    drawn += steelUse;
-  }
-  s.metal -= drawn; // Stahl je s: Zugang der Stahlwerke minus Munitionswerke
-  c.metal = Math.max(0, c.metal - drawn * dt);
-  made.metal += Math.max(0, c.metal - metal0 + drawn * dt); // was die Stahlwerke ins Stadtlager bringen (Munition zählt als Verbrauch)
-  if (credit) {
-    const v0 = main.store.mun;
-    main.store.mun = Math.min(BALANCE.logistics.capitalCap, v0 + s.mun * dt);
-    made.mun += Math.max(0, main.store.mun - v0);
   }
 }
 

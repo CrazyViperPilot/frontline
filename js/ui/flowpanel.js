@@ -1,9 +1,9 @@
 // Ressourcenanzeige (PRD §15 „Ressourcenanzeige“, seit v5.07): Fenster mit dem Fluss der Rohstoffe durch die Kette, geöffnet
-// über den Knopf „Ressourcen“ rechts oben (unter „Forschung“). Links die Förderung (Gebäude, Rohstoff/s), dann die Werke, rechts
+// über den Knopf „Ressourcen“ rechts oben (unter „Forschung“). Links die Einfuhr (Rohwaren/s), dann die Werke, rechts
 // die Lager mit Erzeugung und Verbrauch; Linienbreite = Menge je s. Rot = Engpass, gelb = Werk wartet oder Rohstoff verfällt.
 // Unten die Engpässe in Worten. Der Graph kommt aus js/game/flow.js (CITY.chain), hier wird er nur gezeichnet. Das Spiel läuft weiter.
 import { resourceFlow, FlowMeter, fmtFlow } from '../game/flow.js';
-import { GOOD_COLOR, GOOD_SHORT } from '../data/goods.js';
+import { GOOD_COLOR, GOOD_SHORT, IMPORTS } from '../data/goods.js';
 
 const NW = 158; // Breite eines Knotens (SVG-Einheiten; seit v5.30 158 statt 140, damit Namen und Mengen ganz hineinpassen)
 const NH = 68; // Höhe (seit v5.70 mit Zeile „davon an Werken“ unter dem Hinweis, 68 statt 56)
@@ -12,7 +12,7 @@ const GAP = 40; // Mindestabstand zwischen zwei Spalten (Platz für die Linien u
 const MIN_W = 860; // kleinste Breite des Graphen (wenige Spalten: weiter auseinander)
 const TOP = 18; // Platz für die Spaltenköpfe
 // Farben: Rohstoffe hier, Waren aus dem Warenregister (js/data/goods.js)
-const COLOR = { wood: '#7fa650', stone: '#a3a8ad', ore: '#c0714f', oil: '#7d6aa8', ...GOOD_COLOR };
+const COLOR = { ...Object.fromEntries(Object.entries(IMPORTS).map(([g, d]) => [g, d.color])), ...GOOD_COLOR }; // Rohwaren (Paket „Import“) und Waren
 const UNIT = GOOD_SHORT;
 const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const int = (v) => Math.floor(v).toLocaleString('de-DE');
@@ -91,7 +91,7 @@ export class FlowPanel {
       const here = nodes.filter((n) => n.col === c);
       const works = here.filter((n) => n.type === 'works');
       const later = works.some((n) => n.ins.some((id) => f.nodes[id].type === 'store')); // Werk nimmt aus einem Lager
-      const t = c === 0 ? 'Förderung' : c === f.cols - 1 ? 'Lager · Verbrauch' : later ? 'Weiterverarbeitung' : works.length ? 'Werke' : here.some((n) => n.type === 'mid') ? 'Zwischenprodukt' : 'Zwischenlager';
+      const t = c === 0 ? 'Einfuhr' : c === f.cols - 1 ? 'Lager · Verbrauch' : later ? 'Weiterverarbeitung' : works.length ? 'Werke' : here.some((n) => n.type === 'mid') ? 'Zwischenprodukt' : 'Zwischenlager';
       h += `<text class="fl-col" x="${c * step + NW / 2}" y="11">${t}</text>`;
     }
     // Linien: Anschlüsse je Knoten nach Reihe der Gegenseite gestaffelt
@@ -124,14 +124,13 @@ export class FlowPanel {
       let t2 = '';
       let bar = '';
       if (n.type === 'raw') {
-        t1 += ` ×${n.count}`;
-        t2 = `${fmtFlow(n.rate)} ${n.unit}/s`;
+        t2 = `${fmtFlow(n.rate)} ${n.unit}/s`; // Geld je s steht in der Hinweiszeile
       } else if (n.type === 'works') {
         t1 += ` ×${n.count}`;
         t2 = `${fmtFlow(n.out)} / ${fmtFlow(n.cap)} ${UNIT[n.good] ?? n.good}/s`;
         if (n.count > 0) bar = `<rect class="fl-bar" x="10" y="${NH - 6}" width="${((NW - 20) * Math.min(1, n.util ?? 0)).toFixed(1)}" height="3" rx="1.5"/>`;
       } else if (n.type === 'mid') {
-        // Zwischenprodukt (Roheisen): kein Lager, nur Menge je s
+        // Zwischenprodukt ohne Lager (heute keins): nur Menge je s
         t2 = `${fmtFlow(n.rate)} ${n.unit}/s`; // „ohne Lager“ steht in der Hinweiszeile
       } else {
         where = n.where;

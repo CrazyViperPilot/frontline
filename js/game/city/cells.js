@@ -9,11 +9,6 @@ const FLAT_ID = new Uint8Array(KINDS.length + 1);
 for (const k of FLAT_KINDS) FLAT_ID[KIND_ID[k]] = 1;
 export const isFlat = (id) => FLAT_ID[id] === 1;
 
-/** Rohstoffvorkommen (Code im Raster `deposit`): 0 keins. */
-export const DEPOSITS = ['wood', 'stone', 'ore', 'oil'];
-export const DEPOSIT_NAME = { wood: 'Wald', stone: 'Fels', ore: 'Erz', oil: 'Öl' };
-export const MINE_NAME = { wood: 'Holzfäller', stone: 'Steinbruch', ore: 'Erzmine', oil: 'Ölquelle' };
-
 /** Liegt die Zelle mit linker oberer Ecke (cx0, cy0) unter oder am Rand einer Hauptstadt (CITY.fobMargin)? */
 export function nearMain(mains, T, cx0, cy0) {
   const S = CITY.cell;
@@ -349,10 +344,10 @@ export function roadLinked(game, c) {
   return mask;
 }
 
-/** Gilt die Anschlusspflicht für die Zellenart `kind`? Nicht für Straße, Bahn, Rollfeld und CITY.build.roadFree (Förderanlagen). */
+/** Gilt die Anschlusspflicht für die Zellenart `kind`? Nicht für flache Zellen (Straße, Gleis, Bahn, Rollfeld). */
 function needsLink(game, kind) {
   // Der Stellplatz ist vom Straßenanschluss befreit (ersetzt durch die Bahn-Regel airLinkWhy, immer gültig, auch ohne Baugebiet)
-  return !!game.buildRules && CITY.build.needRoad && kind !== 'stand' && !(kind && (isFlat(KIND_ID[kind]) || CITY.build.roadFree.includes(kind)));
+  return !!game.buildRules && CITY.build.needRoad && kind !== 'stand' && !(kind && isFlat(KIND_ID[kind]));
 }
 
 /**
@@ -456,11 +451,11 @@ function inClaim(c, i, kind) {
  * Gründe (Schlüssel von BUILD_BLOCK): `territory` nicht im eigenen Gebiet (c.claim; Straßen `kind` 'road' dürfen außerhalb liegen),
  * `unexplored` nie aufgedeckt, `zone` in der Konfliktzone (CITY.build.noZone), `enemy` nahe (CITY.build.enemyR) einer sichtbaren
  * gegnerischen Bodeneinheit oder eines gegnerischen Gebäudes, `road` (Paket „Straßen“) nicht an einer Straße zum Lager der Hauptstadt
- * (Einzelzellen; Großbauten über fitBig/roadLinkWhy; nicht für Straßen und CITY.build.roadFree). Ohne Regel immer null. Kein Zufall, nur lesen.
+ * (Einzelzellen; Großbauten über fitBig/roadLinkWhy; nicht für flache Zellen). Ohne Regel immer null. Kein Zufall, nur lesen.
  */
 export function buildWhy(game, c, i, kind) {
   if (!game.buildRules) return null;
-  if (kind !== 'road' && kind !== 'runway' && kind !== 'taxi' && !inClaim(c, i, kind)) return 'territory'; // Bahn und Rollfeld wie Straßen (seit v5.91)
+  if (kind !== 'road' && kind !== 'runway' && kind !== 'taxi' && kind !== 'rail' && !inClaim(c, i, kind)) return 'territory'; // Bahn und Rollfeld wie Straßen (seit v5.91), Gleis ebenso (Paket „Import“: es muss bis zum Kartenrand reichen)
   const col = i % c.cols;
   const x = c.x0 + (col + 0.5) * c.cell;
   const y = c.y0 + ((i - col) / c.cols + 0.5) * c.cell;
@@ -614,4 +609,45 @@ export function airLinkWhy(c, cells, kind) {
   if (kind !== 'stand') return null;
   const mask = airLinked(c);
   return cells.some((j) => nbrsOf(c, j).some((n) => mask[n])) ? null : 'air';
+}
+
+// ---- Einfuhr (Paket „Import“): Kartenrand und Gleise ----
+
+/** Liegt Zelle i in der äußersten Zeile oder Spalte des Stadtrasters (Kartenrand)? */
+export function atEdge(c, i) {
+  const q = i % c.cols;
+  const r = (i - q) / c.cols;
+  return q === 0 || r === 0 || q === c.cols - 1 || r === c.rows - 1;
+}
+
+// Gleis-Verbindung je Stadt (Zwischenspeicher, nicht im Spielstand): 1 = Gleiszelle, die über eine Kette eigener Gleise
+// (4er-Nachbarschaft) ein Gleis am Kartenrand erreicht. Neu, sobald sich die Stadt ändert (c.ver).
+const RAIL_LINK = new WeakMap(); // Stadt → { ver, mask }
+
+export function railLinked(c) {
+  const hit = RAIL_LINK.get(c);
+  if (hit && hit.ver === c.ver) return hit.mask;
+  const RL = KIND_ID.rail;
+  const mask = new Uint8Array(c.cols * c.rows);
+  const queue = [];
+  for (const i of c.list) {
+    if (c.kind[i] !== RL || !atEdge(c, i)) continue;
+    mask[i] = 1;
+    queue.push(i);
+  }
+  for (let h = 0; h < queue.length; h++) {
+    for (const j of nbrsOf(c, queue[h])) {
+      if (mask[j] || c.kind[j] !== RL) continue;
+      mask[j] = 1;
+      queue.push(j);
+    }
+  }
+  RAIL_LINK.set(c, { ver: c.ver, mask });
+  return mask;
+}
+
+/** Ist das Gebäude mit Anker a (Güterbahnhof) über Gleise mit dem Kartenrand verbunden? Eine seiner Zellen grenzt an ein verbundenes Gleis. */
+export function stationLinked(c, a) {
+  const mask = railLinked(c);
+  return cellsOf(c, a).some((j) => nbrsOf(c, j).some((n) => mask[n]));
 }

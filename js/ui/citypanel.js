@@ -7,10 +7,10 @@ import { BALANCE } from '../data/balance.js';
 import { cellAt, sizeOf, bigAnchorAt } from '../game/city/cells.js';
 import { hasMarket, marketBuyPrice } from '../game/city/query.js';
 import { CITY_KINDS, KIND, KIND_COLOR, KIND_ICON, BUILD_MENU } from '../data/citykinds.js';
-import { GOOD_NAME as GOOD_LONG, GOOD_SHORT, MARKET_GOODS, CITY_STORE_GOODS } from '../data/goods.js';
+import { GOOD_NAME as GOOD_LONG, GOOD_SHORT, MARKET_GOODS, CITY_STORE_GOODS, IMPORTS, IMPORT_GOODS } from '../data/goods.js';
 
 // Werkzeuge, Farben, Symbole, Kurznamen, Tipps und Gruppen des Baumenüs kommen seit v5.59 aus dem Register js/data/citykinds.js
-// (Daniels Gruppen seit v5.36: Grundlagen, Wohnen & Gewerbe, Förderung, Ressourcen, Einheiten, Stadt, Fliegerhorst; eine Art ohne
+// (Daniels Gruppen seit v5.36: Grundlagen, Wohnen & Gewerbe, Ressourcen (Förderung bis Paket „Import“), Einheiten, Stadt, Fliegerhorst; eine Art ohne
 // Gruppe landet unter „Weitere“). Waren (Marktmenü) aus js/data/goods.js.
 export const CITY_COLORS = KIND_COLOR;
 export const CITY_ICON = KIND_ICON;
@@ -130,7 +130,6 @@ export class CityPanel {
     if (!res.ok) this.onMessage(res.reason);
     else if (res.broke) this.onMessage(this.tool === 'road' ? 'Zu wenig Baumaterial für alle Zellen' : 'Zu wenig Geld für alle Zellen');
     else if (res.occupied) this.onMessage('Belegte Zellen bleiben, wie sie sind: erst räumen');
-    else if (res.kept) this.onMessage('Geräumt; Rohstoffvorkommen und Förderanlagen bleiben stehen (Förderanlage einzeln wählen und abreißen)');
     else if (res.felled) this.onMessage(`Bäume gefällt: ${res.felled} ${res.felled === 1 ? 'Zelle' : 'Zellen'} frei zum Bauen`);
     else if (res.noRoad) this.onMessage('Gebäude wachsen nur mit Straße daneben (Wohnen/Gewerbe auch über eine Zelle gleicher Art)');
     this.update(true);
@@ -149,7 +148,9 @@ export class CityPanel {
     const c = g.city[this.team];
     const stahl = `Stahl ${fmt(c.metal)} ${s.metal >= 0 ? '+' : ''}${fmt(s.metal, 1)}`;
     const kero = `Kerosin ${fmt(c.kero)} +${fmt(s.kero, 1)}`; // Kerosin im Stadtlager, Ertrag je s (seit v5.20)
-    const store = m ? `${stahl} · Förderung Holz ${fmt(raw.wood, 1)} Stein ${fmt(raw.stone, 1)} Erz ${fmt(raw.ore, 1)} Öl ${fmt(raw.oil, 1)} · Lager BM ${fmt(m.store.bm)} +${fmt(s.bm, 1)} · MUN ${fmt(m.store.mun)} +${fmt(s.mun, 1)} · TS ${fmt(m.store.fuel)} +${fmt(s.fuel, 1)} · ${kero}` : `${stahl} · ${kero} · Hauptstadt zerstört`;
+    // Einfuhr (Paket „Import“): angekommene Rohwaren je s und ihr Preis je s
+    const imp = `Einfuhr ${IMPORT_GOODS.map((x) => `${IMPORTS[x].short} ${fmt(raw[x], 1)}`).join(' ')} (−${fmt(s.importCost ?? 0, 1)} Geld/s)`;
+    const store = m ? `${stahl} · ${imp} · Lager BM ${fmt(m.store.bm)} +${fmt(s.bm, 1)} · MUN ${fmt(m.store.mun)} +${fmt(s.mun, 1)} · TS ${fmt(m.store.fuel)} +${fmt(s.fuel, 1)} · ${kero}` : `${stahl} · ${kero} · Hauptstadt zerstört`;
     // Straßentransport (seit v5.20): kleinster Stau-Faktor auf den benutzten Straßen, Waren ohne Weg je s
     const jam = s.jam ?? 1;
     const jamTxt = Math.round(jam * 100) < 100 ? ` · <b class="warn">Stau ${fmt(Math.round(jam * 100))} %</b>` : '';

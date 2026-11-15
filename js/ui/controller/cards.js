@@ -490,7 +490,7 @@ export const cardMethods = {
       entry('Abreißen', 'Entf', {
         tip: `${b.def.name} abreißen (Entf): kostenlos, keine Erstattung`,
         action: () => {
-          this.issue({ type: 'city', kind: 'erase', c0: col, r0: row, c1: col, r1: row, demolish: true }); // gewähltes Gebäude: auch eine Förderanlage
+          this.issue({ type: 'city', kind: 'erase', c0: col, r0: row, c1: col, r1: row, demolish: true }); // gewähltes Gebäude abreißen
           this.view.selection.delete(b.id);
         },
       }),
@@ -525,7 +525,7 @@ export const cardMethods = {
       else if (this.game.slotsUsed(ready.team) + (def.slots ?? 1) > this.game.slotCap) reason = 'Einheitenlimit erreicht';
       else if (def.hero && hasCommander(this.game, ready.team)) reason = 'Nur ein Kommandeur je Team';
       else if (this.game.city && freePop(this.game, ready.team) < crewOf(u)) reason = 'Zu wenig freie Einwohner (Stadt: Wohnen ausbauen)';
-      else if (this.game.city && this.game.city[ready.team].metal < (CITY.metalCost[u] ?? 0)) reason = 'Zu wenig Stahl (Stadt: Erzmine, Hütte und Stahlwerk oder Markt)';
+      else if (this.game.city && this.game.city[ready.team].metal < (CITY.metalCost[u] ?? 0)) reason = 'Zu wenig Stahl (Stadt: Stahlwerk mit Einfuhr oder Markt)';
       else reason = trainCheck(this.game, ready, u) ?? (def.air && !def.jet ? heliTrainCheck(this.game, ready) : null) ?? this.trainReason(def.cost); // Stellplatz bzw. Heliport: ein Luftfahrzeug je Platz
       card.push(
         entry(def.short || def.name, def.hotkey, {

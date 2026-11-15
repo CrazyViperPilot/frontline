@@ -1,7 +1,7 @@
 // Bagger (seit v5.35, PRD §6 „Bagger“): Befehl `dig` räumt Stadtzellen eine nach der anderen. Der Bagger fährt zur Zelle, arbeitet
 // BALANCE.excavator.digTime s und räumt dann: eine Stadtstraße der Karte (Konfliktzone; nicht Brückenfahrbahnen) verschwindet für beide
-// Teams, Bäume und leere Häuser wie mit „Räumen“, ein eigenes Stadtgebäude wird abgerissen (auch eine Förderanlage; das Vorkommen
-// bleibt). Gegnerische Gebäude zerstört er langsam mit seiner Schaufel (Waffe, combat.js). Seit dem Paket „Straßen“ räumt er Schutt
+// Teams, Bäume und leere Häuser wie mit „Räumen“, ein eigenes Stadtgebäude wird abgerissen.
+// Gegnerische Gebäude zerstört er langsam mit seiner Schaufel (Waffe, combat.js). Seit dem Paket „Straßen“ räumt er Schutt
 // zerstörter Straßen (die Straße ist wieder da) und reißt gegnerische Straßen ab. Kein DOM, deterministisch.
 import { BALANCE } from '../data/balance.js';
 import { cmdCity } from './city/commands.js';

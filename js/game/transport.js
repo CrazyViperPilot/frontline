@@ -1,24 +1,23 @@
-// Straßentransport (PRD §15 „Straßentransport“, seit v5.20, AP2): Wege über Straßenzellen von Förderung und Werken zu ihren Zielen
-// (Werke, Lager der Hauptstadt), Pendlerwege zur nächsten bewohnten Wohnzelle und Stau je Straßenzelle. Dieses Modul rechnet nur Wege
+// Straßentransport (PRD §15 „Straßentransport“, seit v5.20, AP2): Wege über Straßenzellen von den Werken zum Lager der Hauptstadt,
+// seit Paket „Import“ von jedem Werk zum nächsten Einfuhrpunkt (eigene Straße am Kartenrand, Güterbahnhof mit Gleis zum Rand), Pendlerwege zur nächsten bewohnten Wohnzelle und Stau je Straßenzelle. Dieses Modul rechnet nur Wege
 // und Stau, es ändert nichts am Spiel. Kein DOM. Wege, Lasten und Puffer liegen in einer WeakMap je Stadt und werden nicht gespeichert
 // (sie folgen allein aus dem Stand der Stadt); gespeichert wird nur der geglättete Stau-Faktor je Zelle (c.congestion), damit ein
 // geladener Spielstand genau so weiterläuft wie das Spiel ohne Unterbrechung.
 import { laneGrid } from './roads.js';
 import { CITY } from '../data/city.js';
-import { WORKS, WORKPLACE_KINDS, KINDS, KIND_ID, KIND_NAME } from '../data/citykinds.js'; // Arbeitsstätten mit Pendlerweg: alle Arten mit Arbeitsplätzen
+import { WORKS, WORKPLACE_KINDS, KINDS, KIND_ID } from '../data/citykinds.js'; // Arbeitsstätten mit Pendlerweg: alle Arten mit Arbeitsplätzen
 import { GOODS } from '../data/goods.js';
-import { DEPOSITS, isPart, roadAt, accessCells, mainAccess, cellsOf, anchorOf, nbrsOf } from './city/cells.js';
+import { isPart, roadAt, accessCells, mainAccess, cellsOf, anchorOf, nbrsOf, atEdge, stationLinked } from './city/cells.js';
 export { mainAccess }; // liegt seit dem Paket „Straßen“ in cells.js (Anschlusspflicht des Baugebiets)
 
-/** Ziel je Rohstoff der Förderung (Vorkommen) und je Zwischenprodukt: Gruppe der Zielwerke (Breitensuche-Feld, siehe groupOf). */
-const MINE_GROUP = { wood: 'bm', stone: 'bm', ore: 'smelter', oil: 'oil' };
-/** Werkart → Gruppe der Zielgebäude, an die ihr Rohstoff geliefert wird (Öl: Raffinerie oder Kerosin-Raffinerie). */
-const GROUP_OF_KIND = { bm: 'bm', smelter: 'smelter', steel: 'steel', fuel: 'oil', kero: 'oil' };
-/** Produkte fahren zum Lager der Hauptstadt (`'main'`): Werke, deren Ware ein Lager hat (Register js/data/goods.js; Roheisen nicht). */
+/** Produkte fahren zum Lager der Hauptstadt (`'main'`): Werke, deren Ware ein Lager hat (Register js/data/goods.js). */
 const PRODUCT_KINDS = WORKS.filter((k) => GOODS[CITY.chain[k].to]?.store);
 /** Kennung des Lagers der Hauptstadt im Breitensuche-Feld (Besitzer). Gebäude haben als Besitzer ihren Anker (≥ 0). */
 const MAIN = -1;
-/** Weg ohne Straßenzellen (Lieferung direkt an ein angrenzendes Werk, seit Paket „Direkte Lieferung“): Länge 0, Wirkung 1, keine Last. */
+/** Kennung „Straße am Kartenrand“ im Breitensuche-Feld der Einfuhr (Paket „Import“); Güterbahnhöfe haben ihren Anker (≥ 0). */
+const EDGE = -2;
+/** Weg ohne Straßenzellen (Lieferung direkt an ein angrenzendes Gebäude, seit Paket „Direkte Lieferung“; seit Paket „Import“ vom
+ * Güterbahnhof an ein angrenzendes Werk): Länge 0, Wirkung 1, keine Last. */
 const NO_PATH = new Int32Array(0);
 /** Breitensuche-Warteschlange, einmal angelegt und wiederverwendet (nur innerhalb von nearestField genutzt). */
 let QUEUE = new Int32Array(0);
@@ -30,7 +29,7 @@ const STATE = new WeakMap();
 const FREE_EPS = 1e-4;
 
 /** Gruppen der Breitensuche-Felder, die transportOf anlegt. */
-const GROUPS = ['bm', 'smelter', 'steel', 'oil', 'res', 'main'];
+const GROUPS = ['imp', 'res', 'main']; // imp: Einfuhrpunkte (Paket „Import“)
 
 /** Ausbildungsgebäude der Stadt (CITY.produces: Kaserne, Fabrikhalle, Heliport, Stellplatz), versorgt über ihren Weg zum Lager (Paket „Straßen“). */
 const TRAINERS = new Set(Object.keys(CITY.produces).map((k) => KIND_ID[k]));
@@ -187,8 +186,9 @@ function newTransport(c) {
   for (const g of GROUPS) fields[g] = { dist: new Int32Array(n), prev: new Int32Array(n), owner: new Int32Array(n) };
   return {
     routes: new Map(),
+    imports: new Map(), // Paket „Import“: Werk ↔ nächster Einfuhrpunkt
+    stations: [], // angeschlossene Güterbahnhöfe (Anker)
     commute: new Map(),
-    mun: new Map(),
     shop: new Map(),
     depot: new Map(), // seit v5.35: Kerosintank und Munitionslager ↔ Lager
     supply: new Map(), // Paket „Straßen“: Ausbildungsgebäude ↔ Lager
@@ -203,18 +203,9 @@ function newTransport(c) {
   };
 }
 
-/** Gruppe des Lieferanten (Anker a): wo sein Produkt oder Rohstoff hinfährt. null = keine Lieferung. */
-function groupOf(c, a) {
-  const k = KINDS[c.kind[a] - 1];
-  if (k === 'mine') return MINE_GROUP[DEPOSITS[c.deposit[a] - 1]] ?? null;
-  if (k === 'smelter') return 'steel'; // Roheisen → Stahlwerk
-  if (PRODUCT_KINDS.includes(k)) return 'main';
-  return null;
-}
-
 /**
- * Angrenzende Zielwerke des Lieferanten a (Paket „Direkte Lieferung“): Anker aus `owners`, deren Zellen eine 4er-Nachbarzelle einer
- * Zelle von a haben. Sortiert nach Anker (fest, unabhängig von der Reihenfolge der Suche).
+ * Angrenzende Gebäude von a (Paket „Direkte Lieferung“; seit Paket „Import“: Güterbahnhöfe neben einem Werk): Anker aus `owners`, deren
+ * Zellen eine 4er-Nachbarzelle einer Zelle von a haben. Sortiert nach Anker (fest, unabhängig von der Reihenfolge der Suche).
  */
 function adjacentOwners(c, a, owners) {
   const mine = cellsOf(c, a);
@@ -293,76 +284,55 @@ function build(game, c, tr) {
   let m = 0;
   for (let i = 0; i < n; i++) if (tr.cap[i] > 0) tr.list[m++] = i;
 
-  // Quellen je Gruppe: fertige Gebäude (Anker), Wohnen nur bewohnt (Stufe ≥ 1, nicht geflohen)
-  const src = { bm: [], smelter: [], steel: [], oil: [], res: [] };
+  // Quellen: fertige Gebäude (Anker), Wohnen nur bewohnt (Stufe ≥ 1, nicht geflohen)
+  const res = [];
   const anchors = []; // fertige Gebäude (Anker)
+  const stations = []; // Güterbahnhöfe mit Gleis zum Kartenrand (Paket „Import“)
+  const imp = []; // Einfuhrpunkte: eigene Straßen am Kartenrand und Straßen an angeschlossenen Güterbahnhöfen
+  const ROAD = KIND_ID.road;
   for (const i of c.list) {
+    if (c.kind[i] === ROAD && atEdge(c, i)) imp.push({ cells: [i], owner: EDGE });
     if (isPart(c, i) || !c.level[i]) continue;
-    anchors.push(i);
     const k = KINDS[c.kind[i] - 1];
-    const g = GROUP_OF_KIND[k];
-    if (g) src[g].push({ cells: accessCells(c, i), owner: i });
-    if (k === 'res' && c.flee[i] === 0) src.res.push({ cells: accessCells(c, i), owner: i });
+    if (k === 'station' && stationLinked(c, i)) {
+      stations.push(i);
+      imp.push({ cells: accessCells(c, i), owner: i });
+    }
+    anchors.push(i);
+    if (k === 'res' && c.flee[i] === 0) res.push({ cells: accessCells(c, i), owner: i });
   }
-  const mainSrc = { cells: mainAccess(game, c), owner: MAIN };
-  for (const g of ['bm', 'smelter', 'steel', 'oil', 'res']) nearestField(c, src[g], tr.cap, tr.fields[g]);
-  // Alle erreichbaren Zielwerke je Lieferant (seit v5.75): ein Breitensuche-Feld je Werk; die Lieferung wird in updateCity nach freier
-  // Abnahme aufgeteilt (Öl auf Raffinerie und Kerosin-Raffinerie, Holz und Stein auf alle BM-Werke …)
-  const perWork = {};
-  for (const g of ['bm', 'smelter', 'steel', 'oil']) perWork[g] = src[g].map((s) => ({ owner: s.owner, field: nearestField(c, [s], tr.cap) }));
-  nearestField(c, [mainSrc], tr.cap, tr.fields.main);
+  nearestField(c, res, tr.cap, tr.fields.res);
+  nearestField(c, imp, tr.cap, tr.fields.imp);
+  nearestField(c, [{ cells: mainAccess(game, c), owner: MAIN }], tr.cap, tr.fields.main);
 
   const routes = new Map();
-  const alts = new Map();
+  const imports = new Map();
   const commute = new Map();
-  const mun = new Map();
   const shop = new Map();
   const depot = new Map();
   const supply = new Map();
-  const adjOf = new Map(); // Lieferant → angrenzende Zielwerke (für den Pendlerweg über den Nachbarn)
   for (const a of anchors) {
     const k = KINDS[c.kind[a] - 1];
-    const g = groupOf(c, a);
-    const works = g && perWork[g] ? perWork[g] : null;
-    // Angrenzende Zielwerke (Paket „Direkte Lieferung“): ohne Straße, Weg der Länge 0, vor allen Straßenwegen
-    const adj = works ? adjacentOwners(c, a, works.map((w) => w.owner)) : [];
-    if (g) routes.set(a, routeOf(c, tr, a, g, adj));
-    if (adj.length) adjOf.set(a, adj);
-    if (works) {
-      const acc = accessCells(c, a);
-      const list = adj.map((to) => ({ to, path: NO_PATH, dist: 0 }));
-      const road = [];
-      for (const w of works) {
-        if (adj.includes(w.owner)) continue; // schon als direkter Nachbar gezählt
-        const hit = pathFrom(w.field, acc);
-        if (hit) road.push({ to: w.owner, path: hit.path, dist: hit.path.length });
+    if (PRODUCT_KINDS.includes(k)) {
+      routes.set(a, routeOf(c, tr, a, 'main'));
+      // Einfuhr (Paket „Import“): ein Güterbahnhof direkt daneben liefert ohne Straße (Weg der Länge 0), sonst der nächste
+      // Einfuhrpunkt über die Straße; ohne Weg null (das Werk bekommt nichts)
+      const adj = adjacentOwners(c, a, stations);
+      if (adj.length) imports.set(a, { from: adj[0], path: NO_PATH, dist: 0 });
+      else {
+        const hit = pathFrom(tr.fields.imp, accessCells(c, a));
+        imports.set(a, hit ? { from: hit.owner === EDGE ? 'edge' : hit.owner, path: hit.path, dist: hit.path.length } : null);
       }
-      road.sort((p, q) => p.dist - q.dist || p.to - q.to); // nächstes zuerst, bei Gleichstand nach Anker (fest)
-      alts.set(a, list.concat(road));
     }
     if (WORKPLACE_KINDS.includes(k)) commute.set(a, pathFrom(tr.fields.res, accessCells(c, a))?.path ?? null);
-    if (k === 'mun') mun.set(a, pathFrom(tr.fields.main, accessCells(c, a))?.path ?? null);
     if (k === 'com' || k === 'market') shop.set(a, pathFrom(tr.fields.main, accessCells(c, a))?.path ?? null);
     if (k === 'ktank' || k === 'mdepot') depot.set(a, pathFrom(tr.fields.main, supplyAccess(c, tr, a))?.path ?? null); // Fliegerhorst (seit v5.35; seit Paket „Straßen“ auch über Bahn und Rollfeld)
     if (TRAINERS.has(c.kind[a])) supply.set(a, pathFrom(tr.fields.main, supplyAccess(c, tr, a))?.path ?? null); // Ausbildung (Paket „Straßen“)
   }
-  // Pendler über den Nachbarn (Paket „Direkte Lieferung“, Variante C): ein Lieferant ohne eigenen Pendlerweg nutzt den Pendlerweg
-  // des ersten angrenzenden Zielwerks, das einen hat (seine Arbeiter gehen durch das Nachbarwerk; Last und Stau zählen dort).
-  // Mehrere Durchgänge für Ketten (Erzmine → Hütte → Stahlwerk an der Straße); Reihenfolge nach Anker, also fest.
-  for (let pass = 0, changed = true; changed && pass < 4; pass++) {
-    changed = false;
-    for (const [a, adj] of adjOf) {
-      if (commute.get(a) !== null) continue;
-      const via = adj.find((o) => commute.get(o));
-      if (via === undefined) continue;
-      commute.set(a, commute.get(via));
-      changed = true;
-    }
-  }
   tr.routes = routes;
-  tr.alts = alts;
+  tr.imports = imports;
+  tr.stations = stations;
   tr.commute = commute;
-  tr.mun = mun;
   tr.shop = shop;
   tr.depot = depot;
   tr.supply = supply;
@@ -372,11 +342,12 @@ function build(game, c, tr) {
  * Transportzustand der Stadt eines Teams (lazy, je Stadt eine WeakMap). Neu berechnet nur, wenn sich c.ver (Bau, Abriss, Wachstum,
  * Ruinen, seit v5.20 auch Flucht und Rückkehr der Bewohner), die Hauptstadt oder c.mapRoads ändern. Die Wege hängen nur vom Stand der
  * Stadt ab: ein geladener Spielstand ergibt dieselben Wege, und Aufrufe der Anzeige ändern nichts am Spiel.
- * Liefert { routes, commute, mun, shop, load, factor, cap, list, active, nActive }:
- *   routes:  Map<Anker, { to: Anker | 'main' | null, path: Int32Array | null, dist }>  Lieferweg je Förderung und Werk (zum nächsten Ziel)
- *   alts:    Map<Anker, [{ to, path, dist }]>  alle erreichbaren Zielwerke je Förderung bzw. Hütte, nächstes zuerst (seit v5.75)
+ * Liefert { routes, imports, stations, commute, shop, load, factor, cap, list, active, nActive }:
+ *   routes:  Map<Anker, { to: 'main' | null, path: Int32Array | null, dist }>  Lieferweg je Werk zum Lager der Hauptstadt
+ *   imports: Map<Anker, { from: 'edge' | Anker des Güterbahnhofs, path, dist } | null>  Einfuhrweg je Werk zum nächsten Einfuhrpunkt
+ *            (Paket „Import“; null = kein Einfuhrpunkt erreichbar)
+ *   stations: Anker der Güterbahnhöfe mit Gleis zum Kartenrand
  *   commute: Map<Anker, Int32Array | null>  Pendlerweg je Arbeitsstätte (null = kein Wohnen erreichbar)
- *   mun:     Map<Anker, Int32Array | null>  Weg Munitionswerk → Lager
  *   shop:    Map<Anker, Int32Array | null>  Weg Gewerbe/Markt → Lager
  *   depot:   Map<Anker, Int32Array | null>  Weg Kerosintank/Munitionslager → Lager (seit v5.35)
  *   supply:  Map<Anker, Int32Array | null>  Weg Ausbildungsgebäude → Lager (Paket „Straßen“; Stellplatz über Rollfeld und Bahn)
@@ -403,9 +374,11 @@ export function transportOf(game, c) {
 }
 
 /**
- * Anzeige eines Gebäudes (nur lesen): { to: 'Lager' | Name des Zielwerks | null, dist, eff, commuteEff, noHome }.
+ * Anzeige eines Gebäudes (nur lesen): { to: 'Lager' | null, dist, eff, commuteEff, noHome, importFrom, importDist, importEff, linked }.
  * eff = Wirkung des Lieferwegs (0 ohne Weg), commuteEff = Wirkung des Pendlerwegs (0 ohne Wohnen; 1, wenn das Gebäude kein Arbeitsplatz ist),
- * noHome = Arbeitsstätte ohne erreichbare Wohnung.
+ * noHome = Arbeitsstätte ohne erreichbare Wohnung. Einfuhr (Paket „Import“, nur Werke): importFrom 'Kartenrand' | 'Güterbahnhof' |
+ * null (kein Einfuhrpunkt erreichbar; undefined bei Gebäuden ohne Einfuhr), importDist Straßenzellen, importEff Stau-Faktor des Wegs.
+ * linked: Güterbahnhof mit Gleis zum Kartenrand (true/false; undefined bei anderen Gebäuden).
  */
 export function transportInfo(game, c, anker) {
   const tr = transportOf(game, c);
@@ -414,7 +387,7 @@ export function transportInfo(game, c, anker) {
   let dist = 0;
   let eff = 0;
   if (r && r.to !== null) {
-    to = r.to === 'main' ? 'Lager' : KIND_NAME[KINDS[c.kind[r.to] - 1]];
+    to = 'Lager';
     dist = r.dist;
     eff = pathEff(tr, r.path);
   }
@@ -425,9 +398,15 @@ export function transportInfo(game, c, anker) {
     noHome = p === null;
     commuteEff = pathEff(tr, p);
   }
-  // Alle erreichbaren Zielwerke (seit v5.75): die Lieferung wird nach freier Abnahme auf sie verteilt
-  const targets = (tr.alts?.get(anker) ?? []).map((x) => KIND_NAME[KINDS[c.kind[x.to] - 1]]);
-  return { to, dist, eff, commuteEff, noHome, targets };
+  const out = { to, dist, eff, commuteEff, noHome };
+  if (tr.imports.has(anker)) {
+    const im = tr.imports.get(anker);
+    out.importFrom = im ? (im.from === 'edge' ? 'Kartenrand' : 'Güterbahnhof') : null;
+    out.importDist = im ? im.dist : 0;
+    out.importEff = im ? pathEff(tr, im.path) : 0;
+  }
+  if (KINDS[c.kind[anker] - 1] === 'station') out.linked = tr.stations.includes(anker);
+  return out;
 }
 
 

@@ -1,9 +1,9 @@
 // Stadt (SimCity-Teil, seit v4.75): Werte der Zonenstadt (seit v4.82 auf der ganzen Karte, im eigenen Gebiet). Regeln: PRD §15. Kein DOM.
 // Alle Zahlen hier einstellbar; nach Änderungen PRD §15 und Hilfetexte prüfen.
 // Werte je Zellenart (Preis, Baumaterial, Größe, Strom, KI-Zielwert) stehen seit v5.59 im Register js/data/citykinds.js, Werte je Ware
-// (Ertrag, Umwandlung, Marktpreise) in js/data/goods.js; die Tabellen hier werden daraus abgeleitet (gleiche Schlüssel wie bisher).
+// (Ertrag, Marktpreise) und je Rohware (Einfuhrpreis) in js/data/goods.js; die Tabellen hier werden daraus abgeleitet (gleiche Schlüssel wie bisher).
 import { CITY_KINDS } from './citykinds.js';
-import { GOODS } from './goods.js';
+import { GOODS, IMPORTS } from './goods.js';
 
 /** Tabelle Zellenart → Wert des Feldes `field` im Register (nur Arten mit Wert; Räumen ist keine Zellenart). */
 const byKind = (field) => Object.fromEntries(CITY_KINDS.filter((e) => e.id && e[field] !== undefined).map((e) => [e.key, e[field]]));
@@ -24,16 +24,15 @@ export const CITY = {
     enemyR: 500, // Abstand (px), in dem keine Stadtzelle an sichtbare gegnerische Bodeneinheiten oder gegnerische Gebäude grenzt
     noZone: true, // Schalter: Stadtzellen nicht in der Konfliktzone (Kreis game.zone)
     // Anschlusspflicht (Paket „Straßen“, Teil 1): Stadtgebäude nur auf Zellen, die an eine Straße mit Verbindung zum Lager der
-    // Hauptstadt grenzen (Großbau: eine Randzelle genügt). Straße, Bahn und Rollfeld sind frei, ebenso die Arten in roadFree.
+    // Hauptstadt grenzen (Großbau: eine Randzelle genügt). Straße, Gleis, Bahn und Rollfeld sind frei.
     needRoad: true,
-    roadFree: ['mine'], // Förderanlagen auf Vorkommen: ohne Anschlusspflicht (sie liefern an Werke; ohne Straße fördern sie wie bisher nicht)
   },
   // Einwohner als Truppen (seit v4.82): ausgebildete Einheiten brauchen so viele freie Einwohner (Startarmee und Nachschub nicht)
   crew: { default: 1, fobTruck: 2, ifv: 3, tank: 3, flak: 2, sam: 2, gepard: 3, pzh: 4, mlrs: 4, excavator: 2, bridgelayer: 2, recovery: 2, jammer: 2, littlebird: 2, transporter: 2, gunship: 2, f16: 2, f22: 2, u2: 2, su27: 2, a10: 2, c130: 3 },
   // Flucht (seit v4.82): Wohnzellen in der Konfliktzone leeren sich, wenn in ihnen oder den Nachbarzellen geschossen wird
   flee: { reach: 1, calm: 60 }, // Nachbarschaft (Zellen) und Ruhezeit (s), bis die Bewohner zurückziehen dürfen
   startStock: { bm: 1500, mun: 600, fuel: 1000 }, // Startlager der Hauptstadt bei eingeschalteter Stadt (sonst unendlich)
-  yield: byGood('yield'), // Register js/data/goods.js: höchster Ertrag je Arbeiter und Sekunde in Werken (BM-Werk, Munitionswerk, Raffinerie, Kerosin-Raffinerie, Hütte, Stahlwerk), begrenzt durch Rohstoffe
+  yield: byGood('yield'), // Register js/data/goods.js: höchster Ertrag je Arbeiter und Sekunde in Werken (BM-Werk, Munitionswerk, Raffinerie, Kerosin-Raffinerie, Stahlwerk), begrenzt durch die angelieferten Rohwaren
   sight: 160, // Sichtradius (px) jedes fertigen Stadtgebäudes ab seinem Rand (seit v5.25; Großbauten + halbe Diagonale): hebt den Kriegsnebel um die eigene Stadt auf
   taxPop: 0.03, // Geld/s je Einwohner
   taxCom: 0.07, // Geld/s je Arbeiter im Gewerbe (seit v5.20 0,07, vorher 0,15); wirkt nur mit Versorgung, siehe CITY.shop
@@ -87,27 +86,28 @@ export const CITY = {
     },
   },
 
-  // ---- Rohstoffe (seit v4.83, PRD §15) ----
-  // Vorkommen auf der Karte: je Team eine Gruppe jeder Sorte nahe der Hauptstadt, dazu umkämpfte Gruppen zwischen Basis und Zone.
-  deposits: { home: { dist: [5, 9], size: 4 }, neutral: { count: 8, size: 5, ring: [6, 22] }, shore: 16 }, // Abstand in Zellen, Zellen je Gruppe; ring = Zellen außerhalb der Konfliktzone; shore = px Abstand zu Wasser und Furten (nie auf Wasser, Brücken, Straßen, seit v5.15)
-  // Förderanlage (Holzfäller, Steinbruch, Erzmine, Ölquelle je nach Vorkommen): Rohstoff je Arbeiter und Sekunde; braucht seit v5.20 eine Straße (Lieferweg zum Werk, Pendler)
-  extract: { wood: 0.3, stone: 0.3, ore: 0.25, oil: 0.3 },
-  jobsMine: [0, 6, 12, 20], // Arbeitsplätze je Stufe einer Förderanlage
-  // Verarbeitung: so viel Rohstoff braucht eine Einheit Produkt (BM aus Holz oder Stein, Roheisen aus Erz, Stahl aus Roheisen, Treibstoff
-  // und Kerosin aus Öl, Munition aus Stahl). Seit v5.20: Erz → Roheisen (Hütte), Roheisen → Stahl (Stahlwerk, bisher Erz → Metall)
-  convert: byGood('convert'), // Register js/data/goods.js
-  // Ressourcenkette (seit v5.08) für die Flussanzeige (Knopf „Ressourcen“, js/game/flow.js, PRD §15 „Ressourcenanzeige“):
-  // Werk → aus welchen Rohstoffen (Vorkommen) oder Waren es was macht. Reihenfolge = Reihenfolge der Verarbeitung.
-  // Bei jeder Änderung an Rohstoffen, Werken oder Waren hier und in updateCity (js/game/city.js) mitpflegen; test/flow.test.js prüft beides.
-  chain: {
-    bm: { from: ['wood', 'stone'], to: 'bm' }, // Baumaterial-Werk: Holz oder Stein → Baumaterial
-    smelter: { from: ['ore'], to: 'iron' }, // Hütte (seit v5.20): Erz → Roheisen (Zwischenprodukt, ohne Lager)
-    steel: { from: ['iron'], to: 'metal' }, // Stahlwerk: Roheisen → Stahl (Schlüssel metal, bleibt im Stadtlager)
-    fuel: { from: ['oil'], to: 'fuel' }, // Raffinerie: Öl → Treibstoff
-    kero: { from: ['oil'], to: 'kero' }, // Kerosin-Raffinerie (seit v5.20): Öl → Kerosin (Stadtlager)
-    mun: { from: ['metal'], to: 'mun' }, // Munitionswerk: Stahl → Munition
+  // ---- Einfuhr (Paket „Import“, PRD §15) ----
+  // Rohwaren (Register IMPORTS in js/data/goods.js) kommen von außerhalb der Karte. Einfuhrpunkte: jede eigene Straßenzelle in der
+  // äußersten Zeile oder Spalte des Stadtrasters (Durchsatz nur durch Straßenkapazität und Stau begrenzt, CITY.transport) und jeder
+  // fertige Güterbahnhof, den eine durchgehende Kette aus Gleisen (4er-Nachbarschaft) mit einem Gleis am Kartenrand verbindet.
+  // Werke fordern je Schritt so viel an, wie sie verarbeiten (need × Leistung), vom nächsten Einfuhrpunkt über die Straße; bezahlt wird
+  // je angekommener Einheit (price), solange Geld da ist. Ein Werk mit vollem Lager für sein Produkt fordert nichts an.
+  import: {
+    station: [0, 40, 80, 140], // Rohwaren je s je Stufe eines angeschlossenen Güterbahnhofs (alle Sorten zusammen), mal Besetzung, Strom und Stimmung wie jedes Gebäude
+    price: Object.fromEntries(Object.entries(IMPORTS).map(([g, d]) => [g, d.price])), // Register js/data/goods.js (Feld price): Geld je angekommener Einheit
   },
-  // Startviertel (seit v4.84): steht zu Beginn fertig (Stufe 1) neben der Hauptstadt, dazu eine Ölquelle auf dem nächsten Ölvorkommen
+  // Ressourcenkette (seit v5.08, seit Paket „Import“ mit Bedarf je Rohware) für Werke und Flussanzeige (Knopf „Ressourcen“, js/game/flow.js,
+  // PRD §15 „Ressourcenanzeige“): Werk → need = Rohwaren je Einheit Produkt (alle nötig: Ausstoß = kleinster Anteil), to = Produkt.
+  // Bei jeder Änderung an Rohwaren, Werken oder Waren hier und in updateCity (js/game/city/economy.js) mitpflegen; test/flow.test.js prüft beides.
+  chain: {
+    bm: { need: { raw: 1 }, to: 'bm' }, // Baumaterial-Werk: Rohmaterial → Baumaterial
+    steel: { need: { ore: 2 }, to: 'metal' }, // Stahlwerk: Eisen → Stahl (Schlüssel metal, bleibt im Stadtlager)
+    fuel: { need: { oil: 1 }, to: 'fuel' }, // Raffinerie: Öl → Treibstoff
+    kero: { need: { oil: 1.2 }, to: 'kero' }, // Kerosin-Raffinerie (seit v5.20): Öl → Kerosin (Stadtlager)
+    mun: { need: { ore: 0.5, expl: 0.5 }, to: 'mun' }, // Munitionswerk: Eisen und Sprengstoff → Munition (seit Paket „Import“ kein Stahl mehr)
+  },
+  // Startviertel (seit v4.84): steht zu Beginn fertig (Stufe 1) neben der Hauptstadt; seit Paket „Import“ führt eine Straße von ihm zum
+  // nächsten Kartenrand, damit die Raffinerie ab Sekunde 0 Öl einführt (keine Ölquelle mehr)
   // Seit v5.03: über der Straße die Großbauten Kaserne (4 × 4) und Fabrikhalle (seit v5.33 5 × 5, vorher 8 × 8) nebeneinander, big = [Art, Spalte ab Straßenanfang]
   // Ein Großbau in row (seit v5.08 die 2 × 2-Raffinerie) beginnt an seiner Spalte und reicht nach rechts und unten (dort null).
   startQuarter: { road: 12, row: ['res', 'fuel', null, 'res'], big: [['barracks', 0], ['factory', 4]] }, // Straßenlänge, die Zellen darunter, die Großbauten darüber
@@ -158,7 +158,7 @@ export const CITY = {
 
   // ---- Strom und Zufriedenheit (seit v4.88, Stufe 3) ----
   // Strom wirkt stadtweit (keine Leitungen). Angebot: base (Notstrom der Hauptstadt) + Kraftwerke (supply je Stufe × Besetzung).
-  // Bedarf je Stufe und Zellenart; reicht der Strom nicht, arbeiten Förderung, Werke und Forschung nur im Verhältnis Angebot/Bedarf.
+  // Bedarf je Stufe und Zellenart; reicht der Strom nicht, arbeiten Werke, Güterbahnhof und Forschung nur im Verhältnis Angebot/Bedarf.
   power: {
     base: 40,
     supply: [0, 60, 120, 200],
@@ -228,11 +228,10 @@ export const CITY = {
     interval: { easy: 12, normal: 8, hard: 5 }, // Takt (s)
     reserve: { easy: 500, normal: 300, hard: 200 }, // Geld, das sie für die Armee übrig lässt
     perStep: 4, // so viele Zellen je Takt
-    mineFrom: 4, // Förderanlagen setzt sie erst, wenn die Stadt mindestens so viele Zellen hat
     roadEvery: 3, // jede so vielte Zeile (vom Anker aus) wird Straße, dazu eine Straßenspalte durch den Anker
     quarter: 3, // Radius (Zellen) der kleinen Viertel an vorderen FOBs
     quarterEvery: 3, // jeder so vielte Takt baut an einer vorderen FOB statt an der Hauptstadt
-    mix: { com: 2, bm: 3, mun: 2, fuel: 2, kero: 1, smelter: 2, steel: 2, market: 0.3 }, // Verhältnis der Arbeitsstätten (Kraftwerk, Uni, Rechenzentrum nach Bedarf)
+    mix: { com: 2, bm: 3, mun: 2, fuel: 2, kero: 1, steel: 2, market: 0.3 }, // Verhältnis der Arbeitsstätten (Kraftwerk, Uni, Rechenzentrum nach Bedarf)
     powerMargin: 1.15, // baut ein Kraftwerk, wenn das Stromangebot unter Bedarf × powerMargin + powerSpare fällt
     powerSpare: 10, // fester Strompuffer dazu
     // Wohnen: weist Wohnzellen aus, solange es weniger als resPerWork je Arbeitsstätte gibt, oder (bis höchstens resMax je Arbeitsstätte),
@@ -240,7 +239,6 @@ export const CITY = {
     resPerWork: 1.2,
     resMax: 2,
     draftSpare: 20,
-    munMetal: 50, // Munitionswerk gilt nur als knapp, wenn mehr Stahl als das im Stadtlager liegt
     uniFrom: 6, // Arbeitsstätten, ab denen sie eine Universität baut
     dcFrom: 16, // … ein Rechenzentrum (nach der Uni)
     sellAbove: 2700, // verkauft am Markt, wenn eine Sorte im Hauptlager darüber liegt
@@ -267,7 +265,7 @@ export const CITY = {
     defendSize: 6, // so viele Einheiten schickt sie zu einem angegriffenen Stadtgebäude
     defendRange: 2500, // px, nur Einheiten in diesem Abstand
     defendCooldown: 12, // s zwischen zwei Verteidigungsbefehlen
-    // Angriffsziele: Wert je Zellenart geteilt durch (1 + Entfernung / raidDist); Werke und Förderung zuerst
+    // Angriffsziele: Wert je Zellenart geteilt durch (1 + Entfernung / raidDist); Werke und Güterbahnhof zuerst
     raidDist: 1000,
     targetValue: byKind('target'), // je Zellenart im Register js/data/citykinds.js (Feld target, fehlt = 1)
     // Ausbildungsgebäude (seit v4.96): so viele will sie haben; ab moreFrom Arbeitsstätten je eins mehr (Heliport erst, wenn Hubschrauber freigeschaltet sind)
@@ -298,9 +296,6 @@ export const CITY = {
     a10Heavy: 4, // gleichzeitig gesehene gegnerische schwere Fahrzeuge, ab denen die KI A-10 bestellt
     a10Share: 0.25, // Anteil der A-10 an den Kampfflugzeugen
     a10Reserve: 1000, // Geld, das nach dem Kauf einer A-10 übrig bleiben muss (Festung und Forschung gehen vor)
-    // seit v5.20 (Review): höchstens so viele Förderanlagen je Werk, das ihren Rohstoff nimmt (Holz und Stein zusammen je BM-Werk, Erz je
-    // Hütte, Öl je Raffinerie oder Kerosin-Raffinerie; aufgerundet). Mehr Förderung, als die Werke verarbeiten, verstopft nur die Straßen.
-    minesPer: { bm: 1, smelter: 1, oil: 0.5 },
     roadTries: 4, // seit v5.20 (AP4): so viele Gebäude ohne Lieferweg oder Pendlerweg prüft die KI je Takt auf einen Straßenanschluss
     connectNear: 5, // seit v5.20 (AP4): Werke ohne Straße zum Lager nur an Straßen höchstens so viele Zellen vom Lagernetz entfernt (sonst wird der Anschluss zu weit)
     connectRing: 1, // seit v5.20 (AP4): Zellen neben einer Straße zum Lager zählen so viele Ringe näher (Großbauten und Werke bevorzugt dort)
@@ -312,7 +307,6 @@ export const CITY = {
     linkRetry: 120, // s: eine Startzelle, von der aus kein Weg ging (eingeschlossene Lücke), so lange nicht erneut versuchen
     linkBm: 200, // Baumaterial, das im Lager der Hauptstadt bleiben muss, bevor die KI ihr Netz verlängert (Anschlüsse der Werke gehen vor)
     runwayLink: 12, // Zellen: mit Anschlusspflicht darf die Bahn der KI so weit von einer Straße zum Lager entfernt liegen; sie zieht die Straße gleich danach
-    chainNear: 6, // Zellen: mit Anschlusspflicht baut die KI Hütte und Stahlwerk zuerst so nah am Partnerwerk (Roheisen fährt nicht durchs Lager)
     linkOutlets: 2, // so viele Ausgänge (freie Zelle am Netz mit freiem Nachbarn außerhalb) lässt die KI beim Bauen offen, damit ihr Netz nicht eingeschlossen wird
   },
 };

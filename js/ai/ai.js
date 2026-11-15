@@ -71,7 +71,7 @@ export class AI {
     }
     if (this.game.city && this.cityTimer >= CITY.ai.interval[this.difficulty]) {
       this.cityTimer = 0;
-      aiCity(this.game, this.team, this.difficulty, this.cityMem); // Stadt ausbauen: Ringe, Viertel, Förderung, Markt (cityai.js)
+      aiCity(this.game, this.team, this.difficulty, this.cityMem); // Stadt ausbauen: Ringe, Viertel, Einfuhr, Markt (cityai.js)
     }
     const s = this.snapshot();
     this.budget = MAX_PLACE;

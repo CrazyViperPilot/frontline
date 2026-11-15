@@ -10,7 +10,7 @@ import { radios, radioLeft } from '../game/radio.js';
 import { SEASON_NAMES, WEATHER_NAMES, weatherEffect } from '../game/weather.js';
 import { RESEARCH } from '../data/research.js';
 import { CITY } from '../data/city.js';
-import { DEPOSITS, DEPOSIT_NAME, hasRoad } from '../game/city/cells.js';
+import { hasRoad } from '../game/city/cells.js';
 import { hasMarket } from '../game/city/query.js';
 import { careOf } from '../game/city/care.js';
 import { transportInfo, transportOf, supplyOf } from '../game/transport.js';
@@ -162,7 +162,7 @@ export class Hud {
       <div class="fabs">
         ${g.city ? '<button type="button" class="city-fab" data-act="city" title="Stadt verwalten (Y)">🏙 Stadt</button>' : ''}
         ${g.research ? '<button type="button" class="city-fab research-fab" data-act="research" title="Forschungsmenü: Stufen und Forschungsbaum (U bei gewählter Hauptstadt)">🔬 Forschung</button>' : ''}
-        ${g.city ? '<button type="button" class="city-fab flow-fab" data-act="flow" title="Ressourcen: Förderung, Werke, Lager und Engpässe">📊 Ressourcen</button>' : ''}
+        ${g.city ? '<button type="button" class="city-fab flow-fab" data-act="flow" title="Ressourcen: Einfuhr, Werke, Lager und Engpässe">📊 Ressourcen</button>' : ''}
         <button type="button" class="city-fab builder-fab" data-act="builder" title="Nächstes Baufahrzeug (J)">🚧 Bauer</button>
       </div>
       <header class="top">
@@ -585,10 +585,8 @@ export class Hud {
       // Ausgangslager (seit v5.69): LKW holen die Ware hier ab
       if (CITY.pickup.kinds.includes(k)) h += line(`Abholbereit: ${Math.floor(c.out?.[i] ?? 0)} / ${CITY.pickup.cap} ${GOOD_SHORT[made]} (LKW: Rechtsklick)`);
     }
-    else if (k === 'mine') {
-      const d = DEPOSITS[c.deposit[i] - 1];
-      h += line(`Arbeitsplätze ${CITY.jobsMine[lv]}${d ? ` · ${DEPOSIT_NAME[d]} gesamt ${fmtRate(s.raw[d])}/s` : ''}`);
-    } else if (k === 'power') h += line(`Liefert bis ${CITY.power.supply[lv]} Strom · Stadt ${Math.round(s.powerSupply)} / ${Math.round(s.powerUse)}`);
+    else if (k === 'station') h += line(`Arbeitsplätze ${CITY.jobs[lv]} · führt bis ${CITY.import.station[lv]} Rohwaren je s ein (mal Besetzung und Strom)`);
+    else if (k === 'power') h += line(`Liefert bis ${CITY.power.supply[lv]} Strom · Stadt ${Math.round(s.powerSupply)} / ${Math.round(s.powerUse)}`);
     else if (k === 'uni') h += line(`Plätze ${CITY.jobsUni[lv]}`);
     else if (k === 'dc') h += line(`Arbeitsplätze ${CITY.jobsDc[lv]}`);
     else if (b.produces) {
@@ -663,18 +661,17 @@ export class Hud {
     const warn = (t) => `<div class="warn small">${esc(t)}</div>`;
     const pct = (v) => `${Math.round(v * 100)} %`;
     let h = '';
-    // Was ohne Weg fehlt: je Förderung die passende Verarbeitung, sonst das Lager
-    const TO = { wood: 'zu einem BM-Werk', stone: 'zu einem BM-Werk', ore: 'zu einer Hütte', oil: 'zu einer Raffinerie oder Kerosin-Raffinerie', smelter: 'zu einem Stahlwerk' };
     if (SUPPLIER_KINDS.includes(k)) {
       const T = transportInfo(g, c, i);
-      if (T.to) {
-        const way = T.dist === 0 ? 'direkt angrenzend' : `${T.dist} ${T.dist === 1 ? 'Feld' : 'Felder'}`; // Paket „Direkte Lieferung“: ohne Straße
-        h += line(`Liefert an: ${T.to} (${way}) · Weg ${pct(T.eff)}`);
-        if (T.targets?.length > 1) h += line(`Verteilt auf ${T.targets.length} Werke nach freier Abnahme: ${T.targets.join(', ')}`);
-      } else {
-        const d = k === 'mine' ? DEPOSITS[c.deposit[i] - 1] : k === 'smelter' ? 'smelter' : null;
-        h += warn(`Kein Straßenweg ${d ? TO[d] : 'zum Lager'}: die Ware geht verloren`);
-      }
+      if (T.to) h += line(`Liefert an: ${T.to} (${T.dist} ${T.dist === 1 ? 'Feld' : 'Felder'}) · Weg ${pct(T.eff)}`);
+      else h += warn('Kein Straßenweg zum Lager: die Ware geht verloren');
+      // Einfuhr (Paket „Import“): woher die Rohwaren kommen
+      if (T.importFrom) h += line(`Rohwaren von: ${T.importFrom} (${T.importDist === 0 ? 'direkt angrenzend' : `${T.importDist} ${T.importDist === 1 ? 'Feld' : 'Felder'}`}) · Weg ${pct(T.importEff)}`);
+      else if (T.importFrom === null) h += warn('Keine Straße zum Kartenrand oder zu einem angeschlossenen Güterbahnhof: keine Rohwaren');
+    }
+    if (k === 'station') {
+      const T = transportInfo(g, c, i);
+      if (!T.linked) h += warn('Kein Gleis bis zum Kartenrand: führt nichts ein');
     }
     if (WORKPLACE_KINDS.includes(k)) {
       const T = transportInfo(g, c, i);

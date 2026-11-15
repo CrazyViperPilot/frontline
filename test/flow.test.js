@@ -1,50 +1,36 @@
 // Flussanzeige (js/game/flow.js, PRD §15 „Ressourcenanzeige“): Kette aus CITY.chain passt zur Simulation (updateCity),
-// Engpässe werden erkannt, der Verbrauch wird gemessen. Schlägt ein Test hier fehl, wurde an Rohstoffen, Werken oder Waren
-// etwas geändert, ohne CITY.chain oder die Felder cap/inp/gross/n in updateCity mitzupflegen.
+// Engpässe werden erkannt, der Verbrauch wird gemessen. Schlägt ein Test hier fehl, wurde an Rohwaren, Werken oder Waren
+// etwas geändert, ohne CITY.chain oder die Felder cap/inp/gross/raw/n in updateCity mitzupflegen.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { CITY } from '../js/data/city.js';
 import { KINDS } from '../js/data/citykinds.js';
-import { DEPOSITS } from '../js/game/city/cells.js';
-import { resourceFlow, flowLayout, FlowMeter, teamStock, FLOW_GOODS, FLOW_MIDS } from '../js/game/flow.js';
+import { IMPORTS } from '../js/data/goods.js';
+import { resourceFlow, flowLayout, FlowMeter, teamStock, FLOW_GOODS } from '../js/game/flow.js';
 
 const run = (g, s, fn) => { for (let t = 0; t < s * 20; t++) { g.update(0.05); fn?.(); } };
 
-test('CITY.chain deckt alle Rohstoffe, Werke und Waren ab', () => {
+test('CITY.chain deckt alle Rohwaren, Werke und Waren ab', () => {
   const tos = Object.values(CITY.chain).map((L) => L.to);
-  const froms = Object.values(CITY.chain).flatMap((L) => L.from);
-  for (const d of Object.keys(CITY.extract)) assert.ok(froms.includes(d), `Rohstoff ${d} fehlt in CITY.chain`);
-  for (const d of DEPOSITS) assert.ok(froms.includes(d), `Vorkommen ${d} fehlt in CITY.chain`);
-  for (const g of [...Object.keys(CITY.convert), ...Object.keys(CITY.yield)]) assert.ok(tos.includes(g), `Ware ${g} wird in CITY.chain nicht erzeugt`);
+  const needs = Object.values(CITY.chain).flatMap((L) => Object.keys(L.need));
+  for (const g of Object.keys(IMPORTS)) assert.ok(needs.includes(g), `Rohware ${g} fehlt in CITY.chain`);
+  for (const g of Object.keys(CITY.yield)) assert.ok(tos.includes(g), `Ware ${g} wird in CITY.chain nicht erzeugt`);
   for (const w of Object.keys(CITY.chain)) assert.ok(KINDS.includes(w), `CITY.chain.${w} ist keine Zellenart`);
-  for (const g of tos) assert.ok(FLOW_GOODS.includes(g) || FLOW_MIDS.includes(g), `Ware ${g} fehlt in FLOW_GOODS und FLOW_MIDS`);
-  // Zwischenprodukte (Roheisen) ohne Lager: ein Werk erzeugt sie, ein anderes verarbeitet sie
-  for (const g of FLOW_MIDS) assert.ok(froms.includes(g), `Zwischenprodukt ${g} wird von keinem Werk verarbeitet`);
+  for (const g of tos) assert.ok(FLOW_GOODS.includes(g), `Ware ${g} fehlt in FLOW_GOODS`);
   const L = flowLayout();
   for (const l of L.links) assert.ok(L.nodes[l.from].col < L.nodes[l.to].col, `Kante ${l.from} → ${l.to} läuft nach links`);
 });
 
-test('Kette seit v5.20: Erz → Hütte → Roheisen → Stahlwerk → Stahl; Öl → Raffinerie und Kerosin-Raffinerie → Kerosin', () => {
+test('Kette seit Paket „Import“: Öl → Raffinerie und Kerosin-Raffinerie; Eisen und Sprengstoff → Munitionswerk; Eisen → Stahlwerk', () => {
   const { nodes } = flowLayout();
-  assert.equal(nodes['mid:iron'].type, 'mid', 'Roheisen ist ein Zwischenprodukt');
-  assert.equal(nodes['store:iron'], undefined, 'Roheisen hat kein Lager');
-  assert.ok(nodes['mid:iron'].ins.includes('works:smelter') && nodes['mid:iron'].outs.includes('works:steel'));
-  assert.ok(nodes['works:steel'].ins.includes('mid:iron') && nodes['works:steel'].outs.includes('store:metal'));
   assert.ok(nodes['raw:oil'].outs.includes('works:fuel') && nodes['raw:oil'].outs.includes('works:kero'));
+  assert.deepEqual([...nodes['works:mun'].ins].sort(), ['raw:expl', 'raw:ore']);
+  assert.ok(nodes['raw:ore'].outs.includes('works:steel'));
+  assert.ok(nodes['works:steel'].outs.includes('store:metal'));
   assert.ok(nodes['works:kero'].outs.includes('store:kero'));
   assert.ok(nodes['store:kero'].col > nodes['works:kero'].col);
-});
-
-test('Roheisen ohne Stahlwerk: die Hütte meldet es, kein Erz wird als Bestand gezählt', () => {
-  const g = new Game({ seed: 7, city: true });
-  run(g, 2);
-  const c = g.city[0];
-  c.stats = { ...c.stats, fill: 1, powerRatio: 1, happy: 1, mood: 1, jobs: 10, raw: { wood: 0, stone: 0, ore: 1, oil: 0 }, cap: { iron: 2, metal: 0 }, inp: { iron: 1, metal: 0 }, gross: { iron: 0, metal: 0 }, n: { smelter: 1, steel: 0, mine: { wood: 0, stone: 0, ore: 1, oil: 0 } } };
-  const f = resourceFlow(g, 0);
-  assert.equal(f.nodes['works:smelter'].status, 'bad');
-  assert.match(f.nodes['works:smelter'].note, /ohne Stahlwerk/);
-  assert.equal(f.nodes['mid:iron'].status, 'ok');
+  assert.equal(nodes['works:mun'].ins.includes('store:metal'), false, 'Munition braucht keinen Stahl mehr');
 });
 
 test('Graph passt zu den Zahlen der Simulation', () => {
@@ -54,37 +40,48 @@ test('Graph passt zu den Zahlen der Simulation', () => {
   for (const L of Object.values(CITY.chain)) {
     for (const f of ['cap', 'inp', 'gross']) assert.ok(Number.isFinite(s[f]?.[L.to]), `stats.${f}.${L.to} fehlt (updateCity)`);
   }
-  assert.ok(Math.abs(s.gross.metal - s.mun * CITY.convert.mun - s.metal) < 1e-9);
   const f = resourceFlow(g, 0);
   for (const [w, L] of Object.entries(CITY.chain)) {
     const n = f.nodes[`works:${w}`];
     assert.equal(n.out, s.gross[L.to]);
-    assert.ok(n.out <= n.cap + 1e-9 && n.out <= n.inp + 1e-9, `${w}: mehr erzeugt als Werk oder Rohstoff hergeben`);
+    assert.ok(n.out <= n.cap + 1e-9 && n.out <= n.inp + 1e-9, `${w}: mehr erzeugt als Werk oder Rohwaren hergeben`);
   }
-  for (const d of DEPOSITS) assert.equal(f.nodes[`raw:${d}`].rate, s.raw[d]);
-  // Startviertel: eine Raffinerie und eine Ölquelle stehen
+  for (const g2 of Object.keys(IMPORTS)) {
+    assert.equal(f.nodes[`raw:${g2}`].rate, s.raw[g2]);
+    assert.equal(f.nodes[`raw:${g2}`].cost, s.importCostBy[g2]);
+  }
+  // Rohwaren je Werk passen zum Bedarf: angekommenes Öl = Eingang der Raffinerien × need
+  const oil = CITY.chain.fuel.need.oil * s.inp.fuel + CITY.chain.kero.need.oil * s.inp.kero;
+  assert.ok(Math.abs(oil - s.raw.oil) < 1e-9, `Öl ${s.raw.oil} ≠ ${oil}`);
+  // Startviertel: eine Raffinerie, die Öl einführt
   assert.equal(f.nodes['works:fuel'].count, 1);
-  assert.equal(f.nodes['raw:oil'].count, 1);
+  assert.ok(f.nodes['raw:oil'].rate > 0);
+  assert.ok(f.importCost > 0 && Math.abs(f.importCost - s.importCost) < 1e-12);
   assert.ok(f.nodes['store:fuel'].stock > 0);
 });
 
-test('Engpass: Werk zu klein oder Rohstoff fehlt', () => {
+test('Engpass: Werk wartet auf Rohwaren, ohne Einfuhrpunkt, ohne Geld, ohne Arbeiter', () => {
   const g = new Game({ seed: 7, city: true });
   run(g, 2);
   const c = g.city[0];
   const base = { ...c.stats, fill: 1, powerRatio: 1, happy: 1, mood: 1, jobs: 10 };
-  const stats = (cap, inp) => ({ ...base, raw: { wood: 0, stone: 0, ore: 0, oil: inp }, cap: { bm: 0, metal: 0, mun: 0, fuel: cap }, inp: { bm: 0, metal: 0, mun: 0, fuel: inp }, gross: { bm: 0, metal: 0, mun: 0, fuel: Math.min(cap, inp) }, n: { bm: 0, mun: 0, fuel: 1, steel: 0, mine: { wood: 0, stone: 0, ore: 0, oil: 1 } } });
-  c.stats = stats(0.5, 1);
+  const zero = { bm: 0, metal: 0, mun: 0, kero: 0 };
+  const stats = (cap, inp) => ({ ...base, raw: { raw: 0, ore: 0, oil: inp, expl: 0 }, importCostBy: { raw: 0, ore: 0, oil: inp * 0.3, expl: 0 }, cap: { ...zero, fuel: cap }, inp: { ...zero, fuel: inp }, gross: { ...zero, fuel: Math.min(cap, inp) }, n: { bm: 0, mun: 0, fuel: 1, steel: 0, kero: 0, station: 0 } });
+  c.stats = stats(1, 1);
   let f = resourceFlow(g, 0);
-  assert.equal(f.nodes['works:fuel'].status, 'bad');
-  assert.equal(f.nodes['raw:oil'].status, 'warn');
-  assert.ok(Math.abs(f.nodes['raw:oil'].waste - 0.5) < 1e-9);
-  assert.match(f.issues[0].text, /Raffinerie zu klein/);
+  assert.equal(f.nodes['works:fuel'].status, 'ok');
+  assert.equal(f.nodes['raw:oil'].status, 'ok');
+  assert.match(f.nodes['raw:oil'].note, /Geld\/s/);
   c.stats = stats(2, 1);
   f = resourceFlow(g, 0);
   assert.equal(f.nodes['works:fuel'].status, 'warn');
-  assert.equal(f.nodes['raw:oil'].status, 'bad');
   assert.match(f.issues[0].text, /Raffinerie nur 50 % ausgelastet/);
+  c.stats = { ...stats(2, 0), importNone: 1 };
+  f = resourceFlow(g, 0);
+  assert.match(f.issues[0].text, /keinen Einfuhrpunkt/);
+  c.stats = { ...stats(2, 1), importScale: 0.4 };
+  f = resourceFlow(g, 0);
+  assert.match(f.issues[0].text, /Geld reicht nur für 40 % der Einfuhr/);
   c.stats = { ...stats(1, 1), fill: 0.5 };
   f = resourceFlow(g, 0);
   assert.match(f.issues[0].text, /Nur 50 % der Arbeitsplätze/);

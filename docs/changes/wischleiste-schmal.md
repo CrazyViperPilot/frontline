@@ -1,1 +1,0 @@
-**Schmale Wischleiste** (§8 „Steuerung“): Auf dem Telefon ist die Befehlskarte drei Knöpfe breit (der Rest wird gewischt) und steht links neben der Knopfspalte, damit „Bauer“ sie auch bei eingeblendeter Adressleiste nicht verdeckt.

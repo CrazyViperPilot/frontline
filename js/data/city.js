@@ -122,12 +122,15 @@ export const CITY = {
   market: { lot: 100, maxCount: 100, surge: 0.08, calm: 0.01, sell: byGood('sell'), buy: byGood('buy') }, // maxCount: höchstens so viele Lose je Befehl (Knöpfe ×10, ×100 im Marktmenü); Preise je Ware im Register js/data/goods.js
 
   // ---- Straßentransport (seit v5.20, Werte für AP2/AP3; PRD §15 „Straßentransport“) ----
-  // cap: Einheiten je s, die eine eigene Straßenzelle trägt; mapCap: Stadtstraßen der Karte. commute: Last je Arbeiter zum Wohnen (je s).
+  // cap: Einheiten je s, die eine eigene Straßenzelle (je Spur) trägt; mapCap: Stadtstraßen der Karte. Paket „Industriepark“: 24/40 (vorher
+  // 12/20). Gemessen KI gegen KI (Seeds 3, 7, 11, 25 min): bei 12 kamen nach 15 min nur rund 60 % des Rohwarenbedarfs an, bei 24 rund 85–90 %,
+  // nach 25 min noch rund 75–80 % mit Straßenlast bis zum Doppelten der Kapazität (Straßen bleiben der Engpass; mehrspurig bauen oder
+  // Güterbahnhof); 30 und 40 ließen kaum noch Stau. commute: Last je Arbeiter zum Wohnen (je s).
   // maxDist: längster Weg in Zellen (weiter = kein Ziel); smooth: s, bis der Stau-Faktor folgt. Die Wege werden neu gerechnet, sobald sich
   // die Stadt ändert (Bau, Abriss, Wachstum, Ruinen, Flucht der Bewohner), nicht nach Zeit (seit dem Review von v5.20, vorher reroute 3 s).
   // connectMax (seit v5.20, AP4): längster neuer Anschluss an die Straße zum Lager in Zellen (Startviertel und KI, connectRoad in city.js).
   // maxLanes (seit v5.38): Straßen nebeneinander bilden ein mehrspuriges Band; Kapazität je Zelle × Spuren je Richtung, höchstens so viele
-  transport: { cap: 12, mapCap: 20, maxLanes: 4, commute: 0.05, maxDist: 260, smooth: 2, connectMax: 30 }, // maxDist seit Paket „Straßen“ 260 (vorher 160): die Kartenmitte ist ohne Umwege schon 150 Zellen entfernt
+  transport: { cap: 24, mapCap: 40, maxLanes: 4, commute: 0.05, maxDist: 260, smooth: 2, connectMax: 30 }, // maxDist seit Paket „Straßen“ 260 (vorher 160): die Kartenmitte ist ohne Umwege schon 150 Zellen entfernt
   // Versorgung der Ausbildungsgebäude über das Straßennetz (Paket „Straßen“, Teil 2, PRD §15 „Straßentransport“): Kaserne, Fabrikhalle,
   // Heliport und Stellplatz bilden nur so schnell aus, wie ihr Straßenweg zum Lager der Hauptstadt es erlaubt. Versorgungsgrad
   // v = max(min, 1 − perCell × max(0, d − free)), d = Straßenzellen des Wegs; Tempo = v × Stau-Faktor des Wegs; ohne Weg 0 (Ausbildung
@@ -308,21 +311,28 @@ export const CITY = {
     linkBm: 200, // Baumaterial, das im Lager der Hauptstadt bleiben muss, bevor die KI ihr Netz verlängert (Anschlüsse der Werke gehen vor)
     runwayLink: 12, // Zellen: mit Anschlusspflicht darf die Bahn der KI so weit von einer Straße zum Lager entfernt liegen; sie zieht die Straße gleich danach
     linkOutlets: 2, // so viele Ausgänge (freie Zelle am Netz mit freiem Nachbarn außerhalb) lässt die KI beim Bauen offen, damit ihr Netz nicht eingeschlossen wird
-    // Güterbahnhof der KI (Paket „Import“, Logik aiStation in js/ai/cityai.js): baut sie, wenn die Einfuhr über Straßen zu knapp ist (Stau,
-    // nicht Geld). Ein Güterbahnhof wächst mit den Einwohnern selbst (keine Aufwertung durch Befehl), deshalb baut die KI bei anhaltendem
-    // Mangel einen zweiten (stationMax). AUS (null) seit der Messung: Güterbahnhöfe am Kartenrand (der Platz in der dichten Werkszone
-    // ist belegt) brachten keinen messbaren Gewinn (Seeds 3, 7, 11; normal: Einfuhr 46 → 47 %, Ausbildung und Abschüsse leicht darunter;
-    // hard: Einfuhr 50 → 54 %, Einheiten gleich), kosten 300 Geld und 200 Baumaterial. Zum Einschalten: normal 300, hard 240 (Spielsekunden).
-    stationFrom: { easy: null, normal: null, hard: null }, // Spielsekunde, ab der sie einen Güterbahnhof baut (null = nie)
-    stationWorks: 4, // so viele Werke mit Leistung braucht sie zuerst (vorher lohnt der Güterbahnhof nicht)
+    // Güterbahnhof der KI (Paket „Import“, seit Paket „Industriepark“ als Park, Logik aiStation/parkSite in js/ai/cityai.js). Den ersten
+    // Park legt sie voraus an (später ist das Netz am Lager rundum bebaut und es fehlt der Platz), einen zweiten (stationMax) nur bei
+    // anhaltendem Einfuhrmangel (Stau, nicht Geld) und wenn der erste voll umbaut oder ausgelastet ist. Ein Güterbahnhof wächst mit den
+    // Einwohnern selbst. Gemessen (Paket „Industriepark“, Seeds 3, 7, 11, 25 min, normal, Straße 24 je Spur): angekommene Rohwaren
+    // 39 → 44 je s, 22 → 35 Werke, Ausbildung und Abschüsse gleich. Vorher (Bahnhof allein am Rand) kein messbarer Gewinn, deshalb war er aus.
+    stationFrom: { easy: null, normal: 300, hard: 240 }, // Spielsekunde, ab der sie den Industriepark anlegt (null = nie; leicht baut keinen)
+    stationWorks: 2, // so viele Werke mit Leistung braucht sie zuerst (vorher lohnt der Güterbahnhof nicht)
     importLow: 0.7, // Einfuhr-Anteil (tatsächlich ÷ Leistung der Werke, ohne volle Lager) darunter gilt die Einfuhr als knapp
     importScaleMin: 0.9, // Einfuhrskala (1 = Geld reicht) darüber: der Mangel liegt an Straßen und Stau, nicht am Geld
     importWait: 60, // s, so lange knapp, bis sie einen Güterbahnhof baut
     stationMax: 2, // höchstens so viele Güterbahnhöfe
-    stationMoney: 300, // Geld, das nach dem Bau über der Reserve bleibt (die Armee geht vor)
+    stationMoney: 100, // Geld, das nach dem Bau über der Reserve (CITY.ai.reserve) bleibt (die Armee geht vor)
     stationBm: 200, // Baumaterial, das im Lager der Hauptstadt nach dem Bau bleibt
     railMax: 40, // längste Gleiskette (Zellen) bis zum Kartenrand
-    stationNear: 3, // Gewicht der Entfernung zum nächsten Werk gegen die Gleislänge bei der Wahl des Platzes (je Zelle)
+    stationNear: 1, // Gewicht der Entfernung zum nächsten Werk gegen die Gleislänge bei der Wahl des Platzes (je Zelle; Paket „Industriepark“ 1, vorher 3)
     stationRetry: 120, // s: eine Stelle, an der der Bau scheiterte, und eine Suche ohne Platz werden so lange nicht wiederholt
+    // Industriepark (Paket „Industriepark“, Logik aiStation/parkSite in js/ai/cityai.js): statt eines einzelnen Bahnhofs legt die KI einen
+    // Park an: Güterbahnhof (3 × 3) mit Straße an drei Seiten, vier 2 × 2-Werksplätze daneben (grenzen an den Bahnhof, Direktlieferung
+    // ohne Straße, und an die Parkstraße, über die das Produkt zum Lager fährt), Zufahrt zum Netz des Lagers und Gleis zum Kartenrand.
+    // Die Werksplätze hält sie frei; neue Werke kommen zuerst dorthin, erst dann anderswo hin.
+    parkLink: 12, // längste bezahlte Zufahrt (Zellen) vom Straßennetz des Lagers bis zur Straße des Parks
+    parkLinkCost: 2, // Gewicht je Zelle Zufahrt gegen die Gleislänge (Zellen) bei der Wahl des Platzes
+    stationBusy: 0.9, // Anteil des Durchsatzes (CITY.import.station je Stufe), ab dem ein Bahnhof als ausgelastet gilt (dann darf ein zweiter kommen)
   },
 };

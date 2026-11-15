@@ -5,7 +5,7 @@ import { CITY } from '../data/city.js';
 import { BALANCE } from '../data/balance.js';
 import { KINDS, KIND_ID, WORKS, SUPPLIER_KINDS } from '../data/citykinds.js';
 import { transportOf, transportInfo, mainAccess } from '../game/transport.js';
-import { accessCells, cellAt, idx, sizeOf, isPart, fitBig, bigCells, cellFree, roadAt, hasRoad, buildAllowed, buildWhy, canZone, nbrsOf, roadLinked, atEdge, stationLinked } from '../game/city/cells.js';
+import { accessCells, cellAt, idx, sizeOf, isPart, fitBig, bigFits, bigCells, cellFree, roadAt, hasRoad, buildAllowed, buildWhy, canZone, nbrsOf, roadLinked, atEdge, stationLinked } from '../game/city/cells.js';
 import { mainRoadReach, connectRoad, importReach, connectEdge } from '../game/city/roadnet.js';
 import { totals } from '../game/city/state.js';
 import { marketBuyPrice } from '../game/city/query.js';
@@ -143,9 +143,9 @@ function aiCandidates(game, c, x, y, rad, reach) {
   return out;
 }
 
-/** Neue Buchhaltung der Stadt-KI (liegt seit v5.58 in der KI-Instanz, ai.js `cityMem`): Ausbautakte, Zeit seit dem letzten Überfall, letzter Verteidigungsbefehl; seit Paket „Import“ Einfuhr-Wächter (importBad, s) und Güterbahnhof-Fehlschläge (stationFail). */
+/** Neue Buchhaltung der Stadt-KI (liegt seit v5.58 in der KI-Instanz, ai.js `cityMem`): Ausbautakte, Zeit seit dem letzten Überfall, letzter Verteidigungsbefehl; seit Paket „Import“ Einfuhr-Wächter (importBad, s); seit Paket „Industriepark“ abgelehnte Werksplätze (parkFail: Anker → Spielzeit) und freigehaltene Werksplätze am Güterbahnhof (parkKeep: Zelle → 1). */
 export function cityAiMemory() {
-  return { turn: 0, raidTimer: 0, defendAt: -1e9, importBad: 0, importAt: undefined, importNext: -1e9, stationFail: {} };
+  return { turn: 0, raidTimer: 0, defendAt: -1e9, importBad: 0, importAt: undefined, importNext: -1e9, parkFail: {}, parkKeep: {} };
 }
 
 /** KI-Schritt (alle ai.interval s von ai.js): weist die nächsten Zellen aus, solange Geld über der Reserve bleibt. mem: cityAiMemory() der KI. */
@@ -188,19 +188,33 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
   const cands = aiCandidates(game, city, anchor.x, anchor.y, rad, reach);
   const near = nearCells(city, reach, CITY.ai.connectNear);
   const free = (j) => !city.kind[j] && !inDanger(city, j % city.cols, Math.floor(j / city.cols), game.time);
-  // Werk (2 × 2, seit v5.20 AP4): zuerst ein Quadrat an einer Straße zum Lager, sonst an einer beliebigen Straße in Reichweite
-  // (aiConnect verbindet es danach, Baumaterial vorausgesetzt)
+  const keep = (mem.parkKeep ??= {}); // Werksplätze am Güterbahnhof (Paket „Industriepark“): nur Werke dürfen dorthin
+  const freeFor = (kind) => (WORKS.includes(kind) ? free : (j) => free(j) && !keep[j]);
+  // Werk (2 × 2, seit v5.20 AP4): seit Paket „Industriepark“ zuerst ein freier Platz am Güterbahnhof (Direktlieferung), dann ein
+  // Quadrat an einer Straße zum Lager, sonst an einer beliebigen Straße in Reichweite (aiConnect verbindet es danach, Baumaterial
+  // vorausgesetzt). Ein Werk dort nur, wenn eine Zufahrt zum Netz des Lagers überhaupt möglich ist (linkable): sonst lieferte es nie.
+  const isWork = (kind) => WORKS.includes(kind);
+  let linkable = null; // erst bei Bedarf, einmal je Takt
+  const canLink = (a, kind) => {
+    linkable ??= linkField(game, city, reach);
+    return bigCells(city, a, sizeOf(kind)).some((j) => nbrsOf(city, j).some((x) => linkable[x]));
+  };
   const workSpot = (kind) => {
+    if (isWork(kind)) {
+      const spot = parkSpot(game, city, reach, kind, free, mem);
+      if (spot >= 0) return spot;
+    }
     for (const pass of [true, false]) {
       for (const c2 of cands) {
         if (pass ? !touchesRoad(city, c2.i, reach) : !(near[c2.i] && hasRoad(city, c2.col, c2.row))) continue;
-        const a = fitBig(game, city, c2.col, c2.row, kind, free, (j) => buildAllowed(game, city, j, kind));
-        if (a >= 0) return a;
+        const a = fitBig(game, city, c2.col, c2.row, kind, freeFor(kind), (j) => buildAllowed(game, city, j, kind));
+        if (a >= 0 && (pass || !isWork(kind) || canLink(a, kind))) return a;
       }
     }
     return -1;
   };
   const place = (cand) => {
+    if (keep[cand.i]) return; // freigehaltener Werksplatz: keine Straße, kein anderes Gebäude
     let kind = 'road';
     let col = cand.col;
     let row = cand.row;
@@ -236,6 +250,7 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
     const r = game.issue(team, { type: 'city', kind, c0: col, r0: row, c1: col, r1: row });
     if (!r.ok) {
       if (kind !== 'road') skip.add(kind); // z. B. zu wenig Baumaterial: in diesem Takt etwas anderes (seit v5.03)
+      if (isWork(kind)) (mem.parkFail ??= {})[idx(city, col, row)] = game.time; // abgelehnter Werksplatz: nicht jeden Takt neu (Paket „Industriepark“)
       return;
     }
     if (kind !== 'road') add[kind] = (add[kind] ?? 0) + 1;
@@ -279,37 +294,266 @@ function importWatch(game, c, mem) {
 }
 
 /**
- * Güterbahnhof der KI (Paket „Import“, PRD §15): ist die Einfuhr über Straßen anhaltend knapp (importWatch, importWait s), baut sie
- * einen Güterbahnhof neben dem Straßennetz des Lagers (Anschluss wie jedes Großbau) und eine Gleiskette bis an den Kartenrand. Nur mit
- * Geld über Reserve und stationMoney sowie Baumaterial über stationBm (die Armee geht vor). Höchstens stationMax Güterbahnhöfe, alle
- * schon angeschlossen. true, wenn gebaut.
+ * Industriepark der KI (Paket „Industriepark“, PRD §10 „Einfuhr“): ab stationFrom (Spielsekunde je Schwierigkeit) und stationWorks
+ * Werken legt sie einen Güterbahnhof mit Zufahrt, vier Werksplätzen und Gleis zum Kartenrand an (parkSite, Grundriss PARK); einen
+ * weiteren nur, wenn die Einfuhr über Straßen anhaltend knapp ist (importWatch, importWait s).
+ * Die Werke kommen danach im normalen Ausbau auf die Plätze am Bahnhof (parkSpot, Direktlieferung ohne Straße). Nur mit Geld über
+ * Reserve und stationMoney sowie Baumaterial über stationBm (die Armee geht vor). Höchstens stationMax Güterbahnhöfe; ein weiterer erst,
+ * wenn jeder vorhandene angeschlossen ist und voll umbaut oder ausgelastet (stationBusy). Ohne Platz oder nach einem abgelehnten
+ * Befehl sucht sie stationRetry s lang nicht neu. true, wenn gebaut.
  */
 function aiStation(game, c, main, money, reserve, difficulty, mem) {
   const A = CITY.ai;
   const from = A.stationFrom[difficulty];
-  if (from == null || !main || game.time < from || mem.importBad < A.importWait || game.time < mem.importNext) return false;
+  if (from == null || !main || game.time < from || game.time < mem.importNext) return false;
   const stations = c.list.filter((i) => c.kind[i] === KIND_ID.station && !isPart(c, i));
   if (stations.length >= A.stationMax || stations.some((i) => !stationLinked(c, i))) return false;
+  // Den ersten Park plant sie voraus (später ist das Netz am Lager rundum bebaut und es fehlt der Platz), jeden weiteren erst bei
+  // anhaltendem Einfuhrmangel
+  if (stations.length && mem.importBad < A.importWait) return false;
+  const reach = mainRoadReach(game, c);
+  const free = (j) => !c.kind[j] && !inDanger(c, j % c.cols, Math.floor(j / c.cols), game.time);
+  // Zweiter Bahnhof erst, wenn jeder vorhandene voll umbaut (kein freier Werksplatz) oder ausgelastet ist
+  if (!stations.every((st) => !parkSlots(game, c, st, reach, 'bm', free, mem).length || stationBusy(game, c, st))) return false;
   let works = 0;
   for (const i of c.list) if (!isPart(c, i) && c.level[i] && WORKS.includes(KINDS[c.kind[i] - 1])) works++;
   if (works < A.stationWorks) return false;
   if (money < reserve + A.stationMoney + CITY.cost.station || main.store.bm < CITY.costBm.station + A.stationBm) return false;
-  const site = stationSite(game, c, mem);
+  const site = parkSite(game, c, reach);
   if (!site) {
     mem.importNext = game.time + A.stationRetry; // ohne Platz nicht jeden Takt neu suchen
     return false;
   }
+  const roads = site.link.length + site.roads.length;
   const rails = site.rail.length;
-  if (money < reserve + A.stationMoney + CITY.cost.station + rails * CITY.cost.rail || main.store.bm < CITY.costBm.station + rails * CITY.costBm.rail + A.stationBm) return false;
-  // Gleise zuerst (flach, sofort fertig); der Bahnhof hängt danach am Gleis und ist angeschlossen
-  for (const j of site.rail) if (!game.issue(c.team, cellCmd(c, 'rail', j)).ok) return false;
-  if (game.issue(c.team, cellCmd(c, 'station', site.center)).ok) {
-    mem.importBad = 0;
-    return true;
+  if (money < reserve + A.stationMoney + CITY.cost.station + rails * CITY.cost.rail + roads * CITY.cost.road
+    || main.store.bm < CITY.costBm.station + rails * CITY.costBm.rail + roads * CITY.costBm.road + A.stationBm) return false;
+  // Reihenfolge: Zufahrt vom Netz aus, Straßen des Parks, Gleis (flach, sofort fertig), zuletzt der Bahnhof (hängt dann an Straße und Gleis)
+  const fail = () => {
+    mem.importNext = game.time + A.stationRetry; // abgelehnt: nicht jeden Takt neu (gebaute Straßen und Gleise bleiben stehen)
+    return false;
+  };
+  for (const j of [...site.link, ...site.roads]) if (!game.issue(c.team, cellCmd(c, 'road', j)).ok) return fail();
+  for (const j of site.rail) if (!game.issue(c.team, cellCmd(c, 'rail', j)).ok) return fail();
+  if (!game.issue(c.team, cellCmd(c, 'station', site.center)).ok) return fail();
+  for (const j of site.works) (mem.parkKeep ??= {})[j] = 1; // Werksplätze freihalten (andere Bauten und Straßen meiden sie)
+  mem.importBad = 0;
+  return true;
+}
+
+// Grundriss des Industrieparks (Paket „Industriepark“), 9 × 5 Zellen, Gleis nach unten: r = Straße, S = Güterbahnhof (3 × 3),
+// W = Werksplatz (2 × 2, grenzt an den Bahnhof und an eine Straße), g = erste Gleiszelle (von dort zum Kartenrand), . = frei.
+// Gedreht in vier Richtungen.
+const PARK = [
+  'rrrrrrrrr',
+  'rWWSSSWWr',
+  'rWWSSSWWr',
+  'rWWSSSWWr',
+  'rWW.g.WWr',
+];
+
+/** Zellen des Grundrisses je Drehung (0–3): { w, h, road: [[x, y]], work: [[x, y]], station: [x, y] (Mitte), rail: [x, y] }. */
+const PARK_TURNS = (() => {
+  const W = PARK[0].length;
+  const H = PARK.length;
+  const turn = [(x, y) => [x, y], (x, y) => [H - 1 - y, x], (x, y) => [W - 1 - x, H - 1 - y], (x, y) => [y, W - 1 - x]];
+  return turn.map((f, t) => {
+    const out = { w: t % 2 ? H : W, h: t % 2 ? W : H, road: [], work: [], station: f(4, 2), rail: null };
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const ch = PARK[y][x];
+        if (ch === 'r') out.road.push(f(x, y));
+        else if (ch === 'W') out.work.push(f(x, y));
+        else if (ch === 'g') out.rail = f(x, y);
+      }
+    }
+    return out;
+  });
+})();
+
+/**
+ * Platz für den Industriepark (Paket „Industriepark“): Grundriss PARK in einer der vier Drehungen auf freien, ausweisbaren Zellen
+ * (Straßen und Gleis nach der Straßenregel, Bahnhof und Werke nach der Gebäuderegel; fehlender Straßenanschluss zählt nicht, die Zufahrt
+ * kommt mit), dazu eine bezahlte Zufahrt vom Straßennetz des Lagers (`reach`) zu einer Parkstraße (höchstens parkLink Zellen) und ein
+ * Gleis von der Gleiszelle bis zum Kartenrand (höchstens railMax Zellen), beides nicht über den Park. Bewertet wird Gleislänge +
+ * parkLinkCost × Zufahrt + stationNear × Abstand zum nächsten Werk; feste Reihenfolge bei Gleichstand. Liefert { center, roads, link,
+ * rail, works } (Zellindizes; link vom Netz zum Park, rail vom Park zum Rand, works = Zellen der Werksplätze) oder null.
+ */
+function parkSite(game, c, reach) {
+  const A = CITY.ai;
+  const n = c.cols * c.rows;
+  const cols = c.cols;
+  const danger = (j) => inDanger(c, j % cols, Math.floor(j / cols), game.time);
+  const open = (j) => !c.kind[j] && !c.mapRoads?.[j] && cellFree(game, c, j % cols, Math.floor(j / cols)) && !danger(j);
+  const roadOk = (j) => open(j) && buildAllowed(game, c, j, 'road');
+  const railOk = (j) => open(j) && buildAllowed(game, c, j, 'rail');
+  const houseOk = (j, kind) => {
+    if (!open(j) || !canZone(game, c, j)) return false;
+    const why = buildWhy(game, c, j, kind);
+    return why === null || why === 'road';
+  };
+  // BFS-Felder: Zufahrt vom Netz des Lagers (über freie Straßenzellen) und Gleis vom Kartenrand (über freie Gleiszellen)
+  const field = (starts, ok, max) => {
+    const dist = new Int32Array(n).fill(-1);
+    const prev = new Int32Array(n).fill(-1);
+    const queue = new Int32Array(n);
+    let tail = 0;
+    for (const j of starts) {
+      dist[j] = 0;
+      queue[tail++] = j;
+    }
+    for (let h = 0; h < tail; h++) {
+      const i = queue[h];
+      if (dist[i] >= max) continue;
+      for (const j of nbrsOf(c, i)) {
+        if (dist[j] >= 0 || !ok(j)) continue;
+        dist[j] = dist[i] + 1;
+        prev[j] = i;
+        queue[tail++] = j;
+      }
+    }
+    return { dist, prev };
+  };
+  const linkStart = [];
+  for (let j = 0; j < n; j++) if (roadOk(j) && nbrsOf(c, j).some((x) => reach[x] && roadAt(c, x))) linkStart.push(j);
+  if (!linkStart.length) return null;
+  const link = field(linkStart, roadOk, A.parkLink); // dist 0 = Zelle direkt am Netz (wird selbst Straße)
+  const edge = [];
+  for (let j = 0; j < n; j++) if (atEdge(c, j) && railOk(j)) edge.push(j);
+  const rail = field(edge, railOk, A.railMax);
+  const works = [];
+  for (const i of c.list) if (!isPart(c, i) && c.level[i] && WORKS.includes(KINDS[c.kind[i] - 1])) works.push(i);
+  // Suchfenster: Zellen höchstens parkLink + Parkgröße um die Zufahrt
+  let q0 = cols;
+  let q1 = -1;
+  let r0 = c.rows;
+  let r1 = -1;
+  for (let j = 0; j < n; j++) {
+    if (link.dist[j] < 0) continue;
+    const q = j % cols;
+    const r = (j - q) / cols;
+    if (q < q0) q0 = q;
+    if (q > q1) q1 = q;
+    if (r < r0) r0 = r;
+    if (r > r1) r1 = r;
   }
-  mem.stationFail[site.center] = game.time; // Platz gilt als verbraucht (Gleise bleiben stehen)
-  mem.importNext = game.time + A.stationRetry;
-  return false;
+  let best = null;
+  for (let t = 0; t < 4; t++) {
+    const P = PARK_TURNS[t];
+    for (let oy = Math.max(0, r0 - P.h); oy <= Math.min(c.rows - P.h, r1); oy++) {
+      for (let ox = Math.max(0, q0 - P.w); ox <= Math.min(cols - P.w, q1); ox++) {
+        const at = ([x, y]) => (oy + y) * cols + ox + x;
+        const g = at(P.rail);
+        if (rail.dist[g] < 0) continue;
+        // Zufahrt: die Parkstraße mit der kürzesten Zufahrt
+        let lk = Infinity;
+        let lj = -1;
+        let ok = true;
+        for (const p of P.road) {
+          const j = at(p);
+          if (!roadOk(j)) {
+            ok = false;
+            break;
+          }
+          if (link.dist[j] >= 0 && link.dist[j] < lk) {
+            lk = link.dist[j];
+            lj = j;
+          }
+        }
+        if (!ok || lj < 0) continue;
+        const [sx, sy] = P.station;
+        for (let y = sy - 1; y <= sy + 1 && ok; y++) for (let x = sx - 1; x <= sx + 1 && ok; x++) ok = houseOk(at([x, y]), 'station');
+        for (const p of P.work) if (ok) ok = houseOk(at(p), 'bm');
+        if (!ok) continue;
+        let wd = 0;
+        if (works.length) {
+          wd = Infinity;
+          for (const w of works) wd = Math.min(wd, Math.max(Math.abs((w % cols) - (ox + sx)), Math.abs(Math.floor(w / cols) - (oy + sy))));
+        }
+        const score = rail.dist[g] + A.parkLinkCost * lk + A.stationNear * wd;
+        if (best && score >= best.score) continue;
+        best = { score, t, ox, oy, lj, g };
+      }
+    }
+  }
+  if (!best) return null;
+  const P = PARK_TURNS[best.t];
+  const at = ([x, y]) => (best.oy + y) * cols + best.ox + x;
+  const foot = new Set();
+  const roads = P.road.map(at);
+  const workCells = P.work.map(at);
+  const [sx, sy] = P.station;
+  for (let y = sy - 1; y <= sy + 1; y++) for (let x = sx - 1; x <= sx + 1; x++) foot.add(at([x, y]));
+  for (const j of [...roads, ...workCells]) foot.add(j);
+  // Zufahrt: vom Netz (dist 0) bis zur Parkstraße, ohne die Parkstraße selbst; Gleis: von der Gleiszelle bis zum Rand
+  const linkPath = [];
+  for (let i = link.prev[best.lj]; i >= 0 && !roads.includes(i); i = link.dist[i] > 0 ? link.prev[i] : -1) linkPath.push(i);
+  linkPath.reverse();
+  const railPath = [];
+  for (let i = best.g; i >= 0; i = rail.dist[i] > 0 ? rail.prev[i] : -1) railPath.push(i);
+  if (linkPath.some((j) => foot.has(j)) || railPath.some((j) => foot.has(j) || linkPath.includes(j))) return null;
+  // Parkstraßen ab der Zufahrt der Reihe nach (bei Anschlusspflicht wächst die Straße so am Netz entlang)
+  const order = [best.lj];
+  const seen = new Set(order);
+  for (let h = 0; h < order.length; h++) for (const j of nbrsOf(c, order[h])) if (roads.includes(j) && !seen.has(j)) seen.add(j), order.push(j);
+  return { center: at(P.station), roads: order, link: linkPath, rail: railPath, works: workCells };
+}
+
+/**
+ * Werksplätze am Güterbahnhof (Paket „Industriepark“): Anker (links oben) der freien 2 × 2-Quadrate, die an das 3 × 3-Quadrat um
+ * `center` grenzen (4er-Nachbarschaft, dann Direktlieferung ohne Straße) und mit einer Zelle an einer Straße zum Lager liegen (das
+ * Produkt fährt über die Straße; `reach` = mainRoadReach). `free(j)`: Zelle frei; ausweisbar für `kind` prüft buildAllowed. Plätze,
+ * an denen ein Bau zuletzt abgelehnt wurde (mem.parkFail), zählen CITY.ai.stationRetry s nicht. Feste Reihenfolge (nach Anker).
+ */
+function parkSlots(game, c, center, reach, kind, free, mem = null) {
+  const sc = center % c.cols;
+  const sr = (center - sc) / c.cols;
+  const anchors = [];
+  for (let q = sc - 2; q <= sc + 1; q++) anchors.push([q, sr - 3], [q, sr + 2]); // oben, unten
+  for (let r = sr - 2; r <= sr + 1; r++) anchors.push([sc - 3, r], [sc + 2, r]); // links, rechts
+  const out = [];
+  for (const [q, r] of anchors) {
+    if (q < 0 || r < 0 || q + 1 >= c.cols || r + 1 >= c.rows) continue;
+    const a = r * c.cols + q;
+    const fail = mem?.parkFail?.[a];
+    if (fail !== undefined && game.time - fail < CITY.ai.stationRetry) continue;
+    if (!bigFits(game, c, a, 2, free, (j) => buildAllowed(game, c, j, kind))) continue;
+    if (!bigCells(c, a, 2).some((j) => touchesRoad(c, j, reach))) continue;
+    out.push(a);
+  }
+  return out.sort((p, o) => p - o);
+}
+
+/**
+ * Freier Werksplatz an einem Güterbahnhof der Stadt, dessen Gleis bis zum Kartenrand reicht (auch im Bau), für ein Werk der Art `kind`
+ * (Paket „Industriepark“): Anker des 2 × 2-Quadrats oder −1. Bahnhöfe der Reihe nach (nach Anker).
+ */
+function parkSpot(game, c, reach, kind, free, mem) {
+  for (const st of c.list) {
+    if (c.kind[st] !== KIND_ID.station || isPart(c, st) || !stationLinked(c, st)) continue;
+    const slots = parkSlots(game, c, st, reach, kind, free, mem);
+    if (slots.length) return slots[0];
+  }
+  return -1;
+}
+
+/**
+ * Ist der Güterbahnhof `st` ausgelastet (Paket „Industriepark“)? Summe der Rohwaren, die seine Werke bei voller Besetzung je s
+ * anfordern könnten (Werke, deren nächster Einfuhrpunkt er ist), ab CITY.ai.stationBusy × Durchsatz seiner Stufe (CITY.import.station).
+ */
+function stationBusy(game, c, st) {
+  if (!c.level[st]) return false; // noch im Bau oder ohne Stufe: erst einmal wachsen lassen
+  const tr = transportOf(game, c);
+  let want = 0;
+  for (const [w, im] of tr.imports) {
+    if (im?.from !== st) continue;
+    const k = KINDS[c.kind[w] - 1];
+    const ch = CITY.chain[k];
+    if (!ch) continue;
+    const per = Object.values(ch.need).reduce((a, b) => a + b, 0);
+    want += CITY.jobs[c.level[w]] * CITY.yield[ch.to] * per;
+  }
+  return want >= CITY.ai.stationBusy * (CITY.import.station[c.level[st]] ?? 0);
 }
 
 /** Befehl „Zelle j als Art kind bauen“ (ein Feld des Rasters). */
@@ -317,103 +561,6 @@ function cellCmd(c, kind, j) {
   const q = j % c.cols;
   const r = (j - q) / c.cols;
   return { type: 'city', kind, c0: q, r0: r, c1: q, r1: r };
-}
-
-/** Liegt (x, y) 4-benachbart zum 3 × 3-Quadrat um (col, row)? (Randzelle ohne Ecken: dort endet das Gleis am Güterbahnhof.) */
-function adjRing(x, y, col, row) {
-  const dx = Math.abs(x - col);
-  const dy = Math.abs(y - row);
-  return (dx === 2 && dy <= 1) || (dy === 2 && dx <= 1);
-}
-
-/**
- * Platz für den Güterbahnhof (Paket „Import“): Mitte eines 3 × 3-Quadrats, dessen Zellen frei und ausweisbar sind und von denen
- * eine an einer Straße zum Lager liegt (Anschlusspflicht des Großbaus), und eine Gleiskette aus freien Zellen von einer Randzone
- * des Quadrats bis an den Kartenrand (höchstens railMax Zellen). Bewertet wird Gleislänge + stationNear × Abstand zum nächsten Werk;
- * gewählt wird der beste Platz, dessen Gleis nicht über das Quadrat führt. Liefert { center, rail } (rail vom Quadrat bis zum Rand) oder null.
- */
-function stationSite(game, c, mem) {
-  const A = CITY.ai;
-  const n = c.cols * c.rows;
-  const linked = roadLinked(game, c);
-  const free = (j) => !c.kind[j] && !c.mapRoads?.[j] && cellFree(game, c, j % c.cols, Math.floor(j / c.cols)) && !inDanger(c, j % c.cols, Math.floor(j / c.cols), game.time);
-  const railOk = (j) => free(j) && buildAllowed(game, c, j, 'rail');
-  // Gleisabstand: BFS von den freien Randzellen aus, höchstens railMax Schritte; prev zeigt zurück zum Rand
-  const dist = new Int32Array(n).fill(-1);
-  const prev = new Int32Array(n).fill(-1);
-  const queue = new Int32Array(n);
-  let tail = 0;
-  for (let j = 0; j < n; j++) {
-    if (!atEdge(c, j) || !railOk(j)) continue;
-    dist[j] = 0;
-    queue[tail++] = j;
-  }
-  for (let h = 0; h < tail; h++) {
-    const i = queue[h];
-    if (dist[i] >= A.railMax) continue;
-    for (const j of nbrsOf(c, i)) {
-      if (dist[j] >= 0 || !railOk(j)) continue;
-      dist[j] = dist[i] + 1;
-      prev[j] = i;
-      queue[tail++] = j;
-    }
-  }
-  const works = [];
-  for (const i of c.list) if (!isPart(c, i) && c.level[i] && WORKS.includes(KINDS[c.kind[i] - 1])) works.push(i);
-  // Kandidaten: Mitte (col, row) mit Abstand ≥ 1 vom Rand; Quadrat 3 × 3, Randzone 5 × 5 ohne Quadrat
-  const cands = [];
-  for (let row = 1; row < c.rows - 1; row++) {
-    for (let col = 1; col < c.cols - 1; col++) {
-      const center = row * c.cols + col;
-      const fail = mem.stationFail[center];
-      if (fail !== undefined && game.time - fail < A.stationRetry) continue;
-      let touch = false;
-      for (let y = row - 1; y <= row + 1 && !touch; y++) for (let x = col - 1; x <= col + 1; x++) if (linked[y * c.cols + x]) touch = true;
-      if (!touch) continue;
-      // Quadrat frei und ausweisbar (vor dem Ranking: nur gültige Plätze zählen)
-      let fits = true;
-      for (let y = row - 1; y <= row + 1 && fits; y++) for (let x = col - 1; x <= col + 1 && fits; x++) fits = free(y * c.cols + x) && buildAllowed(game, c, y * c.cols + x, 'station');
-      if (!fits) continue;
-      let rail = Infinity;
-      for (let y = Math.max(0, row - 2); y <= Math.min(c.rows - 1, row + 2); y++) {
-        for (let x = Math.max(0, col - 2); x <= Math.min(c.cols - 1, col + 2); x++) {
-          if (!adjRing(x, y, col, row)) continue;
-          const j = y * c.cols + x;
-          if (dist[j] >= 0) rail = Math.min(rail, dist[j] + 1);
-        }
-      }
-      if (rail === Infinity) continue;
-      let wd = 0;
-      if (works.length) {
-        wd = Infinity;
-        for (const w of works) wd = Math.min(wd, Math.max(Math.abs((w % c.cols) - col), Math.abs(Math.floor(w / c.cols) - row)));
-      }
-      cands.push({ center, score: rail + A.stationNear * wd });
-    }
-  }
-  cands.sort((p, o) => p.score - o.score || p.center - o.center);
-  for (const { center } of cands) {
-    const col = center % c.cols;
-    const row = (center - col) / c.cols;
-    const foot = [];
-    for (let y = row - 1; y <= row + 1; y++) for (let x = col - 1; x <= col + 1; x++) foot.push(y * c.cols + x);
-    // Gleisende: die Randzellen um das Quadrat, nächste zuerst; der erste Weg zum Rand, der nicht über das Quadrat führt
-    const ends = [];
-    for (let y = Math.max(0, row - 2); y <= Math.min(c.rows - 1, row + 2); y++) {
-      for (let x = Math.max(0, col - 2); x <= Math.min(c.cols - 1, col + 2); x++) {
-        if (!adjRing(x, y, col, row)) continue;
-        const j = y * c.cols + x;
-        if (dist[j] >= 0) ends.push(j);
-      }
-    }
-    ends.sort((p, o) => dist[p] - dist[o] || p - o);
-    for (const end of ends) {
-      const path = [];
-      for (let i = end; i >= 0; i = dist[i] > 0 ? prev[i] : -1) path.push(i);
-      if (!path.some((j) => foot.includes(j))) return { center, rail: path };
-    }
-  }
-  return null;
 }
 
 /**
@@ -597,6 +744,35 @@ function connectNear(game, c, ac, ar, rad, mem) {
     }
   }
   return false;
+}
+
+/**
+ * Zellen, von denen aus die KI eine Straße zum Netz des Lagers ziehen könnte (Paket „Industriepark“): Breitensuche ab den Straßen in
+ * `reach` (mainRoadReach) über Straßen und freie, für Straßen ausweisbare Zellen, höchstens CITY.transport.connectMax Schritte
+ * (wie connectRoad). Uint8Array, 1 = erreichbar.
+ */
+function linkField(game, c, reach) {
+  const n = c.cols * c.rows;
+  const seen = new Uint8Array(n);
+  const dist = new Int32Array(n);
+  const queue = new Int32Array(n);
+  let tail = 0;
+  for (let j = 0; j < n; j++) {
+    if (!reach[j] || !roadAt(c, j)) continue;
+    seen[j] = 1;
+    queue[tail++] = j;
+  }
+  for (let h = 0; h < tail; h++) {
+    const i = queue[h];
+    if (dist[i] >= CITY.transport.connectMax) continue;
+    for (const j of nbrsOf(c, i)) {
+      if (seen[j] || !(roadAt(c, j) || roadFree(game, c, j))) continue;
+      seen[j] = 1;
+      dist[j] = dist[i] + 1;
+      queue[tail++] = j;
+    }
+  }
+  return seen;
 }
 
 /** Liegt eine verbundene Straße (mit dem Lager) neben Zelle i? */

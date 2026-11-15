@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.178: **Doku Flak und Gepard** (§6 „Einheiten“, nur Doku): Beschreibung des Gepard korrigiert (1000 Geld, 180 Stahl, Taste L), bei der Flak Preis, Taste und Wirkung gegen Kampfflugzeuge ergänzt. Cache v247.
 - v5.177: **F3 bei offenem Menü** (§8 „Steuerung“): F3 schaltet die Messanzeige auch bei offenem Start-, Pausen- oder Hilfemenü und öffnet nie die Suche des Browsers. Cache v246.
 - v5.176: **Messanzeige** (§8 „Steuerung“ und §9 „Messanzeige“): F3 oder `?perf=1` zeigt Bildrate, Bildzeit, Simulations- und Zeichenzeit je Ebene sowie die Eingabeverzögerung, um Ruckler und träge Befehle auf dem eigenen Gerät zu finden. Cache v245.
 - v5.175: **LKW-Ladungsarten** (§8 „Steuerung“, Zeile „LKW gewählt“): Die Knöpfe Baumaterial, Munition und Treibstoff (W/E/R) schalten ihre Sorte an oder ab; so lädt ein LKW zum Beispiel Munition und Treibstoff zugleich. Gemischt (Q) lädt wie bisher alle drei. Cache v245.

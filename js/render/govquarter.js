@@ -4,7 +4,7 @@
 // Teamfarbe, Zufahrt mit Wache, Schranke, Fahnen und Obelisk, ein klassisches und ein modernes Ministerium, Park mit Brunnen und
 // Bänken, Parkplatz mit Dienstwagen.
 // - Boden (Rasen, Wege, Platz mit Rand in Teamfarbe, Parkplätze): ein Bild in Weltkoordinaten über genau den gesperrten Zellen,
-//   in 2D und Iso gleich (Iso legt es wie die Vorkommen in citylayer.js mit drei Ecken aufs Gelände, passt also zu jeder Drehung).
+//   in 2D und Iso gleich (Iso legt es wie die Straßen in citylayer.js mit drei Ecken aufs Gelände, passt also zu jeder Drehung).
 // - Teile mit Höhe stehen nur im inneren Quadrat (Fußabdruck ±48 + Rand 64 = ±112), weil ein Mauerring der Festung die äußeren
 //   Streifen belegen kann. Iso: acht Gruppen um die Mitte (Ecken und Seiten), jede ein eigenes Bild je Drehung und mit eigener
 //   Tiefe, damit Einheiten im Viertel richtig davor oder dahinter stehen. Steht in einer Gruppe ein anderes Gebäude (Bunker,
@@ -293,7 +293,7 @@ export function drawQuarterGround(ctx, cam, b, color, season = 'summer', dpr = 1
   if (e === false) return;
   ctx.save();
   if (iso) {
-    // wie drawDeposits (citylayer.js): drei Ecken mit Gelände bestimmen die Lage, passt zu jeder Drehung
+    // wie die Straßen (citylayer.js): drei Ecken mit Gelände bestimmen die Lage, passt zu jeder Drehung
     const A = cam.worldToScreen(b.x + q.x0, b.y + q.y0);
     const B = cam.worldToScreen(b.x + q.x1, b.y + q.y0);
     const C = cam.worldToScreen(b.x + q.x0, b.y + q.y1);

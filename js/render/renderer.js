@@ -1,4 +1,4 @@
-// Haupt-Renderer (docs/verlauf.md §5 render/renderer.js). Zeichnet Terrain, Zone, Vorkommen, Gebäude, Einheiten,
+// Haupt-Renderer (docs/verlauf.md §5 render/renderer.js). Zeichnet Terrain, Zone, Gebäude, Einheiten,
 // Granaten, Effekte, Nebel und Overlays. Liest game.projectiles/effects bei jedem Aufruf frisch. Kein Zugriff auf den Controller.
 import { BALANCE } from '../data/balance.js';
 import { BUILDINGS } from '../data/buildings.js';
@@ -1019,7 +1019,7 @@ export class Renderer {
       // beschädigtes Stadtgebäude (Stadt-Teil): Rauch über dem Dach
       const p = cam.worldToScreen(o.x, o.y);
       const k = cam.zoom;
-      const up = o.kind === 'town' ? townLift(o.ck, o.level, o.dep) - 52 : 0; // 1 × 1: Rauch ab dem Dach (seit v5.14)
+      const up = o.kind === 'town' ? townLift(o.ck, o.level) - 52 : 0; // 1 × 1: Rauch ab dem Dach (seit v5.14)
       ctx.save();
       ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
       ctx.fillStyle = `rgba(40,36,34,${Math.min(0.75, o.damage).toFixed(2)})`;

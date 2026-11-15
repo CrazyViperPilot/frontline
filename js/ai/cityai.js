@@ -2,9 +2,10 @@
 // Markt), Überfälle auf die gegnerische Stadt und Verteidigung. Befehle nur über game.issue; die Buchhaltung (cityAiMemory) liegt in
 // der KI-Instanz (ai.js). Kein DOM, deterministisch.
 import { CITY } from '../data/city.js';
+import { BALANCE } from '../data/balance.js';
 import { KINDS, KIND_ID, WORKS, SUPPLIER_KINDS } from '../data/citykinds.js';
 import { transportOf, transportInfo, mainAccess } from '../game/transport.js';
-import { accessCells, cellAt, idx, sizeOf, isPart, fitBig, bigCells, cellFree, roadAt, hasRoad, buildAllowed, buildWhy, canZone, nbrsOf, roadLinked } from '../game/city/cells.js';
+import { accessCells, cellAt, idx, sizeOf, isPart, fitBig, bigCells, cellFree, roadAt, hasRoad, buildAllowed, buildWhy, canZone, nbrsOf, roadLinked, atEdge, stationLinked } from '../game/city/cells.js';
 import { mainRoadReach, connectRoad, importReach, connectEdge } from '../game/city/roadnet.js';
 import { totals } from '../game/city/state.js';
 import { marketBuyPrice } from '../game/city/query.js';
@@ -142,9 +143,9 @@ function aiCandidates(game, c, x, y, rad, reach) {
   return out;
 }
 
-/** Neue Buchhaltung der Stadt-KI (liegt seit v5.58 in der KI-Instanz, ai.js `cityMem`): Ausbautakte, Zeit seit dem letzten Überfall, letzter Verteidigungsbefehl. */
+/** Neue Buchhaltung der Stadt-KI (liegt seit v5.58 in der KI-Instanz, ai.js `cityMem`): Ausbautakte, Zeit seit dem letzten Überfall, letzter Verteidigungsbefehl; seit Paket „Import“ Einfuhr-Wächter (importBad, s) und Güterbahnhof-Fehlschläge (stationFail). */
 export function cityAiMemory() {
-  return { turn: 0, raidTimer: 0, defendAt: -1e9 };
+  return { turn: 0, raidTimer: 0, defendAt: -1e9, importBad: 0, importAt: undefined, importNext: -1e9, stationFail: {} };
 }
 
 /** KI-Schritt (alle ai.interval s von ai.js): weist die nächsten Zellen aus, solange Geld über der Reserve bleibt. mem: cityAiMemory() der KI. */
@@ -153,6 +154,7 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
   if (!city) return;
   const reserve = CITY.ai.reserve[difficulty] ?? CITY.ai.reserve.normal;
   const money = () => game.teams[team].res.money;
+  importWatch(game, city, mem);
   aiMarket(game, team, reserve, mem);
   mem.turn++;
   let n = 0;
@@ -177,6 +179,7 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
     if (!anchor) return;
   }
   if (aiAirport(game, city, main, reserve, CITY.ai.jets[difficulty] ?? CITY.ai.jets.normal, difficulty)) n++;
+  if (n < CITY.ai.perStep && aiStation(game, city, main, money(), reserve, difficulty, mem)) n++;
   if (n < CITY.ai.perStep && aiConnect(game, city, mem.turn)) n++;
   const add = {};
   const skip = new Set(); // Großbauten, für die in diesem Takt kein Platz war
@@ -243,6 +246,170 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
     place(cand);
     if (!Number.isFinite(n)) return;
   }
+}
+
+/** Produkte der Werke (Lager, in das die Einfuhr läuft): bm, metal, mun, fuel, kero. */
+const PRODUCTS = WORKS.map((k) => CITY.chain[k].to);
+
+/** Lager der Ware voll (wie storeFull in js/game/city/economy.js): Stadtlager bzw. Lager der Hauptstadt. Dann fordern Werke nichts an. */
+function storeFullOf(game, c, prod) {
+  if (prod === 'metal' || prod === 'kero') return c[prod] >= BALANCE.logistics.storeCap;
+  const main = game.mainFob(c.team);
+  return !main || main.store[prod] >= BALANCE.logistics.capitalCap;
+}
+
+/**
+ * Einfuhr-Wächter (Paket „Import“, Stadt-KI): zählt die Zeit in mem.importBad (s), in der die Werke weniger Rohwaren bekommen, als ihre
+ * Leistung verarbeiten könnte (Ist unter CITY.ai.importLow der Leistung), obwohl das Geld reicht (Einfuhrskala ab importScaleMin) und
+ * ein Lager die Ware braucht. Jede andere Lage setzt die Zeit auf 0.
+ */
+function importWatch(game, c, mem) {
+  const dt = mem.importAt === undefined ? 0 : game.time - mem.importAt;
+  mem.importAt = game.time;
+  const s = c.stats ?? {};
+  let cap = 0;
+  let inp = 0;
+  for (const p of PRODUCTS) {
+    if (storeFullOf(game, c, p)) continue;
+    cap += s.cap?.[p] ?? 0;
+    inp += s.inp?.[p] ?? 0;
+  }
+  const short = cap > 0 && inp < CITY.ai.importLow * cap && (s.importScale ?? 1) >= CITY.ai.importScaleMin;
+  mem.importBad = short ? mem.importBad + dt : 0;
+}
+
+/**
+ * Güterbahnhof der KI (Paket „Import“, PRD §15): ist die Einfuhr über Straßen anhaltend knapp (importWatch, importWait s), baut sie
+ * einen Güterbahnhof neben dem Straßennetz des Lagers (Anschluss wie jedes Großbau) und eine Gleiskette bis an den Kartenrand. Nur mit
+ * Geld über Reserve und stationMoney sowie Baumaterial über stationBm (die Armee geht vor). Höchstens stationMax Güterbahnhöfe, alle
+ * schon angeschlossen. true, wenn gebaut.
+ */
+function aiStation(game, c, main, money, reserve, difficulty, mem) {
+  const A = CITY.ai;
+  const from = A.stationFrom[difficulty];
+  if (from == null || !main || game.time < from || mem.importBad < A.importWait || game.time < mem.importNext) return false;
+  const stations = c.list.filter((i) => c.kind[i] === KIND_ID.station && !isPart(c, i));
+  if (stations.length >= A.stationMax || stations.some((i) => !stationLinked(c, i))) return false;
+  let works = 0;
+  for (const i of c.list) if (!isPart(c, i) && c.level[i] && WORKS.includes(KINDS[c.kind[i] - 1])) works++;
+  if (works < A.stationWorks) return false;
+  if (money < reserve + A.stationMoney + CITY.cost.station || main.store.bm < CITY.costBm.station + A.stationBm) return false;
+  const site = stationSite(game, c, mem);
+  if (!site) {
+    mem.importNext = game.time + A.stationRetry; // ohne Platz nicht jeden Takt neu suchen
+    return false;
+  }
+  const rails = site.rail.length;
+  if (money < reserve + A.stationMoney + CITY.cost.station + rails * CITY.cost.rail || main.store.bm < CITY.costBm.station + rails * CITY.costBm.rail + A.stationBm) return false;
+  // Gleise zuerst (flach, sofort fertig); der Bahnhof hängt danach am Gleis und ist angeschlossen
+  for (const j of site.rail) if (!game.issue(c.team, cellCmd(c, 'rail', j)).ok) return false;
+  if (game.issue(c.team, cellCmd(c, 'station', site.center)).ok) {
+    mem.importBad = 0;
+    return true;
+  }
+  mem.stationFail[site.center] = game.time; // Platz gilt als verbraucht (Gleise bleiben stehen)
+  mem.importNext = game.time + A.stationRetry;
+  return false;
+}
+
+/** Befehl „Zelle j als Art kind bauen“ (ein Feld des Rasters). */
+function cellCmd(c, kind, j) {
+  const q = j % c.cols;
+  const r = (j - q) / c.cols;
+  return { type: 'city', kind, c0: q, r0: r, c1: q, r1: r };
+}
+
+/** Liegt (x, y) 4-benachbart zum 3 × 3-Quadrat um (col, row)? (Randzelle ohne Ecken: dort endet das Gleis am Güterbahnhof.) */
+function adjRing(x, y, col, row) {
+  const dx = Math.abs(x - col);
+  const dy = Math.abs(y - row);
+  return (dx === 2 && dy <= 1) || (dy === 2 && dx <= 1);
+}
+
+/**
+ * Platz für den Güterbahnhof (Paket „Import“): Mitte eines 3 × 3-Quadrats, dessen Zellen frei und ausweisbar sind und von denen
+ * eine an einer Straße zum Lager liegt (Anschlusspflicht des Großbaus), und eine Gleiskette aus freien Zellen von einer Randzone
+ * des Quadrats bis an den Kartenrand (höchstens railMax Zellen). Bewertet wird Gleislänge + stationNear × Abstand zum nächsten Werk;
+ * gewählt wird der beste Platz, dessen Gleis nicht über das Quadrat führt. Liefert { center, rail } (rail vom Quadrat bis zum Rand) oder null.
+ */
+function stationSite(game, c, mem) {
+  const A = CITY.ai;
+  const n = c.cols * c.rows;
+  const linked = roadLinked(game, c);
+  const free = (j) => !c.kind[j] && !c.mapRoads?.[j] && cellFree(game, c, j % c.cols, Math.floor(j / c.cols)) && !inDanger(c, j % c.cols, Math.floor(j / c.cols), game.time);
+  const railOk = (j) => free(j) && buildAllowed(game, c, j, 'rail');
+  // Gleisabstand: BFS von den freien Randzellen aus, höchstens railMax Schritte; prev zeigt zurück zum Rand
+  const dist = new Int32Array(n).fill(-1);
+  const prev = new Int32Array(n).fill(-1);
+  const queue = new Int32Array(n);
+  let tail = 0;
+  for (let j = 0; j < n; j++) {
+    if (!atEdge(c, j) || !railOk(j)) continue;
+    dist[j] = 0;
+    queue[tail++] = j;
+  }
+  for (let h = 0; h < tail; h++) {
+    const i = queue[h];
+    if (dist[i] >= A.railMax) continue;
+    for (const j of nbrsOf(c, i)) {
+      if (dist[j] >= 0 || !railOk(j)) continue;
+      dist[j] = dist[i] + 1;
+      prev[j] = i;
+      queue[tail++] = j;
+    }
+  }
+  const works = [];
+  for (const i of c.list) if (!isPart(c, i) && c.level[i] && WORKS.includes(KINDS[c.kind[i] - 1])) works.push(i);
+  // Kandidaten: Mitte (col, row) mit Abstand ≥ 1 vom Rand; Quadrat 3 × 3, Randzone 5 × 5 ohne Quadrat
+  const cands = [];
+  for (let row = 1; row < c.rows - 1; row++) {
+    for (let col = 1; col < c.cols - 1; col++) {
+      const center = row * c.cols + col;
+      const fail = mem.stationFail[center];
+      if (fail !== undefined && game.time - fail < A.stationRetry) continue;
+      let touch = false;
+      for (let y = row - 1; y <= row + 1 && !touch; y++) for (let x = col - 1; x <= col + 1; x++) if (linked[y * c.cols + x]) touch = true;
+      if (!touch) continue;
+      let rail = Infinity;
+      for (let y = Math.max(0, row - 2); y <= Math.min(c.rows - 1, row + 2); y++) {
+        for (let x = Math.max(0, col - 2); x <= Math.min(c.cols - 1, col + 2); x++) {
+          if (!adjRing(x, y, col, row)) continue;
+          const j = y * c.cols + x;
+          if (dist[j] >= 0) rail = Math.min(rail, dist[j] + 1);
+        }
+      }
+      if (rail === Infinity) continue;
+      let wd = 0;
+      if (works.length) {
+        wd = Infinity;
+        for (const w of works) wd = Math.min(wd, Math.max(Math.abs((w % c.cols) - col), Math.abs(Math.floor(w / c.cols) - row)));
+      }
+      cands.push({ center, score: rail + A.stationNear * wd });
+    }
+  }
+  cands.sort((p, o) => p.score - o.score || p.center - o.center);
+  for (const { center } of cands.slice(0, 25)) {
+    const col = center % c.cols;
+    const row = (center - col) / c.cols;
+    const foot = [];
+    for (let y = row - 1; y <= row + 1; y++) for (let x = col - 1; x <= col + 1; x++) foot.push(y * c.cols + x);
+    if (!foot.every((j) => free(j) && buildAllowed(game, c, j, 'station'))) continue;
+    // Gleisende: der Randzelle am nächsten (dist) in der Zone um das Quadrat
+    let end = -1;
+    for (let y = Math.max(0, row - 2); y <= Math.min(c.rows - 1, row + 2); y++) {
+      for (let x = Math.max(0, col - 2); x <= Math.min(c.cols - 1, col + 2); x++) {
+        if (!adjRing(x, y, col, row)) continue;
+        const j = y * c.cols + x;
+        if (dist[j] >= 0 && (end < 0 || dist[j] < dist[end])) end = j;
+      }
+    }
+    if (end < 0) continue;
+    const path = [];
+    for (let i = end; i >= 0; i = dist[i] > 0 ? prev[i] : -1) path.push(i);
+    if (path.some((j) => foot.includes(j))) continue;
+    return { center, rail: path };
+  }
+  return null;
 }
 
 /**

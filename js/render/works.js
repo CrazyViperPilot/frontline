@@ -5,7 +5,6 @@
 //   Munitionswerk: Fertigungshalle mit Sheddach, Erdbunker, Kistenlager, Wache am Tor, Geschoss-Denkmal
 //   Raffinerie:    Tanklager in der Auffangwanne, Destillationskolonnen, Rohrbrücken, Kugeltanks, Fackel, Verladestation
 //   Stahlwerk:     Hochofen mit Winderhitzern und Schrägaufzug, Gießhalle mit Glut, Erz- und Kokshalden, Torpedowagen
-//   Hütte:         gemauerter Hochofen mit offener Gicht, Gießhalle aus Bruchstein, Masselbett mit Glutrinnen, Erzhalden, Röstöfen
 //   Kerosin-Raf.:  Kugel- und Rundtanks mit blauen Ringen, Kolonne, Pumpenhaus, Rohrbrücke, Drucktanks, Verladestation, Fackel
 // Stufe 2 und 3 fügen Anlagen hinzu. Wie die 1 × 1-Stadtgebäude (townhouses.js) wird jedes Bild über spritecache.js einmal je
 // Maßstab gemalt und danach nur kopiert. Örtliche Koordinaten ab der Mitte des Quadrats (±64, bemalt bis ±58), Bauteile aus
@@ -19,9 +18,9 @@ import {
 } from './isokit.js';
 import { sprite, blit, spriteDpr } from './spritecache.js';
 
-export const WORKS_KINDS = ['bm', 'mun', 'fuel', 'steel', 'power', 'smelter', 'kero'];
+export const WORKS_KINDS = ['bm', 'mun', 'fuel', 'steel', 'power', 'kero'];
 /** Boden unter dem fertigen Werk (sichtbar am Rand des Grundstücks). */
-export const WORKS_GROUND = { bm: '#b39a74', mun: '#8b9273', fuel: '#8f9398', steel: '#7a756f', power: '#b3afa4', smelter: '#6e6660', kero: '#a3aaaf' };
+export const WORKS_GROUND = { bm: '#b39a74', mun: '#8b9273', fuel: '#8f9398', steel: '#7a756f', power: '#b3afa4', kero: '#a3aaaf' };
 
 const E = 58; // bemalte Fläche ±E (Grundstücksrahmen ab ±61)
 const CONCRETE = '#bab5a9';
@@ -1090,149 +1089,6 @@ function steel(g, lv, o) {
   tree(g, 24, 52, 0.8, 2);
 }
 
-// ---------- Hütte (Verhüttung von Erz zu Roheisen, seit v5.20) ----------
-// Alter gemauerter Hochofen (quadratischer Steinschacht mit Ankerbändern, offene Gicht mit Glut), Gießhalle aus Bruchstein mit
-// glühenden Bogentoren, Masselbett mit Glutrinnen, rötliche Erzhalden, Röstöfen, dunkler Ziegelschornstein. Bewusst anders als
-// das Stahlwerk (runder Stahlofen, Winderhitzer, Walzwerk): dunkler Stein und Rost statt Stahlgrau.
-
-const STONE = '#6d635b'; // Bruchstein
-const STONE_D = '#554c46';
-const IRON = '#3a2f2a'; // Ankerbänder, Eisen
-const ORE = '#a4462c'; // Erz (rötlich)
-const ORE_R = '#b65a35'; // geröstetes Erz
-const SOOT = '#6b3a2c'; // dunkler Ziegel (Schornstein, Röstöfen)
-const SAND = '#8f7c60'; // Masselbett
-const PIG = '#575b60'; // Masseln (Roheisen)
-
-/** Gemauerter Schacht (quadratisch, verjüngt von s0 auf s1) von h0 bis h1: Steinlagen, eiserne Ankerbänder, Deckfläche. */
-function stoneShaft(g, u, v, s0, s1, h0, h1, col, bands = []) {
-  const { P } = g;
-  const sAt = (h) => s0 + ((s1 - s0) * (h - h0)) / (h1 - h0);
-  poly(g, [P(u - s0, v + s0, h0), P(u + s0, v + s0, h0), P(u + s1, v + s1, h1), P(u - s1, v + s1, h1)], lit(col, ...FACE.s));
-  poly(g, [P(u + s0, v + s0, h0), P(u + s0, v - s0, h0), P(u + s1, v - s1, h1), P(u + s1, v + s1, h1)], lit(col, ...FACE.e));
-  if (g.fine) {
-    for (let h = h0 + 1.8, k = 0; h < h1 - 0.5; h += 1.8, k++) {
-      const s = sAt(h);
-      stroke(g, [P(u - s, v + s, h), P(u + s, v + s, h), P(u + s, v - s, h)], 'rgba(25,15,10,0.22)', 0.35);
-      const t = sAt(h + 1.8);
-      for (let a = -s + (k % 2 ? 1.6 : 3.2); a < s - 0.4; a += 3.2) {
-        stroke(g, [P(u + a, v + s, h), P(u + (a * t) / s, v + t, h + 1.8)], 'rgba(25,15,10,0.16)', 0.3);
-        stroke(g, [P(u + s, v + a, h), P(u + t, v + (a * t) / s, h + 1.8)], 'rgba(25,15,10,0.16)', 0.3);
-      }
-    }
-  }
-  for (const b of bands) {
-    const s = sAt(b) + 0.12;
-    const t = sAt(b + 1.2) + 0.12;
-    poly(g, [P(u - s, v + s, b), P(u + s, v + s, b), P(u + t, v + t, b + 1.2), P(u - t, v + t, b + 1.2)], lit(IRON, ...FACE.s), null);
-    poly(g, [P(u + s, v + s, b), P(u + s, v - s, b), P(u + t, v - t, b + 1.2), P(u + t, v + t, b + 1.2)], lit(IRON, ...FACE.e), null);
-  }
-  poly(g, [P(u - s1, v - s1, h1), P(u + s1, v - s1, h1), P(u + s1, v + s1, h1), P(u - s1, v + s1, h1)], lit(shade(col, 0.1), ...FACE.top));
-}
-
-/** Gemauerter Hochofen: Gestell mit glühendem Stichloch, verjüngter Steinschacht, Gichtbühne mit Geländer, offene Gicht mit Glut und Flamme. */
-function stoneFurnace(g, u, v, s, H) {
-  const { P } = g;
-  const h0 = H * 0.28;
-  const h1 = H * 0.8;
-  const top = s * 0.56;
-  shadow(g, u - s, u + s, v - s, v + s, H, 0.22);
-  box(g, u - s, u + s, v - s, v + s, 0, h0, STONE_D, shade(STONE_D, 0.15));
-  archDoor(g, 's', v + s, u, s * 0.7, h0 * 0.72, true);
-  archDoor(g, 'e', u + s, v, s * 0.5, h0 * 0.6, false);
-  wallBand(g, u - s, u + s, v - s, v + s, h0 - 1.1, h0, IRON);
-  stoneShaft(g, u, v, s * 0.86, top, h0, h1, STONE, [h0 + (h1 - h0) * 0.3, h0 + (h1 - h0) * 0.62]);
-  // Gichtbühne mit Geländer
-  const b = s * 0.86;
-  box(g, u - b, u + b, v - b, v + b, h1, h1 + 0.9, '#4a4f55', snowy('#5b6066'));
-  if (g.fine) {
-    stroke(g, [P(u - b, v + b, h1 + 2.4), P(u + b, v + b, h1 + 2.4), P(u + b, v - b, h1 + 2.4)], 'rgba(60,64,70,0.9)', 0.45);
-    for (let a = -b; a <= b + 0.1; a += b / 2) {
-      stroke(g, [P(u + a, v + b, h1 + 0.9), P(u + a, v + b, h1 + 2.4)], 'rgba(60,64,70,0.9)', 0.35);
-      stroke(g, [P(u + b, v + a, h1 + 0.9), P(u + b, v + a, h1 + 2.4)], 'rgba(60,64,70,0.9)', 0.35);
-    }
-  }
-  // offene Gicht: niedriger Mauerkranz, Glut, Flamme
-  box(g, u - top, u + top, v - top, v + top, h1 + 0.9, h1 + 3.6, STONE_D, '#2a211d');
-  glow(g, u, v, h1 + 3.6, top * 1.4);
-  flame(g, u - 0.4, v - 0.4, h1 + 3.4, 0.55);
-}
-
-/** Röstofen: gedrungener Kegelstumpf aus dunklem Ziegel mit Eisenring und glühender Öffnung. */
-function kiln(g, u, v, r, H) {
-  shadowRound(g, u, v, r, H, 0.18);
-  frustum(g, u, v, r, r * 0.78, 0, H, SOOT, false);
-  band(g, u, v, r * 0.9, H * 0.45, H * 0.45 + 1, IRON);
-  cyl(g, u, v, r * 0.82, H, H + 0.8, shade(SOOT, 0.2), true);
-  glow(g, u, v, H + 0.8, r * 0.9);
-  archDoor(g, 's', v + r * 0.98, u, r * 0.7, H * 0.4, true);
-}
-
-/** Masselbett: Sandfläche mit Hauptrinne entlang u und Seitenrinnen nach +v; hot = Anteil der glühenden Rinnen. */
-function castBed(g, u0, u1, v0, v1, n, hot) {
-  flat(g, u0, u1, v0, v1, SAND);
-  const { P } = g;
-  const w = (u1 - u0) / n;
-  stroke(g, [P(u0 + 1, v0 + 2, 0), P(u1 - 1, v0 + 2, 0)], '#ff9a3a', 1.1);
-  for (let k = 0; k < n; k++) {
-    const a = u0 + w * (k + 0.5);
-    const on = k < n * hot;
-    stroke(g, [P(a, v0 + 2, 0), P(a, v1 - 1.5, 0)], on ? '#ff8a2a' : '#4c4744', on ? 0.9 : 0.8);
-    if (!g.fine) continue;
-    for (let b = v0 + 4.5; b < v1 - 2; b += 2.6) stroke(g, [P(a - w * 0.38, b, 0), P(a + w * 0.38, b, 0)], on ? 'rgba(255,170,70,0.9)' : 'rgba(70,66,64,0.8)', 0.55);
-  }
-  glow(g, u0 + 3, v0 + 2, 0.1, 4.5);
-}
-
-/** Stapel Masseln (Roheisenbarren) auf dem Lagerplatz. */
-function pigStack(g, u, v, layers) {
-  for (let k = 0; k < layers; k++) {
-    const h = k * 0.9;
-    if (k % 2) box(g, u - 2.2, u + 2.2, v - 1.6, v + 1.6, h, h + 0.9, PIG, tint(PIG, 0.12));
-    else box(g, u - 1.8, u + 1.8, v - 2, v + 2, h, h + 0.9, shade(PIG, 0.06), tint(PIG, 0.08));
-  }
-}
-
-function smelter(g, lv, o) {
-  const T = o.color;
-  ground(g, '#6e6660');
-  flat(g, 14, E, -E, -4, '#7b4a3a'); // Erzplatz
-  flat(g, -6, 6, 20, E, ASPH); // Zufahrt
-  flat(g, -56, -26, 36, 56, '#5f5955'); // Masselplatz
-  castBed(g, -54, -12, 4, 30, [0, 5, 7, 8][lv], [0, 0.6, 0.72, 0.8][lv]);
-  // Schornstein, Hochöfen (Stufe 3 ein zweiter)
-  brickStack(g, -53, -30, 3.4, 2.4, [0, 46, 52, 58][lv], SOOT);
-  const H = [0, 44, 50, 56][lv];
-  stoneFurnace(g, -28, -34, 10, H);
-  if (lv >= 3) stoneFurnace(g, 0, -45, 7.5, 40);
-  // Erz-, Koks- und Röstgut-Halden
-  if (lv >= 2) heap(g, 26, -50, 6.5, 5, COAL);
-  heap(g, 41, -44, 12, 9, ORE);
-  if (lv >= 3) gallery(g, [24, -34, 2], [7.8, -44, 32.8], 2.8, 2.4, '#7d6e64');
-  gallery(g, [22, -20, 2], [-19, -32, H * 0.8], 3.2, 2.6, '#7d6e64');
-  if (lv >= 2) loader(g, 32, -26);
-  // Gießhalle aus Bruchstein mit glühenden Bogentoren
-  walls(g, -46, -8, -20, -6, 11, STONE, { band: T, roofH: 4 });
-  for (const a of [-40, -32, -24]) archDoor(g, 's', -6, a, 4, 7, true);
-  strip(g, 'e', -8, -18, -9, 6.5, 8.6, 2.2, true);
-  gable(g, 'u', -46, -8, -20, -6, 11, 4, '#3d3633', STONE);
-  if (lv >= 2) heap(g, 46, -21, 9, 7, ORE_R);
-  // Röstöfen
-  [22, 34, 46].slice(0, lv).forEach((u) => kiln(g, u, 8, 4.5, 9));
-  // Masseln, Schlacke, Büro, LKW
-  const n = [0, 4, 7, 10][lv];
-  for (let k = 0; k < n; k++) pigStack(g, -51 + (k % 5) * 6, 40 + Math.floor(k / 5) * 8, 2 + Math.floor(rnd(k * 7 + 3) * 3));
-  if (lv >= 2) {
-    heap(g, 44, 27, 7, 5, '#3f3b38');
-    glow(g, 41, 29, 2.2, 3.6);
-  }
-  office(g, 16, 34, 38, 52, 9, '#cfc6b8', { hip: true, roof: '#5a3a30', seed: 23 });
-  flagpole(g, 12, 55, 0, 16, T);
-  lorry(g, 0, 40, 'v', '#7a4b37', 'ore');
-  lamp(g, 8, 24, 9);
-  tree(g, 52, 54, 0.8, 1);
-  if (lv >= 3) tree(g, -20, 55, 0.75, 2);
-}
 
 // ---------- Kerosin-Raffinerie (Öl zu Kerosin, seit v5.20) ----------
 // Helle Kugeltanks mit blauem Gürtel, Rundtanks mit gewölbtem Dach und blauen Tankringen in der Auffangwanne, Kolonne, Pumpenhaus
@@ -1953,94 +1809,6 @@ function steelTop(c, lv, o) {
   treesTop(c, [[52, 50, 0.85, 1], [24, 52, 0.8, 2]]);
 }
 
-// Hütte
-/** Gemauerter Hochofen von oben: Gestell, Steinschacht mit Ankerband, Gichtbühne, offene Gicht mit Glut. */
-function stoneFurnaceTop(c, x, y, s, H) {
-  shadowTop(c, x - s, y - s, x + s, y + s, H);
-  rectS(c, x - s, y - s, x + s, y + s, STONE_D, 'rgba(0,0,0,0.45)', 0.4);
-  const b = s * 0.86;
-  rectS(c, x - b, y - b, x + b, y + b, '#5b6066', 'rgba(0,0,0,0.45)', 0.35);
-  c.save();
-  c.setLineDash([0.6, 0.6]);
-  c.strokeStyle = 'rgba(40,44,48,0.8)';
-  c.lineWidth = 0.3;
-  c.strokeRect(x - b + 0.4, y - b + 0.4, 2 * b - 0.8, 2 * b - 0.8);
-  c.restore();
-  const t = s * 0.56;
-  rectS(c, x - t, y - t, x + t, y + t, STONE, 'rgba(0,0,0,0.45)', 0.35);
-  rectF(c, x - t + 0.9, y - t + 0.9, x + t - 0.9, y + t - 0.9, '#2a211d');
-  glowTop(c, x, y, t * 1.1);
-}
-
-function kilnTop(c, x, y, r, H) {
-  roundShadow(c, x, y, r, H);
-  discTop(c, x, y, r, SOOT);
-  ringTop(c, x, y, r * 0.86, IRON, 0.5);
-  circle(c, x, y, r * 0.62, '#2a211d');
-  glowTop(c, x, y, r * 0.7);
-}
-
-function castBedTop(c, x0, y0, x1, y1, n, hot) {
-  rectF(c, x0, y0, x1, y1, SAND);
-  const w = (x1 - x0) / n;
-  lineT(c, [[x0 + 1, y0 + 2], [x1 - 1, y0 + 2]], '#ff9a3a', 1.1);
-  for (let k = 0; k < n; k++) {
-    const a = x0 + w * (k + 0.5);
-    const on = k < n * hot;
-    lineT(c, [[a, y0 + 2], [a, y1 - 1.5]], on ? '#ff8a2a' : '#4c4744', 0.8);
-    for (let b = y0 + 4.5; b < y1 - 2; b += 2.6) lineT(c, [[a - w * 0.38, b], [a + w * 0.38, b]], on ? 'rgba(255,170,70,0.9)' : 'rgba(70,66,64,0.8)', 0.55);
-  }
-  glowTop(c, x0 + 3, y0 + 2, 4.5);
-}
-
-function pigTop(c, x, y) {
-  rectF(c, x - 1.4, y - 1.2, x + 2.8, y + 2.6, 'rgba(0,0,0,0.25)');
-  rectS(c, x - 2.2, y - 2, x + 2.2, y + 2, PIG, 'rgba(0,0,0,0.4)', 0.3);
-  for (const d of [-1, 0, 1]) lineT(c, [[x - 2, y + d], [x + 2, y + d]], tint(PIG, 0.15), 0.3);
-}
-
-function smelterTop(c, lv, o) {
-  const T = o.color;
-  rectF(c, -E, -E, E, E, '#6e6660');
-  rectF(c, 14, -E, E, -4, '#7b4a3a');
-  rectF(c, -6, 20, 6, E, ASPH);
-  rectF(c, -56, 36, -26, 56, '#5f5955');
-  castBedTop(c, -54, 4, -12, 30, [0, 5, 7, 8][lv], [0, 0.6, 0.72, 0.8][lv]);
-  // Halden, Röstöfen, Schlacke
-  heapTop(c, 41, -44, 12, ORE);
-  if (lv >= 2) {
-    heapTop(c, 26, -50, 6.5, COAL);
-    heapTop(c, 46, -21, 9, ORE_R);
-    loaderTop(c, 32, -26);
-    heapTop(c, 44, 27, 7, '#3f3b38');
-    glowTop(c, 42, 28, 3.2);
-  }
-  [22, 34, 46].slice(0, lv).forEach((x) => kilnTop(c, x, 8, 4.5, 9));
-  // Gießhalle, Hochöfen, Schrägaufzug, Schornstein
-  hallTop(c, -46, -20, -8, -6, 15, '#3d3633');
-  rectF(c, -47.5, -6, -6.5, -5, T);
-  for (const x of [-40, -32, -24]) glowTop(c, x, -4.6, 2.2);
-  const H = [0, 44, 50, 56][lv];
-  stoneFurnaceTop(c, -28, -34, 10, H);
-  if (lv >= 3) {
-    stoneFurnaceTop(c, 0, -45, 7.5, 40);
-    galleryTop(c, [24, -34, 2], [7.8, -44, 32.8], 2.8, '#7d6e64');
-  }
-  galleryTop(c, [22, -20, 2], [-19, -32, H * 0.8], 3.2, '#7d6e64');
-  shadowTop(c, -56.4, -33.4, -49.6, -26.6, [0, 46, 52, 58][lv]);
-  rectS(c, -56.2, -33.2, -49.8, -26.8, tint(SOOT, 0.05), 'rgba(0,0,0,0.45)', 0.35);
-  rectF(c, -55.1, -32.1, -50.9, -27.9, '#2a2622');
-  // Masseln, Büro, Fahne, LKW, Laterne, Bäume
-  const n = [0, 4, 7, 10][lv];
-  for (let k = 0; k < n; k++) pigTop(c, -51 + (k % 5) * 6, 40 + Math.floor(k / 5) * 8);
-  shadowTop(c, 16, 38, 34, 52, 13);
-  hipTop(c, 16, 38, 34, 52, '#5a3a30');
-  flagTop(c, 12, 55, T);
-  lorryTop(c, 0, 40, 'v', '#7a4b37', 'ore');
-  lampTop(c, 8, 24);
-  treesTop(c, lv >= 3 ? [[52, 54, 0.8, 1], [-20, 55, 0.75, 2]] : [[52, 54, 0.8, 1]]);
-}
-
 // Kerosin-Raffinerie
 function keroTankTop(c, x, y, r, H) {
   roundShadow(c, x, y, r, H);
@@ -2129,11 +1897,11 @@ function keroTop(c, lv, o) {
 
 // ---------- Schnittstelle ----------
 
-const ISO = { power, bm, mun, fuel, steel, smelter, kero };
-const TOP = { power: powerTop, bm: bmTop, mun: munTop, fuel: fuelTop, steel: steelTop, smelter: smelterTop, kero: keroTop };
+const ISO = { power, bm, mun, fuel, steel, kero };
+const TOP = { power: powerTop, bm: bmTop, mun: munTop, fuel: fuelTop, steel: steelTop, kero: keroTop };
 // Höhe des höchsten Punkts im Iso-Bild über der Mitte des Quadrats (Weltpixel, gemessen, hinten stehende Teile zählen mit ihrer
 // Lage höher): bestimmt die Größe des Bilds und die Höhe des Schilds darüber. Nach jeder Änderung an einer Anlage neu messen.
-const TALL = { power: [0, 128, 138, 148], bm: [0, 78, 84, 90], mun: [0, 50, 52, 52], fuel: [0, 48, 54, 81], steel: [0, 71, 77, 83], smelter: [0, 78, 84, 90], kero: [0, 53, 53, 88] };
+const TALL = { power: [0, 128, 138, 148], bm: [0, 78, 84, 90], mun: [0, 50, 52, 52], fuel: [0, 48, 54, 81], steel: [0, 71, 77, 83], kero: [0, 53, 53, 88] };
 
 function paintIso(ctx, s, kind, lv, color) {
   ISO[kind](G(ctx, s), lv, { color });

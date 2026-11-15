@@ -427,34 +427,6 @@ export function tree(g, u, v, s = 1, t = 0) {
   }
 }
 
-/** Nadelbaum: drei gestapelte Kegel. */
-export function conifer(g, u, v, s = 1) {
-  const { P, ctx, z } = g;
-  const [gx, gy] = P(u, v, 0);
-  ctx.fillStyle = 'rgba(0,0,0,0.2)';
-  ctx.beginPath();
-  ctx.ellipse(gx - 3 * s * z, gy + 1.5 * s * z, 6.5 * s * z, 3.2 * s * z, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#5a4030';
-  ctx.fillRect(gx - 0.9 * s * z, gy - 5 * s * z, 1.8 * s * z, 5 * s * z);
-  for (const [h0, h1, r] of [[3, 15, 6.4], [9, 21, 5], [15, 27, 3.6]]) {
-    const [, y0] = P(u, v, h0 * s);
-    const [, y1] = P(u, v, h1 * s);
-    const R = r * s * z;
-    const grad = ctx.createLinearGradient(gx - R, 0, gx + R, 0);
-    grad.addColorStop(0, roofSnowOn() ? '#e8eff2' : '#5d9a52');
-    grad.addColorStop(0.5, roofSnowOn() ? '#3d5c46' : '#2f6b3a');
-    grad.addColorStop(1, '#1d4628');
-    ctx.beginPath();
-    ctx.moveTo(gx - R, y0);
-    ctx.quadraticCurveTo(gx, y0 + R * 0.35, gx + R, y0);
-    ctx.lineTo(gx, y1);
-    ctx.closePath();
-    ctx.fillStyle = grad;
-    ctx.fill();
-  }
-}
-
 /** Busch (eine flache Kugel). */
 export function bush(g, u, v, s = 1, t = 0) {
   const { P, ctx, z } = g;

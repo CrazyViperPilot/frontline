@@ -1,20 +1,20 @@
-// Stadtgebäude 1 × 1 (seit v5.14, PRD §15): Wohnen, Gewerbe, Markt, Rechenzentrum, Krankenhaus, Heliport und die Förderanlagen
-// (Holzfäller, Steinbruch, Erzmine, Ölquelle), jedes mit eigenem Aussehen je Ausbaustufe, in 2D (von oben) und isometrisch.
+// Stadtgebäude 1 × 1 (seit v5.14, PRD §15): Wohnen, Gewerbe, Markt, Rechenzentrum, Krankenhaus und Heliport, jedes mit eigenem Aussehen je
+// Ausbaustufe, in 2D (von oben) und isometrisch. Die Förderanlagen (Holzfäller bis Ölquelle) gibt es seit Paket „Import“ nicht mehr.
 //   Wohnen:  Einfamilienhaus mit Garten und Garage → Doppelhaus mit Balkonen → Wohnblock mit fünf Geschossen
 //   Gewerbe: Laden mit Markise und Café-Tischen → Geschäftshaus mit zwei Läden → Bürohochhaus aus Glas
 //   Markt:   Wochenmarkt mit Ständen und Brunnen → Markthalle → Markthalle mit Uhrturm
-//   Rechenzentrum, Krankenhaus, Heliport und die Förderanlagen wachsen mit der Stufe (mehr Technik, mehr Gebäude).
+//   Rechenzentrum, Krankenhaus und Heliport wachsen mit der Stufe (mehr Technik, mehr Gebäude).
 // Wohnen und Gewerbe gibt es in drei Farbvarianten (fest je Zelle). Wie Universität und Werke zeichnet die Iso-Ansicht für jede
 // Drehung der Karte dasselbe Bild (Daniel dreht nie). Damit auch große Städte flüssig bleiben, wird jede Variante über
 // spritecache.js einmal je Maßstab gemalt und danach nur noch kopiert.
 // Örtliche Koordinaten: u = Welt-x, v = Welt-y ab der Zellmitte (Zelle ±32, Grundstücksrand ab ±27), h = Höhe. Iso sichtbar sind
 // die Wand nach +v (links, Fläche 's'), die Wand nach +u (rechts, Fläche 'e') und das Dach; Licht von links oben.
-// Nur Zeichnen: liest b = { x, y, ck, level, color, variant, dep } (ck = Zellenart der Stadt, dep = Vorkommen der Förderanlage).
-import { box, FACE, lit, OUTLINE, poly, pyramid, acTop, acUnit, archWins, ASPH, awning, awningTop, balcony, ball, bush, cap, car, CAR_COLORS, carTop, circle, clampLv, cobble, cobbleTop, coneRoof, conifer, conveyor, crate, cyl, disc, dish, dishTop, door, excavator, fan, fanWin, fence, fenceTop, flagpole, flat, flatTop, frustum, G, gable, gableTop, groundRing, heap, heapTop, HEDGE, hip, hipTop, k3, lamp, latticeTop, LAWN, LAWN2, LEAF, ledge, lineT, loader, logPile, logsTop, mast, onFace, parapet, PATH, PAVE, planks, planksTop, PLAZA, plinth, polyF, pyramidTop, rails, railsTop, rectF, rectS, ribs, rnd, roofSnowOn, seam, shade, shadow, shadowTop, shed, snowy, stroke, tankTop, tint, tree, treeTop, truck, van, vanTop, vault, vaultTop, wallBand, wheel, WHITE, wins, winsAt, yellowTop } from './isokit.js';
+// Nur Zeichnen: liest b = { x, y, ck, level, color, variant } (ck = Zellenart der Stadt).
+import { box, FACE, lit, OUTLINE, poly, pyramid, acTop, acUnit, archWins, ASPH, awning, awningTop, balcony, ball, bush, cap, car, CAR_COLORS, carTop, circle, clampLv, cobble, cobbleTop, coneRoof, crate, cyl, disc, dish, dishTop, door, fan, fanWin, fence, fenceTop, flagpole, flat, flatTop, frustum, G, gable, gableTop, groundRing, HEDGE, hip, hipTop, k3, lamp, latticeTop, LAWN, LAWN2, LEAF, ledge, lineT, mast, onFace, parapet, PATH, PAVE, PLAZA, plinth, polyF, pyramidTop, rectF, rectS, ribs, rnd, roofSnowOn, seam, shade, shadow, shadowTop, snowy, stroke, tankTop, tint, tree, treeTop, van, vanTop, vault, vaultTop, wallBand, WHITE, wins, winsAt } from './isokit.js';
 import { sprite, blit, spriteFrame } from './spritecache.js';
 
 // Höhe des höchsten Punkts über der Zellmitte im Iso-Bild (Weltpixel, hinten stehende Teile zählen höher): Größe des Bilds
-// und Höhe des Schilds darüber, je Art und Stufe (Förderanlagen je Vorkommen)
+// und Höhe des Schilds darüber, je Art und Stufe
 const TALL = {
   res: [0, 39, 41, 81],
   com: [0, 29, 56, 124],
@@ -23,9 +23,8 @@ const TALL = {
   hospital: [0, 31, 39, 47],
   heliport: [0, 39, 41, 43],
 };
-const MINE_TALL = { wood: [0, 40, 40, 40], stone: [0, 19, 19, 19], ore: [0, 44, 49, 55], oil: [0, 19, 24, 60] };
 // Arten und Stufen, deren Bild die Teamfarbe zeigt (Fahnen, Bänder); nur diese bekommen je Team ein eigenes Bild
-const TEAM_SHOWN = new Set(['com3', 'market3', 'dc3', 'mine:oil']);
+const TEAM_SHOWN = new Set(['com3', 'market3', 'dc3']);
 
 // ---------- Grundformen (isometrisch, örtliche Koordinaten) ----------
 
@@ -867,362 +866,6 @@ function heli3(g, o) {
   windsock(g, 19, 13);
 }
 
-// ---------- Förderanlagen ----------
-
-/** Blockhütte mit Satteldach, Schornstein, Tür und Fenster. */
-function cabin(g, u0, u1, v0, v1, H, rh, roof, seed) {
-  const wall = '#8b5e3a';
-  shadow(g, u0, u1, v0, v1, H + rh);
-  box(g, u0, u1, v0, v1, 0, H, wall);
-  if (g.fine) for (let h = 1.3; h < H; h += 1.45) ledge(g, u0, u1, v0, v1, h, 'rgba(40,25,10,0.32)', 0.5);
-  door(g, 's', v1, u0 + (u1 - u0) * 0.28, 2.8, 5.6, '#5b3b22');
-  winsAt(g, 's', v1, [u0 + (u1 - u0) * 0.72], [[2.6, 5.2]], 2.4, { seed, cross: true, frame: '#d9c7a5' });
-  winsAt(g, 'e', u1, [(v0 + v1) / 2], [[2.6, 5.2]], 2.2, { seed: seed + 1, cross: true, frame: '#d9c7a5' });
-  const cu = u0 + (u1 - u0) * 0.75;
-  gable(g, 'u', u0, u1, v0, v1, H, rh, roof, wall, () => box(g, cu - 1, cu + 1, v0 + 1.4, v0 + 3.4, H, H + rh + 3, '#8f8a82', '#6f6a63'));
-}
-
-/** Baumstumpf. */
-function stump(g, u, v) {
-  cyl(g, u, v, 1.2, 0, 1.3, '#7a5634');
-}
-
-/** Sägetisch mit Kreissäge und Stamm. */
-function sawTable(g, u0, u1, v) {
-  box(g, u0, u1, v - 1.4, v + 1.4, 0, 2.6, '#6d7277', '#8a8f94');
-  logPile(g, u0 + 1, u0 + (u1 - u0) * 0.6, v - 0.9, v + 0.9, 1);
-  disc(g, 's', v, u0 + (u1 - u0) * 0.75, 2.6, 1.8, '#c9ccd0', 'rgba(60,60,60,0.6)', 0, 14);
-}
-
-/** Holzfäller: Hütte, Holzstapel, Nadelbäume und Stümpfe; Stufe 2 mit Sägeschuppen, Stufe 3 mit Sägewerk und Radlader. */
-function wood(g, lv, o) {
-  flat(g, -25, 25, -25, 25, snowy('#7f9157'));
-  flat(g, -10, 22, -8, 22, '#9c8462');
-  conifer(g, -21, -21, 0.9);
-  conifer(g, -12, -22.5, 0.85);
-  conifer(g, -22.5, -11, 0.9);
-  if (lv === 1) {
-    cabin(g, -4, 9, -20, -11, 6.5, 4.5, '#5b4636', o.seed);
-    logPile(g, -19, -9, 2, 8, 2);
-    logPile(g, 2, 15, -4, 2, 3);
-    conifer(g, 21, -20, 0.9);
-    stump(g, 17, 9);
-    stump(g, 20, 15);
-    stump(g, -4, 17);
-    crate(g, 8, 12, 1, 1.4, '#7a5634');
-    conifer(g, -20, 19, 0.85);
-  } else if (lv === 2) {
-    cabin(g, -21, -10, -9, 0, 6, 4.5, '#5b4636', o.seed);
-    shed(g, 2, 22, -22, -10, 6.5, 4, '#6b5847', () => sawTable(g, 5, 19, -16));
-    logPile(g, -19, -7, 5, 11, 3);
-    logPile(g, 3, 17, 1, 7, 3);
-    stump(g, 20, 12);
-    stump(g, 9, 18);
-    conifer(g, -21, 20, 0.85);
-    conifer(g, 21, 20, 0.8);
-  } else {
-    // Sägewerk: geschlossene Halle mit Tor und Absaugung
-    const wall = '#9a7a56';
-    shadow(g, -2, 22, -23, -9, 16);
-    box(g, -2, 22, -23, -9, 0, 9, wall);
-    if (g.fine) for (let a = 0; a < 22; a += 1.6) stroke(g, [g.P(a, -9, 0.3), g.P(a, -9, 9)], 'rgba(50,30,15,0.25)', 0.45);
-    const pt = onFace(g, 's', -9);
-    poly(g, [pt(5, 0), pt(13, 0), pt(13, 7), pt(5, 7)], lit('#5b4636', ...FACE.s), OUTLINE);
-    gable(g, 'u', -2, 22, -23, -9, 9, 5.5, '#5f5a52', wall, () => {
-      cyl(g, 4, -18, 1.8, 13, 18, '#a9aeb2');
-      frustum(g, 4, -18, 0.5, 1.8, 10.5, 13, '#a9aeb2', false);
-    });
-    cabin(g, -22, -12, -22, -14, 5.5, 4, '#5b4636', o.seed);
-    logPile(g, -21, -8, -6, 2, 4);
-    logPile(g, -21, -10, 5, 11, 3);
-    planks(g, 6, 14, 3, 7, 3.2);
-    planks(g, 15, 22, 3, 7, 2.4);
-    loader(g, -2, 12);
-    planks(g, 8, 18, 12, 16, 2.6);
-    conifer(g, -21, 21, 0.85);
-    conifer(g, 21.5, 20.5, 0.75);
-  }
-}
-
-/** Steinbruch-Grube mit Absätzen (hinten und links sichtbar), auf die Öffnung beschnitten. */
-function quarryPit(g, u0, u1, v0, v1, steps, d, s, rock) {
-  const { P, ctx } = g;
-  const D = steps * d;
-  ctx.save();
-  ctx.beginPath();
-  [P(u0, v0, 0), P(u1, v0, 0), P(u1, v1, 0), P(u0, v1, 0)].forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
-  ctx.closePath();
-  ctx.clip();
-  flat(g, u0 - D, u1, v0 - D, v1, lit(shade(rock, 0.18), ...FACE.top), -D);
-  for (let k = 0; k < steps; k++) {
-    const a = u0 + k * s;
-    const b = v0 + k * s;
-    const h0 = -k * d;
-    const h1 = -(k + 1) * d;
-    poly(g, [P(a, b, h0), P(u1 + 4, b, h0), P(u1 + 4, b, h1), P(a, b, h1)], lit(shade(rock, 0.06), ...FACE.s), null);
-    poly(g, [P(a, b, h0), P(a, v1 + 4, h0), P(a, v1 + 4, h1), P(a, b, h1)], lit(shade(rock, 0.1), ...FACE.e), null);
-    if (k < steps - 1) {
-      const a2 = a + s;
-      const b2 = b + s;
-      poly(g, [P(a, b, h1), P(u1 + 4, b, h1), P(u1 + 4, b2, h1), P(a2, b2, h1), P(a2, v1 + 4, h1), P(a, v1 + 4, h1)], lit(tint(rock, 0.06), ...FACE.top), null);
-    }
-    if (g.fine) stroke(g, [P(a, v1 + 4, h1 + 0.2), P(a, b, h1 + 0.2), P(u1 + 4, b, h1 + 0.2)], 'rgba(0,0,0,0.12)', 0.5);
-  }
-  ctx.restore();
-  stroke(g, [P(u0, v1, 0), P(u0, v0, 0), P(u1, v0, 0)], 'rgba(255,255,255,0.35)', 0.8);
-  stroke(g, [P(u0, v1, 0), P(u1, v1, 0), P(u1, v0, 0)], 'rgba(60,50,40,0.35)', 0.7);
-}
-
-/** Brecher: Kasten mit Trichter oben. */
-function crusher(g, u, v, H, col = '#6f7a80') {
-  shadow(g, u - 3.5, u + 3.5, v - 3.5, v + 3.5, H + 3);
-  box(g, u - 3.5, u + 3.5, v - 3.5, v + 3.5, 0, H, col, tint(col, 0.1));
-  frustum(g, u, v, 1.8, 3.6, H, H + 3, '#8a9399', false);
-  const { ctx, z } = g;
-  const [x, y] = g.P(u, v, H + 3);
-  ctx.fillStyle = '#3a3d40';
-  ctx.beginPath();
-  ctx.ellipse(x, y, 3.6 * z, 1.8 * z, 0, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-/** Steinbruch: Grube mit Absätzen, Blöcke, Hütte; Stufe 2 mit Förderband, Brecher und Kies, Stufe 3 mit Bagger und Kipper. */
-function stone(g, lv, o) {
-  const rock = '#b9b2a5';
-  flat(g, -25, 25, -25, 25, '#b0a794');
-  if (lv === 1) {
-    quarryPit(g, -23, 5, -23, 5, 3, 3, 3.4, rock);
-    for (const [u, v] of [[13, -21], [17, -21], [21, -21], [15, -17], [19, -17]]) crate(g, u, v, 1.6, 2.6, '#d2cdc2');
-    crate(g, 17, -19, 1.5, 5, '#d2cdc2');
-    hut(g, 9, 21, 9, 17, 5.5, 3.6, '#8d7d6a', '#6b5f52', 'u');
-  } else {
-    quarryPit(g, -23, 3, -23, 3, lv === 3 ? 4 : 3, 3, 3.2, rock);
-    if (lv === 3) excavator(g, -16, -15, -3);
-    crusher(g, 16, -15, lv === 3 ? 9 : 6, '#6f7a80');
-    conveyor(g, -6, -6, -5, 12.5, -14, lv === 3 ? 11 : 8.5);
-    heap(g, 18, 3, 6, 6, '#bdb6a8');
-    if (lv === 3) heap(g, 8, 11, 5, 5, '#a9a194');
-    for (const [u, v] of [[-19, 12], [-15, 12], [-19, 16]]) crate(g, u, v, 1.6, 2.6, '#d2cdc2');
-    if (lv === 3) truck(g, -2, 18);
-  }
-  bush(g, -21, 21, 0.8, o.v);
-  if (lv === 1) {
-    rubble(g, 10, 2);
-    rubble(g, -2, 13);
-  }
-}
-
-/** Kleine Hütte mit Satteldach (First entlang axis), Tür und Fenster. */
-function hut(g, u0, u1, v0, v1, H, rh, wall, roof, axis) {
-  shadow(g, u0, u1, v0, v1, H + rh);
-  box(g, u0, u1, v0, v1, 0, H, wall);
-  plinth(g, u0, u1, v0, v1, wall, 1);
-  door(g, 's', v1, u0 + (u1 - u0) * 0.3, 2.6, 4.6, '#5b4a3a');
-  winsAt(g, 'e', u1, [(v0 + v1) / 2], [[2.2, 4.4]], 2.2, { seed: 9, cross: true });
-  gable(g, axis, u0, u1, v0, v1, H, rh, roof, wall);
-}
-
-/** Ein paar lose Steine. */
-function rubble(g, u, v) {
-  for (const [du, dv, s] of [[0, 0, 1], [1.8, 0.6, 0.7], [0.6, 1.8, 0.8]]) box(g, u + du - s, u + du + s, v + dv - s, v + dv + s, 0, s * 1.2, '#a59d8f', '#c2bbae');
-}
-
-/** Förderturm: Stahlgerüst mit Streben, Bühne und Seilscheibe(n); gibt die Höhe des Scheibenmittelpunkts zurück. */
-function headframe(g, u, v, w, H, color, wheels = 1) {
-  const { P } = g;
-  const u0 = u - w;
-  const u1 = u + w;
-  const v0 = v - w;
-  const v1 = v + w;
-  const dark = shade(color, 0.2);
-  for (const [a, b, wd] of [[u0, v0, 1], [u1, v0, 1.2], [u0, v1, 1.2]]) stroke(g, [P(a, b, 0), P(a, b, H)], dark, wd);
-  const n = Math.max(3, Math.round(H / 5));
-  for (let k = 0; k < n; k++) {
-    const h0 = (H * k) / n;
-    const h1 = (H * (k + 1)) / n;
-    stroke(g, [P(u0, v1, h0), P(u1, v1, h1)], color, 0.55);
-    stroke(g, [P(u1, v1, h0), P(u0, v1, h1)], color, 0.55);
-    stroke(g, [P(u1, v0, h0), P(u1, v1, h1)], color, 0.55);
-    stroke(g, [P(u1, v1, h0), P(u1, v0, h1)], color, 0.55);
-    stroke(g, [P(u0, v1, h1), P(u1, v1, h1), P(u1, v0, h1)], color, 0.5);
-  }
-  stroke(g, [P(u1, v1, 0), P(u1, v1, H)], dark, 1.3);
-  box(g, u0 - 0.9, u1 + 0.9, v0 - 0.9, v1 + 0.9, H, H + 1.2, color);
-  const r = w + 1.4;
-  const hc = H + 1.2 + r;
-  for (const dv of wheels === 2 ? [-w * 0.6, w * 0.6] : [0]) {
-    stroke(g, [P(u - r * 0.55, v + dv, H + 1.2), P(u, v + dv, hc), P(u + r * 0.55, v + dv, H + 1.2)], dark, 0.8);
-    wheel(g, 's', v + dv, u, hc, r, '#2f3236');
-  }
-  return { hc, r };
-}
-
-/** Maschinenhaus aus Ziegeln mit Rundbogenfenstern und Satteldach (First entlang u). */
-function brickHouse(g, u0, u1, v0, v1, H, rh, seed) {
-  const wall = '#a35a40';
-  shadow(g, u0, u1, v0, v1, H + rh);
-  box(g, u0, u1, v0, v1, 0, H, wall);
-  plinth(g, u0, u1, v0, v1, wall);
-  const n = Math.max(2, Math.round((u1 - u0) / 5));
-  const at = [];
-  for (let k = 0; k < n; k++) at.push(u0 + ((u1 - u0) * (k + 0.5)) / n);
-  archWins(g, 's', v1, at, 2.4, H - 3, 2.4, { seed, frame: '#e2cfb4' });
-  archWins(g, 'e', u1, [(v0 + v1) / 2], 2.4, H - 3, 2.4, { seed: seed + 1, frame: '#e2cfb4' });
-  gable(g, 'u', u0, u1, v0, v1, H, rh, '#4f4f52', wall);
-}
-
-/** Förderwagen auf den Schienen, mit Erz beladen. */
-function oreCart(g, u, v, ore) {
-  box(g, u - 2, u + 2, v - 1.3, v + 1.3, 0.6, 3, '#5d6266', '#6d7276');
-  box(g, u - 1.6, u + 1.6, v - 1, v + 1, 3, 3.8, ore, tint(ore, 0.12), null);
-}
-
-/** Erzmine: Förderturm mit Seilscheibe, Maschinenhaus, Erzhalde, Gleis mit Wagen; Stufe 3 mit Doppelscheibe und Erzbunker. */
-function ore(g, lv, o) {
-  const ORE = '#8a4b2e';
-  const RUST = '#a33a2a';
-  flat(g, -25, 25, -25, 25, '#9b8b77');
-  const H = [0, 22, 27, 31][lv];
-  const w = [0, 3.2, 3.5, 3.9][lv];
-  const hu = -13;
-  const hv = -13;
-  const { hc, r } = headframe(g, hu, hv, w, H, RUST, lv === 3 ? 2 : 1);
-  const [x0, x1] = lv === 1 ? [1, 15] : [2, 19];
-  const [y0, y1] = lv === 1 ? [-19, -8] : [-21, -8];
-  const hh = lv === 1 ? 8 : 10;
-  brickHouse(g, x0, x1, y0, y1, hh, 5, o.seed);
-  const { P } = g;
-  for (const dv of lv === 3 ? [-w * 0.6, w * 0.6] : [0]) stroke(g, [P(hu + r, hv + dv, hc), P(x0, (y0 + y1) / 2 + dv * 0.5, hh + 2.6)], '#2a2a2a', 0.4);
-  if (lv === 2) brickHouse(g, -23, -13, 4, 12, 6, 4, o.seed + 3);
-  rails(g, -4, 24, lv === 3 ? 20 : 5);
-  if (lv === 3) {
-    // Erzbunker auf Stützen, Förderband vom Turm
-    for (const [a, b] of [[8, 5], [17, 5], [8, 14], [17, 14]]) stroke(g, [P(a, b, 0), P(a, b, 6)], '#55595d', 1);
-    box(g, 7, 18, 4, 15, 6, 13, '#6d5446', '#7d6456');
-    frustum(g, 12.5, 9.5, 0.9, 3, 3.5, 6, '#55595d', false);
-    conveyor(g, hu + w + 1, hv + w + 1, H * 0.55, 9, 7, 13.3);
-    heap(g, -15, 15, 7.5, 7, ORE);
-    oreCart(g, 13, 20, ORE);
-    oreCart(g, 19, 20, ORE);
-  } else {
-    heap(g, lv === 1 ? -14 : 14, lv === 1 ? 14 : 15, lv === 1 ? 6.5 : 7.5, lv === 1 ? 5.5 : 6.5, ORE);
-    oreCart(g, 9, 5, ORE);
-    if (lv === 2) oreCart(g, 15, 5, ORE);
-  }
-  lamp(g, -2, -2, 9);
-}
-
-/** Pferdekopfpumpe in der Ebene v (Schwinge entlang u, Pferdekopf bei +u). */
-function pumpjack(g, u, v) {
-  const pt = (a, h) => g.P(u + a, v, h);
-  flat(g, u - 7, u + 8, v - 1.6, v + 3, 'rgba(0,0,0,0.18)');
-  box(g, u - 7, u + 6, v - 1.5, v + 1.5, 0, 0.8, '#9a958a');
-  stroke(g, [pt(-1.8, 0.8), pt(0, 9.6), pt(1.8, 0.8)], '#5d6266', 1.2);
-  box(g, u - 5.8, u - 3.6, v - 1.2, v + 1.2, 0.8, 3.4, '#5d6266');
-  disc(g, 's', v + 1.4, u - 4.7, 3.2, 2.3, '#3f4448', OUTLINE, 0, 14);
-  stroke(g, [pt(-3.6, 4.2), pt(-6.6, 10.1)], '#3f4448', 0.8);
-  stroke(g, [pt(-6.9, 10.3), pt(5, 9.2)], '#d8a227', 2.1);
-  poly(g, [g.P(u + 4.6, v, 10.7), g.P(u + 6.8, v, 10), g.P(u + 7.6, v, 7.7), g.P(u + 7.1, v, 5.4), g.P(u + 5.4, v, 7.6), g.P(u + 4.6, v, 8.6)], lit('#d8a227', ...FACE.s));
-  stroke(g, [pt(7.2, 5.4), pt(7.2, 1.6)], '#c9cdd0', 0.5);
-  box(g, u + 6.4, u + 8, v - 0.8, v + 0.8, 0, 1.8, '#6b7075');
-}
-
-/** Öltank mit flachem Kegeldach, Naht und Leiter. */
-function oilTank(g, u, v, r, h, team) {
-  shadow(g, u - r, u + r, v - r, v + r, h, 0.16);
-  cyl(g, u, v, r, 0, h, '#dedbd2', false);
-  if (g.fine) {
-    seam(g, u, v, r, h * 0.33);
-    seam(g, u, v, r, h * 0.66);
-  }
-  const { P } = g;
-  const [x0, y0] = P(u, v, 0);
-  const [, y1] = P(u, v, h);
-  const { ctx, z } = g;
-  ctx.fillStyle = team;
-  ctx.globalAlpha = 0.85;
-  ctx.fillRect(x0 - r * z * 0.65, y1 + (y0 - y1) * 0.2, r * z * 0.5, (y0 - y1) * 0.12);
-  ctx.globalAlpha = 1;
-  coneRoof(g, u, v, r, h, r * 0.3, '#c9c6bc');
-  stroke(g, [P(u + r * 0.7, v + r * 0.7, 0), P(u + r * 0.7, v + r * 0.7, h)], '#7d8186', 0.5);
-}
-
-/** Bohrturm auf Unterbau: vier Beine (sichtbar drei), Streben, Bühne oben. */
-function derrick(g, u, v, w, H, color = '#b5452f') {
-  const { P } = g;
-  const base = 4.4;
-  box(g, u - w - 2, u + w + 2, v - w - 2, v + w + 2, 0, base, '#7d7a72', '#8f8c84');
-  const top = w * 0.22;
-  const dark = shade(color, 0.2);
-  const leg = (su, sv, wd) => stroke(g, [P(u + su * w, v + sv * w, base), P(u + su * top, v + sv * top, H)], dark, wd);
-  leg(-1, -1, 0.9);
-  leg(1, -1, 1.1);
-  leg(-1, 1, 1.1);
-  const n = Math.max(4, Math.round((H - base) / 5.5));
-  for (let k = 0; k < n; k++) {
-    const t0 = k / n;
-    const t1 = (k + 1) / n;
-    const r0 = w + (top - w) * t0;
-    const r1 = w + (top - w) * t1;
-    const h0 = base + (H - base) * t0;
-    const h1 = base + (H - base) * t1;
-    stroke(g, [P(u - r0, v + r0, h0), P(u + r1, v + r1, h1)], color, 0.5);
-    stroke(g, [P(u + r0, v + r0, h0), P(u - r1, v + r1, h1)], color, 0.5);
-    stroke(g, [P(u + r0, v - r0, h0), P(u + r1, v + r1, h1)], color, 0.5);
-    stroke(g, [P(u + r0, v + r0, h0), P(u + r1, v - r1, h1)], color, 0.5);
-    stroke(g, [P(u - r1, v + r1, h1), P(u + r1, v + r1, h1), P(u + r1, v - r1, h1)], color, 0.45);
-  }
-  leg(1, 1, 1.3);
-  box(g, u - top - 0.8, u + top + 0.8, v - top - 0.8, v + top + 0.8, H, H + 1.8, '#7d7a72');
-  box(g, u + w + 2, u + w + 6.5, v - 2.2, v + 2.2, 0, 3.2, '#6a6f74', '#7a7f84');
-}
-
-/** Ölquelle: Pferdekopfpumpe, Tank, Ölfleck; Stufe 2 zwei Pumpen und zwei Tanks, Stufe 3 Bohrturm. */
-function oil(g, lv, o) {
-  flat(g, -25, 25, -25, 25, '#a99c83');
-  const { P, ctx, z } = g;
-  const stain = (u, v, r) => {
-    const [x, y] = P(u, v, 0);
-    ctx.fillStyle = 'rgba(25,22,20,0.5)';
-    ctx.beginPath();
-    ctx.ellipse(x, y, r * z * 1.3, r * z * 0.6, 0, 0, Math.PI * 2);
-    ctx.fill();
-  };
-  const pipe = (pts) => stroke(g, pts.map(([u, v]) => P(u, v, 0.6)), '#6b7075', 0.8);
-  if (lv === 1) {
-    stain(2, -5, 3);
-    oilTank(g, 14, -14, 5, 9, o.color);
-    pipe([[2, -6], [9, -6], [9, -11]]);
-    pumpjack(g, -5, -6);
-    for (const [u, v] of [[5, 10], [7.4, 10.6], [6, 12.6]]) cyl(g, u, v, 0.9, 0, 2.4, '#3d5a7a');
-  } else if (lv === 2) {
-    stain(-6, -12, 2.6);
-    stain(9, 8, 2.6);
-    oilTank(g, 14, -15, 4.6, 9, o.color);
-    oilTank(g, 19.5, -4, 3.6, 7.5, o.color);
-    pipe([[-6, -13], [8, -13], [10, -14]]);
-    pipe([[9, 7], [16, 7], [17.5, -1]]);
-    pumpjack(g, -13, -12);
-    hut(g, -22, -14, 9, 19, 5, 3, '#c9c4b8', '#6a6f74', 'v');
-    pumpjack(g, 2, 8);
-  } else {
-    derrick(g, -12, -12, 5, 46);
-    oilTank(g, 15, -15, 4.6, 10, o.color);
-    oilTank(g, 20, -4.5, 3.6, 8, o.color);
-    stain(9, 9, 2.6);
-    pipe([[-4, -12], [11, -12]]);
-    pipe([[9, 8], [16, 8], [18, -1]]);
-    for (const [u, v] of [[-20, 9], [-20, 11], [-20, 13]]) box(g, u - 0.6, u + 14, v - 0.6, v + 0.6, 0, 1.2, '#7d8186', '#9aa0a5');
-    pumpjack(g, 2, 9);
-  }
-}
-
-const MINE_PAINT = { wood, stone, ore, oil };
-
-function mine(g, lv, o) {
-  (MINE_PAINT[o.dep] ?? ore)(g, lv, o);
-}
-
 // ---------- Ablauf ----------
 
 const ISO = {
@@ -1232,7 +875,6 @@ const ISO = {
   dc: [dc1, dc2, dc3],
   hospital: [hosp1, hosp2, hosp3],
   heliport: [heli1, heli2, heli3],
-  mine: [(g, o) => mine(g, 1, o), (g, o) => mine(g, 2, o), (g, o) => mine(g, 3, o)],
 };
 
 /** Ersatz für Arten ohne eigenes Bild (noch nicht gezeichnet): schlichter Quader mit Flachdach. */
@@ -1247,7 +889,7 @@ function plain(g, lv, o) {
 
 function paintIso(ctx, s, b, lv) {
   const g = G(ctx, s);
-  const o = { v: b.variant % 3, seed: b.variant * 7 + 11, color: b.color, dep: b.dep };
+  const o = { v: b.variant % 3, seed: b.variant * 7 + 11, color: b.color };
   const f = ISO[b.ck]?.[lv - 1];
   if (f) f(g, o);
   else plain(g, lv, o);
@@ -1379,7 +1021,7 @@ function com3Top(c, o) {
   treeTop(c, 22, -21, 5, o.v + 1);
 }
 
-// --- 2D: Markt, Rechenzentrum, Krankenhaus, Heliport, Förderanlagen ---
+// --- 2D: Markt, Rechenzentrum, Krankenhaus, Heliport ---
 
 /** Marktstand von oben: gestreiftes Zeltdach mit First entlang x. */
 function stallTop(c, x, y, cols) {
@@ -1431,55 +1073,6 @@ function padTop(c, x, y, r) {
     circle(c, x + (r + 0.45) * Math.cos(a), y + (r + 0.45) * Math.sin(a), 0.45, k % 2 ? '#ffe27a' : '#8af08f');
   }
 }
-function conTop(c, x, y, r) {
-  circle(c, x + r * 0.5, y + r * 0.5, r, 'rgba(0,0,0,0.28)');
-  const grad = c.createRadialGradient(x - r * 0.3, y - r * 0.3, 0.2, x, y, r);
-  grad.addColorStop(0, '#5d9a52');
-  grad.addColorStop(0.6, '#2f6b3a');
-  grad.addColorStop(1, '#1d4628');
-  c.fillStyle = grad;
-  c.beginPath();
-  for (let k = 0; k < 16; k++) {
-    const a = (k / 16) * Math.PI * 2;
-    const rr = k % 2 ? r * 0.72 : r;
-    const px = x + rr * Math.cos(a);
-    const py = y + rr * Math.sin(a);
-    if (k) c.lineTo(px, py);
-    else c.moveTo(px, py);
-  }
-  c.closePath();
-  c.fill();
-  circle(c, x - r * 0.15, y - r * 0.15, r * 0.25, '#6aa85d');
-}
-function stumpTop(c, x, y) {
-  circle(c, x, y, 1.2, '#7a5634');
-  circle(c, x, y, 0.8, '#d8b07c');
-}
-/** Grube von oben: Absätze als ineinander liegende Rechtecke, Wände oben und links im Schatten. */
-function pitTop(c, x0, y0, x1, y1, steps, s, rock) {
-  for (let k = 0; k <= steps; k++) {
-    const a = x0 + k * s;
-    const b = y0 + k * s;
-    rectF(c, a, b, x1, y1, shade(rock, 0.06 * k));
-    if (k < steps) {
-      rectF(c, a, b, x1, b + s * 0.45, 'rgba(0,0,0,0.18)');
-      rectF(c, a, b, a + s * 0.45, y1, 'rgba(0,0,0,0.22)');
-    }
-  }
-  c.strokeStyle = 'rgba(60,50,40,0.45)';
-  c.lineWidth = 0.4;
-  c.strokeRect(x0, y0, x1 - x0, y1 - y0);
-}
-function pumpjackTop(c, x, y) {
-  rectF(c, x - 7 + 0.8, y - 1.5 + 0.8, x + 6 + 0.8, y + 1.5 + 0.8, 'rgba(0,0,0,0.22)');
-  rectS(c, x - 7, y - 1.5, x + 6, y + 1.5, '#9a958a', 'rgba(0,0,0,0.35)', 0.3);
-  lineT(c, [[x + 2, y + 2], [x + 9.5, y + 6]], 'rgba(0,0,0,0.25)', 1.3);
-  circle(c, x - 4.7, y, 1.7, '#3f4448');
-  lineT(c, [[x - 6.9, y], [x + 5, y]], '#d8a227', 1.4);
-  polyF(c, [[x + 4.6, y - 1.2], [x + 7.6, y - 0.9], [x + 7.6, y + 0.9], [x + 4.6, y + 1.2]], '#c99520');
-  rectS(c, x + 6.4, y - 0.8, x + 8, y + 0.8, '#6b7075', 'rgba(0,0,0,0.4)', 0.3);
-}
-
 function market1Top(c, o) {
   cobbleTop(c);
   stallTop(c, -12, -13, STALL[0]);
@@ -1674,158 +1267,6 @@ function heli1Top(c, o, lv = 1) {
   void o;
 }
 
-function woodTop(c, lv, o) {
-  rectF(c, -25, -25, 25, 25, '#7f9157');
-  rectF(c, -10, -8, 22, 22, '#9c8462');
-  if (lv === 1) {
-    shadowTop(c, -4, -20, 9, -11, 11);
-    gableTop(c, -4, -20, 9, -11, 'u', '#5b4636');
-    logsTop(c, -19, 2, -9, 8, 2);
-    logsTop(c, 2, -4, 15, 2, 3);
-    for (const [x, y] of [[17, 9], [20, 15], [-4, 17]]) stumpTop(c, x, y);
-    rectS(c, 7, 11, 9, 13, '#7a5634', 'rgba(0,0,0,0.4)', 0.3);
-    conTop(c, 21, -20, 5.8);
-    conTop(c, -20, 19, 5.5);
-  } else if (lv === 2) {
-    shadowTop(c, -21, -9, -10, 0, 10.5);
-    gableTop(c, -21, -9, -10, 0, 'u', '#5b4636');
-    shadowTop(c, 2, -22, 22, -10, 10.5);
-    gableTop(c, 2, -22, 22, -10, 'u', '#6b5847');
-    logsTop(c, -19, 5, -7, 11, 3);
-    logsTop(c, 3, 1, 17, 7, 3);
-    stumpTop(c, 20, 12);
-    stumpTop(c, 9, 18);
-    conTop(c, -21, 20, 5.5);
-    conTop(c, 21, 20, 5.2);
-  } else {
-    shadowTop(c, -2, -23, 22, -9, 14.5);
-    gableTop(c, -2, -23, 22, -9, 'u', '#5f5a52');
-    circle(c, 4, -18, 1.8, '#a9aeb2');
-    shadowTop(c, -22, -22, -12, -14, 9.5);
-    gableTop(c, -22, -22, -12, -14, 'u', '#5b4636');
-    logsTop(c, -21, -6, -8, 2, 4);
-    logsTop(c, -21, 5, -10, 11, 3);
-    planksTop(c, 6, 3, 14, 7);
-    planksTop(c, 15, 3, 22, 7);
-    planksTop(c, 8, 12, 18, 16);
-    yellowTop(c, -5.8, 10.2, 3, 13.8);
-    rectF(c, 1.4, 9.8, 3.4, 14.2, '#5d6064');
-    conTop(c, -21, 21, 5.5);
-    conTop(c, 21.5, 20.5, 4.9);
-  }
-  conTop(c, -21, -21, 5.8);
-  conTop(c, -12, -22.5, 5);
-  conTop(c, -22.5, -11, 5.3);
-}
-function stoneTop(c, lv, o) {
-  const rock = '#b9b2a5';
-  rectF(c, -25, -25, 25, 25, '#b0a794');
-  const block = (x, y, s) => {
-    rectF(c, x - s + 0.6, y - s + 0.6, x + s + 0.6, y + s + 0.6, 'rgba(0,0,0,0.22)');
-    rectS(c, x - s, y - s, x + s, y + s, '#d8d3c8', 'rgba(0,0,0,0.35)', 0.3);
-  };
-  if (lv === 1) {
-    pitTop(c, -23, -23, 5, 5, 3, 3.4, rock);
-    for (const [x, y] of [[13, -21], [17, -21], [21, -21], [15, -17], [19, -17]]) block(x, y, 1.6);
-    block(17, -19, 1.5);
-    shadowTop(c, 9, 9, 21, 17, 9);
-    gableTop(c, 9, 9, 21, 17, 'u', '#6b5f52');
-    for (const [x, y] of [[10, 2], [-2, 13]]) circle(c, x, y, 1.2, '#a59d8f');
-  } else {
-    pitTop(c, -23, -23, 3, 3, lv === 3 ? 4 : 3, 3.2, rock);
-    if (lv === 3) {
-      yellowTop(c, -19.5, -17.6, -13.8, -12.4);
-      lineT(c, [[-14, -15], [-6.6, -15]], '#d39d14', 1);
-    }
-    lineT(c, [[-6, -6], [12.5, -14]], '#3b3e41', 1.3);
-    shadowTop(c, 12.5, -18.5, 19.5, -11.5, lv === 3 ? 12 : 9);
-    rectS(c, 12.5, -18.5, 19.5, -11.5, '#6f7a80', 'rgba(0,0,0,0.45)', 0.4);
-    circle(c, 16, -15, 3, '#3a3d40');
-    heapTop(c, 18, 3, 6, '#bdb6a8');
-    if (lv === 3) heapTop(c, 8, 11, 5, '#a9a194');
-    for (const [x, y] of [[-19, 12], [-15, 12], [-19, 16]]) block(x, y, 1.6);
-    if (lv === 3) {
-      yellowTop(c, -7, 15.8, -0.4, 20.2);
-      rectS(c, -0.2, 16, 3, 20, '#d4d0c6', 'rgba(0,0,0,0.4)', 0.3);
-    }
-  }
-  circle(c, -21, 21, 2.8, LEAF[k3(o.v)][1]);
-}
-function oreTop(c, lv, o) {
-  const ORE = '#8a4b2e';
-  const RUST = '#a33a2a';
-  rectF(c, -25, -25, 25, 25, '#9b8b77');
-  const [x0, x1] = lv === 1 ? [1, 15] : [2, 19];
-  const [y0, y1] = lv === 1 ? [-19, -8] : [-21, -8];
-  railsTop(c, -4, 24, lv === 3 ? 20 : 5);
-  shadowTop(c, x0, y0, x1, y1, 13);
-  gableTop(c, x0, y0, x1, y1, 'u', '#4f4f52');
-  if (lv === 2) {
-    shadowTop(c, -23, 4, -13, 12, 10);
-    gableTop(c, -23, 4, -13, 12, 'u', '#4f4f52');
-  }
-  const w = [0, 3.2, 3.5, 3.9][lv];
-  latticeTop(c, -13, -13, w + 0.9, [0, 30, 36, 40][lv], RUST);
-  lineT(c, [[-13 - w - 1.4, -13], [-13 + w + 1.4, -13]], '#2f3236', 0.8);
-  lineT(c, [[-13 + w, -13], [x0, (y0 + y1) / 2]], '#2a2a2a', 0.3);
-  if (lv === 3) {
-    shadowTop(c, 7, 4, 18, 15, 13);
-    rectS(c, 7, 4, 18, 15, '#7d6456', 'rgba(0,0,0,0.45)', 0.4);
-    lineT(c, [[-8, -8], [9, 7]], '#3b3e41', 1.3);
-    heapTop(c, -15, 15, 7.5, ORE);
-    for (const x of [13, 19]) rectS(c, x - 2, 18.7, x + 2, 21.3, ORE, 'rgba(0,0,0,0.5)', 0.35);
-  } else {
-    heapTop(c, lv === 1 ? -14 : 14, lv === 1 ? 14 : 15, lv === 1 ? 6.5 : 7.5, ORE);
-    for (const x of lv === 2 ? [9, 15] : [9]) rectS(c, x - 2, 3.7, x + 2, 6.3, ORE, 'rgba(0,0,0,0.5)', 0.35);
-  }
-  circle(c, -2, -2, 1, '#f1df9a');
-}
-function oilTop(c, lv, o) {
-  rectF(c, -25, -25, 25, 25, '#a99c83');
-  const stain = (x, y, r) => {
-    c.fillStyle = 'rgba(25,22,20,0.5)';
-    c.beginPath();
-    c.ellipse(x, y, r * 1.3, r, 0, 0, Math.PI * 2);
-    c.fill();
-  };
-  const pipe = (pts) => lineT(c, pts, '#6b7075', 0.6);
-  if (lv === 1) {
-    stain(2, -5, 3);
-    pipe([[2, -6], [9, -6], [9, -11]]);
-    pumpjackTop(c, -5, -6);
-    tankTop(c, 14, -14, 5);
-    for (const [x, y] of [[5, 10], [7.4, 10.6], [6, 12.6]]) circle(c, x, y, 0.9, '#3d5a7a');
-  } else if (lv === 2) {
-    stain(-6, -12, 2.6);
-    stain(9, 8, 2.6);
-    pipe([[-6, -13], [8, -13], [10, -14]]);
-    pipe([[9, 7], [16, 7], [17.5, -1]]);
-    pumpjackTop(c, -13, -12);
-    pumpjackTop(c, 2, 8);
-    tankTop(c, 14, -15, 4.6);
-    tankTop(c, 19.5, -4, 3.6);
-    shadowTop(c, -22, 9, -14, 19, 8);
-    gableTop(c, -22, 9, -14, 19, 'v', '#6a6f74');
-  } else {
-    stain(9, 9, 2.6);
-    pipe([[-4, -12], [11, -12]]);
-    pipe([[9, 8], [16, 8], [18, -1]]);
-    rectF(c, -20.6, 8.4, -5.4, 13.6, 'rgba(0,0,0,0.18)');
-    for (const y of [9, 11, 13]) rectS(c, -20.6, y - 0.6, -6, y + 0.6, '#9aa0a5', 'rgba(0,0,0,0.35)', 0.25);
-    pumpjackTop(c, 2, 9);
-    tankTop(c, 15, -15, 4.6);
-    tankTop(c, 20, -4.5, 3.6);
-    rectS(c, -19, -19, -5, -5, '#8f8c84', 'rgba(0,0,0,0.45)', 0.4);
-    rectS(c, -5, -14.2, -0.5, -9.8, '#7a7f84', 'rgba(0,0,0,0.4)', 0.3);
-    latticeTop(c, -12, -12, 5, 44, '#b5452f');
-    rectS(c, -13.9, -13.9, -10.1, -10.1, '#7d7a72', 'rgba(0,0,0,0.45)', 0.3);
-  }
-  void o;
-}
-function mineTop(c, lv, o) {
-  ({ wood: woodTop, stone: stoneTop, ore: oreTop, oil: oilTop }[o.dep] ?? oreTop)(c, lv, o);
-}
-
 const TOP = {
   res: [res1Top, res2Top, res3Top],
   com: [com1Top, com2Top, com3Top],
@@ -1833,7 +1274,6 @@ const TOP = {
   dc: [dc1Top, dc2Top, dc3Top],
   hospital: [hosp1Top, (c, o) => hosp2Top(c, o, 2), (c, o) => hosp2Top(c, o, 3)],
   heliport: [(c, o) => heli1Top(c, o, 1), (c, o) => heli1Top(c, o, 2), (c, o) => heli1Top(c, o, 3)],
-  mine: [(c, o) => mineTop(c, 1, o), (c, o) => mineTop(c, 2, o), (c, o) => mineTop(c, 3, o)],
 };
 
 function plainTop(c, lv) {
@@ -1844,7 +1284,7 @@ function plainTop(c, lv) {
 
 function paintTop(ctx, s, b, lv) {
   ctx.scale(s, s);
-  const o = { v: b.variant % 3, seed: b.variant * 7 + 11, color: b.color, dep: b.dep };
+  const o = { v: b.variant % 3, seed: b.variant * 7 + 11, color: b.color };
   const f = TOP[b.ck]?.[lv - 1];
   if (f) f(ctx, o);
   else plainTop(ctx, lv);
@@ -1860,19 +1300,19 @@ export function beginTownFrame(ratio) {
   spriteFrame(dpr);
 }
 
-const tallOf = (ck, lv, dep) => (ck === 'mine' ? (MINE_TALL[dep] ?? MINE_TALL.ore)[lv] : TALL[ck]?.[lv]) ?? 40;
-const teamKey = (ck, lv, dep, color) => (TEAM_SHOWN.has(ck === 'mine' ? `mine:${dep}` : ck + lv) ? color : '');
+const tallOf = (ck, lv) => TALL[ck]?.[lv] ?? 40;
+const teamKey = (ck, lv, color) => (TEAM_SHOWN.has(ck + lv) ? color : '');
 
-/** Höhe (Weltpixel) über dem höchsten Teil, für das Schild darüber (dep: Vorkommen der Förderanlage). */
-export function townLift(ck, level, dep = null) {
-  return tallOf(ck, clampLv(level), dep) + 6;
+/** Höhe (Weltpixel) über dem höchsten Teil, für das Schild darüber. */
+export function townLift(ck, level) {
+  return tallOf(ck, clampLv(level)) + 6;
 }
 
 /** Isometrisch: Gebäude b als Bild aus dem Zwischenspeicher (für jede Drehung dasselbe), Ankerpunkt = Zellmitte am Boden. */
 export function drawTownIso(ctx, cam, b, season = 'summer') {
   const lv = clampLv(b.level);
-  const tall = tallOf(b.ck, lv, b.dep);
-  const key = `i|${b.ck}|${lv}|${b.variant % 3}|${b.dep ?? ''}|${teamKey(b.ck, lv, b.dep, b.color)}|${season === 'winter' ? 1 : 0}`;
+  const tall = tallOf(b.ck, lv);
+  const key = `i|${b.ck}|${lv}|${b.variant % 3}|${teamKey(b.ck, lv, b.color)}|${season === 'winter' ? 1 : 0}`;
   const p = cam.worldToScreen(b.x, b.y);
   const z = cam.zoom;
   const e = sprite(key, z * dpr, [-41, -(tall + 1), 39, 21], (c, s) => paintIso(c, s, b, lv)); // Ausmaße gemessen (alle Varianten)
@@ -1891,7 +1331,7 @@ export function drawTownIso(ctx, cam, b, season = 'summer') {
 /** 2D von oben: Gebäude b als Bild aus dem Zwischenspeicher (Weltkoordinaten, Kamera-Transformation gesetzt). */
 export function drawTownTop(ctx, b, zoom) {
   const lv = clampLv(b.level);
-  const key = `t|${b.ck}|${lv}|${b.variant % 3}|${b.dep ?? ''}|${teamKey(b.ck, lv, b.dep, b.color)}`;
+  const key = `t|${b.ck}|${lv}|${b.variant % 3}|${teamKey(b.ck, lv, b.color)}`;
   const e = sprite(key, zoom * dpr, [-28, -28, 33, 31], (c, s) => paintTop(c, s, b, lv));
   if (e === false) return;
   if (e) {

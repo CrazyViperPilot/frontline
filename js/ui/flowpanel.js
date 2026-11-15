@@ -65,11 +65,14 @@ export class FlowPanel {
     if (!f) return;
     const F = f.factors;
     const chip = (label, v, bad) => `<span class="fl-chip${bad ? ' bad' : ''}">${label} <b>${v}</b></span>`;
+    // Einfuhr (Paket „Import“): Geld je s für alle Rohwaren; rot, wenn das Geld sie bremst (importScale < 1)
+    const scale = this.game.city?.[this.team]?.stats?.importScale ?? 1;
     this.root.querySelector('[data-fl-chips]').innerHTML =
       chip('Arbeiter', `${Math.round(F.fill * 100)} %`, F.fill < 0.95) +
       chip('Strom', `${Math.round(F.power * 100)} %`, F.power < 0.999) +
       chip('Zufrieden', `${Math.round(F.happy * 100)} %`, F.happy < 0.5) +
-      chip('Steuern', `+${fmtFlow(f.money)} G/s`, false);
+      chip('Steuern', `+${fmtFlow(f.money)} G/s`, false) +
+      chip('Einfuhr', `−${fmtFlow(f.importCost)} G/s${scale < 0.999 ? ` · ${Math.round(scale * 100)} %` : ''}`, scale < 0.999);
     this.svg.innerHTML = this.draw(f);
     const list = f.issues.slice(0, 4);
     this.root.querySelector('[data-fl-issues]').innerHTML = list.length

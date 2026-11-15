@@ -18,7 +18,7 @@ import { standRoute, runwaysOf, runwayBusy, freeSpace } from '../game/aircraft.j
 import { padBusy } from '../game/helipad.js';
 import { CITY_TIP } from './citypanel.js';
 import { WORKS, SUPPLIER_KINDS, WORKPLACE_KINDS, KINDS } from '../data/citykinds.js';
-import { GOOD_SHORT, GOOD_COLOR } from '../data/goods.js';
+import { GOOD_SHORT, GOOD_COLOR, IMPORTS } from '../data/goods.js';
 
 // Wettersymbole (16 × 16, Strichfarbe = currentColor)
 const WX_ICON = {
@@ -276,7 +276,12 @@ export class Hud {
       // Lagersorten: Summe aller fertigen FOB-Lager; Geld ist global
       const lines = [k === 'money' ? `Geld (global): je Einheit in der Konfliktzone ${fmtDe(BALANCE.zone.unitIncome)}/s, in der Hot Zone ${fmtDe(BALANCE.hot.unitIncome)}/s, je eingelagerte Versorgungskiste ${fmtDe(BALANCE.crates.income)}/s; bleibt von Runde zu Runde` : 'Front-Lager: Summe der FOB-Lager ohne Hauptstadt (die hat unendlich)'];
       if (t.used[k] !== undefined) lines.push(`verbraucht: ${Math.floor(t.used[k])}`);
-      if (k === 'money' && g.city) lines.push('Antippen: Marktmenü (mit fertigem Markt)');
+      if (k === 'money' && g.city) {
+        // Einfuhr der Rohwaren (Paket „Import“): Geld je s für die Werke, siehe Ressourcenanzeige
+        const ic = g.city[this.team]?.stats?.importCost ?? 0;
+        if (ic > 0.005) lines.push(`Einfuhr der Rohwaren: −${fmtDe(fmtRate(ic))} Geld/s (Werke, siehe Ressourcen)`);
+        lines.push('Antippen: Marktmenü (mit fertigem Markt)');
+      }
       const tip = lines.join('\n');
       if (el.box.title !== tip) el.box.title = tip;
     }
@@ -499,7 +504,7 @@ export class Hud {
     return `<div class="muted small">${esc(line)}</div>`;
   }
 
-  /** Gebäude: FOB (Lager, Baustelle), Baustelle (Fortschritt, Status), Förderanlage, Ausbildung. */
+  /** Gebäude: FOB (Lager, Baustelle), Baustelle (Fortschritt, Status), Stadtgebäude, Ausbildung. */
   buildingInfo(b) {
     if (b.type === 'city') return this.cityInfo(b);
     const g = this.game;
@@ -584,8 +589,12 @@ export class Hud {
       h += line(`Arbeitsplätze ${CITY.jobs[lv]} · Stadt gesamt +${fmtRate(s[made])} ${GOOD_SHORT[made]}/s`);
       // Ausgangslager (seit v5.69): LKW holen die Ware hier ab
       if (CITY.pickup.kinds.includes(k)) h += line(`Abholbereit: ${Math.floor(c.out?.[i] ?? 0)} / ${CITY.pickup.cap} ${GOOD_SHORT[made]} (LKW: Rechtsklick)`);
+      h += this.importText(c, i, k, lv, s);
     }
-    else if (k === 'station') h += line(`Arbeitsplätze ${CITY.jobs[lv]} · führt bis ${CITY.import.station[lv]} Rohwaren je s ein (mal Besetzung und Strom)`);
+    else if (k === 'station') {
+      h += line(`Arbeitsplätze ${CITY.jobs[lv]} · führt bis ${CITY.import.station[lv]} Rohwaren je s ein (mal Besetzung und Strom)`);
+      h += this.stationText(g, c, i, lv);
+    }
     else if (k === 'power') h += line(`Liefert bis ${CITY.power.supply[lv]} Strom · Stadt ${Math.round(s.powerSupply)} / ${Math.round(s.powerUse)}`);
     else if (k === 'uni') h += line(`Plätze ${CITY.jobsUni[lv]}`);
     else if (k === 'dc') h += line(`Arbeitsplätze ${CITY.jobsDc[lv]}`);
@@ -653,6 +662,39 @@ export class Hud {
   }
 
   /**
+   * Einfuhr eines Werks (Paket „Import“, nur lesen): je Rohware, was je s ankommt und was bei voller Besetzung ankäme, dazu das Geld je s
+   * und eine Warnung, wenn das Geld die Einfuhr bremst. Ankunft = Ausstoß des Werks je s (c.workOut) × Bedarf je Einheit (CITY.chain);
+   * voll = Arbeitsplätze × Ertrag je Arbeiter (CITY.yield), beides ohne Strom und Stau.
+   */
+  importText(c, i, k, lv, s) {
+    const L = CITY.chain[k];
+    const Y = CITY.yield[L.to];
+    const out = c.workOut?.[i] ?? 0;
+    const full = CITY.jobs[lv] * Y;
+    const needs = Object.entries(L.need);
+    const parts = needs.map(([gd, n]) => `${IMPORTS[gd].name} ${fmtDe(fmtRate(out * n))}/s von ${fmtDe(fmtRate(full * n))}/s`);
+    const cost = needs.reduce((a, [gd, n]) => a + out * n * CITY.import.price[gd], 0);
+    let h = `<div class="small">Einfuhr: ${parts.join(' · ')}${cost > 0.005 ? ` · −${fmtDe(fmtRate(cost))} Geld/s` : ''}</div>`;
+    if (s?.importScale < 0.999 && cost > 0.005) h += `<div class="warn small">Geld reicht nur für ${Math.round(s.importScale * 100)} % der Einfuhr: das Werk arbeitet langsamer</div>`;
+    return h;
+  }
+
+  /** Güterbahnhof (Paket „Import“, nur lesen): Durchsatz je s, also die Rohwaren aller Werke, die über ihn kommen, gegen die Obergrenze der Stufe. */
+  stationText(g, c, i, lv) {
+    const tr = transportOf(g, c);
+    let used = 0;
+    for (const [w, im] of tr.imports) {
+      if (im?.from !== i) continue;
+      const need = Object.values(CITY.chain[KINDS[c.kind[w] - 1]]?.need ?? {});
+      used += (c.workOut?.[w] ?? 0) * need.reduce((a, n) => a + n, 0);
+    }
+    const cap = CITY.import.station[lv] ?? 0;
+    let h = `<div class="small">Durchsatz ${fmtDe(fmtRate(used))} / ${cap} Rohwaren je s (Obergrenze der Stufe; Besetzung und Strom senken sie)</div>`;
+    if (cap > 0 && used >= cap * 0.95) h += '<div class="warn small">Durchsatz voll: die Werke bekommen nur anteilig Rohwaren</div>';
+    return h;
+  }
+
+  /**
    * Straßentransport eines Stadtgebäudes (seit v5.20, AP5, nur lesen): Lieferziel und Weg, Stau der Pendler, Waren der Gewerbe.
    * Liefert HTML-Zeilen; Warnungen rot über die Klasse „warn“.
    */
@@ -667,7 +709,7 @@ export class Hud {
       else h += warn('Kein Straßenweg zum Lager: die Ware geht verloren');
       // Einfuhr (Paket „Import“): woher die Rohwaren kommen
       if (T.importFrom) h += line(`Rohwaren von: ${T.importFrom} (${T.importDist === 0 ? 'direkt angrenzend' : `${T.importDist} ${T.importDist === 1 ? 'Feld' : 'Felder'}`}) · Weg ${pct(T.importEff)}`);
-      else if (T.importFrom === null) h += warn('Keine Straße zum Kartenrand oder zu einem angeschlossenen Güterbahnhof: keine Rohwaren');
+      else if (T.importFrom === null) h += warn('Kein Import: Straße bis zum Kartenrand oder Güterbahnhof fehlt');
     }
     if (k === 'station') {
       const T = transportInfo(g, c, i);

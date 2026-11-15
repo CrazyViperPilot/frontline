@@ -1,4 +1,5 @@
-// Großbauten der Stadt ohne eigenes Bild (seit v5.03, PRD §15; das Kraftwerk zeichnet seit v5.18 works.js): Kaserne (4 × 4,
+// Großbauten der Stadt ohne eigenes Bild (seit v5.03, PRD §15; das Kraftwerk zeichnet seit v5.18 works.js; der Güterbahnhof seit Paket
+// „Import“, 3 × 3, mit Gleisen zu seinen offenen Seiten): Kaserne (4 × 4,
 // Unterkünfte mit Ziegeldach um einen Exerzierplatz, Wache, Fahrzeuge; seit v5.11 mit Fenstern, Toren und Bäumen), Fabrikhalle
 // (5 × 5 seit v5.33, vorher 8 × 8; Montagehalle mit Sheddach, Verwaltung, Lackiererei, Schornsteine, Fahrzeughof mit fertigen Fahrzeugen, Portalkran).
 // Den Fliegerhorst aus Bausteinen (Stellplatz, Tower, Kerosintank, Munitionslager, je 2 × 2) malt seit v5.42 airbase.js (den alten
@@ -27,7 +28,7 @@ export function drawShowIso(ctx, cam, p) {
 }
 
 /** Großbauten, die hier gezeichnet werden (die Universität hat ihr eigenes Bild, university.js). */
-export const BIG_KINDS = new Set(['barracks', 'factory', 'stand', 'atc', 'ktank', 'mdepot']); // seit v5.35 auch der Fliegerhorst (2 × 2)
+export const BIG_KINDS = new Set(['barracks', 'factory', 'stand', 'atc', 'ktank', 'mdepot', 'station']); // seit v5.35 auch der Fliegerhorst (2 × 2), seit Paket „Import“ der Güterbahnhof (3 × 3)
 
 /** Bausteine des Fliegerhorsts (seit v5.42 gemalt, airbase.js). */
 const AIRBASE = new Set(['stand', 'atc', 'ktank', 'mdepot']);
@@ -37,8 +38,8 @@ export const VEH_COLOR = '#5f6b3e';
 
 // ---- Anlagen: Boden und Körper je Art und Stufe (lokal, Mitte 0/0) ----
 
-/** Boden einer Anlage: [{ t: 'rect', x0, y0, x1, y1, c } | { t: 'line', x0, y0, x1, y1, c, w } | { t: 'disc', x, y, r, c }]. */
-function groundOf(k, lv, half) {
+/** Boden einer Anlage: [{ t: 'rect', x0, y0, x1, y1, c } | { t: 'line', x0, y0, x1, y1, c, w } | { t: 'disc', x, y, r, c }]. open = Seiten mit Gleis (Güterbahnhof). */
+function groundOf(k, lv, half, open = 0) {
   const g = [];
   const rect = (x0, y0, x1, y1, c) => g.push({ t: 'rect', x0, y0, x1, y1, c });
   const line = (x0, y0, x1, y1, c, w) => g.push({ t: 'line', x0, y0, x1, y1, c, w });
@@ -77,10 +78,96 @@ function groundOf(k, lv, half) {
     rect(-148, -26, 52, -8, '#9b988f'); // Vorplatz der Montagehalle
     for (let x = -126; x <= 30; x += 52) line(x, -24, x, -10, '#e3d46a', 1.4);
     if (lv >= 2) rect(96, 26, 152, 84, '#96938a'); // Containerlager
+  } else if (k === 'station') {
+    return stationGround(lv, half, open);
   } else if (AIRBASE.has(k)) {
     return airbaseGround(k, lv, half); // seit v5.42: Beton mit Fugen, Führungslinie, Parkplatz … (airbase.js)
   }
   return g;
+}
+
+// ---- Güterbahnhof (Paket „Import“, 3 × 3): Hauptgleis quer durch, Prellbock an geschlossener Seite, Ladegleis mit Waggons ----
+
+const BED = '#6a655e'; // Schotterbett
+const BED_SNOW = '#dcdfe2';
+const SLEEP = '#8d8a82'; // Schwellen
+const SLEEP_SNOW = '#cfd3d6';
+const RAIL = '#3e4043'; // Schienen (wie ways.js im Sommer)
+const BUFFER = '#b5483c'; // Prellbock
+const PLAT = '#b8b3a7'; // Bahnsteig
+const PLAT_SNOW = '#e4e7ea';
+const YELLOW = '#d9b73a';
+
+/**
+ * Boden des Güterbahnhofs: Betonhof, Hauptgleis (von Kante zu Kante, sonst ein Prellbock), Stichgleis an jeder offenen Seite (Bits N 1,
+ * E 2, S 4, W 8) zur Mitte, Ladegleis mit Schwellen im Süden, Bahnsteig mit gelben Kanten, Laderampe. h = halbe Kantenlänge.
+ */
+function stationGround(lv, h, open) {
+  const g = [];
+  const rect = (x0, y0, x1, y1, c, snow) => g.push({ t: 'rect', x0, y0, x1, y1, c, snow });
+  const line = (x0, y0, x1, y1, c, w, snow) => g.push({ t: 'line', x0, y0, x1, y1, c, w, snow });
+  const B = h - 3; // Rand der Fläche
+  rect(-B, -B, B, B, '#a9a69c', '#e2e5e8'); // Betonhof
+  // Hauptgleis quer durch
+  rect(-B, -20, B, 20, BED, BED_SNOW);
+  for (let x = -B + 6; x < B - 4; x += 12) line(x, -18, x, 18, SLEEP, 2.2, SLEEP_SNOW);
+  line(-B, -11.2, B, -11.2, RAIL, 2.3);
+  line(-B, 11.2, B, 11.2, RAIL, 2.3);
+  if (!(open & 8)) rect(-B, -20, -B + 6, 20, BUFFER); // Prellbock West
+  if (!(open & 2)) rect(B - 6, -20, B, 20, BUFFER); // Prellbock Ost
+  // Stichgleise zu den offenen Seiten Nord und Süd (zur Mitte, auf das Hauptgleis)
+  const stub = (y0, y1) => {
+    rect(-20, Math.min(y0, y1), 20, Math.max(y0, y1), BED, BED_SNOW);
+    for (let y = Math.min(y0, y1) + 6; y < Math.max(y0, y1) - 4; y += 12) line(-18, y, 18, y, SLEEP, 2.2, SLEEP_SNOW);
+    for (const x of [-11.2, 11.2]) line(x, y0, x, y1, RAIL, 2.3);
+  };
+  if (open & 1) stub(-h, -11.2);
+  if (open & 4) stub(h, 11.2);
+  // Ladegleis (Süden): Bett, Schwellen und zwei Schienen, Waggons stehen darauf
+  rect(-B, 46, B, 70, BED, BED_SNOW);
+  for (let x = -B + 6; x < B - 4; x += 12) line(x, 48, x, 68, SLEEP, 2.2, SLEEP_SNOW);
+  line(-B, 52, B, 52, RAIL, 2.3);
+  line(-B, 64, B, 64, RAIL, 2.3);
+  // Bahnsteig zwischen Hauptgleis und Ladegleis, mit gelben Kanten
+  rect(-64, 24, -24, 36, PLAT, PLAT_SNOW);
+  line(-64, 24.8, -24, 24.8, YELLOW, 1.4);
+  line(-64, 35.2, -24, 35.2, YELLOW, 1.4);
+  // Laderampe im Südosten
+  rect(40, 74, B - 8, B - 6, '#8c8a82', '#d6dadd');
+  for (let x = 44; x < B - 12; x += 9) line(x, 76, x, B - 12, YELLOW, 1.4);
+  return g;
+}
+
+/** Körper des Güterbahnhofs: Lagerhalle (Satteldach, Teamstreifen), Waggons auf dem Ladegleis, Stufe 2 Sheddachhalle, Vordach, Container; Stufe 3 Portalkran und Stellwerk. */
+function stationBodies(lv) {
+  const b = [];
+  const box = (x0, y0, x1, y1, h, c, roof, base = 0, deco = null) => b.push({ t: 'box', x0, y0, x1, y1, h, base, c, roof, ...deco });
+  const cyl = (x, y, r, h, c) => b.push({ t: 'cyl', x, y, r, r1: r, h, base: 0, c, band: null });
+  // Lagerhalle quer, Tore zum Ladegleis im Süden
+  box(-88, -90, -28, -40, 24, '#c9c4b4', '#8a8f92', 0, { gable: 10, gates: { e: [2], n: 2, w: 18, h: 14 }, win: [[12, 17]], wg: 12, ww: 8, stripe: true });
+  // Waggons (ab Stufe 1 zwei, ab Stufe 2 drei) auf dem Ladegleis
+  const wagons = [[-84, -56, '#8a6d4a', '#6c5536'], [-50, -22, '#6f7b86', '#525c66'], [28, 56, '#9c4b3a', '#7a3a2d']];
+  for (const [x0, x1, c, roof] of wagons.slice(0, lv >= 2 ? 3 : 2)) box(x0, 50, x1, 66, 9, c, roof);
+  // Mit Stufe 2: Sheddachhalle im Nordosten, Vordach über dem Bahnsteig, Container auf der Rampe
+  if (lv >= 2) {
+    box(26, -90, 88, -58, 22, '#bcc1bd', '#7d858b', 0, { saw: { n: 5, rh: 10 }, gates: { e: [2], n: 1, w: 22, h: 14 } });
+    box(-64, 24, -24, 36, 2, '#55585b', '#6d7174', 16);
+    for (const [x, y] of [[-61, 26], [-27, 26], [-61, 34], [-27, 34]]) cyl(x, y, 1.6, 16, '#6d7174');
+    box(44, 76, 62, 88, 8, '#b5523b', '#a0442f');
+    box(66, 76, 84, 88, 8, '#3c6e9e', '#2f5a82');
+    box(44, 76, 62, 88, 8, '#5f7f4f', '#4d6a40', 8); // zweite Lage Container
+  }
+  // Mit Stufe 3: Portalkran über der Rampe, Stellwerk am Bahnsteig, dritte Lage Container
+  if (lv >= 3) {
+    box(36, 78, 40, 82, 36, '#d9a21b', '#e8b52c');
+    box(84, 78, 88, 82, 36, '#d9a21b', '#e8b52c');
+    box(36, 79, 88, 81, 4, '#d9a21b', '#e8b52c', 36);
+    box(60, 79, 64, 81, 2, '#55585b', '#6d7174', 30);
+    box(-88, -30, -74, -14, 20, '#e4e0d4', '#7b7f82', 0, { win: [[6, 12]], wg: 6, ww: 4 });
+    box(66, 76, 84, 88, 8, '#3c6e9e', '#2f5a82', 8); // dritte Lage Container
+  }
+  b.push({ t: 'flag', x: -92, y: -92, h: 46 }); // Teamfarbe am Eingang (Fahne)
+  return b;
 }
 
 /**
@@ -92,6 +179,7 @@ function groundOf(k, lv, half) {
  */
 function bodiesOf(k, lv) {
   const b = [];
+  if (k === 'station') return stationBodies(lv);
   const box = (x0, y0, x1, y1, h, c, roof, base = 0, deco = null) => b.push({ t: 'box', x0, y0, x1, y1, h, base, c, roof, ...deco });
   const cyl = (x, y, r, h, c, o = {}) => b.push({ t: 'cyl', x, y, r, r1: o.r1 ?? r, h, base: o.base ?? 0, c, band: o.band ?? null });
   const show = (unit, x, y, angle) => UNITS[unit] && b.push({ t: 'unit', unit, x, y, angle, h: 10 }); // Ausstellungsstück (seit v5.40)
@@ -164,9 +252,12 @@ function bodiesOf(k, lv) {
 
 const plans = new Map(); // Anlagen je Art, Stufe und Lage (seit v5.22; der Fliegerhorst hat viele Teile, nicht jedes Bild neu bauen)
 
-/** Größe, Stufe und Mitte → Anlage { ground, bodies } in Weltkoordinaten (Mitte cx, cy). Nicht verändern (Zwischenspeicher). */
-export function bigPlan(k, lv, cx, cy, size) {
-  const key = `${k}|${lv}|${cx}|${cy}|${size}`;
+/**
+ * Größe, Stufe und Mitte → Anlage { ground, bodies } in Weltkoordinaten (Mitte cx, cy). open = Seiten mit Gleis (nur Güterbahnhof:
+ * Bits N 1, E 2, S 4, W 8). Nicht verändern (Zwischenspeicher).
+ */
+export function bigPlan(k, lv, cx, cy, size, open = 0) {
+  const key = `${k}|${lv}|${cx}|${cy}|${size}|${open}`;
   const hit = plans.get(key);
   if (hit) return hit;
   const half = size / 2;
@@ -179,7 +270,7 @@ export function bigPlan(k, lv, cx, cy, size) {
   };
   const bodies = bodiesOf(k, Math.max(1, lv)).map(mv);
   if (k === 'barracks' || k === 'factory') for (const p of bodies) p.fine = true; // seit v5.11: weichere Wände und Schmuck (isobuild.js)
-  const plan = { ground: groundOf(k, Math.max(1, lv), half).map(mv), bodies };
+  const plan = { ground: groundOf(k, Math.max(1, lv), half, open).map(mv), bodies };
   if (plans.size > 48) plans.clear();
   plans.set(key, plan);
   return plan;
@@ -200,7 +291,7 @@ export function bigTop(k, lv) {
 export function drawBigGround(g, plan, detail = true, winter = false) {
   const L = plan.ground;
   const kind = (p) => (p.t === 'line' ? 'l' : 'f');
-  const col = (p) => (winter && p.grass ? p.grass : p.c);
+  const col = (p) => (winter && (p.snow ?? p.grass) ? (p.snow ?? p.grass) : p.c); // Winter: Schnee für Rasen (grass) und Gleisbett (snow)
   for (let i = 0; i < L.length; ) {
     const p = L[i];
     let j = i;

@@ -1,4 +1,4 @@
-// Minimap (docs/verlauf.md §5 render/minimap.js): Gelände, Zone, Vorkommen, Gebäude und Einheiten als Punkte, Nebel, Kamerarahmen.
+// Minimap (docs/verlauf.md §5 render/minimap.js): Gelände, Zone, Gebäude und Einheiten als Punkte, Nebel, Kamerarahmen.
 // Zeichnet in Weltkoordinaten (Transformation Welt → Canvas) und nutzt dieselben Sichtregeln wie der Hauptrenderer.
 import { BALANCE } from '../data/balance.js';
 import { buildTerrain } from './terrain.js';
@@ -6,11 +6,13 @@ import { drawMapTownMini } from './maptown.js';
 import { seasonal } from './season.js';
 import { makeFogLayer, updateFogLayer } from './renderer.js';
 import { hexA, CRATE_MARK } from './sprites.js';
+import { KIND_ID } from '../data/citykinds.js';
 
 const TILE = BALANCE.map.tile;
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;
 const DEFAULT_SIZE = 180;
+const RAIL_GREY = [66, 70, 74]; // Gleise der Stadt: dunkelgrau, sichtbar wie Straßen (Paket „Import“)
 
 export class Minimap {
   constructor(canvas, game, camera, team) {
@@ -198,12 +200,15 @@ export class Minimap {
     const im = e.ctx.createImageData(c.cols, c.rows);
     const n = parseInt(color.slice(1), 16);
     const [R, G, B] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    const RAIL = KIND_ID.rail;
     for (let i = 0; i < c.claim.length; i++) {
-      const a = c.level[i] && c.kind[i] !== 1 ? 230 : c.kind[i] ? 140 : 0;
+      const rail = c.kind[i] === RAIL; // Gleis: dunkelgrau statt Teamfarbe
+      const a = rail ? 200 : c.level[i] && c.kind[i] !== 1 ? 230 : c.kind[i] ? 140 : 0;
       if (!a) continue;
-      im.data[i * 4] = R;
-      im.data[i * 4 + 1] = G;
-      im.data[i * 4 + 2] = B;
+      const [r, g, b] = rail ? RAIL_GREY : [R, G, B];
+      im.data[i * 4] = r;
+      im.data[i * 4 + 1] = g;
+      im.data[i * 4 + 2] = b;
       im.data[i * 4 + 3] = a;
     }
     e.ctx.putImageData(im, 0, 0);

@@ -420,34 +420,50 @@ class Builder {
 
 const hashSeg = (r) => (Math.imul(Math.round(r.x1) * 73856093 ^ Math.round(r.y1) * 19349663, 1) ^ Math.round(r.x2 * 83492791 + r.y2)) >>> 0;
 
-/** Alle Pfade der Feldwege und Gleise einer Karte (relief: Pfadkoordinaten mit Gelände, u: Iso-Achsen bei Zoom 1). */
-export function buildWays(map, relief, u) {
-  const P = u && relief ? (x, y) => [x * u[0] + y * u[2], x * u[1] + y * u[3] - relief.displayAt(x, y)] : (x, y) => [x, y];
-  const B = new Builder(P);
-  const rails = railList(map.town);
-  // Gleise: Saum, Bett, Krone, Schwellen (die Schienen kommen nach den Wegen, siehe drawWays)
+/**
+ * Gleise in Weltkoordinaten, für die Karte und die Stadt gleich (Paket „Import“): Strecken { x1, y1, x2, y2, pad } mit Schotterbett,
+ * Schwellen und Schienen (pad verlängert eine Strecke an beiden Enden, für die Sehnen einer Kurve); discs { x, y } Scheiben
+ * (Weichen, Kreuzungen, eine freie Gleiszelle); bars { x, y, ux, uy } Prellböcke quer zur Richtung (ux, uy) am Gleisende.
+ */
+function railShapes(B, rails, discs, bars) {
   for (const r of rails) {
     const L = Math.hypot(r.x2 - r.x1, r.y2 - r.y1);
     if (L < 1) continue;
     const ux = (r.x2 - r.x1) / L;
     const uy = (r.y2 - r.y1) / L;
     const h = RAIL_BED / 2;
-    B.strip('railShoulder', r.x1, r.y1, ux, uy, 0, L, -h - 5, h + 5);
-    B.strip('ballast', r.x1, r.y1, ux, uy, 0, L, -h, h);
-    B.strip('crown', r.x1, r.y1, ux, uy, 0, L, -h + 6, h - 6);
+    const s0 = -(r.pad ?? 0);
+    const s1 = L + (r.pad ?? 0);
+    // Gleis: Saum, Bett, Krone, Schwellen (die Schienen kommen nach den Wegen, siehe drawWays)
+    B.strip('railShoulder', r.x1, r.y1, ux, uy, s0, s1, -h - 5, h + 5);
+    B.strip('ballast', r.x1, r.y1, ux, uy, s0, s1, -h, h);
+    B.strip('crown', r.x1, r.y1, ux, uy, s0, s1, -h + 6, h - 6);
     for (let s = SLEEPER_GAP / 2; s < L; s += SLEEPER_GAP) {
       B.quad('sleeperShade', r.x1, r.y1, ux, uy, s + 0.5, SLEEPER_W + 0.5, SLEEPER_LEN + 0.6);
       B.quad('sleeper', r.x1, r.y1, ux, uy, s, SLEEPER_W, SLEEPER_LEN);
     }
     for (const side of [-1, 1]) {
-      B.strip('rail', r.x1, r.y1, ux, uy, 0, L, side * GAUGE - 1.15, side * GAUGE + 1.15);
-      B.strip('railTop', r.x1, r.y1, ux, uy, 0, L, side * GAUGE - 0.75, side * GAUGE - 0.05);
+      B.strip('rail', r.x1, r.y1, ux, uy, s0, s1, side * GAUGE - 1.15, side * GAUGE + 1.15);
+      B.strip('railTop', r.x1, r.y1, ux, uy, s0, s1, side * GAUGE - 0.75, side * GAUGE - 0.05);
     }
   }
-  for (const j of roadJunctions(rails.map((r) => ({ ...r, w: RAIL_BED })))) {
+  for (const j of discs) {
     B.disc('railShoulder', j.x, j.y, RAIL_BED / 2 + 5);
     B.disc('ballast', j.x, j.y, RAIL_BED / 2);
   }
+  for (const b of bars) {
+    B.quad('sleeperShade', b.x, b.y, b.ux, b.uy, 0, 2.6, RAIL_BED / 2 - 3);
+    B.quad('sleeper', b.x, b.y, b.ux, b.uy, 0, 1.6, RAIL_BED / 2 - 6);
+  }
+}
+
+/** Alle Pfade der Feldwege und Gleise einer Karte (relief: Pfadkoordinaten mit Gelände, u: Iso-Achsen bei Zoom 1). */
+export function buildWays(map, relief, u) {
+  const P = u && relief ? (x, y) => [x * u[0] + y * u[2], x * u[1] + y * u[3] - relief.displayAt(x, y)] : (x, y) => [x, y];
+  const B = new Builder(P);
+  const rails = railList(map.town);
+  // Gleise: Saum, Bett, Krone, Schwellen (die Schienen kommen nach den Wegen, siehe drawWays)
+  railShapes(B, rails, roadJunctions(rails.map((r) => ({ ...r, w: RAIL_BED }))), []);
   // Feldwege (schmal) und Landwege (breit)
   const dirt = (map.town?.roads ?? []).filter((r) => r.dirt);
   for (const r of dirt) {
@@ -572,8 +588,14 @@ export function drawWays(ren, ctx, season = 'summer') {
     ctx.restore();
     return;
   }
-  const fine = z >= 0.45; // Schwellen und Glanz nur nah genug
-  for (const layer of ORDER) {
+  paintLayers(ctx, shown, ORDER, season, mat, z);
+  ctx.restore();
+}
+
+/** Ebenen der Reihe nach füllen (Schwellen und Glanz nur ab mittlerem Zoom). */
+function paintLayers(ctx, shown, layers, season, mat, z) {
+  const fine = z >= 0.45;
+  for (const layer of layers) {
     if (!fine && (layer === 'sleeper' || layer === 'sleeperShade' || layer === 'railTop' || layer === 'crown')) continue;
     ctx.fillStyle = fillOf(ctx, layer, season, mat, z);
     ctx.globalAlpha = ALPHA[layer] ?? 1;
@@ -582,5 +604,60 @@ export function drawWays(ren, ctx, season = 'summer') {
       if (p) ctx.fill(p);
     }
   }
+}
+
+/** Pfade der Stadtgleise (buildRailChunks = railShapes in Kacheln); Gleis-Ebenen in der Zeichenreihenfolge. */
+const RAIL_LAYERS = ['railShoulder', 'ballast', 'crown', 'sleeperShade', 'sleeper', 'rail', 'railTop'];
+const cityRail = { key: '', relief: null, chunks: null };
+
+/** Ansicht wie drawWays: Ursprung und Iso-Achsen bei Zoom 1 (nur mit Gelände), sonst flach. */
+function viewOf(cam, drape, z) {
+  if (!drape) return { ax: 0, ay: 0, u: null };
+  const o = cam.worldToScreenFlat(0, 0);
+  const e1 = cam.worldToScreenFlat(1000, 0);
+  const e2 = cam.worldToScreenFlat(0, 1000);
+  return { ax: o.x, ay: o.y, u: [(e1.x - o.x) / (1000 * z), (e1.y - o.y) / (1000 * z), (e2.x - o.x) / (1000 * z), (e2.y - o.y) / (1000 * z)] };
+}
+
+/** Gleise der Stadt (Paket „Import“) aus Strecken, Scheiben und Prellböcken (siehe railShapes) in Kacheln, relief und u wie buildWays. */
+export function buildRailChunks(list, relief, u) {
+  const P = u && relief ? (x, y) => [x * u[0] + y * u[2], x * u[1] + y * u[3] - relief.displayAt(x, y)] : (x, y) => [x, y];
+  const B = new Builder(P);
+  railShapes(B, list.rails, list.discs, list.bars);
+  return B.chunks;
+}
+
+/**
+ * Gleise der Stadt zeichnen, mit denselben Farben und Maßen wie die Gleise der Karte (Schotter, Schwellen, Schienen). `list` = { rails,
+ * discs, bars } in Weltkoordinaten; `key` kennzeichnet den Inhalt (neu bauen nur bei Änderung).
+ */
+export function drawCityRails(ren, ctx, list, key, season = 'summer') {
+  if (typeof Path2D === 'undefined') return;
+  if (!list.rails.length && !list.discs.length) return;
+  const cam = ren.camera;
+  const drape = ren.draping();
+  const z = cam.zoom;
+  const { ax, ay, u } = viewOf(cam, drape, z);
+  const k = `${key}|${season}|${u ? u.map((v) => v.toFixed(5)).join(',') : 'flat'}`;
+  if (k !== cityRail.key || cityRail.relief !== (drape ? cam.relief : null)) {
+    cityRail.key = k;
+    cityRail.relief = drape ? cam.relief : null;
+    cityRail.chunks = buildRailChunks(list, drape ? cam.relief : null, u);
+  }
+  const R = cam.visibleRect();
+  const pad = 64;
+  const shown = [];
+  for (const c of cityRail.chunks.values()) {
+    const x0 = c.cx * CHUNK;
+    const y0 = c.cy * CHUNK;
+    if (x0 > R.x1 + pad || y0 > R.y1 + pad || x0 + CHUNK < R.x0 - pad || y0 + CHUNK < R.y0 - pad) continue;
+    shown.push(c);
+  }
+  if (!shown.length) return;
+  ctx.save();
+  if (drape) ctx.setTransform(ren.dpr * z, 0, 0, ren.dpr * z, ren.dpr * ax, ren.dpr * ay);
+  const sc = TEX / TEX_PX;
+  const mat = typeof DOMMatrix !== 'undefined' ? (u ? new DOMMatrix([u[0] * sc, u[1] * sc, u[2] * sc, u[3] * sc, 0, 0]) : new DOMMatrix([sc, 0, 0, sc, 0, 0])) : null;
+  paintLayers(ctx, shown, RAIL_LAYERS, season, mat, z);
   ctx.restore();
 }

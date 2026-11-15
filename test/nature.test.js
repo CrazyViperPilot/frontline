@@ -16,7 +16,6 @@ import {
   drawRockTop,
   drawAnimalIso,
   drawAnimalTopP,
-  depositSprite,
 } from '../js/render/nature.js';
 
 test('Felsen und Tiere: alle Modelle gültig', () => {
@@ -52,7 +51,6 @@ test('ohne Canvas zeichnen die Funktionen nichts und melden false', () => {
     assert.equal(drawBushTop({}, { x: 1, y: 2, r: 9 }, season, 1), false);
     assert.equal(drawRockIso({}, cam, { x: 3, y: 4, r: 15 }, season), false);
     assert.equal(drawRockTop({}, { x: 3, y: 4, r: 15 }, season, 1), false);
-    for (const type of ['wood', 'stone', 'ore', 'oil']) assert.equal(depositSprite(type, 1, season, 2), null);
   }
   const a = { id: 3, kind: 'deer', x: 0, y: 0, angle: 1, speed: 30, step: 12, state: 'walk' };
   assert.equal(drawAnimalIso({}, cam, a, { x: 0, y: 0 }, 0), false);

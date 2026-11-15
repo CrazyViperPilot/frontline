@@ -1,7 +1,7 @@
 // Stadt auf der Karte (PRD §15): Straßen, ausgewiesene Zonen, Gebäude, Gebietsgrenzen und im Baumodus das gezogene Rechteck.
 // Liest nur game.city (und ren.cityUi, die Stadtleiste). 2D: flach von oben; isometrisch: Boden hier, Gebäude als Stadthäuser
 // über drawTownBuilding (renderer.js).
-import { cellRect, buildAllowed, hasRoad, sizeOf, fitBig, bigCenter, bigSpan } from '../game/city/cells.js';
+import { cellRect, buildAllowed, hasRoad, sizeOf, fitBig, bigCenter, bigSpan, cellsOf } from '../game/city/cells.js';
 import { BIG_KINDS, bigPlan, drawBigGround, drawBigTop, partFoot, bigTop } from './bigbuild.js';
 import { drawWorksTop, worksLift, WORKS_GROUND, WORKS_KINDS } from './works.js';
 import { CITY } from '../data/city.js';
@@ -11,7 +11,7 @@ import { drawTownTop, townLift } from './townhouses.js';
 import { transportOf } from '../game/transport.js';
 import { runwaysOf } from '../game/aircraft.js';
 import { laneGrid } from '../game/roads.js';
-import { groundPattern, patternMatrix } from './ways.js';
+import { groundPattern, patternMatrix, drawCityRails } from './ways.js';
 import { railList } from './terrain.js';
 import { drawSiteTop, siteStep, siteTall, siteWall } from './citysite.js';
 import { drawWreckRubble } from './fx.js';
@@ -50,7 +50,7 @@ function* cells(game, team, known) {
 /** Farbvariante (0..2) eines 1 × 1-Gebäudes, fest je Zelle (townhouses.js). */
 const variantOf = (i) => ((Math.imul(i ^ 0x5bd1, 2654435761) >>> 16) % 3);
 
-/** Angaben für townhouses.js: Zellenart, Stufe, Teamfarbe, Variante und bei Förderanlagen das Vorkommen. */
+/** Angaben für townhouses.js: Zellenart, Stufe, Teamfarbe und Variante. */
 const townObj = (c, k, lv, r, i, color, damage) => ({
   x: r.x,
   y: r.y,
@@ -61,7 +61,6 @@ const townObj = (c, k, lv, r, i, color, damage) => ({
   level: lv,
   color,
   variant: variantOf(i),
-  dep: null, // Vorkommen gibt es seit Paket „Import“ nicht mehr
   damage,
 });
 
@@ -109,7 +108,7 @@ export function cityBuildings(game, team, known, inRect) {
     const damage = e ? 1 - e.hp / e.def.hp : 0;
     if (big && BIG_KINDS.has(k)) {
       // Großbau (seit v5.03): jeder Körper ein eigenes Objekt, damit die Tiefenordnung auch große Anlagen richtig zeigt (bigbuild.js)
-      bigPlan(k, lv, ctr.x, ctr.y, sizeOf(k) * c.cell).bodies.forEach((p, n) => out.push({ ...partFoot(p), kind: 'bigpart', part: p, color, damage: n ? 0 : damage }));
+      bigPlan(k, lv, ctr.x, ctr.y, sizeOf(k) * c.cell, openOf(c, k, i)).bodies.forEach((p, n) => out.push({ ...partFoot(p), kind: 'bigpart', part: p, color, damage: n ? 0 : damage }));
       continue;
     }
     if (big) {
@@ -157,13 +156,13 @@ export function drawCityGround(ren, ctx, team, known, inRect) {
     return;
   }
   drawClearings(ren, ctx, known);
-  for (const { c, k, lv, r, ruin, big, ctr } of cells(g, team, known)) {
+  for (const { c, k, lv, r, i, ruin, big, ctr } of cells(g, team, known)) {
     if (!inRect(ctr.x, ctr.y, big ? (sizeOf(k) * c.cell) / 2 + 32 : 64)) continue;
     if (ruin) continue; // Ruine: Schutt mit eigenem Boden (seit v5.45: Iso drawRubble, 2D drawWreckRubble), bis die Zelle neu wächst
     if (k === 'runway' || k === 'taxi') continue; // Bahn und Rollfeld danach in einem Zug (drawAirfield, seit v5.37)
-    if (k === 'road' || big === 'part') continue; // Straßen danach in einem Zug (drawRoads); Großbau zeichnet seine Mitte
+    if (k === 'road' || k === 'rail' || big === 'part') continue; // Straßen und Gleise danach in einem Zug (drawRoads, drawCityRailTracks); Großbau zeichnet seine Mitte
     if (big) {
-      drawBigLot(ren, ctx, c, k, lv, r, ctr);
+      drawBigLot(ren, ctx, c, k, lv, r, ctr, i);
       continue;
     }
     groundRect(ren, ctx, r.x0 + 3, r.y0 + 3, r.x1 - 3, r.y1 - 3);
@@ -175,6 +174,7 @@ export function drawCityGround(ren, ctx, team, known, inRect) {
   }
   drawAirfield(ren, ctx, team, known, inRect);
   drawRoads(ren, ctx, team, known);
+  drawCityRailTracks(ren, ctx, team, known);
   if (ren.cityUi?.open) drawLoads(ren, ctx, team, known, inRect); // Baumodus: Auslastung der Straßen
   drawTerritory(ren, ctx, team);
   ctx.restore();
@@ -395,7 +395,7 @@ function drawLoads(ren, ctx, team, known, inRect) {
  * Grundstück eines Großbaus: ausgewiesen blass mit Fortschritt; gebaut die Universität als Pflaster mit vier Rasenflächen, die
  * anderen (Kraftwerk, Kaserne, Fabrikhalle, Fliegerhorst) mit ihrem Boden aus bigbuild.js (Bahnen, Höfe, Plätze). r: Ankerzelle, m: Mitte.
  */
-function drawBigLot(ren, ctx, c, k, lv, r, m) {
+function drawBigLot(ren, ctx, c, k, lv, r, m, i) {
   const h = (sizeOf(k) * c.cell) / 2;
   const x0 = m.x - h;
   const y0 = m.y - h;
@@ -417,7 +417,7 @@ function drawBigLot(ren, ctx, c, k, lv, r, m) {
           ctx.stroke();
         },
       },
-      bigPlan(k, lv, m.x, m.y, 2 * h),
+      bigPlan(k, lv, m.x, m.y, 2 * h, openOf(c, k, i)),
       ren.camera.zoom >= 0.55, // feine Markierungen und Lichter erst ab mittlerem Zoom
       ren.season === 'winter',
     );
@@ -445,6 +445,116 @@ function drawBigLot(ren, ctx, c, k, lv, r, m) {
     }
     return;
   }
+}
+
+// ---------- Gleise und Güterbahnhof (Paket „Import“) ----------
+
+// Richtungen N, E, S, W; Bit je Richtung 1, 2, 4, 8 (wie die Straßennachbarn oben)
+const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+
+/** Anschlüsse eines Gleisfelds (Bits N, E, S, W): Nachbar ist Gleis oder Güterbahnhof; am Kartenrand führt das Gleis hinaus. */
+function railArms(c, i) {
+  const RL = KIND_ID.rail;
+  const ST = KIND_ID.station;
+  const col = i % c.cols;
+  const row = (i - col) / c.cols;
+  let m = 0;
+  DIRS.forEach(([dx, dy], k) => {
+    const q = col + dx;
+    const r = row + dy;
+    if (q < 0 || r < 0 || q >= c.cols || r >= c.rows) m |= 1 << k;
+    else if (c.kind[r * c.cols + q] === RL || c.kind[r * c.cols + q] === ST) m |= 1 << k;
+  });
+  return m;
+}
+
+/** Seiten (Bits wie railArms), an denen ein Gleis an den Güterbahnhof mit Anker a anschließt; sein Bild zeichnet dort das Gleis. */
+export function stationOpen(c, a) {
+  const RL = KIND_ID.rail;
+  const cells = cellsOf(c, a);
+  const inside = new Set(cells);
+  let m = 0;
+  for (const j of cells) {
+    const col = j % c.cols;
+    const row = (j - col) / c.cols;
+    DIRS.forEach(([dx, dy], k) => {
+      const q = col + dx;
+      const r = row + dy;
+      if (q < 0 || r < 0 || q >= c.cols || r >= c.rows) return;
+      const n = r * c.cols + q;
+      if (!inside.has(n) && c.kind[n] === RL) m |= 1 << k;
+    });
+  }
+  return m;
+}
+
+/** Seiten-Bits für bigPlan: nur der Güterbahnhof hat welche (0 sonst). */
+function openOf(c, k, i) {
+  return k === 'station' ? stationOpen(c, i) : 0;
+}
+
+/**
+ * Stücke eines Gleisfelds (Mitte cx, cy, Zellgröße S): gerade Strecke von der Mitte zu jeder Kante mit Anschluss; Kurve (zwei
+ * Seiten im rechten Winkel) als Viertelkreis um die Ecke, aus acht Sehnen; Kreuzung oder Weiche (drei und mehr Seiten) mit
+ * Scheibe in der Mitte; Gleisende (eine Seite) mit Prellbock; allein eine Scheibe.
+ */
+function railCell(out, S, cx, cy, m) {
+  const h = S / 2;
+  const arms = [0, 1, 2, 3].filter((k) => m & (1 << k));
+  if (!arms.length) {
+    out.discs.push({ x: cx, y: cy });
+    return;
+  }
+  if (arms.length === 2 && (arms[1] - arms[0]) % 2 === 1) {
+    // Kurve: Ecke zwischen den beiden Seiten; Kanten d1, d2 liegen h von der Mitte, die Ecke h von der Mitte in beide
+    const d1 = DIRS[arms[0]];
+    const d2 = DIRS[arms[1]];
+    const ox = cx + (d1[0] + d2[0]) * h;
+    const oy = cy + (d1[1] + d2[1]) * h;
+    const u1 = [-d2[0], -d2[1]];
+    const u2 = [-d1[0], -d1[1]];
+    const at = (t) => [ox + h * (u1[0] * Math.cos(t) + u2[0] * Math.sin(t)), oy + h * (u1[1] * Math.cos(t) + u2[1] * Math.sin(t))];
+    const N = 8;
+    for (let j = 0; j < N; j++) {
+      const [x1, y1] = at((j / N) * Math.PI * 0.5);
+      const [x2, y2] = at(((j + 1) / N) * Math.PI * 0.5);
+      out.rails.push({ x1, y1, x2, y2, pad: 1.5 });
+    }
+    return;
+  }
+  for (const k of arms) out.rails.push({ x1: cx, y1: cy, x2: cx + DIRS[k][0] * h, y2: cy + DIRS[k][1] * h });
+  if (arms.length >= 3) out.discs.push({ x: cx, y: cy });
+  if (arms.length === 1) out.bars.push({ x: cx, y: cy, ux: DIRS[arms[0]][0], uy: DIRS[arms[0]][1] });
+}
+
+/** Gleise der sichtbaren Städte (eigene immer, fremde nur, wo erkundet): { rails, discs, bars } in Weltkoordinaten. */
+function cityRailPieces(g, team, known) {
+  const out = { rails: [], discs: [], bars: [] };
+  const RL = KIND_ID.rail;
+  for (const c of g.city ?? []) {
+    for (const i of c.list) {
+      if (c.kind[i] !== RL) continue;
+      const col = i % c.cols;
+      const r = cellRect(c, col, (i - col) / c.cols);
+      if (c.team !== team && !known(r.x, r.y)) continue;
+      railCell(out, c.cell, r.x, r.y, railArms(c, i));
+    }
+  }
+  return out;
+}
+
+/** Kennzahl der Gleisstücke (ändert sich, wenn Gleise hinzukommen, fallen oder anders anschließen). */
+function railKey(list) {
+  let h = list.rails.length * 7 + list.discs.length * 13 + list.bars.length * 17;
+  for (const r of list.rails) h = (Math.imul(h, 31) + Math.round(r.x1 * 4) * 3 + Math.round(r.y1 * 4) * 5 + Math.round(r.x2 * 4) * 7 + Math.round(r.y2 * 4) * 11) | 0;
+  for (const d of list.discs) h = (Math.imul(h, 37) + Math.round(d.x * 4) + Math.round(d.y * 4) * 3) | 0;
+  return String(h);
+}
+
+/** Gleise zeichnen (ways.js: wie die Gleise der Karte, dieselben Farben und Maße), nach den Straßen. */
+function drawCityRailTracks(ren, ctx, team, known) {
+  const list = cityRailPieces(ren.game, team, known);
+  drawCityRails(ren, ctx, list, railKey(list), ren.season ?? 'summer');
 }
 
 // Straßen (v4.97): je Zelle nach den Straßennachbarn Gerade, Kurve, Sackgasse, T-Stück oder Kreuzung. Gehweg an Seiten ohne
@@ -1146,7 +1256,7 @@ export function drawCityRoofs(ren, ctx, team, known, inRect) {
     if (k !== 'stand' || lv < 2 || big !== 'anchor' || !inRect(ctr.x, ctr.y, c.cell + 32)) continue;
     const e = c.ents.get(i);
     const color = g.teams[c.team]?.color ?? '#888';
-    drawBigTop(ctx, bigPlan(k, lv, ctr.x, ctr.y, sizeOf(k) * c.cell), color, e ? 1 - e.hp / e.def.hp : 0, ren.camera.zoom, true);
+    drawBigTop(ctx, bigPlan(k, lv, ctr.x, ctr.y, sizeOf(k) * c.cell, openOf(c, k, i)), color, e ? 1 - e.hp / e.def.hp : 0, ren.camera.zoom, true);
   }
 }
 
@@ -1166,7 +1276,7 @@ export function drawCityTop(ren, ctx, team, known, inRect) {
     const e = c.ents.get(i);
     const color = g.teams[c.team]?.color ?? '#888';
     if (big && BIG_KINDS.has(k)) {
-      drawBigTop(ctx, bigPlan(k, lv, ctr.x, ctr.y, sizeOf(k) * c.cell), color, e ? 1 - e.hp / e.def.hp : 0, ren.camera.zoom);
+      drawBigTop(ctx, bigPlan(k, lv, ctr.x, ctr.y, sizeOf(k) * c.cell, openOf(c, k, i)), color, e ? 1 - e.hp / e.def.hp : 0, ren.camera.zoom);
       continue;
     }
     if (big) {
@@ -1282,7 +1392,7 @@ export function drawCityBadges(ren, ctx, team, known, inRect, iso) {
   const warnImg = tr ? warnImage() : null;
   for (const { c, k, lv, r: cell, i, big: whole, ctr, ruin } of cells(g, team, known)) {
     const r = whole ? ctr : cell; // Großbau: Schild über der Mitte
-    if (!lv && !ruin && c.team === team && k !== 'mine' && !FLAT_KINDS.has(k) && whole !== 'part' && inRect(r.x, r.y, 64)) siteBar(ren, ctx, c, i, r, whole ? sizeOf(k) : 1, iso);
+    if (!lv && !ruin && c.team === team && !FLAT_KINDS.has(k) && whole !== 'part' && inRect(r.x, r.y, 64)) siteBar(ren, ctx, c, i, r, whole ? sizeOf(k) : 1, iso);
     if (k === 'road' || !lv || whole === 'part' || !inRect(r.x, r.y, 64)) continue;
     const sm = !!SMALL[k];
     const img = badgeImage(sm ? k : CITY_ICON[k], CITY_COLORS[k], sm);
@@ -1292,7 +1402,7 @@ export function drawCityBadges(ren, ctx, team, known, inRect, iso) {
     let bw;
     if (iso) {
       const p = cam.worldToScreen(r.x, r.y);
-      const lift = whole ? (BIG_KINDS.has(k) ? Math.min(150, bigTop(k, lv) * 0.7) + 14 : WORKS_KINDS.includes(k) ? worksLift(k, lv) : BIG_LIFT[lv] ?? 110) : townLift(k, lv, d);
+      const lift = whole ? (BIG_KINDS.has(k) ? Math.min(150, bigTop(k, lv) * 0.7) + 14 : WORKS_KINDS.includes(k) ? worksLift(k, lv) : BIG_LIFT[lv] ?? 110) : townLift(k, lv);
       bx = p.x - px / 2;
       by = p.y - lift * z - px;
       bw = px;

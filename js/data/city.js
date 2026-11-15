@@ -308,5 +308,19 @@ export const CITY = {
     linkBm: 200, // Baumaterial, das im Lager der Hauptstadt bleiben muss, bevor die KI ihr Netz verlängert (Anschlüsse der Werke gehen vor)
     runwayLink: 12, // Zellen: mit Anschlusspflicht darf die Bahn der KI so weit von einer Straße zum Lager entfernt liegen; sie zieht die Straße gleich danach
     linkOutlets: 2, // so viele Ausgänge (freie Zelle am Netz mit freiem Nachbarn außerhalb) lässt die KI beim Bauen offen, damit ihr Netz nicht eingeschlossen wird
+    // Güterbahnhof der KI (Paket „Import“, Logik aiStation in js/ai/cityai.js): baut sie, wenn die Einfuhr über Straßen zu knapp ist (Stau,
+    // nicht Geld). Ein Güterbahnhof wächst mit den Einwohnern selbst (keine Aufwertung durch Befehl), deshalb baut die KI bei anhaltendem
+    // Mangel einen zweiten (stationMax).
+    stationFrom: { easy: null, normal: 300, hard: 240 }, // Spielsekunde, ab der sie einen Güterbahnhof baut (null = nie)
+    stationWorks: 4, // so viele Werke mit Leistung braucht sie zuerst (vorher lohnt der Güterbahnhof nicht)
+    importLow: 0.7, // Einfuhr-Anteil (tatsächlich ÷ Leistung der Werke, ohne volle Lager) darunter gilt die Einfuhr als knapp
+    importScaleMin: 0.9, // Einfuhrskala (1 = Geld reicht) darüber: der Mangel liegt an Straßen und Stau, nicht am Geld
+    importWait: 60, // s, so lange knapp, bis sie einen Güterbahnhof baut
+    stationMax: 2, // höchstens so viele Güterbahnhöfe
+    stationMoney: 300, // Geld, das nach dem Bau über der Reserve bleibt (die Armee geht vor)
+    stationBm: 200, // Baumaterial, das im Lager der Hauptstadt nach dem Bau bleibt
+    railMax: 40, // längste Gleiskette (Zellen) bis zum Kartenrand
+    stationNear: 0.5, // Gewicht der Entfernung zum nächsten Werk gegen die Gleislänge bei der Wahl des Platzes (je Zelle)
+    stationRetry: 120, // s: eine Stelle, an der der Bau scheiterte, und eine Suche ohne Platz werden so lange nicht wiederholt
   },
 };

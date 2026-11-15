@@ -1,1 +1,0 @@
-**Detailstufen beim Herauszoomen** (§9 „Oberfläche“): Unter Zoom 0,8 (2D) bzw. 0,6 (Iso) zeichnen Bodeneinheiten als Keil oder Dreieck in Teamfarbe, Iso ohne Schatten; Leuchtspur, Mündungsfeuer und Fahrzeugrauch entfallen, Lebensbalken nur für gewählte oder beschädigte Einheiten.

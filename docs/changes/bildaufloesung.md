@@ -1,1 +1,0 @@
-**Bildauflösung** (§9 „Oberfläche“, Start- und Pausenmenü, `?lowres=1`): Schalter „Scharf“ (bis 2× Pixel, wie bisher) oder „Leistung“ (1× Pixel) für schwache Geräte; im Pausenmenü sofort wirksam, Partie und Spielstand bleiben unberührt.

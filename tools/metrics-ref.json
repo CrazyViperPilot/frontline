@@ -1,86 +1,86 @@
 {
  "3": [
   {
-   "steel": 852,
-   "mun": 1376,
-   "trained": 29,
-   "kills": 48,
+   "steel": 2576,
+   "mun": 2598,
+   "trained": 30,
+   "kills": 67,
    "fobs": 5,
-   "cells": 508,
-   "houses": 1,
-   "storms": 0,
-   "workRoutes": 1,
+   "cells": 575,
+   "houses": 3,
+   "storms": 2,
+   "workRoutes": 0,
    "airDef": 0,
-   "points": 5
+   "points": 2
   },
   {
-   "steel": 1143,
-   "mun": 1293,
-   "trained": 26,
-   "kills": 49,
+   "steel": 2102,
+   "mun": 1760,
+   "trained": 33,
+   "kills": 57,
    "fobs": 5,
-   "cells": 551,
-   "houses": 5,
+   "cells": 566,
+   "houses": 6,
    "storms": 0,
-   "workRoutes": 1,
+   "workRoutes": 0,
    "airDef": 0,
-   "points": 16
+   "points": 14
   }
  ],
  "7": [
   {
-   "steel": 1613,
-   "mun": 2226,
-   "trained": 37,
-   "kills": 70,
+   "steel": 2895,
+   "mun": 4248,
+   "trained": 35,
+   "kills": 64,
    "fobs": 5,
-   "cells": 512,
-   "houses": 3,
+   "cells": 438,
+   "houses": 7,
    "storms": 0,
    "workRoutes": 0,
    "airDef": 0,
    "points": 6
   },
   {
-   "steel": 830,
-   "mun": 1087,
-   "trained": 23,
-   "kills": 70,
+   "steel": 2477,
+   "mun": 3212,
+   "trained": 29,
+   "kills": 82,
    "fobs": 5,
-   "cells": 578,
-   "houses": 4,
+   "cells": 542,
+   "houses": 3,
    "storms": 8,
-   "workRoutes": 1,
+   "workRoutes": 0,
    "airDef": 0,
    "points": 11
   }
  ],
  "11": [
   {
-   "steel": 1764,
-   "mun": 1871,
-   "trained": 26,
-   "kills": 68,
+   "steel": 2075,
+   "mun": 2472,
+   "trained": 30,
+   "kills": 64,
    "fobs": 5,
-   "cells": 424,
-   "houses": 4,
+   "cells": 429,
+   "houses": 3,
    "storms": 5,
    "workRoutes": 0,
    "airDef": 0,
-   "points": 14
+   "points": 1
   },
   {
-   "steel": 641,
-   "mun": 785,
-   "trained": 22,
-   "kills": 60,
+   "steel": 2299,
+   "mun": 2838,
+   "trained": 33,
+   "kills": 78,
    "fobs": 5,
-   "cells": 585,
-   "houses": 5,
-   "storms": 8,
-   "workRoutes": 1,
+   "cells": 401,
+   "houses": 4,
+   "storms": 0,
+   "workRoutes": 0,
    "airDef": 0,
-   "points": 7
+   "points": 18
   }
  ]
 }

@@ -25,16 +25,23 @@ export class Minimap {
     this.terrain = seasonal(buildTerrain(game.map), game.weather?.season ?? 'summer'); // Herbst- und Winterfarben
     this.fogLayer = makeFogLayer(game.fog[team], false); // ohne Wolken, weicher Rand wie im Bild
     this.dpr = 1;
+    this.maxDpr = 2; // Obergrenze der Pixeldichte (Bildauflösung, wie renderer.js; setMaxDpr)
     this.cssW = DEFAULT_SIZE;
     this.cssH = DEFAULT_SIZE;
     this.resize();
   }
 
-  /** Canvas-Pufferung an CSS-Größe und DPR anpassen. */
+  /** Obergrenze der Pixeldichte setzen (Bildauflösung) und die Minimap sofort neu aufbauen. */
+  setMaxDpr(max) {
+    this.maxDpr = max;
+    this.resize();
+  }
+
+  /** Canvas-Pufferung an CSS-Größe und DPR anpassen (höchstens maxDpr). */
   resize() {
     const cssW = this.canvas.clientWidth || DEFAULT_SIZE;
     const cssH = this.canvas.clientHeight || DEFAULT_SIZE;
-    const dpr = Math.min(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
+    const dpr = Math.min(this.maxDpr, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
     const pw = Math.round(cssW * dpr);
     const ph = Math.round(cssH * dpr);
     if (this.canvas.width !== pw) this.canvas.width = pw;

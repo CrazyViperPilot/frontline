@@ -8,7 +8,7 @@ import { AI } from './ai/ai.js';
 import { createLoop } from './core/loop.js';
 import { Sound } from './audio/sound.js';
 import { Camera } from './render/camera.js';
-import { Renderer } from './render/renderer.js';
+import { Renderer, MAX_DPR_SHARP, MAX_DPR_FAST } from './render/renderer.js';
 import { Minimap } from './render/minimap.js';
 import { Controller } from './ui/controller.js';
 import { Input } from './ui/input.js';
@@ -16,7 +16,7 @@ import { Hud } from './ui/hud.js';
 import { CityPanel, MarketPanel } from './ui/citypanel.js';
 import { ResearchPanel } from './ui/researchpanel.js';
 import { FlowPanel } from './ui/flowpanel.js';
-import { showStartMenu, showPause, showHelp, showEnd, hideOverlay } from './ui/menu.js';
+import { showStartMenu, showPause, showHelp, showEnd, hideOverlay, readLowRes } from './ui/menu.js';
 import { pickMood, MOOD_SETTINGS } from './render/mood.js';
 import { snapshotGame, restoreGame, SAVE_FORMAT } from './game/savegame.js';
 import { pack, unpack } from './core/snapshot.js';
@@ -74,6 +74,17 @@ let session = null; // laufendes Spiel: { game, ai, camera, renderer, minimap, c
 // Nur mit ?debug=1: Zugriff für Browser-Prüfungen (tools/smoke.mjs, Playwright), z. B. window.__frontline.session().game (seit v5.81)
 if (DEBUG) window.__frontline = { session: () => session };
 let settings = { difficulty: 'normal', winPoints: BALANCE.winPoints, radio: true, weather: 'random', mood: 'random', research: true, river: true, city: true };
+// Bildauflösung „Leistung“ (Start- und Pausenmenü, ?lowres=1): nur Darstellung, gehört nicht zur Partie und nicht in den Spielstand
+let lowRes = readLowRes();
+const pixelCap = () => (lowRes ? MAX_DPR_FAST : MAX_DPR_SHARP);
+/** Bildauflösung umschalten: wirkt sofort auf Renderer und Minimap der laufenden Partie (Pausenmenü). */
+function setLowRes(on) {
+  lowRes = on;
+  if (!session) return;
+  session.renderer.setMaxDpr(pixelCap());
+  session.minimap.setMaxDpr(pixelCap());
+}
+const displayCtl = { get: () => lowRes, set: (on) => setLowRes(on) }; // Pausenmenü: Schalter Bildauflösung
 
 function nearestSpeedIndex(v) {
   let best = 0;
@@ -277,7 +288,7 @@ async function resumeGame(rec) {
   Object.assign(session, { saveId: rec.meta.id, saveName: rec.meta.name, createdAt: rec.meta.createdAt });
   // Beim Fortsetzen erst pausiert: Zeit zum Umsehen
   session.loop.paused = true;
-  showPause(overlay, resume, quitToMenu, () => {}, levelCtl, pauseSaveAs(session), { rated: !!session.match });
+  showPause(overlay, resume, quitToMenu, () => {}, levelCtl, pauseSaveAs(session), { rated: !!session.match }, displayCtl);
 }
 
 async function quitAndSave() {
@@ -371,7 +382,7 @@ const app = {
           if (t) setText(t);
           setName();
         });
-      }, levelCtl, pauseSaveAs(s2), { rated: !!s2.match });
+      }, levelCtl, pauseSaveAs(s2), { rated: !!s2.match }, displayCtl);
     }
   },
   toggleView() {
@@ -553,7 +564,9 @@ function frame(s) {
   }
 }
 
-function startGame(opts) {
+function startGame(start) {
+  const { lowres, ...opts } = start; // Bildauflösung nicht in die Partie (Spielstand) übernehmen
+  lowRes = !!lowres;
   settings = opts;
   stopSession();
   hideOverlay(overlay);
@@ -598,6 +611,10 @@ function buildSession(game, ai, opts, view) {
   controller.onOrder = () => sound.order();
   sound.attach(game, camera, HUMAN);
   const minimap = new Minimap(hud.minimapCanvas, game, camera, HUMAN);
+  if (lowRes) {
+    renderer.setMaxDpr(pixelCap());
+    minimap.setMaxDpr(pixelCap());
+  }
 
   const applyInsets = () => {
     const ins = hud.insets();

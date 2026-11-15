@@ -127,6 +127,17 @@ const TICKETS_KEY = 'frontline-tickets'; // Startmenü: Start-Tickets der Erober
 const OPP_KEY = 'frontline-gegner'; // Startmenü: Zahl der Computergegner (1 bis 3, nur Eroberung)
 const OPP_DIFF_KEY = 'frontline-ki-'; // + Nummer des Gegners: seine Schwierigkeit
 const BUILD_KEY = 'frontline-baugebiet'; // Startmenü: Baugebiet der Stadt an/aus (seit v5.78)
+const LOWRES_KEY = 'frontline-lowres'; // Start- und Pausenmenü: Bildauflösung „Leistung“ (1× statt bis 2×, nur Darstellung)
+/** Bildauflösung „Leistung“ an? URL ?lowres=1 bzw. ?lowres=0 hat Vorrang (zum Prüfen), sonst die gemerkte Wahl. */
+export function readLowRes() {
+  const q = new URLSearchParams(location.search);
+  if (q.has('lowres')) return q.get('lowres') === '1';
+  return readFlag(LOWRES_KEY, false);
+}
+/** Bildauflösung merken (Startmenü und Pausenmenü). */
+export function writeLowRes(on) {
+  writeFlag(LOWRES_KEY, on);
+}
 function readMapSel() {
   try {
     return localStorage.getItem(MAPSEL_KEY) || 'random';
@@ -521,7 +532,7 @@ export function wireAccount(box, { compact = false, hint = '', locked = null, st
 }
 
 /**
- * Startmenü: onStart({conquest, difficulty, difficulties (je Computergegner), winPoints, mapId, radio, weather, mood, research, river, buildRules}) (city immer true) beim Klick auf Start (mapId 'random' oder Karten-ID,
+ * Startmenü: onStart({conquest, difficulty, difficulties (je Computergegner), winPoints, mapId, radio, weather, mood, research, river, buildRules, lowres}) (city immer true) beim Klick auf Start (mapId 'random' oder Karten-ID, lowres = Bildauflösung „Leistung“,
  * radio = Sendemast-Sieg, weather = 'off' | 'random' | Jahreszeit, research = Forschungsbaum, river = Flüsse auf Zufallskarten).
  * Die Kasse (Geld von Runde zu Runde) kommt aus dem Konto (ui/saves.js, accountWallet); Gäste sehen den Startbetrag und den Hinweis.
  * Gewertete Partien (Tokens, ui/match.js) zeigt die Kasszeile: wie viele bereit sind und ob ein Endstand noch auf Netz wartet.
@@ -543,6 +554,7 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
   let research = readFlag(RESEARCH_KEY, D.research);
   let river = readFlag(RIVER_KEY, D.river);
   let buildRules = readFlag(BUILD_KEY, D.buildRules);
+  let lowres = readLowRes(); // Bildauflösung (nur Darstellung, nicht an new Game())
   let sound = readFlag(SOUND_KEY, true); // Ton: gleicher Speicher wie der Schalter im Spiel (audio/sound.js)
   show(
     root,
@@ -603,6 +615,10 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
       <div class="field">
         <span class="flabel" title="Zufallskarten: je ein Fluss vor den Startecken von Blau und Rot (mit 3 oder 4 Spielern in der Eroberung nur diese beiden) mit drei zerstörbaren Brücken und zwei Furten">Fluss</span>
         <div class="seg"><button type="button" data-river="1">An</button><button type="button" data-river="0">Aus</button></div>
+      </div>
+      <div class="field">
+        <span class="flabel" title="Scharf: Bild mit der vollen Pixeldichte des Geräts (höchstens 2×). Leistung: 1× Pixel, schont schwache Geräte; Schärfe nimmt ab. Im Spiel: Pausenmenü">Bildauflösung</span>
+        <div class="seg"><button type="button" data-lowres="0">Scharf</button><button type="button" data-lowres="1">Leistung</button></div>
       </div>
       <div class="field">
         <span class="flabel" title="Schüsse, Explosionen, Fahrzeuge, Wetter und Meldungen; selbst erzeugt, ohne Dateien. Im Spiel: Taste F2 oder der Lautsprecher-Knopf oben">Ton</span>
@@ -812,6 +828,7 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
     root.querySelectorAll('[data-build]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.build === '1') === buildRules)));
     root.querySelectorAll('[data-river]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.river === '1') === river)));
     root.querySelectorAll('[data-sound]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.sound === '1') === sound)));
+    root.querySelectorAll('[data-lowres]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.lowres === '1') === lowres)));
     markFullscreen(root);
   };
   const renderMapBox = () => {
@@ -957,6 +974,9 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
     } else if (b.dataset.sound) {
       sound = b.dataset.sound === '1';
       writeFlag(SOUND_KEY, sound);
+    } else if (b.dataset.lowres) {
+      lowres = b.dataset.lowres === '1';
+      writeLowRes(lowres);
     }
     else if (b.dataset.act === 'resume') {
       hideOverlay(root);
@@ -975,7 +995,7 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
     } else if (b.dataset.act === 'start') {
       hideOverlay(root);
       // difficulties: Schwierigkeit je Computergegner (Team 1, 2, 3); difficulty: die des ersten (Spielstand-Liste, Statistik)
-      onStart({ conquest, tickets, difficulty: diffs[0], difficulties: diffs.slice(0, conquest ? opponents : 1), winPoints, mapId: mapSel, radio, weather, mood, research, river, city: true, buildRules });
+      onStart({ conquest, tickets, difficulty: diffs[0], difficulties: diffs.slice(0, conquest ? opponents : 1), winPoints, mapId: mapSel, radio, weather, mood, research, river, city: true, buildRules, lowres });
       return;
     }
     mark();
@@ -989,8 +1009,9 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
  * `account` (seit v5.157, optional): { rated } → Konto-Abschnitt (Anmelden, Registrieren, Abmelden). rated = die laufende Partie ist
  * gewertet: dann nur die Anzeige, An- und Abmelden erst nach dem Endstand (sonst fiele der Endstand weg). Ohne `account` kein Abschnitt.
  * Die laufende Partie bleibt, wie sie begonnen hat; das Konto gilt für künftige Partien.
+ * `display` (optional): { get() → true bei Bildauflösung „Leistung“, set(on) } wirkt sofort auf das Bild.
  */
-export function showPause(root, onResume, onQuit, onSave = null, audio = null, saveAs = null, account = null) {
+export function showPause(root, onResume, onQuit, onSave = null, audio = null, saveAs = null, account = null, display = null) {
   show(
     root,
     'pause',
@@ -1009,6 +1030,9 @@ export function showPause(root, onResume, onQuit, onSave = null, audio = null, s
         <p class="bad small" data-copyerr></p>
       </div>` : ''}
       ${account ? '<section class="account" data-account aria-label="Konto"></section>' : ''}
+      ${display ? `<div class="field"><span class="flabel" title="Scharf: volle Pixeldichte (höchstens 2×). Leistung: 1× Pixel, schont schwache Geräte; wirkt sofort">Bildauflösung</span>
+        <div class="seg"><button type="button" data-lowres="0">Scharf</button><button type="button" data-lowres="1">Leistung</button></div>
+      </div>` : ''}
       ${audio ? `<div class="field"><span class="flabel">Geräusche</span>${volRow('sfx', audio.get('sfx'))}</div>
       <div class="field"><span class="flabel">Musik</span>${volRow('music', audio.get('music'))}</div>` : ''}
       <div class="field" data-fsbox hidden>
@@ -1028,6 +1052,10 @@ export function showPause(root, onResume, onQuit, onSave = null, audio = null, s
     if (el) el.textContent = t;
   }, setName);
   markFullscreen(root);
+  const markLowRes = () => {
+    root.querySelectorAll('[data-lowres]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.lowres === '1') === !!display?.get())));
+  };
+  markLowRes();
   const accBox = root.querySelector('[data-account]');
   if (account && accBox) {
     // Kompakt, ohne Abfrage: der Anmeldestand kommt vom Startmenü (accountEmail); Netz braucht das Pausenmenü nicht
@@ -1100,6 +1128,12 @@ export function showPause(root, onResume, onQuit, onSave = null, audio = null, s
   root.onclick = (e) => {
     const f = e.target.closest('[data-fs]');
     if (f) return setFullscreen(f.dataset.fs === '1');
+    const lr = e.target.closest('[data-lowres]');
+    if (lr && display) {
+      display.set(lr.dataset.lowres === '1');
+      writeLowRes(lr.dataset.lowres === '1');
+      return markLowRes();
+    }
     const p = e.target.closest('[data-pact]');
     if (p) return copyAct(p.dataset.pact);
     const b = e.target.closest('[data-act]');

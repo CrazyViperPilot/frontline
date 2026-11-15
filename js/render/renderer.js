@@ -13,6 +13,7 @@ import { buildTerrain, railList } from './terrain.js';
 import { lacksAmmo } from '../game/entities.js';
 import {
   drawUnit,
+  drawUnitSymbol,
   drawBuilding,
   drawBar,
   drawCrate as drawCrateTop,
@@ -69,6 +70,16 @@ const TILE = BALANCE.map.tile;
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;
 const BG = '#0d110d';
+// Bildauflösung (Einstellung im Start- und Pausenmenü, nur Darstellung): höchste Pixeldichte je Stufe. „Scharf“ 2 (Standard), „Leistung“ 1.
+export const MAX_DPR_SHARP = 2;
+export const MAX_DPR_FAST = 1;
+// Detailstufen beim Herauszoomen (nur Darstellung, Simulation unberührt): unter diesem Zoom zeichnet der Renderer Einheiten als
+// Symbol statt als Modell, lässt kleine Effekte weg und zeigt Lebensbalken nur für gewählte oder beschädigte Einheiten.
+// Maßstab: Infanterie (Radius LOD_REF_R, units.js) ist 2D unter 0,8 und in Iso unter 0,6 kleiner als ~10 Bildschirmpixel.
+// Größere Einheiten wechseln nach ihrem Radius (Radius × Zoom unter LOD_ZOOM × LOD_REF_R), Iso-Modelle sind 1,35× größer.
+export const LOD_ZOOM = { top: 0.8, iso: 0.6 };
+const LOD_REF_R = 6;
+const SMALL_FX = new Set(['tracer', 'muzzle']); // Leuchtspur und Mündungsfeuer: unter der Schwelle weg (Granaten, Explosionen bleiben)
 // Turm und Waffe zeichnen (aimOf, nur Darstellung): Drehtempo in rad/s (Fahrzeuge, Infanterie) und Haltezeit nach Zielverlust in ms
 const AIM_TURN = 4;
 const AIM_TURN_INF = 10;
@@ -238,16 +249,23 @@ export class Renderer {
     this.deco = null; // Bäume und Felsen der Hindernisse (isometrisch)
     this.fogLayer = makeFogLayer(game.fog[team]);
     this.dpr = 1;
+    this.maxDpr = MAX_DPR_SHARP; // Obergrenze der Pixeldichte: „Scharf“ 2, „Leistung“ 1 (setMaxDpr, Einstellung Bildauflösung)
     this.cssW = 0;
     this.cssH = 0;
     this.resize();
   }
 
-  /** Canvas an die CSS-Größe anpassen (DPR höchstens 2) und Kamera-Ansicht setzen. */
+  /** Obergrenze der Pixeldichte setzen (Bildauflösung, nur Darstellung) und das Bild sofort neu aufbauen. */
+  setMaxDpr(max) {
+    this.maxDpr = max;
+    this.resize();
+  }
+
+  /** Canvas an die CSS-Größe anpassen (DPR höchstens maxDpr) und Kamera-Ansicht setzen. */
   resize() {
     const cssW = this.canvas.clientWidth || (typeof window !== 'undefined' ? window.innerWidth : 800);
     const cssH = this.canvas.clientHeight || (typeof window !== 'undefined' ? window.innerHeight : 600);
-    const dpr = Math.min(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
+    const dpr = Math.min(this.maxDpr, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
     const pw = Math.max(1, Math.round(cssW * dpr));
     const ph = Math.max(1, Math.round(cssH * dpr));
     if (this.canvas.width !== pw) this.canvas.width = pw;
@@ -308,6 +326,8 @@ export class Renderer {
       sel: v.selection instanceof Set ? v.selection : new Set(v.selection || []),
       hover: v.hoverId ? g.getEntity(v.hoverId) : null,
       inRect: (x, y, pad = 0) => x >= R.x0 - pad && x <= R.x1 + pad && y >= R.y0 - pad && y <= R.y1 + pad,
+      lodFx: cam.zoom < (cam.iso ? LOD_ZOOM.iso : LOD_ZOOM.top), // kleine Effekte weglassen (Detailstufe)
+      lodUnit: (u) => (u.def.radius ?? LOD_REF_R) * cam.zoom < (cam.iso ? LOD_ZOOM.iso : LOD_ZOOM.top) * LOD_REF_R, // Einheit als Symbol
       seen,
       known: (x, y) => reveal || g.isExplored(team, x, y),
       shown: (e) => e.team === team || reveal || (seen(e.x, e.y) && g.sees(team, e)),
@@ -419,7 +439,8 @@ export class Renderer {
       for (const u of g.units) {
         if (!u.alive || u.house || flying(u) !== air || !shown(u) || !inRect(u.x, u.y, Math.max(30, u.def.radius * 1.6))) continue; // Jets am Boden mit den Bodeneinheiten
         const aim = this.aimOf(u);
-        if (!drawUnitTop(ctx, u, z, aim, now)) drawUnit(ctx, u, g.teams[u.team].color, z, aim, now); // gemalt (seit v5.27), sonst einfache Form
+        if (f.lodUnit(u)) drawUnitSymbol(ctx, u.x, u.y, u.angle || 0, g.teams[u.team].color, z, air); // Detailstufe: Symbol statt Modell
+        else if (!drawUnitTop(ctx, u, z, aim, now)) drawUnit(ctx, u, g.teams[u.team].color, z, aim, now); // gemalt (seit v5.27), sonst einfache Form
         if (u.crate && !drawCratePainted(ctx, u.x + 4, u.y - 6, 10, z)) drawCrateTop(ctx, u.x + 4, u.y - 6, 10, z); // Kiste auf dem Rücken
       }
     }
@@ -506,9 +527,10 @@ export class Renderer {
   topEffects(f) {
     const { ctx, z, now } = f;
     for (const p of this.visibleShells(f)) drawShell(ctx, p, z);
-    for (const e of this.visibleEffects(f)) drawEffect(ctx, e, z);
+    for (const e of this.visibleEffects(f)) if (!(f.lodFx && SMALL_FX.has(e.type))) drawEffect(ctx, e, z);
     const t = now / 1000;
     for (const q of this.smokeSources(f.seen, f.shown, f.inRect, 120)) {
+      if (f.lodFx && (q.unit || q.dust)) continue; // Detailstufe: Rauch und Staub von Fahrzeugen und Baggern weg
       if (q.mine) {
         drawMine(ctx, q.x, q.y, 1);
         continue;
@@ -550,8 +572,8 @@ export class Renderer {
   }
 
   /** Lebensbalken bei Auswahl, Hover oder Schaden. */
-  barShown(f, e) {
-    return f.sel.has(e.id) || f.hover === e || e.hp < e.maxHp;
+  barShown(f, e, lod = false) {
+    return f.sel.has(e.id) || (!lod && f.hover === e) || e.hp < e.maxHp; // Detailstufe: ohne Hover, nur gewählt oder beschädigt
   }
 
   /** 2D, Balken: Lebensbalken, Heilkreuz, Kommandeursstern, Vorrat und Warnzeichen, Platzierung. */
@@ -559,7 +581,7 @@ export class Renderer {
     const { ctx, g, team, z, sel, hover, inRect, shown } = f;
     for (const u of g.units) {
       if (!u.alive || u.house || !shown(u) || !inRect(u.x, u.y, Math.max(30, u.def.radius * 1.6))) continue;
-      if (!this.barShown(f, u)) continue;
+      if (!this.barShown(f, u, f.lodUnit(u))) continue;
       const bw = 24;
       this.drawHp(ctx, u.x - bw / 2, u.y - u.def.radius - HP_OFFSET / z, bw, u.hp / u.maxHp, z);
       if (g.time - (u.caredAt ?? -9) < 0.5) this.drawCare(ctx, u.x - bw / 2, u.y - u.def.radius - HP_OFFSET / z, z);
@@ -1124,6 +1146,21 @@ export class Renderer {
     const p = cam.worldToScreen(u.x, u.y);
     const lift = unitLift(u);
     const sc = 1.35;
+    if (f.lodUnit(u)) {
+      // Detailstufe: Symbol in Teamfarbe. Bodeneinheiten liegen auf dem Boden, Luftfahrzeuge schweben (Richtung auf dem Bild)
+      const color = g.teams[u.team].color;
+      const a = u.angle || 0;
+      if (flying(u)) {
+        const q = cam.worldToScreen(u.x + Math.cos(a) * 20, u.y + Math.sin(a) * 20);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawUnitSymbol(ctx, p.x, p.y - lift * z, Math.atan2(q.y - p.y, q.x - p.x), color, 1, true);
+      } else {
+        setIsoAt(ctx, cam, dpr, p.x, p.y - lift * z, u.x, u.y, sc);
+        drawUnitSymbol(ctx, u.x, u.y, a, color, z * sc, false);
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return;
+    }
     // Schatten am Boden: Umriss des Modells (seit v5.27, unitpaint.js), sonst Ellipse
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (!drawUnitShadowIso(ctx, cam, u, p, dpr, now)) {
@@ -1155,6 +1192,7 @@ export class Renderer {
     }
     const ups = [];
     for (const e of this.visibleEffects(f)) {
+      if (f.lodFx && SMALL_FX.has(e.type)) continue; // Detailstufe: Leuchtspur und Mündungsfeuer weg
       if (e.type === 'explosion' || e.type === 'muzzle') {
         if (relief) this.groundAt(ctx, e.x, e.y);
         else setIsoGround(ctx, cam, dpr);
@@ -1167,6 +1205,7 @@ export class Renderer {
     for (const e of ups) drawEffectUp(ctx, e, cam, at);
     const t = now / 1000;
     for (const q of this.smokeSources(f.seen, f.shown, f.inRect, ISO_PAD)) {
+      if (f.lodFx && (q.unit || q.dust)) continue; // Detailstufe: Rauch und Staub von Fahrzeugen und Baggern weg
       const p = cam.worldToScreen(q.x, q.y);
       const y = p.y - q.lift * z;
       if (q.mine) {
@@ -1214,7 +1253,7 @@ export class Renderer {
     };
     for (const u of g.units) {
       if (!u.alive || u.house || !shown(u) || !inRect(u.x, u.y, PAD)) continue;
-      if (!this.barShown(f, u)) continue;
+      if (!this.barShown(f, u, f.lodUnit(u))) continue;
       upright(u.x, u.y, unitLift(u));
       this.drawHp(ctx, u.x - 12, u.y - u.def.radius - HP_OFFSET / z, 24, u.hp / u.maxHp, z);
       if (g.time - (u.caredAt ?? -9) < 0.5) this.drawCare(ctx, u.x - 12, u.y - u.def.radius - HP_OFFSET / z, z);
@@ -1353,7 +1392,7 @@ export class Renderer {
     for (const u of g.units) {
       if (!u.alive || u.house || u.def.armor === 'inf' || u.hp >= u.maxHp * VEHICLE_SMOKE || !inRect(u.x, u.y, pad) || !shown(u)) continue;
       const f = u.hp / u.maxHp;
-      out.push({ x: u.x, y: u.y, lift: unitLift(u) + 6, s: 4 + u.def.radius * 0.3, k: (VEHICLE_SMOKE - f) / VEHICLE_SMOKE, fire: f < FIRE_AT / 2, seed: u.id * 17 });
+      out.push({ x: u.x, y: u.y, lift: unitLift(u) + 6, s: 4 + u.def.radius * 0.3, k: (VEHICLE_SMOKE - f) / VEHICLE_SMOKE, fire: f < FIRE_AT / 2, seed: u.id * 17, unit: true });
     }
     // Staub am arbeitenden Bagger (seit v5.77, nur Bild): an der Zelle, die er gerade räumt, solange er dort arbeitet (order.t > 0)
     for (const u of g.units) {

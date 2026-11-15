@@ -386,6 +386,38 @@ function drawHeli(ctx, u, color, dark, light, hull, turret, now, z, iso = false)
  * Fertigungsbalken unter dem Gebäude. pic = das Gebäude ist schon als Bild gemalt (milbuild.js, seit v5.21):
  * dann nur die Anzeigen darüber (Baufortschritt, Besatzung des Turms, Bohrer, Fertigung).
  */
+/**
+ * Einheit als Symbol (Detailstufe beim Herauszoomen, renderer.js LOD_ZOOM): Keil in Teamfarbe mit dunklem Rand, für
+ * Luftfahrzeuge ein Dreieck. (x, y, a) in Zeichenkoordinaten (Welt oder Bildschirm), k = Bildschirmpixel je Zeicheneinheit;
+ * die Länge ist fest SYMBOL_PX Bildschirmpixel, damit das Zeichen auch weit draußen lesbar bleibt.
+ */
+const SYMBOL_PX = 4.5;
+export function drawUnitSymbol(ctx, x, y, a, color, k, air = false) {
+  const s = SYMBOL_PX / k;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(a);
+  ctx.beginPath();
+  if (air) {
+    ctx.moveTo(s * 1.2, 0);
+    ctx.lineTo(-s * 0.9, s * 0.8);
+    ctx.lineTo(-s * 0.9, -s * 0.8);
+  } else {
+    ctx.moveTo(s, 0);
+    ctx.lineTo(-s * 0.9, s * 0.85);
+    ctx.lineTo(-s * 0.35, 0);
+    ctx.lineTo(-s * 0.9, -s * 0.85);
+  }
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = shade(color, 0.45);
+  ctx.lineWidth = 1.2 / k;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.restore();
+}
+
 export function drawBuilding(ctx, b, color, zoom = 1, pic = false) {
   const z = zoom || 1;
   const x0 = b.cx * TILE;

@@ -1,1 +1,0 @@
-**Industriepark** (§15 „Import“, §10 „Einfuhr“): Straßen tragen 24 Einheiten je s und Spur (vorher 12), Stadtstraßen der Karte 40 (vorher 20); die Stadt-KI legt ab 5 Minuten (normal) einen Industriepark an: Güterbahnhof mit Gleis zum Kartenrand, Zufahrt und vier Werksplätze direkt am Bahnhof; Werke gehen nur noch an Straßen, die sich ans Lager anschließen lassen.

@@ -1,1 +1,0 @@
-**Flaggengebiet** (§7 „Eroberung“): Das Gebiet jeder Flagge, in dem Einheiten für die Einnahme zählen, ist als Quadrat in der Farbe des Besitzers auf dem Boden eingezeichnet (gestrichelt, solange umkämpft); der irreführende Kreis um den Mast ist nur noch ein kleiner Sockel.

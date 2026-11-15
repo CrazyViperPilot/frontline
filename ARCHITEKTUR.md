@@ -129,7 +129,7 @@ Neue Befehle: Rezept in [CLAUDE.md](CLAUDE.md).
 | `repairBridge` | `ids, bridgeId` | `river.js` `cmdRepairBridge` | Brücke wieder aufbauen |
 | `load`, `unload` | `ids, fobId, preset?`; `load` auch `work` statt `fobId` (seit v5.69) | `logistics.js` | LKW an einer FOB laden / entladen; `work` (Zellindex eines eigenen Werks mit Ausgangslager, `CITY.pickup.kinds`) lädt dort nur die Ware des Werks |
 | `route` | `ids, fromId, toId, preset?`; `fromWork` statt `fromId` (seit v5.69) | `logistics.js` `cmdRoute` | LKW pendeln lassen, Start an einer FOB oder einem Werk |
-| `setPreset` | `ids, preset` | `logistics.js` | Ladungsart (`mix`, `bm`, `mun`, `fuel`) |
+| `setPreset` | `ids, preset` | `logistics.js` | Ladungsart (`mix`, eine Sorte `bm`/`mun`/`fuel`, zwei Sorten `bm+mun`/`bm+fuel`/`mun+fuel`; Liste `PRESETS`, `presetKinds`/`presetOf` in `logistics.js`) |
 | `mortarTarget` | `ids, x, y` | `cmd/units.js` `cmdMortarTarget` | Mörser auf einen Punkt richten |
 | `layMine` | `ids, x, y` | `mines.js` `cmdLayMine` | Pionier legt an einer Stelle eine getarnte Panzermine (Munition aus dem Teamlager, höchstens `BALANCE.sapper.maxMines` je Pionier) |
 | `land` | `ids, airportId` | `aircraft.js` `cmdLand`, Heliport als Ziel `helipad.js` `cmdHeliLand` (seit v5.51) | Flugzeuge landen am Fliegerhorst des eigenen Stellplatzes `airportId` (seit v5.35; Anflug, Bahn, Ausrollen, Rollen zum Stellplatz; seit v5.15) |

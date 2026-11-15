@@ -23,7 +23,7 @@
 | Häuserkampf | Infanterie wählen + Rechtsklick/Tippen auf ein Haus der Stadt (oder **I**, dann Haus antippen) = besetzen · Klick auf eigenes besetztes Haus = Besatzung wählen · **O** = Raus · Rechtsklick auf gegnerisch besetztes Haus = angreifen · **X** = Stürmen (dann gegnerisches Haus antippen) · Besatzung gewählt: **Z** Sandsäcke, **N** MG-Nest, **W** Stacheldraht |
 | Hauptstadt gewählt | Ausbildung: Q Schütze · W PAK · T Scharfschütze · E LKW · R Baufahrzeug · B FOB-Fahrzeug · A SPz · S KPz · D Little Bird · F Transporter · G AH-64 · Z Flakpanzer · N SAM-Startrampe · L Flakpanzer Gepard · O Panzerhaubitze · X Bagger · C Kommandeur (einmalig) · **U Forschung** (wenn eingeschaltet): öffnet das Forschungsmenü (auch Knopf „🔬 Forschung“ rechts oben; Regeln in §7 „Forschung“): Antippen einer Forschung zeigt Wirkung, Preis und Voraussetzung, „Erforschen“ bzw. „Einreihen“ startet, ✕ in der Warteschlange bricht ab (Geld zurück), Esc schließt |
 | FOB-Fahrzeug gewählt | **D Aufbauen**: wird an seiner Stelle sofort zur FOB (§4) |
-| LKW gewählt | L Laden · U Entladen · T Pendeln (Start: FOB oder Werk mit Ausgangslager, dann Ziel-FOB) · Ladung Q Gemischt / W Baumaterial / E Munition / R Treibstoff |
+| LKW gewählt | L Laden · U Entladen · T Pendeln (Start: FOB oder Werk mit Ausgangslager, dann Ziel-FOB) · Ladung Q Gemischt (alle drei Sorten) / W Baumaterial / E Munition / R Treibstoff als Umschalter: jede Taste schaltet ihre Sorte an oder ab, so können zwei zugleich gelten (z. B. E + R: Munition und Treibstoff, je zur Hälfte geladen; die Art heißt `bm+mun`, `bm+fuel` oder `mun+fuel`) |
 | Entf | Gebäude abreißen |
 | Esc | Abbrechen / Auswahl aufheben |
 | Strg+0–9 / 0–9 | Gruppe speichern / wählen (2× = Kamera hin) |

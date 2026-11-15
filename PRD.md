@@ -1,6 +1,6 @@
 # Frontline – Product Requirements
 
-Echtzeit-Strategiespiel (RTS) im Browser, inspiriert vom Spielprinzip „FOB bauen, Ressourcen fördern, Nachschub fahren,
+Echtzeit-Strategiespiel (RTS) im Browser, inspiriert vom Spielprinzip „FOB bauen, Ressourcen beschaffen, Nachschub fahren,
 Konfliktzone halten“. Im Modus **Eroberung** (Standard, §7) spielt der Mensch (Blau) gegen 1 bis 3 Computergegner, jeder gegen jeden; klassisch zwei Parteien: Spieler (Blau) gegen Computer (Rot).
 
 **Aufbau des PRD (seit v5.79):** Diese Datei ist der Einstieg: Ziel, Spielablauf, Qualität, Priorisierung und die Übersicht unten.
@@ -22,10 +22,10 @@ Der Änderungsverlauf steht in [docs/changelog.md](docs/changelog.md) (nur bei B
 | 14, 16 | Ton, Musik, Spielstand | [ton-speichern.md](docs/prd/ton-speichern.md) | Synthetisierte Geräusche und Musik, Lautstärke; Speichern und Laden |
 | 17 | Benutzerkonten | [konto.md](docs/prd/konto.md) | Gast spielt ohne Konto; Konto mit E-Mail und Passwort, Bestätigungslink, Passwort vergessen, Sitzungs-Cookie, Mailversand per SMTP (Backend, Spielstände am Konto, Oberfläche im Startmenü); Kasse am Konto und signierter Match-Start (gewertete Partien nur mit Server-Token) |
 | 15 | Stadt (Kern) | [stadt.md](docs/prd/stadt.md) | Zonenstadt: Startviertel, Ausbildung in Kaserne/Fabrikhalle/Heliport, Großbauten, Heilen und Krankenhaus, Universität und Rechenzentrum, Strom, Zufriedenheit, Baugebiet, Bedienung, Wachstum, Einwohner (auch als Truppen), Flucht, Arbeit, Stadtgebäude wählen, Angriff auf die Stadt, Stadt-KI |
-| 15 | Stadt: Wirtschaft | [stadt-wirtschaft.md](docs/prd/stadt-wirtschaft.md) | Rohstoffe und Vorkommen, Werke als 2 × 2-Großbauten, Ertrag, Stahl, Markt, Straßenkosten, Steuern, Ressourcenanzeige |
+| 15 | Stadt: Wirtschaft | [stadt-wirtschaft.md](docs/prd/stadt-wirtschaft.md) | Rohwaren und Import (Einfuhr am Kartenrand und über Güterbahnhof mit Gleis, Preise), Werke als 2 × 2-Großbauten, Ertrag, Stahl, Markt, Straßenkosten, Steuern, Ressourcenanzeige |
 | 15 | Stadt: Aussehen | [stadt-aussehen.md](docs/prd/stadt-aussehen.md) | Schilder und Farben, gemalte 1 × 1-Gebäude, Baustellen und Ruinen, Universität als Bild, Darstellung auf der Karte |
 | 15 | Stadt: Fliegerhorst, Heliport | [stadt-luft.md](docs/prd/stadt-luft.md) | Bahn, Rollfeld, Stellplätze, Tower, Kerosintank, Munitionslager, F-16; Heliport als Landeplatz |
-| 15 | Stadt: Straßentransport | [stadt-transport.md](docs/prd/stadt-transport.md) | Wege über Straßen, Kapazität und Stau, Pendler, Gewerbe-Absatz, Kerosin, Werkslager und LKW am Werk |
+| 15 | Stadt: Straßentransport | [stadt-transport.md](docs/prd/stadt-transport.md) | Wege über Straßen zum Lager und zu den Einfuhrpunkten, Kapazität und Stau, Pendler, Gewerbe-Absatz, Kerosin, Werkslager und LKW am Werk |
 
 
 ## 1. Ziel & Rahmen
@@ -44,7 +44,7 @@ Nicht im Umfang: Netzwerk-Multiplayer, Kampagne. Speichern laufender Partien gib
 ## 2. Spielablauf
 
 1. Startmenü: **Modus** (Eroberung · Klassisch, gemerkt; Standard Eroberung, §7), in der Eroberung **Computergegner** (1 bis 3) mit Schwierigkeit je Gegner (Leicht/Normal/Schwer), Siegpunkte (100 Standard; 25/50 für Schnellpartie; in der Eroberung stattdessen Tickets 75/150/300/1000), **Sendemast-Sieg** (An/Aus, gemerkt; Standard An, §7), **Wetter** (Aus · Zufall · Sommer · Herbst · Winter, gemerkt; Standard Zufall, §7), **Forschung** (An/Aus, gemerkt; Standard An, §7), **Fluss** (An/Aus, gemerkt; Standard An, nur Zufallskarten, §7), **Baugebiet** der Stadt (An/Aus, gemerkt; Standard An, §15), **Ton** (An/Aus, gemerkt; Standard An, §14), **Karte** (Zufall · Gespeichert · Neue Karte, siehe Abschnitt 9a), Start.
-2. Jede Partei startet in einer Ecke der großen Karte mit der **Hauptstadt** (Lager: Baumaterial, Munition, Treibstoff; gefüllt von den Werken der Stadt, §15), Geld (800; angemeldet die Kasse des Kontos, §17), 1 Baufahrzeug, **3 LKW** (leer), **2 Kampfpanzern, 3 Schützenpanzern, 22 Schützen und 7 Panzerabwehrsoldaten** (29 Soldaten, Startaufstellung nach Truppengattung getrennt um die FOB: Panzer vorn, Schützen links, Panzerabwehr rechts, LKW und Baufahrzeug hinten, Kommandeur dicht hinter der FOB; `BALANCE.startLayout`). Zusammen belegen sie 52 der 300 Plätze des Einheitenlimits (klassisch; in der Eroberung 500, siehe §6 und §7).
+2. Jede Partei startet in einer Ecke der großen Karte mit der **Hauptstadt** (Lager: Baumaterial, Munition, Treibstoff; gefüllt von den Werken der Stadt, die Rohwaren einführen, §15), Geld (800; angemeldet die Kasse des Kontos, §17), 1 Baufahrzeug, **3 LKW** (leer), **2 Kampfpanzern, 3 Schützenpanzern, 22 Schützen und 7 Panzerabwehrsoldaten** (29 Soldaten, Startaufstellung nach Truppengattung getrennt um die FOB: Panzer vorn, Schützen links, Panzerabwehr rechts, LKW und Baufahrzeug hinten, Kommandeur dicht hinter der FOB; `BALANCE.startLayout`). Zusammen belegen sie 52 der 300 Plätze des Einheitenlimits (klassisch; in der Eroberung 500, siehe §6 und §7).
 3. Kaserne, Fabrikhalle und Heliport der Stadt bilden Einheiten aus (§15; nur gegen Geld; mit Forschung Schützenpanzer, Scharfschützen und Hubschrauber erst ab Stufe 2, Kampfpanzer und AH-64 ab Stufe 3, §7). Man bringt Einheiten und Nachschub per LKW an die Front, gründet vordere FOBs (seit v5.09 mit dem FOB-Fahrzeug)
    (Verschanzen mit Mauern und Tore, Mörser, Flak, Nachladen und Tanken) und hält die Zone.
 4. In der Mitte liegt die **Konfliktzone** (eine Stadt). Klassisch ist sie ein großer Kreis: Wer dort mehr Spieler hat (Hot Zone doppelt), füllt den Punktebalken und bekommt Geld. In der Eroberung ist sie ein Quadrat aus 16 Flaggengebieten: Wer eine Flagge hält, bekommt Geld, und statt Punkten zählen Tickets (§7). In ihr wandert die **Hot Zone** (Abschnitt 7).

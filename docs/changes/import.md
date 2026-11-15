@@ -1,0 +1,1 @@
+**Paket Import** (§15 „Wirtschaft“, „Straßentransport“, Hilfe): Rohmaterial, Eisen, Öl und Sprengstoff kommen von außerhalb der Karte statt aus Vorkommen: eine eigene Straße am Kartenrand oder ein Güterbahnhof mit Gleis bis an den Rand; sie kosten Geld je angekommener Einheit, Förderanlage, Hütte und Vorkommen entfallen, alte Spielstände laden nicht mehr.

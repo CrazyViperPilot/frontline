@@ -41,7 +41,7 @@ export function createUnit(id, type, team, x, y) {
     weapons: (def.weapons ?? []).map((spec) => ({ spec, rounds: spec.rounds, cd: 0 })),
     fuel: def.fuelMax ?? 0,
     cargo: { bm: def.bmCap ?? 0, mun: 0, fuel: 0 }, // Soldaten starten mit vollem Baumaterial (bmCap)
-    preset: 'mix', // LKW-Ladungsart: 'mix' | 'bm' | 'mun' | 'fuel'
+    preset: 'mix', // LKW-Ladungsart: 'mix' | 'bm' | 'mun' | 'fuel' | zwei Sorten mit + ('bm+mun', 'bm+fuel', 'mun+fuel'; PRESETS in logistics.js)
     passengers: [], // Hubschrauber: eingestiegene Einheiten (alive = false, solange sie an Bord sind)
     house: 0, // ID des besetzten Stadthauses (garrison.js; Häuser haben negative IDs), 0 = draußen
     crate: 0, // ID der getragenen Versorgungskiste (crates.js; negativ), 0 = keine

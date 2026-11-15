@@ -26,10 +26,6 @@ function scratchOf(c) {
 
 /** Werke in fester Reihenfolge (Register: alle Arten mit `works`); seit Paket „Import“ alle gleich: Rohwaren ein, Produkt ins Lager. */
 const WORK_ORDER = WORKS;
-/** Rohwaren je Einheit Produkt und ihr Preis je Einheit Produkt, je Werk (aus CITY.chain und CITY.import.price, einmal gerechnet). */
-const NEED = Object.fromEntries(WORKS.map((k) => [k, Object.entries(CITY.chain[k].need)]));
-const NEED_SUM = Object.fromEntries(WORKS.map((k) => [k, NEED[k].reduce((a, [, n]) => a + n, 0)]));
-const NEED_PRICE = Object.fromEntries(WORKS.map((k) => [k, NEED[k].reduce((a, [g, n]) => a + n * CITY.import.price[g], 0)]));
 
 /** Werke mit Ausgangslager (CITY.pickup, seit v5.69): Art-Schlüssel. */
 const PICKUP = new Set(CITY.pickup.kinds);
@@ -332,6 +328,16 @@ function storeFull(x, prod) {
 function runWorks(x) {
   const { c, s, tr, dt, eff, anchors, nA, credit, team } = x;
   const Y = CITY.yield;
+  // Rohwaren je Einheit Produkt, ihre Summe und ihr Preis je Einheit Produkt, je Werk (je Schritt aus CITY.chain und CITY.import.price,
+  // damit Tests die Werte ändern können)
+  const NEED = {};
+  const NEED_SUM = {};
+  const NEED_PRICE = {};
+  for (const k of WORKS) {
+    NEED[k] = Object.entries(CITY.chain[k].need);
+    NEED_SUM[k] = NEED[k].reduce((a, [, n]) => a + n, 0);
+    NEED_PRICE[k] = NEED[k].reduce((a, [g, n]) => a + n * CITY.import.price[g], 0);
+  }
   // 1. Bedarf je Werk (Produkt je s) und Summe je Güterbahnhof (Rohwaren je s)
   const list = [];
   const atStation = new Map(); // Anker des Güterbahnhofs → angeforderte Rohwaren je s

@@ -4,7 +4,7 @@
 import { CITY } from '../data/city.js';
 import { KINDS, KIND_ID, WORKS, SUPPLIER_KINDS } from '../data/citykinds.js';
 import { transportOf, transportInfo, mainAccess } from '../game/transport.js';
-import { cellAt, idx, sizeOf, isPart, fitBig, bigCells, cellFree, roadAt, hasRoad, buildAllowed, buildWhy, canZone, nbrsOf, roadLinked } from '../game/city/cells.js';
+import { accessCells, cellAt, idx, sizeOf, isPart, fitBig, bigCells, cellFree, roadAt, hasRoad, buildAllowed, buildWhy, canZone, nbrsOf, roadLinked } from '../game/city/cells.js';
 import { mainRoadReach, connectRoad, importReach, connectEdge } from '../game/city/roadnet.js';
 import { totals } from '../game/city/state.js';
 import { marketBuyPrice } from '../game/city/query.js';
@@ -251,8 +251,16 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
  * CITY.transport.connectMax Zellen). true, wenn gebaut.
  */
 function aiEdge(game, c) {
-  if (importReach(c)) return false;
-  return connectEdge(game, c, mainAccess(game, c), true, CITY.transport.connectMax) > 0;
+  if (!importReach(c)) return connectEdge(game, c, mainAccess(game, c), true, CITY.transport.connectMax) > 0;
+  // Werk an einem Straßennetz ohne Einfuhrpunkt (z. B. ein Viertel, das nur über das Lager mit dem Rest hängt): eigene Straße vom
+  // Netz des Werks zum Rand, wenn sie kurz genug ist (aiConnect versucht danach den Anschluss an das Netz der Einfuhrpunkte)
+  for (const i of c.list) {
+    if (isPart(c, i) || !c.level[i] || !WORKS.includes(KINDS[c.kind[i] - 1])) continue;
+    if (transportInfo(game, c, i).importFrom !== null) continue;
+    const acc = accessCells(c, i);
+    if (acc.length && connectEdge(game, c, acc, true, CITY.transport.connectMax) > 0) return true;
+  }
+  return false;
 }
 
 /** Liegt im Rechteck (q, r, w × h) oder höchstens d Zellen darum eine Zelle an einer Straße zum Lager? */

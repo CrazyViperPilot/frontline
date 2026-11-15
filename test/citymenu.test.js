@@ -7,7 +7,7 @@ import { TOOL_GROUPS } from '../js/ui/citypanel.js';
 
 test('Baumenü: Gruppen in Daniels Reihenfolge, jede baubare Art genau einmal', () => {
   const names = TOOL_GROUPS.map(([n]) => n);
-  assert.deepEqual(names.slice(0, 7), ['Grundlagen', 'Wohnen & Gewerbe', 'Förderung', 'Ressourcen', 'Einheiten', 'Stadt', 'Fliegerhorst']);
+  assert.deepEqual(names.slice(0, 6), ['Grundlagen', 'Wohnen & Gewerbe', 'Ressourcen', 'Einheiten', 'Stadt', 'Fliegerhorst']);
   const all = TOOL_GROUPS.flatMap(([, ks]) => ks);
   assert.equal(new Set(all).size, all.length, 'keine doppelt');
   for (const k of KINDS) assert.equal(all.includes(k), !CITY.retired.includes(k), k);

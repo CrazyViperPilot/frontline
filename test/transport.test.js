@@ -3,7 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { CITY } from '../js/data/city.js';
-import { cellsOf, anchorOf, canZone, roadAt, accessCells, cellRect, isPart, DEPOSITS } from '../js/game/city/cells.js';
+import { cellsOf, anchorOf, canZone, roadAt, accessCells, cellRect, isPart } from '../js/game/city/cells.js';
+import { connectEdge } from '../js/game/city/roadnet.js';
 import { KIND_ID } from '../js/data/citykinds.js';
 import { UNITS } from '../js/data/units.js';
 import { transportOf, transportInfo, mainAccess, pathEff, addLoad, beginLoads, settleLoads } from '../js/game/transport.js';
@@ -59,80 +60,54 @@ function finish(g, col, row) {
   return anchorOf(c, i);
 }
 
-// Hütte (Erz → Roheisen) bei (0,1) und Stahlwerk bei (8,1), Straße durch die Zeile 0 von Spalte 0 bis 9
-function hutte() {
+// Stahlwerk bei (8,1), Straße durch Zeile 0 von Spalte 0 bis 9, von Spalte 0 eine Straße bis zum Kartenrand (Einfuhrpunkt, Paket „Import“)
+function edgeWorks() {
   const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  clearStart(g);
   put(g, 'road', 0, 0, 9, 0);
-  put(g, 'smelter', 0, 1, 1, 2);
   put(g, 'steel', 8, 1, 9, 2);
   const c = g.city[0];
-  const hut = finish(g, 0, 1);
+  assert.ok(connectEdge(g, c, [at(g, 0, 0)], false) > 0, 'Straße zum Kartenrand');
   const stahl = finish(g, 8, 1);
-  return { g, c, hut, stahl };
+  c.ver++;
+  return { g, c, stahl };
 }
 
-test('Weg über Straßen: Hütte liefert zum Stahlwerk, der Weg besteht aus Straßenzellen', () => {
-  const { g, c, hut, stahl } = hutte();
+test('Einfuhrweg über Straßen: Stahlwerk bezieht Rohwaren vom Kartenrand, der Weg besteht aus Straßenzellen', () => {
+  const { g, c, stahl } = edgeWorks();
   const tr = transportOf(g, c);
-  const r = tr.routes.get(hut);
-  assert.equal(r.to, stahl);
-  assert.equal(r.dist, 8); // Straßenzellen (1 … 8) von der Hütte zum Anschluss des Stahlwerks
-  assert.ok(r.path.every((i) => roadAt(c, i)), 'alle Zellen des Weges sind Straßen');
-  const info = transportInfo(g, c, hut);
-  assert.equal(info.to, 'Stahlwerk');
-  assert.equal(info.dist, 8);
-  assert.equal(info.eff, 1);
-  // Pendler: ohne Wohnen kein Weg, also keine Arbeit
-  assert.equal(tr.commute.get(hut), null);
+  const r = tr.imports.get(stahl);
+  assert.equal(r.from, 'edge');
+  assert.ok(r.dist > 8 && r.dist === r.path.length);
+  assert.ok([...r.path].every((i) => roadAt(c, i)), 'alle Zellen des Weges sind Straßen');
+  const info = transportInfo(g, c, stahl);
+  assert.equal(info.importFrom, 'Kartenrand');
+  assert.equal(info.importDist, r.dist);
+  assert.equal(info.importEff, 1);
+  assert.equal(tr.commute.get(stahl), null, 'ohne Wohnen kein Pendlerweg');
   assert.equal(info.noHome, true);
-  assert.equal(info.commuteEff, 0);
 });
 
-test('ohne Verbindung kein Weg: keine Lieferung, Info ohne Ziel', () => {
-  const { g, c, hut } = hutte();
-  // Straße zum Stahlwerk abreißen: das Werk bei (8,1) liegt danach an keiner Straße mehr
-  const row0 = baseOf(g).r;
-  const col0 = baseOf(g).c;
-  g.issue(0, { type: 'city', kind: 'erase', c0: col0 + 8, r0: row0, c1: col0 + 9, r1: row0 });
-  const tr = transportOf(g, c);
-  const r = tr.routes.get(hut);
-  assert.equal(r.to, null);
-  assert.equal(r.path, null);
-  const info = transportInfo(g, c, hut);
-  assert.equal(info.to, null);
-  assert.equal(info.eff, 0);
-});
-
-test('nächstes von zwei Zielen gewinnt', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  put(g, 'road', 0, 0, 9, 0);
-  put(g, 'smelter', 0, 1, 1, 2);
-  put(g, 'steel', 3, 1, 4, 2); // nah: Anschluss bei (3,0)
-  put(g, 'steel', 8, 1, 9, 2); // fern: Anschluss bei (8,0)
-  const c = g.city[0];
-  const hut = finish(g, 0, 1);
-  const near = finish(g, 3, 1);
-  finish(g, 8, 1);
-  const tr = transportOf(g, c);
-  const r = tr.routes.get(hut);
-  assert.equal(r.to, near, 'das nahe Stahlwerk gewinnt');
-  assert.equal(r.dist, 3); // (1,0), (2,0), (3,0)
+test('ohne Verbindung kein Einfuhrweg: Info ohne Herkunft', () => {
+  const { g, c, stahl } = edgeWorks();
+  const b = baseOf(g);
+  g.issue(0, { type: 'city', kind: 'erase', c0: b.c + 8, r0: b.r, c1: b.c + 9, r1: b.r });
+  assert.equal(transportOf(g, c).imports.get(stahl), null);
+  assert.equal(transportInfo(g, c, stahl).importFrom, null);
 });
 
 test('Überlast → Stau-Faktor < 1 nach settleLoads, nach Entlastung wieder 1', () => {
-  const { g, c, hut } = hutte();
+  const { g, c, stahl } = edgeWorks();
   const tr = transportOf(g, c);
-  const r = tr.routes.get(hut);
+  const path = tr.imports.get(stahl).path;
   beginLoads(tr);
-  addLoad(tr, r.path, CITY.transport.cap * 3); // dreifache Kapazität auf dem Weg
-  settleLoads(tr, CITY.transport.smooth); // dt = smooth: Glättung ist in einem Schritt vollständig
-  const eff = pathEff(tr, r.path);
-  assert.ok(eff < 1, `Wirkung ${eff} unter 1`);
+  addLoad(tr, path, CITY.transport.cap * 3);
+  settleLoads(tr, CITY.transport.smooth);
+  const eff = pathEff(tr, path);
   assert.ok(Math.abs(eff - 1 / 3) < 1e-4, `Wirkung ${eff} ≈ 1/3`);
-  // ohne Last erholt sich der Stau wieder
   beginLoads(tr);
   settleLoads(tr, CITY.transport.smooth);
-  assert.equal(pathEff(tr, r.path), 1);
+  assert.equal(pathEff(tr, path), 1);
 });
 
 test('Lager-Anschluss: Straße bis an die Hauptstadt macht mainAccess nicht leer, Werk liefert ins Lager', () => {
@@ -180,36 +155,31 @@ test('Lager-Anschluss: Straße bis an die Hauptstadt macht mainAccess nicht leer
 
 test('Cache: nach Bau wird neu berechnet, ohne Änderung bleibt der Stand (auch nach Zeit), Rückkehr Geflohener rechnet neu', () => {
   const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  clearStart(g);
   put(g, 'road', 0, 0, 1, 0); // Straße nur bis Spalte 1
-  put(g, 'smelter', 0, 1, 1, 2);
   put(g, 'steel', 8, 1, 9, 2); // ohne Anschluss
   const c = g.city[0];
-  const hut = finish(g, 0, 1);
+  connectEdge(g, c, [at(g, 0, 0)], false);
   const stahl = finish(g, 8, 1);
-  const tr1 = transportOf(g, c);
-  const routes1 = tr1.routes;
-  assert.equal(routes1.get(hut).to, null, 'noch keine Verbindung');
-  // Straße bis zum Stahlwerk bauen: Stadt ändert sich (c.ver), also neue Berechnung ohne Zeitablauf
+  c.ver++;
+  assert.equal(transportOf(g, c).imports.get(stahl), null, 'noch keine Verbindung');
   put(g, 'road', 2, 0, 8, 0);
   const tr2 = transportOf(g, c);
-  assert.equal(tr2.routes.get(hut).to, stahl, 'nach dem Bau gefunden');
-  // ohne Änderung und ohne Zeitablauf: derselbe Stand
+  assert.equal(tr2.imports.get(stahl).from, 'edge', 'nach dem Bau gefunden');
   const routes2 = tr2.routes;
   assert.equal(transportOf(g, c).routes, routes2);
-  // Zeit allein rechnet nicht neu (seit dem Review von v5.20): die Wege hängen nur vom Stand der Stadt ab
   g.time += 100;
   assert.equal(transportOf(g, c).routes, routes2, 'ohne Änderung derselbe Stand');
-  // Wohnung an der Straße, deren Bewohner geflohen sind: kein Pendlerziel; kehren sie zurück (c.ver), ist sie wieder eins
   put(g, 'res', 4, 1, 4, 1);
   const home = finish(g, 4, 1);
   c.flee[home] = 0.01;
-  c.ver++; // wie cityNoise beim Beginn der Flucht
-  assert.equal(transportInfo(g, c, hut).noHome, true, 'geflohen: keine Wohnung erreichbar');
+  c.ver++;
+  assert.equal(transportInfo(g, c, stahl).noHome, true, 'geflohen: keine Wohnung erreichbar');
   const routes3 = transportOf(g, c).routes;
-  g.update(0.05); // Ruhezeit läuft ab: Bewohner zurück
+  g.update(0.05);
   assert.equal(c.flee[home], 0);
   assert.notEqual(transportOf(g, c).routes, routes3, 'nach der Rückkehr neu berechnet');
-  assert.equal(transportInfo(g, c, hut).noHome, false, 'Wohnung wieder Pendlerziel');
+  assert.equal(transportInfo(g, c, stahl).noHome, false, 'Wohnung wieder Pendlerziel');
 });
 
 // ---- Rechnung je Gebäude (seit v5.20, AP3, PLAN 1.4): Straßen zum Lager, Pendler, Stau, Kerosin ----
@@ -303,69 +273,38 @@ function finishKind(g, kind) {
 }
 const stepN = (g, n) => { for (let t = 0; t < n; t++) g.update(0.05); };
 
-test('Mine ohne Straße liefert nichts, mit Straße kommt Holz im BM-Werk und BM im Lager an', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+// Grundnetz mit Straße zum Kartenrand (Einfuhrpunkt, Paket „Import“)
+function netEdge(g) {
   const c = netBase(g);
-  const m = g.mainFob(0);
-  put(g, 'bm', 5, 1, 6, 2); // 2 × 2 an der Straße
-  c.deposit[at(g, 8, 2)] = 1; // Wald (Test)
-  put(g, 'mine', 8, 2, 8, 2); // ohne Straße: wächst nicht
-  run(g, CITY.growTime + 2);
-  assert.equal(c.stats.raw.wood, 0, 'ohne Straße keine Förderung');
-  assert.equal(c.stats.bm, 0);
-  linkRoad(g, at(g, 8, 2));
-  const bm0 = m.store.bm; // nach dem Straßenbau (Straßen kosten Baumaterial)
-  run(g, CITY.growTime + 4);
-  assert.ok(c.stats.raw.wood > 0, `Holz ${c.stats.raw.wood}`);
-  assert.ok(c.stats.inp.bm > 0, 'Holz kommt im BM-Werk an');
-  assert.ok(c.stats.gross.bm > 0, 'BM entsteht');
-  assert.ok(m.store.bm > bm0, `BM im Lager ${bm0} → ${m.store.bm}`);
-  assert.ok(c.stats.bm > 0, 'BM kommt im Lager an');
-});
+  assert.ok(connectEdge(g, c, [at(g, 0, 0)], false) >= 0, 'Straße zum Kartenrand');
+  return c;
+}
 
-test('Kette Erz → Hütte → Stahlwerk: c.metal (Stahl) steigt, Roheisen fährt zum Stahlwerk', () => {
+test('Munitionswerk: Eisen und Sprengstoff über die Straße, Munition nur mit Weg ins Lager', () => {
   const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = netBase(g);
-  put(g, 'smelter', 5, 1, 6, 2); // Hütte
-  put(g, 'steel', 7, 1, 8, 2); // Stahlwerk
-  c.deposit[at(g, 5, 4)] = 3; // Erz (Test)
-  put(g, 'mine', 5, 4, 5, 4);
-  linkRoad(g, at(g, 5, 4)); // die Erzmine (nicht die Ölquelle, die Räumen stehen lässt)
-  const metal0 = c.metal;
-  run(g, CITY.growTime + 30);
-  assert.ok(c.stats.raw.ore > 0, 'Erz gefördert');
-  assert.ok(c.stats.inp.iron > 0 && c.stats.gross.iron > 0, 'Hütte bekommt Erz und macht Roheisen');
-  assert.ok(c.stats.gross.metal > 0, 'Stahlwerk macht Stahl');
-  assert.ok(c.metal > metal0, `Stahl im Stadtlager ${metal0} → ${c.metal}`);
-});
-
-test('Munitionswerk: zieht Stahl aus dem Lager über seinen Weg und liefert Munition nur mit Weg', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = netBase(g);
+  const c = netEdge(g);
   const m = g.mainFob(0);
   put(g, 'mun', 5, 1, 6, 2);
-  linkRoad(g, c.list.find((i) => c.kind[i] === KIND_ID.mun));
   const metal0 = c.metal;
   const mun0 = m.store.mun;
   run(g, CITY.growTime + 20);
   assert.ok(c.stats.gross.mun > 0, 'Munition wird hergestellt');
   assert.ok(m.store.mun > mun0, `Munition im Lager ${mun0} → ${m.store.mun}`);
-  assert.ok(c.metal < metal0, `Stahl sinkt ${metal0} → ${c.metal}`);
-  assert.ok(c.stats.metal < 0, 'Stahl-Bilanz negativ (Munitionswerk zieht)');
+  assert.ok(c.stats.raw.ore > 0 && c.stats.raw.expl > 0, 'Eisen und Sprengstoff kommen an');
+  assert.equal(c.metal, metal0, 'kein Stahl abgezogen (seit Paket „Import“)');
 });
 
-test('Munitionswerk ohne Straße zum Lager: kein Stahl, keine Munition', () => {
+test('Munitionswerk ohne Straße: keine Munition, keine Einfuhr, keine Kosten', () => {
   const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = netBase(g);
+  const c = netEdge(g);
   const m = g.mainFob(0);
   put(g, 'mun', 5, 3, 6, 4); // nicht an der Straße
-  finishKind(g, 'mun'); // fertig, aber ohne Weg
-  const metal0 = c.metal;
+  finishKind(g, 'mun');
   const mun0 = m.store.mun;
   run(g, 10);
   assert.equal(c.stats.gross.mun, 0);
   assert.equal(m.store.mun, mun0);
-  assert.equal(c.metal, metal0, 'kein Stahl abgezogen');
+  assert.equal(c.stats.raw.expl, 0);
 });
 
 test('Arbeitsstätte ohne Weg zu Wohnen produziert nichts; mit Anschluss der Wohnungen läuft sie', () => {
@@ -375,25 +314,21 @@ test('Arbeitsstätte ohne Weg zu Wohnen produziert nichts; mit Anschluss der Woh
   connectMain(g);
   const c = g.city[0];
   const m = g.mainFob(0);
-  // Wohnen auf einer Straßen-Insel in Zeile 4/5: Einwohner gibt es, aber kein Weg vom Werk dorthin
   put(g, 'road', 0, 5, 3, 5);
   put(g, 'res', 0, 4, 3, 4);
   put(g, 'bm', 5, 1, 6, 2);
-  c.deposit[at(g, 8, 2)] = 1;
-  put(g, 'mine', 8, 2, 8, 2);
-  linkRoad(g, at(g, 8, 2));
   const bm = c.list.find((i) => c.kind[i] === KIND_ID.bm);
   run(g, CITY.growTime + 10);
   assert.equal(transportInfo(g, c, bm).noHome, true, 'kein Wohnen erreichbar');
   assert.equal(c.stats.bm, 0, 'BM ohne Wohnung');
-  assert.equal(c.stats.raw.wood, 0, 'Holz ohne Wohnung');
-  // Anschluss der Insel ans Netz: jetzt pendeln die Arbeiter, das BM-Werk arbeitet
+  assert.equal(c.stats.raw.raw, 0, 'keine Einfuhr ohne Arbeiter');
   const isl = [];
   for (let x = 0; x <= 3; x++) isl.push(at(g, x, 5));
   const islSet = new Set(isl);
   const starts = [];
   for (const j of isl) starts.push(...nbOf(c, j));
   assert.ok(connect(g, starts, (j) => nbOf(c, j).some((k) => c.kind[k] === KIND_ID.road && !islSet.has(k))), 'Insel anschließbar');
+  assert.ok(connectEdge(g, c, [at(g, 9, 0)], false) >= 0, 'Straße zum Kartenrand');
   const bm0 = m.store.bm;
   run(g, 20);
   assert.equal(transportInfo(g, c, bm).noHome, false, 'Wohnen erreichbar');
@@ -402,227 +337,61 @@ test('Arbeitsstätte ohne Weg zu Wohnen produziert nichts; mit Anschluss der Woh
 
 test('Überlast auf dem Lieferweg senkt die Lieferung (Stau-Faktor wirkt im Schritt)', () => {
   const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = netBase(g);
+  const c = netEdge(g);
   put(g, 'bm', 5, 1, 6, 2);
-  c.deposit[at(g, 8, 2)] = 1;
-  put(g, 'mine', 8, 2, 8, 2);
-  linkRoad(g, at(g, 8, 2));
   run(g, CITY.growTime + 10);
   const tr = transportOf(g, c);
   const bm = c.list.find((i) => c.kind[i] === KIND_ID.bm);
   const path = tr.routes.get(bm).path;
   assert.ok(c.stats.gross.bm > 0 && path, 'BM läuft');
-  for (const j of path) tr.factor[j] = 0.5; // Stau auf dem Weg zum Lager
+  for (const j of path) tr.factor[j] = 0.5; // Stau auf dem Weg zum Lager (der Einfuhrweg kann dieselben Zellen nutzen)
   stepN(g, 1);
   assert.ok(Math.abs(c.stats.bm - 0.5 * c.stats.gross.bm) < 1e-6, `Lieferung ${c.stats.bm} ≈ halb von ${c.stats.gross.bm}`);
-  assert.ok(Math.abs(c.stats.jam - 0.5) < 1e-6, `kleinster Stau ${c.stats.jam}`);
 });
 
-test('Keine Ware aus dem Nichts: Lager-Zuwachs je Schritt ≤ Förderung über die Kette (auch Munition, Stahl-Netto, Gewerbe-BM)', () => {
+test('Keine Ware aus dem Nichts: Lager-Zuwachs je Schritt ≤ angekommene Rohwaren über die Kette (auch Gewerbe-BM)', () => {
   const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = netBase(g);
+  const c = netEdge(g);
   const m = g.mainFob(0);
-  const K = CITY.convert;
+  const N = CITY.chain;
   put(g, 'bm', 3, 1, 4, 2);
-  put(g, 'smelter', 5, 1, 6, 2);
   put(g, 'steel', 7, 1, 8, 2);
-  put(g, 'com', 9, 1, 9, 1); // Gewerbe holt Baumaterial aus dem Lager (seit dem Review geprüft)
-  put(g, 'mun', 0, 3, 1, 4); // Munitionswerk zieht Stahl aus dem Stadtlager
-  linkRoad(g, c.list.find((i) => c.kind[i] === KIND_ID.mun));
-  c.deposit[at(g, 3, 4)] = 1; // Holz
-  c.deposit[at(g, 5, 4)] = 3; // Erz
-  put(g, 'mine', 3, 4, 3, 4);
-  put(g, 'mine', 5, 4, 5, 4);
-  linkRoad(g, at(g, 3, 4));
-  linkRoad(g, at(g, 5, 4));
+  put(g, 'com', 9, 1, 9, 1);
+  put(g, 'mun', 5, 1, 6, 2);
   let bad = 0;
   let mun = 0;
-  let take = 0;
-  const dt = 0.05;
   for (let t = 0; t < 1200; t++) {
     const metal0 = c.metal;
     const bm0 = m.store.bm;
     const mun0 = m.store.mun;
-    g.update(dt);
+    g.update(0.05);
     const s = c.stats;
-    const dMetal = c.metal - metal0;
-    const dMun = m.store.mun - mun0;
-    // Stahl im Lager plus Stahl in der Munition ≤ Erz / (Erz je Roheisen × Roheisen je Stahl): Munition entsteht nur aus Stahl
-    if (dMetal + dMun * K.mun > (s.raw.ore * dt) / (K.iron * K.metal) + 1e-9) bad++;
-    // Baumaterial im Lager plus, was das Gewerbe nahm ≤ Holz und Stein / BM-Verbrauch
-    if (m.store.bm - bm0 + s.shopBm * dt > ((s.raw.wood + s.raw.stone) * dt) / K.bm + 1e-9) bad++;
-    if (c.metal < 0 || m.store.bm < 0 || !Number.isFinite(c.metal) || !Number.isFinite(m.store.mun)) bad++;
-    mun += Math.max(0, dMun);
-    take += s.shopBm * dt;
+    if (c.metal - metal0 > (s.raw.ore * 0.05) / N.steel.need.ore + 1e-9) bad++;
+    if (m.store.mun - mun0 > (s.raw.expl * 0.05) / N.mun.need.expl + 1e-9) bad++;
+    if (m.store.bm - bm0 + s.shopBm * 0.05 > (s.raw.raw * 0.05) / N.bm.need.raw + 1e-9) bad++;
+    if (c.metal < 0 || m.store.bm < 0 || !Number.isFinite(m.store.mun)) bad++;
+    mun += Math.max(0, m.store.mun - mun0);
   }
-  assert.equal(bad, 0, 'nie mehr im Lager als gefördert');
+  assert.equal(bad, 0, 'nie mehr im Lager als eingeführt');
   assert.ok(mun > 0, 'Munition entsteht (die Prüfung greift)');
-  assert.ok(take > 0, 'Gewerbe nimmt Baumaterial (die Prüfung greift)');
 });
 
-// Seit v5.51 tanken Hubschrauber gelandet auf ihrem Heliport aus dem Kerosintank (test/helipad.test.js), nicht mehr im Umkreis aus c.kero.
-test('Ohne Hauptstadt (zerstört): Werke liefern nichts ins Lager, Munitionswerk steht, Gewerbe unversorgt, keine ungültigen Zahlen', () => {
+test('Ohne Hauptstadt (zerstört): Werke fordern nichts an, liefern nichts, Gewerbe unversorgt, keine ungültigen Zahlen', () => {
   const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = netBase(g);
-  put(g, 'smelter', 5, 1, 6, 2);
+  const c = netEdge(g);
   put(g, 'steel', 7, 1, 8, 2);
   put(g, 'com', 9, 1, 9, 1);
-  put(g, 'mun', 0, 3, 1, 4);
-  linkRoad(g, c.list.find((i) => c.kind[i] === KIND_ID.mun));
-  c.deposit[at(g, 5, 4)] = 3; // Erz
-  put(g, 'mine', 5, 4, 5, 4);
-  linkRoad(g, at(g, 5, 4));
+  put(g, 'mun', 5, 1, 6, 2);
   run(g, CITY.growTime + 20);
   assert.ok(c.stats.gross.metal > 0 && c.stats.gross.mun > 0, 'vorher: Stahl und Munition');
   const m = g.mainFob(0);
-  m.alive = false; // Hauptstadt zerstört
+  m.alive = false;
   m.hp = 0;
-  const metal0 = c.metal;
   stepN(g, 40);
   const s = c.stats;
   assert.equal(g.mainFob(0), null);
-  assert.ok(s.raw.ore > 0 && s.gross.iron > 0, 'Förderung und Hütte arbeiten weiter (Ziel ist ein Werk)');
-  assert.equal(s.metal, 0, 'kein Stahl ins Stadtlager');
   assert.equal(s.mun, 0, 'keine Munition');
-  assert.equal(s.gross.mun, 0, 'Munitionswerk steht');
-  assert.equal(c.metal, metal0, 'Stadtlager unverändert');
+  assert.equal(s.importCost, 0, 'keine Einfuhr ohne Lager');
   assert.equal(s.shopSupply, 0, 'Gewerbe ohne Waren');
   for (const v of [s.money, s.jam, s.lost, s.shop, s.happy]) assert.ok(Number.isFinite(v), `Zahl ${v}`);
-});
-
-test('Öl wird nach freier Abnahme auf Raffinerie und Kerosin-Raffinerie verteilt (seit v5.75), nicht nur an die nächste', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = netBase(g);
-  put(g, 'fuel', 5, 1, 6, 2); // Raffinerie nah an der Ölquelle
-  put(g, 'kero', 7, 1, 8, 2); // Kerosin-Raffinerie daneben, etwas weiter weg
-  c.deposit[at(g, 5, 4)] = DEPOSITS.indexOf('oil') + 1; // Öl (Test)
-  put(g, 'mine', 5, 4, 5, 4);
-  linkRoad(g, at(g, 5, 4));
-  run(g, CITY.growTime + 20);
-  const fuel = finishKind(g, 'fuel');
-  const kero = finishKind(g, 'kero');
-  const alts = transportOf(g, c).alts;
-  const mine = anchorOf(c, at(g, 5, 4));
-  assert.ok(mine != null, 'Ölquelle mit Lieferwegen');
-  assert.deepEqual(alts.get(mine).map((r) => r.to).sort(), [fuel, kero].sort(), 'beide Raffinerien erreichbar');
-  run(g, 3);
-  assert.ok(c.stats.raw.oil > 0, 'Öl gefördert');
-  assert.ok(c.stats.inp.fuel > 0, 'Raffinerie bekommt Öl');
-  assert.ok(c.stats.inp.kero > 0, 'Kerosin-Raffinerie bekommt auch Öl');
-  // vorher ging alles an die nähere Raffinerie; jetzt bekommt die Kerosin-Raffinerie einen spürbaren Anteil
-  const f = c.stats.inp.fuel * CITY.convert.fuel;
-  const k = c.stats.inp.kero * CITY.convert.kero;
-  assert.ok(k / (f + k) > 0.15, `Verteilung Treibstoff ${f.toFixed(2)} / Kerosin ${k.toFixed(2)}`);
-});
-
-// Direkte Lieferung (Paket „Direkte Lieferung“): Erzmine (0,3) grenzt an die Hütte (0,1)–(1,2), das Stahlwerk (2,1)–(3,2) grenzt an die
-// Hütte; die Straße läuft nur oben in Zeile 0 (Hütte und Stahlwerk am Netz, die Mine nicht).
-test('Erzmine grenzt an Hütte: Weg der Länge 0 ohne Straße, Info „direkt angrenzend“', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = g.city[0];
-  put(g, 'road', 0, 0, 3, 0);
-  put(g, 'smelter', 0, 1, 1, 2);
-  put(g, 'steel', 2, 1, 3, 2);
-  c.deposit[at(g, 0, 3)] = 3; // Erz (Test)
-  put(g, 'mine', 0, 3, 0, 3);
-  const mine = finish(g, 0, 3);
-  const hut = finish(g, 0, 1);
-  finish(g, 2, 1);
-  assert.equal(accessCells(c, mine).length, 0, 'die Mine hat keine Straße');
-  const tr = transportOf(g, c);
-  const r = tr.routes.get(mine);
-  assert.equal(r.to, hut);
-  assert.equal(r.dist, 0);
-  assert.equal(r.path.length, 0);
-  assert.ok(r.path !== null, 'ein Weg der Länge 0 ist ein gültiger Lieferweg');
-  assert.equal(pathEff(tr, r.path), 1);
-  const info = transportInfo(g, c, mine);
-  assert.equal(info.to, 'Hütte');
-  assert.equal(info.dist, 0);
-  assert.equal(info.eff, 1);
-  assert.deepEqual(info.targets, ['Hütte']);
-});
-
-test('Hütte grenzt an Stahlwerk und hat einen Straßenweg zu einem zweiten: das angrenzende kommt zuerst', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = g.city[0];
-  put(g, 'road', 0, 0, 9, 0);
-  put(g, 'smelter', 0, 1, 1, 2);
-  put(g, 'steel', 2, 1, 3, 2); // direkt angrenzend
-  put(g, 'steel', 8, 1, 9, 2); // über die Straße
-  const hut = finish(g, 0, 1);
-  const near = finish(g, 2, 1);
-  const far = finish(g, 8, 1);
-  const tr = transportOf(g, c);
-  assert.equal(tr.routes.get(hut).to, near, 'das angrenzende Werk ist das Ziel');
-  assert.equal(tr.routes.get(hut).dist, 0);
-  const list = tr.alts.get(hut);
-  assert.deepEqual(list.map((x) => x.to), [near, far], 'angrenzend vor Straßenweg');
-  assert.equal(list[0].dist, 0);
-  assert.ok(list[1].dist > 0, 'das ferne Werk bleibt über die Straße');
-  assert.deepEqual(transportInfo(g, c, hut).targets, ['Stahlwerk', 'Stahlwerk']);
-});
-
-test('mehrere angrenzende Werke: fest nach Anker sortiert', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = g.city[0];
-  put(g, 'road', 0, 0, 3, 0);
-  put(g, 'smelter', 0, 1, 1, 2);
-  put(g, 'steel', 2, 1, 3, 2); // rechts neben der Hütte
-  put(g, 'steel', 0, 3, 1, 4); // unterhalb der Hütte
-  const hut = finish(g, 0, 1);
-  const right = finish(g, 2, 1);
-  const below = finish(g, 0, 3);
-  const expect = [right, below].sort((p, q) => p - q);
-  const got = transportOf(g, c).alts.get(hut).slice(0, 2).map((x) => x.to);
-  assert.deepEqual(got, expect);
-  assert.equal(transportOf(g, c).routes.get(hut).to, expect[0]);
-});
-
-test('Erz kommt bei der angrenzenden Hütte an (Lieferweg ohne Straße), Roheisen fährt direkt zum angrenzenden Stahlwerk', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = netBase(g);
-  put(g, 'smelter', 5, 1, 6, 2); // Hütte
-  put(g, 'steel', 7, 1, 8, 2); // Stahlwerk, grenzt an die Hütte
-  c.deposit[at(g, 5, 3)] = 3; // Erz (Test), grenzt an die Hütte
-  put(g, 'mine', 5, 3, 5, 3);
-  // Die Mine braucht eine Straße nur für ihre Pendler (Arbeitsstätte); die Lieferung zur Hütte läuft ohne Straße (Weg der Länge 0)
-  linkRoad(g, at(g, 5, 3));
-  finish(g, 5, 3);
-  finish(g, 5, 1);
-  finish(g, 7, 1);
-  assert.equal(transportOf(g, c).routes.get(at(g, 5, 3)).dist, 0, 'Lieferweg der Länge 0');
-  run(g, CITY.growTime + 30);
-  assert.ok(c.stats.raw.ore > 0, 'Erz gefördert');
-  assert.ok(c.stats.inp.iron > 0 && c.stats.gross.iron > 0, 'Hütte bekommt Erz ohne Straße');
-  assert.ok(c.stats.gross.metal > 0, 'Stahlwerk bekommt Roheisen direkt');
-});
-
-test('angrenzende Mine ohne eigene Straße: Pendler gehen durch die Hütte (deren Pendlerweg), Erz wird gefördert', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = netBase(g);
-  put(g, 'smelter', 5, 1, 6, 2); // Hütte an der Straße
-  put(g, 'steel', 7, 1, 8, 2);
-  c.deposit[at(g, 5, 3)] = 3; // Erz (Test), grenzt an die Hütte
-  put(g, 'mine', 5, 3, 5, 3);
-  const mine = finish(g, 5, 3);
-  const hut = finish(g, 5, 1);
-  finish(g, 7, 1);
-  assert.equal(accessCells(c, mine).length, 0, 'Mine hat keine eigene Straße');
-  run(g, CITY.growTime + 30); // Wohnungen wachsen, erst dann gibt es Pendlerziele
-  const tr = transportOf(g, c);
-  assert.ok(tr.commute.get(hut), 'Hütte hat einen Pendlerweg');
-  assert.equal(tr.commute.get(mine), tr.commute.get(hut), 'Mine nutzt den Pendlerweg der Hütte');
-  assert.equal(transportInfo(g, c, mine).noHome, false);
-  assert.ok(c.stats.raw.ore > 0, 'Erz gefördert ohne eigene Straße');
-  assert.ok(c.stats.gross.iron > 0, 'Hütte verarbeitet es');
-});
-
-test('Mine ohne Straße und ohne angrenzendes Werk: weiter kein Pendlerweg', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
-  const c = netBase(g);
-  c.deposit[at(g, 5, 3)] = 3;
-  put(g, 'mine', 5, 3, 5, 3);
-  const mine = finish(g, 5, 3);
-  assert.equal(transportOf(g, c).commute.get(mine), null);
 });

@@ -54,7 +54,7 @@ test('Bauabschnitt aus dem Fortschritt: fünf Stufen, Ränder und kaputte Werte'
 });
 
 test('Baustellen zeichnen in jeder Größe, jedem Abschnitt, jeder Variante und Jahreszeit (Iso und 2D)', () => {
-  for (const [ck, n] of [['res', 1], ['com', 1], ['mine', 1], ['power', 2], ['uni', 3], ['barracks', 4], ['factory', 5]]) {
+  for (const [ck, n] of [['res', 1], ['com', 1], ['market', 1], ['power', 2], ['uni', 3], ['barracks', 4], ['factory', 5]]) {
     for (let step = 0; step < 5; step++) {
       for (let variant = 0; variant < 3; variant++) {
         const b = { x: 900, y: 1400, n, step, variant, ck, zone: CITY_COLORS[ck], wall: siteWall(ck, variant) };

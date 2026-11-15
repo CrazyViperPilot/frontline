@@ -7,15 +7,13 @@ import { BALANCE } from '../js/data/balance.js';
 import { AI } from '../js/ai/ai.js';
 import { treeGone } from '../js/game/city/clearing.js';
 import { KINDS, KIND_ID } from '../js/data/citykinds.js';
-import { canZone, hasRoad, sizeOf, cellsOf, isPart, accessCells, roadAt, cellRect, DEPOSITS, cellAt } from '../js/game/city/cells.js';
+import { canZone, hasRoad, sizeOf, cellsOf, isPart, accessCells, roadAt, cellRect, cellAt } from '../js/game/city/cells.js';
 import { cityNoise } from '../js/game/city/state.js';
 import { freePop, hasMarket, cityEntityAt, cityTrainers, forEnemyCity, cityLevel, marketBuyPrice } from '../js/game/city/query.js';
 import { cityAiMemory, aiCity, aiDefend, aiRaid } from '../js/ai/cityai.js';
-import { connectRoad } from '../js/game/city/roadnet.js';
+import { connectRoad, connectEdge } from '../js/game/city/roadnet.js';
 import { transportOf, transportInfo } from '../js/game/transport.js';
 import { snapshotGame, restoreGame } from '../js/game/savegame.js';
-import { RELIEF } from '../js/game/relief.js';
-import { bridgeUnder } from '../js/game/river.js';
 import { withValue } from './util.js';
 import { brakeTax } from '../js/game/city/economy.js';
 
@@ -188,13 +186,8 @@ test('Wohnen + Werk + Straße: Einwohner arbeiten, Lager und Geld wachsen', () =
   paint(g, 'res', 0, 1, 5, 1);
   paint(g, 'bm', 0, 3, 5, 3);
   const c = g.city[0];
-  c.deposit[at(g, 0, 4)] = 1; // Wald direkt an der Stadt (Test)
-  c.deposit[at(g, 1, 4)] = 2; // Fels
-  assert.match(paint(g, 'mine', 5, 4, 5, 4).reason, /vorkommen/);
-  assert.match(paint(g, 'mine', 2, 4, 2, 4).reason, /räumen/, 'BM-Werk steht dort: nicht überbauen');
-  assert.ok(paint(g, 'mine', 0, 4, 1, 4).ok);
-  linkRoad(g, 0, at(g, 0, 4)); // Förderanlagen brauchen eine Straße (seit v5.20)
-  linkRoad(g, 0, at(g, 1, 4));
+  assert.match(paint(g, 'mine', 0, 4, 0, 4).reason, /nicht mehr baubar/, 'Förderanlage gibt es nicht mehr (Paket „Import“)');
+  assert.ok(connectEdge(g, c, [at(g, 0, 2)], false) >= 0, 'Straße zum Kartenrand (Einfuhr)');
   linkMain(g, 0, c.list.find((i) => c.kind[i] === KIND_ID.bm)); // das Netz erreicht das Lager (seit v5.20 braucht BM einen Weg dorthin)
   const m = g.mainFob(0);
   m.store.bm = 0;
@@ -203,8 +196,8 @@ test('Wohnen + Werk + Straße: Einwohner arbeiten, Lager und Geld wachsen', () =
   const s = g.city[0].stats;
   assert.ok(s.pop > 8, `Einwohner ${s.pop}`);
   assert.ok(s.workers > 0 && s.bm > 0);
-  assert.ok(s.raw.wood > 0 && s.raw.stone > 0, 'Holzfäller und Steinbruch fördern');
-  assert.ok(s.bm <= s.raw.wood + s.raw.stone + 1e-9, 'BM nur aus Rohstoffen');
+  assert.ok(s.raw.raw > 0 && s.importCost > 0, 'Rohmaterial wird eingeführt und bezahlt');
+  assert.ok(s.bm <= s.raw.raw / CITY.chain.bm.need.raw + 1e-9, 'BM nur aus Rohmaterial');
   assert.ok(m.store.bm > 50, `BM ${m.store.bm}`);
   assert.ok(g.teams[0].res.money > money0);
   assert.ok(m.store.bm <= 3000);
@@ -231,31 +224,6 @@ test('Großbauten der Stadt (Fabrikhalle, Kaserne) lichten den Nebel über ihrer
     }
   }
   assert.ok(n >= 4 * (25 + 16), 'Fabrikhalle (5 × 5) und Kaserne (4 × 4) im Startviertel geprüft');
-});
-
-test('Räumen lässt Rohstoffvorkommen und Förderanlagen stehen; nur Abreißen (demolish) entfernt eine Förderanlage', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 3000 });
-  clearStart(g);
-  const c = g.city[0];
-  assert.ok(paint(g, 'res', 1, 4, 1, 4).ok); // legt auch den Bauplatz der Testzellen fest
-  c.deposit[at(g, 0, 4)] = 1; // Wald (Test)
-  const dep = c.deposit.slice();
-  assert.ok(paint(g, 'mine', 0, 4, 0, 4).ok);
-  const mine = c.kind[at(g, 0, 4)];
-  const r = paint(g, 'erase', 0, 4, 1, 4);
-  assert.equal(r.ok, true, 'Wohnen daneben wird geräumt');
-  assert.equal(r.kept, true);
-  assert.equal(c.kind[at(g, 0, 4)], mine, 'Förderanlage bleibt');
-  assert.equal(c.deposit[at(g, 0, 4)], 1, 'Vorkommen bleibt');
-  assert.equal(c.kind[at(g, 1, 4)], 0, 'Wohnen geräumt');
-  const only = paint(g, 'erase', 0, 4, 0, 4);
-  assert.equal(only.ok, false);
-  assert.match(only.reason, /Rohstoffvorkommen/);
-  const b = base.get(g);
-  assert.ok(g.issue(0, { type: 'city', kind: 'erase', c0: b.c, r0: b.r + 4, c1: b.c, r1: b.r + 4, demolish: true }).ok, 'Abreißen');
-  assert.equal(c.kind[at(g, 0, 4)], 0, 'Förderanlage abgerissen');
-  assert.equal(c.deposit[at(g, 0, 4)], 1, 'Vorkommen bleibt auch dann');
-  for (let i = 0; i < dep.length; i++) if (i !== at(g, 0, 4)) assert.equal(c.deposit[i], dep[i]);
 });
 
 test('Nichts überbauen: belegte Zellen bleiben, erst räumen, dann neu ausweisen', () => {
@@ -407,69 +375,17 @@ test('Flucht: Schüsse in der Konfliktzone leeren Wohnzellen, nach Ruhe kehren s
   assert.ok(c.stats.housing > 0, 'zurück nach der Ruhezeit');
 });
 
-test('Rohstoffvorkommen: jede Sorte nahe jeder Hauptstadt, Karte unverändert', () => {
-  const a = new Game({ seed: 4, city: true });
-  const b = new Game({ city: false, seed: 4 });
-  assert.deepEqual([...a.grid.terrain], [...b.grid.terrain], 'Karte gleich mit und ohne Stadt');
-  for (const team of [0, 1]) {
-    const c = a.city[team];
-    const m = a.mainFob(team);
-    for (let d = 1; d <= 4; d++) {
-      let near = false;
-      for (let i = 0; i < c.deposit.length; i++) {
-        if (c.deposit[i] !== d) continue;
-        const q = i % c.cols;
-        const r = (i - q) / c.cols;
-        if (Math.hypot((q + 0.5) * c.cell - m.x, (r + 0.5) * c.cell - m.y) < (CITY.territory.main + 1) * c.cell) near = true;
-      }
-      assert.ok(near, `Team ${team} Sorte ${d} im Gebiet`);
-    }
-  }
-});
-
-test('Rohstoffvorkommen nie auf Wasser, Furten, Brücken oder Stadtstraßen (auch nicht am Ufer)', () => {
-  for (const seed of [1, 3, 42, 1234]) {
-    const g = new Game({ seed, city: true, river: true });
-    const c = g.city[0];
-    const S = c.cell;
-    const T = g.grid.tile;
-    const m = CITY.deposits.shore;
-    let n = 0;
-    for (let i = 0; i < c.deposit.length; i++) {
-      if (!c.deposit[i]) continue;
-      n++;
-      const q = i % c.cols;
-      const r = (i - q) / c.cols;
-      assert.ok(!g.roads.kind[i], `Seed ${seed}: Vorkommen auf Stadtstraße/Brücke (${q}, ${r})`);
-      assert.ok(!bridgeUnder(g, (q + 0.5) * S, (r + 0.5) * S), `Seed ${seed}: Vorkommen auf Brücke (${q}, ${r})`);
-      for (let y = r * S - m; y <= (r + 1) * S + m; y += 8) {
-        for (let x = q * S - m; x <= (q + 1) * S + m; x += 8) {
-          assert.ok(!g.grid.isFord(Math.floor(x / T), Math.floor(y / T)), `Seed ${seed}: Vorkommen an einer Furt (${q}, ${r})`);
-          if (g.relief) assert.ok(g.relief.heightAt(x, y) >= RELIEF.water, `Seed ${seed}: Vorkommen am/auf Wasser (${q}, ${r})`);
-        }
-      }
-    }
-    assert.ok(n > 40, `Seed ${seed}: genug Vorkommen (${n})`);
-  }
-});
-
-test('Stahl: Erzmine, Hütte und Stahlwerk liefern, Fahrzeuge kosten Stahl, Abbruch erstattet', () => {
+test('Stahl: Stahlwerk mit Einfuhr liefert, Fahrzeuge kosten Stahl, Abbruch erstattet', () => {
   const g = new Game({ seed: 3, city: true, startMoney: 9000 });
   const c = g.city[0];
   paint(g, 'road', 0, 0, 9, 0);
   paint(g, 'res', 0, 1, 9, 1);
   assert.ok(paint(g, 'steel', 0, 2, 1, 3).ok); // 2 × 2 (seit v5.08), Straße darunter
-  assert.ok(paint(g, 'smelter', 3, 2, 4, 3).ok); // Hütte (seit v5.20): Erz → Roheisen, Roheisen → Stahlwerk
   paint(g, 'road', 0, 4, 4, 4);
-  c.deposit[at(g, 5, 3)] = 3; // Erz
-  c.deposit[at(g, 6, 3)] = 3;
-  paint(g, 'mine', 5, 3, 6, 3);
-  linkRoad(g, 0, at(g, 5, 3)); // Erzmine braucht eine Straße zur Hütte (seit v5.20)
-  linkRoad(g, 0, at(g, 6, 3));
-  paint(g, 'res', 7, 4, 7, 4); // Wohnen an der Erzstraße: Förderung, Hütte und Stahlwerk pendeln dorthin (seit v5.20 nötig)
   linkMain(g, 0, c.list.find((i) => c.kind[i] === KIND_ID.steel));
+  assert.ok(connectEdge(g, c, [at(g, 0, 0)], false) >= 0, 'Straße zum Kartenrand');
   run(g, 90);
-  assert.ok(c.stats.raw.ore > 0 && c.stats.iron > 0 && c.stats.metal > 0, `Stahl/s ${c.stats.metal}, Roheisen/s ${c.stats.iron}`);
+  assert.ok(c.stats.raw.ore > 0 && c.stats.metal > 0, `Stahl/s ${c.stats.metal}, Eisen/s ${c.stats.raw.ore}`);
   c.metal = 50;
   const r = g.issue(0, { type: 'train', buildingId: trainerFor(g, 'tank').id, unit: 'tank' });
   assert.equal(r.ok, false);
@@ -604,15 +520,13 @@ test('Angriff: Stadtgebäude nehmen Schaden, werden Ruine (Prämie), wachsen dan
   assert.equal(c.level[i], 1, 'wiederaufgebaut');
 });
 
-test('Startviertel: Raffinerie, Wohnen und Ölquelle stehen fertig, Treibstoff fließt', () => {
+test('Startviertel: Raffinerie und Wohnen stehen fertig, Öl kommt über die Straße zum Kartenrand, Treibstoff fließt', () => {
   const g = new Game({ seed: 3, city: true });
   for (const team of [0, 1]) {
     const c = g.city[team];
     const kinds = c.list.filter((i) => c.level[i]).map((i) => c.kind[i]);
-    assert.ok(kinds.includes(6) && kinds.includes(2) && kinds.includes(8), `Team ${team}: ${kinds}`);
+    assert.ok(kinds.includes(KIND_ID.fuel) && kinds.includes(KIND_ID.res) && !kinds.includes(KIND_ID.mine), `Team ${team}: ${kinds}`);
   }
-  const c0 = g.city[0];
-  linkRoad(g, 0, c0.list.find((i) => c0.kind[i] === KIND_ID.mine && c0.level[i])); // Ölquelle an die Straße (seit v5.20 Pflicht)
   const m = g.mainFob(0);
   m.store.fuel = 0;
   run(g, 30);
@@ -903,7 +817,6 @@ test('KI baut die Universität als 3 × 3-Großbau', () => {
   assert.ok(a >= 0, 'KI hat eine Uni ausgewiesen');
   const c = g.city[1];
   assert.equal(cellsOf(c, a).length, 9);
-  assert.ok(cellsOf(c, a).every((j) => !c.deposit[j]), 'nicht auf Vorkommen');
   assert.ok(hasRoad(c, a % c.cols, Math.floor(a / c.cols)), 'mit Straße');
   void ai;
 });
@@ -1042,7 +955,6 @@ test('KI baut Werke als 2 × 2-Großbauten', () => {
   }
   assert.ok(works.length >= 8, `KI hat Werke ausgewiesen (${works.length} Zellen)`);
   assert.ok(works.every((j) => c.part[j] > 0), 'alle als Großbau');
-  assert.ok(works.every((j) => !c.deposit[j]), 'nicht auf Vorkommen');
 });
 
 test('Räumen fällt Bäume: Zelle wird bebaubar, Fels und Hauptstadt bleiben gesperrt (seit v5.13)', () => {
@@ -1097,44 +1009,38 @@ test('Räumen fällt Bäume: Zelle wird bebaubar, Fels und Hauptstadt bleiben ge
   assert.deepEqual([...h.city[0].felled], [...c.felled]);
 });
 
-test('connectRoad (AP4): Förderanlage an das Lager anschließen, Baumaterial je Zelle, 0 wenn verbunden, −1 ohne Weg', () => {
-  const g = new Game({ seed: 3, city: true });
-  const c = g.city[0];
-  const m = g.mainFob(0);
-  const wood = DEPOSITS.indexOf('wood') + 1;
-  // Holzvorkommen im Gebiet ohne Straße daneben, möglichst weit von der Hauptstadt
-  const [fc, fr] = cellAt(c, m.x, m.y);
-  const far = [];
-  for (let i = 0; i < c.deposit.length; i++) {
-    if (c.deposit[i] !== wood || !c.claim[i] || c.kind[i] || !canZone(g, c, i) || accessCells(c, i).length) continue;
-    far.push({ i, d: Math.abs((i % c.cols) - fc) + Math.abs(Math.floor(i / c.cols) - fr) });
-  }
-  far.sort((p, o) => p.d - o.d);
-  const i = far.find((f) => f.d >= 3).i; // nicht direkt an der Hauptstadt
-  const col = i % c.cols;
-  const row = (i - col) / c.cols;
-  assert.ok(g.issue(0, { type: 'city', kind: 'mine', c0: col, r0: row, c1: col, r1: row }).ok);
-  const bm0 = m.store.bm;
-  withValue(CITY.transport, 'connectMax', 0, () => assert.equal(connectRoad(g, c, i, true), -1, 'ohne erlaubte Länge kein Weg'));
-  const n = connectRoad(g, c, i, true);
-  assert.ok(n > 0 && n <= CITY.transport.connectMax, `gelegte Zellen ${n}`);
-  assert.equal(m.store.bm, bm0 - n * CITY.costBm.road, 'jede Straßenzelle kostet Baumaterial');
-  assert.ok(accessCells(c, i).some((j) => roadAt(c, j)), 'Förderanlage hat jetzt eine Straße');
-  assert.equal(connectRoad(g, c, i, true), 0, 'schon verbunden: nichts mehr');
-  // neue Straßen nie auf Vorkommen
-  for (let j = 0; j < c.kind.length; j++) if (c.kind[j] === KIND_ID.road && c.deposit[j]) assert.fail(`Straße auf Vorkommen ${j}`);
-});
-
-test('Startviertel (AP4): Raffinerie hat einen Weg ins Lager, Ölquelle einen Weg zur Raffinerie', () => {
+test('Startviertel (AP4, Paket „Import“): Raffinerie hat einen Weg ins Lager und einen zum Kartenrand', () => {
   for (const team of [0, 1]) {
     const g = new Game({ seed: 3, city: true });
     const c = g.city[team];
     const fuel = c.list.find((i) => !isPart(c, i) && c.level[i] && c.kind[i] === KIND_ID.fuel);
-    const oil = c.list.find((i) => c.kind[i] === KIND_ID.mine && c.level[i] && DEPOSITS[c.deposit[i] - 1] === 'oil');
-    assert.ok(fuel !== undefined && oil !== undefined, `Team ${team}: Raffinerie und Ölquelle fertig`);
+    assert.ok(fuel !== undefined, `Team ${team}: Raffinerie fertig`);
     assert.equal(transportInfo(g, c, fuel).to, 'Lager', `Team ${team}: Raffinerie → Lager`);
-    assert.equal(transportInfo(g, c, oil).to, 'Raffinerie', `Team ${team}: Ölquelle → Raffinerie`);
+    assert.equal(transportInfo(g, c, fuel).importFrom, 'Kartenrand', `Team ${team}: Öl vom Kartenrand`);
   }
+});
+
+test('connectRoad (AP4): Werk an das Lager anschließen, Baumaterial je Zelle, 0 wenn verbunden, −1 ohne erlaubte Länge', () => {
+  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const c = g.city[0];
+  const m = g.mainFob(0);
+  // freies 2 × 2-Quadrat im Gebiet ohne Straße daneben, nicht direkt an der Hauptstadt
+  const [fc, fr] = cellAt(c, m.x, m.y);
+  let a = -1;
+  for (let d = 3; d < 12 && a < 0; d++) {
+    for (let r = fr - d; r <= fr + d && a < 0; r++) for (let q = fc - d; q <= fc + d && a < 0; q++) {
+      const cells = [[0, 0], [1, 0], [0, 1], [1, 1]].map(([x, y]) => (r + y) * c.cols + q + x);
+      if (cells.every((j) => c.claim[j] && !c.kind[j] && canZone(g, c, j)) && cells.every((j) => !nbOf(c, j).some((k) => roadAt(c, k) || c.kind[k]))) a = r * c.cols + q;
+    }
+  }
+  assert.ok(a >= 0, 'Platz für ein Werk');
+  assert.ok(g.issue(0, { type: 'city', kind: 'bm', c0: a % c.cols, r0: Math.floor(a / c.cols), c1: a % c.cols + 1, r1: Math.floor(a / c.cols) + 1 }).ok);
+  const bm0 = m.store.bm;
+  withValue(CITY.transport, 'connectMax', 0, () => assert.equal(connectRoad(g, c, a, true), -1, 'ohne erlaubte Länge kein Weg'));
+  const n = connectRoad(g, c, a, true);
+  assert.ok(n > 0 && n <= CITY.transport.connectMax, `gelegte Zellen ${n}`);
+  assert.equal(m.store.bm, bm0 - n * CITY.costBm.road, 'jede Straßenzelle kostet Baumaterial');
+  assert.equal(connectRoad(g, c, a, true), 0, 'schon verbunden: nichts mehr');
 });
 
 test('Steuerbremse: unter der Schwelle unverändert, darüber nur gedämpft (Balance-Steuern)', () => {

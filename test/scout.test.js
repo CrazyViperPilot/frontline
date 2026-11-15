@@ -46,7 +46,7 @@ test('Aufklärungsfahrzeug: stehend nach 3 s getarnt, beim Fahren nicht', () => 
   g.fog[1].mark(x, y, 400); // Zelle ist eingesehen, nur die Tarnung zählt
   run(g, 1);
   assert.equal(g.sees(1, s), true, 'vor 3 s Stillstand noch sichtbar');
-  run(g, 3);
+  run(g, 3.5); // etwas Luft: das Gedränge zu Beginn verschiebt den Wagen bis etwa 1 s lang (Zeitpunkt hängt von den Kennungen ab)
   assert.equal(g.sees(1, s), false, 'nach 3 s Stillstand getarnt');
   assert.equal(g.sees(0, s), true, 'eigene sehen es immer');
   foe.x = x + BALANCE.stealth.detectRange - 10;
@@ -66,7 +66,7 @@ test('Aufklärungsfahrzeug: ein Schuss deckt es kurz auf', () => {
   const foe = g.spawnUnit('rifleman', 1, x + 300, y);
   foe.weapons[0].rounds = 0;
   g.fog[1].mark(x, y, 400);
-  run(g, 4); // im Lauf nähert sich der Gegner ggf.
+  run(g, 4.5); // im Lauf nähert sich der Gegner ggf.; etwas Luft für das Gedränge zu Beginn
   assert.equal(g.sees(1, s), false, 'getarnt');
   g.fog[1].mark(x, y, 400); // die Sicht lief während des Stillstands aus dem Feld
   // im Lauf können sich beide verschoben haben (Gedränge, Annäherung): hier wieder 300 px Abstand

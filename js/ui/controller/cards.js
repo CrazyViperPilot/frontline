@@ -16,6 +16,7 @@ import { hasCommander } from '../../game/commander.js';
 import { hasUnlock } from '../../game/research.js';
 import { RESEARCH } from '../../data/research.js';
 import { canShellRoads } from '../../game/roadwar.js';
+import { presetKinds, presetOf } from '../../game/logistics.js';
 import { isCarrier } from './util.js';
 import { MODES } from './modes.js';
 
@@ -37,7 +38,7 @@ const RADIO_TIP = `. Zweite Siegbedingung: steht er fertig ${Math.round(BALANCE.
 const CMD = BALANCE.commander;
 const COMMANDER_TIP = `. Einmalig, belegt keinen Platz. Aura ${CMD.aura} px: eigene Einheiten schießen ${Math.round((CMD.fireRate - 1) * 100)} % schneller, verletzte Infanterie heilt. Fällt er, bekommt der Gegner ${CMD.deathPoints} Punkte (Eroberung: das eigene Team verliert ${CMD.deathPoints} Tickets).`;
 
-// Ladungsart: Taste, Kurzname, Bezeichnung
+// Ladungsart: Taste, Kurzname, Bezeichnung (Q setzt Gemischt; W/E/R schalten je eine Sorte an oder ab)
 const PRESET_BTN = [
   ['mix', 'Q', 'Gemischt', 'Gemischt'],
   ['bm', 'W', 'Baumat.', 'Baumaterial'],
@@ -343,11 +344,28 @@ export const cardMethods = {
         }),
       );
       for (const [preset, key, label, long] of PRESET_BTN) {
+        const ids = trucks.map((t) => t.id);
+        if (preset === 'mix') {
+          card.push(
+            entry(label, key, {
+              tip: `Ladungsart ${long} (${key})`,
+              active: trucks.every((t) => t.preset === 'mix'),
+              action: () => this.issue({ type: 'setPreset', ids, preset: 'mix' }),
+            }),
+          );
+          continue;
+        }
+        // Umschalter: die Sorte wird dazugenommen oder weggelassen; Ausgangsbasis ist die Art des ersten LKW
         card.push(
           entry(label, key, {
-            tip: `Ladungsart ${long} (${key})`,
-            active: trucks.every((t) => t.preset === preset),
-            action: () => this.issue({ type: 'setPreset', ids: trucks.map((t) => t.id), preset }),
+            tip: `Ladungsart ${long} an/aus (${key}): mehrere Sorten zugleich möglich, z. B. Munition und Treibstoff`,
+            active: trucks.every((t) => t.preset !== 'mix' && presetKinds(t.preset).includes(preset)),
+            action: () => {
+              const kinds = presetKinds(trucks[0].preset);
+              const next = kinds.includes(preset) ? kinds.filter((k) => k !== preset) : [...kinds, preset];
+              const p = presetOf(next);
+              if (p) this.issue({ type: 'setPreset', ids, preset: p }); // ohne Sorte bleibt alles, wie es war
+            },
           }),
         );
       }

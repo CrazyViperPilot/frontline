@@ -8,7 +8,24 @@ import { anchorOf, sizeOf } from './city/cells.js';
 
 const L = BALANCE.logistics;
 const CARGO = ['bm', 'mun', 'fuel'];
-export const PRESETS = ['mix', 'bm', 'mun', 'fuel'];
+// Ladungsarten des LKW (Text, steht in Spielständen): 'mix' = alle drei Sorten, eine Sorte, oder zwei Sorten mit '+' in der festen
+// Reihenfolge bm, mun, fuel (zwei Sorten zugleich, z. B. 'mun+fuel' für Munition und Treibstoff).
+export const PRESETS = ['mix', 'bm', 'mun', 'fuel', 'bm+mun', 'bm+fuel', 'mun+fuel'];
+
+/** Sorten einer Ladungsart in fester Reihenfolge ('mix' = alle drei); unbekannte Art: []. */
+export function presetKinds(preset) {
+  if (!PRESETS.includes(preset)) return [];
+  if (preset === 'mix') return [...CARGO];
+  return CARGO.filter((k) => preset.split('+').includes(k));
+}
+
+/** Kanonische Ladungsart zu einer Liste von Sorten: alle drei = 'mix', keine = null. */
+export function presetOf(kinds) {
+  const set = CARGO.filter((k) => kinds.includes(k));
+  if (set.length === 0) return null;
+  if (set.length === CARGO.length) return 'mix';
+  return set.join('+');
+}
 const TRUCK_ORDERS = new Set(['load', 'unload', 'route']);
 const BOARD_REACH = BALANCE.logistics.boardReach; // Infanterie steigt ein, wenn sie so nah am Hubschrauber ist
 const DROP_RING = BALANCE.logistics.dropRing; // Absetzen: Abstand der Passagiere um den Hubschrauber
@@ -144,15 +161,14 @@ export function cmdSetPreset(game, team, cmd) {
 
 /**
  * Ein Ladeschritt am Lager der FOB. 'full' = Ladung voll, 'empty' = passende Sorte im Lager leer, 'busy' = geladen.
- * Preset 'mix': je Tick die Sorte mit der kleinsten Ladung, die im Lager vorhanden ist.
+ * Geladen werden nur die Sorten der Ladungsart (presetKinds); je Tick die Sorte mit der kleinsten Ladung, die im Lager vorhanden ist.
  */
 function loadStep(u, fob, dt) {
   const cap = u.def.cargoCap;
   const total = cargoSum(u.cargo);
   if (total >= cap - EPS) return 'full';
   let best = null;
-  for (const k of CARGO) {
-    if (u.preset !== 'mix' && u.preset !== k) continue;
+  for (const k of presetKinds(u.preset)) {
     if (fob.store[k] <= EPS) continue;
     if (best === null || u.cargo[k] < u.cargo[best]) best = k;
   }

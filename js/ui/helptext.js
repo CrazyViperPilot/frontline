@@ -60,7 +60,7 @@ export const KEYS = [
   ['R (Baufahrzeug)', `Baufahrzeug gewählt: Schutt räumen, dann eine Zelle mit Schutt anklicken (Shift: mehrere) · in ${CITY.roadWar.clearTime} s ist die Straße wieder da (eigene Straßen und Stadtstraßen der Karte)`],
   ['C (Brückenleger)', `Brückenleger gewählt: Brücke legen, dann eine Flusszelle am Ufer anklicken · nach ${UNITS.bridgelayer.layTime} s befahrbar, eine Brücke je Fahrzeug (neue ersetzt die alte) · ausgebildet in Fabrikhalle (${UNITS.bridgelayer.hotkey})`],
   ['G (Bagger)', `Bagger gewählt: Baggern, dann eine Zelle anklicken (Shift: mehrere) · räumt Zonenstraßen der Karte (nicht Brücken) für beide Seiten, Bäume, leere Häuser und eigene Stadtgebäude (je ${BALANCE.excavator.digTime} s) · räumt Schutt zerstörter Straßen (die Straße ist wieder da) und reißt gegnerische Straßen ab · gegnerische Gebäude per Rechtsklick langsam mit der Schaufel zerstören · ausgebildet in Fabrikhalle oder Hauptstadt (${UNITS.excavator.hotkey})`],
-  ['Q / W / E / R', 'LKW gewählt: Ladungsart Gemischt · Baumaterial · Munition · Treibstoff'],
+  ['Q / W / E / R', 'LKW gewählt: Q Gemischt (alle Sorten) · W/E/R schalten Baumaterial, Munition, Treibstoff einzeln an oder ab (z. B. Munition und Treibstoff zugleich)'],
   ['Entf', `Gebäude abreißen (${pct(BALANCE.demolishRefund)} % des Baumaterials zurück)`],
   ['Lager', 'Die Hauptstadt hat unendlich Baumaterial (mit „Stadt“ im Startmenü: nur, was die Werke der Stadt liefern), Munition und Treibstoff. Vordere FOBs haben ein eigenes Lager, das LKW füllen · Gebäude bezahlt die FOB in Reichweite · LKW versorgen Einheiten in der Nähe aus ihrer Ladung'],
   ['Munition', 'Jeder Schuss verbraucht Munition · ohne Vorrat feuern Einheiten nicht (FOB-MG kostet nichts)'],

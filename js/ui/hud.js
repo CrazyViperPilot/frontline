@@ -16,6 +16,7 @@ import { careOf } from '../game/city/care.js';
 import { transportInfo, transportOf, supplyOf } from '../game/transport.js';
 import { standRoute, runwaysOf, runwayBusy, freeSpace } from '../game/aircraft.js';
 import { padBusy } from '../game/helipad.js';
+import { presetKinds } from '../game/logistics.js';
 import { CITY_TIP } from './citypanel.js';
 import { WORKS, SUPPLIER_KINDS, WORKPLACE_KINDS, KINDS } from '../data/citykinds.js';
 import { GOOD_SHORT, GOOD_COLOR, IMPORTS } from '../data/goods.js';
@@ -41,6 +42,8 @@ const NEG_COLOR = '#e5484d'; // Verbrauch (negative Netto-Rate)
 // wie der Munitionsbalken über den Einheiten (renderer.js), Ladung und Passagiere im Akzentgelb
 const COLOR = { bm: GOOD_COLOR.bm, mun: GOOD_COLOR.mun, fuel: GOOD_COLOR.fuel, ammo: '#7f93ad', cargo: '#c9a227' };
 const PRESET_NAME = { mix: 'Gemischt', bm: 'Baumaterial', mun: 'Munition', fuel: 'Treibstoff' };
+/** Anzeige der Ladungsart: 'Gemischt', eine Sorte oder zwei Sorten mit ' + ' (z. B. „Munition + Treibstoff“). */
+const presetName = (p) => PRESET_NAME[p] || presetKinds(p).map((k) => PRESET_NAME[k]).join(' + ') || p;
 const STORE_CAP = BALANCE.logistics.storeCap;
 const CAPITAL_CAP = BALANCE.logistics.capitalCap;
 
@@ -464,7 +467,7 @@ export class Hud {
       h += gauge('Ladung', sum, u.def.cargoCap, COLOR.cargo);
       h +=
         `<div class="muted small">${Math.floor(c.bm)} BM · ${Math.floor(c.mun)} MUN · ${Math.floor(c.fuel)} TS` +
-        ` · Ladungsart: ${PRESET_NAME[u.preset] || u.preset}</div>`;
+        ` · Ladungsart: ${presetName(u.preset)}</div>`;
     }
     return h;
   }

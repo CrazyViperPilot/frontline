@@ -69,6 +69,10 @@ const TILE = BALANCE.map.tile;
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;
 const BG = '#0d110d';
+// Turm und Waffe zeichnen (aimOf, nur Darstellung): Drehtempo in rad/s (Fahrzeuge, Infanterie) und Haltezeit nach Zielverlust in ms
+const AIM_TURN = 4;
+const AIM_TURN_INF = 10;
+const AIM_HOLD = 1500;
 const BG_RGB = [13, 17, 13];
 const ACCENT = '#c9a227';
 const GOLD_RALLY = '#ffd65a'; // Ring am Sammelpunkt
@@ -427,11 +431,43 @@ export class Renderer {
     }
   }
 
-  /** Blickrichtung einer Einheit zu ihrem Ziel (Bogenmaß) oder null. */
+  /**
+   * Gezeichnete Blickrichtung von Turm bzw. Waffe (Bogenmaß) oder null (= wie der Rumpf). Nur Darstellung, die Simulation zielt
+   * sofort: Der Turm dreht mit begrenzter Geschwindigkeit zum Ziel (AIM_TURN rad/s, Infanterie AIM_TURN_INF), hält nach dem Verlust
+   * des Ziels AIM_HOLD ms die letzte Richtung (ein kurzer Zielwechsel oder eine Lücke zwischen zwei Schüssen lässt das Rohr nicht
+   * zurückspringen) und dreht danach weich zum Rumpf zurück. Vorher sprang das Rohr bei jedem Zielwechsel (Zucken).
+   */
   aimOf(u) {
-    if (!u.targetId || !(u.def.range > 0)) return null;
-    const t = this.game.getEntity(u.targetId);
-    return t ? Math.atan2(t.y - u.y, t.x - u.x) : null;
+    if (!(u.def.range > 0)) return null;
+    const t = u.targetId ? this.game.getEntity(u.targetId) : null;
+    const want = t ? Math.atan2(t.y - u.y, t.x - u.x) : null;
+    const now = performance.now();
+    const hull = u.angle ?? 0;
+    const map = (this.aimState ??= new WeakMap());
+    let st = map.get(u);
+    if (!st) {
+      if (want === null) return null;
+      st = { a: hull, t: now, hold: 0, last: want };
+      map.set(u, st);
+    }
+    const dt = Math.min(0.1, Math.max(0, (now - st.t) / 1000));
+    st.t = now;
+    let goal;
+    if (want !== null) {
+      goal = want;
+      st.last = want;
+      st.hold = now + AIM_HOLD;
+    } else if (now < st.hold) goal = st.last;
+    else goal = hull;
+    const turn = (u.def.armor === 'inf' ? AIM_TURN_INF : AIM_TURN) * dt;
+    const diff = Math.atan2(Math.sin(goal - st.a), Math.cos(goal - st.a));
+    st.a += Math.abs(diff) <= turn ? diff : Math.sign(diff) * turn;
+    // zurück in Fahrtrichtung angekommen: wieder „wie der Rumpf“ (der Turm folgt dem Rumpf ohne Verzögerung)
+    if (want === null && now >= st.hold && Math.abs(Math.atan2(Math.sin(hull - st.a), Math.cos(hull - st.a))) < 0.02) {
+      map.delete(u);
+      return null;
+    }
+    return st.a;
   }
 
   /** Effekte, die das eigene Team sieht (im Ausschnitt, eigene oder in Sicht). */

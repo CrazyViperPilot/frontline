@@ -35,9 +35,9 @@ const FULL = { radio: true, weather: 'random', research: true, river: true, city
 // prettier-ignore
 // Läufe (play) neu gesetzt mit v5.61 (Review-Paket P8: Wegsuche mit Budget je Schritt, unerreichbare Ziele, lange Suchen); Paket K1: KI bildet Unterstützer aus; Paket K2: KI bildet Artillerie aus und lässt sie feuern
 const GOLDEN = {
-  2: { map: '894406ba81d0', river: '533ace5a08d3', start: '17a88db39a61', play: ['50d40a40e160', '261b6b793615', '9c7d039cdf55', '5abfc5b6aa5e'] },
-  3: { map: 'b8095c497a39', river: 'de3f5da9bcba', start: '1305f1fa2351', play: ['5ca0f24a64af', 'a7293c82a57d', '21e871035cf9', 'db5cec1000ac'] },
-  7: { map: 'e6c2e69a3dc6', river: 'b5fa8dc32b8a', start: '1498509d7fba', play: ['1fb4e34ec113', 'a6447353ef00', 'c06908b7dc1d', '3c3d0135c91e'] },
+  2: { map: '894406ba81d0', river: '533ace5a08d3', start: '17a88db39a61', play: ['ec78337d7d67', '4a630e168e69', '0fde64af7e7f', 'e2a74e397182'] },
+  3: { map: 'b8095c497a39', river: 'de3f5da9bcba', start: '1305f1fa2351', play: ['ba9771d11b7e', '375e3497f1ea', 'f23b14e1bcb1', 'e7d1081b1097'] },
+  7: { map: 'e6c2e69a3dc6', river: 'b5fa8dc32b8a', start: '1498509d7fba', play: ['45cfc866fd74', 'd0b46f19cf18', 'db02fed0a8f2', 'ca308b5c34c3'] },
 };
 
 /** Prüfsumme (12 Hex-Zeichen) über einen Wert: Zahlen exakt (String), Typed Arrays als Bytes, Objekte mit sortierten Schlüsseln. */

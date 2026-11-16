@@ -14,7 +14,7 @@
 //   yield  höchster Ertrag je Arbeiter und Sekunde im Werk, das sie macht (CITY.chain), begrenzt durch die angelieferten Rohwaren
 //   full   Hinweis der Ressourcenanzeige, wenn das Stadtlager voll ist (nur store 'city')
 // Baumaterial, Munition und Treibstoff sind zugleich die Sorten der FOB-Lager und LKW (js/game/logistics.js); eine neue Ware dieser
-// Art braucht deutlich mehr (Lager, LKW, HUD) und ist nicht Teil des Rezepts „Neue Ware“ in CLAUDE.md.
+// Art braucht deutlich mehr (Lager, LKW, HUD) und ist nicht Teil des Rezepts docs/rezepte/neue-ware.md.
 export const GOODS = {
   bm: { name: 'Baumaterial', short: 'BM', color: '#b58248', store: 'main', sell: 20, buy: 200, yield: 0.1 },
   mun: { name: 'Munition', short: 'MUN', color: '#d9b600', store: 'main', sell: 30, buy: 300, yield: 0.06 },

@@ -1,6 +1,6 @@
 // Modus-Register (Review „Eroberung“): jede Spielart steht hier genau einmal. `game.mode` liefert den Eintrag der laufenden Partie;
 // Simulation und KI fragen ihn an den Stellen, an denen sich die Spielarten unterscheiden, statt `if (game.conquest)` zu verstreuen.
-// Neue Spielart: Modul mit einem Objekt wie CONQUEST_MODE schreiben, hier eintragen, Schalter in `new Game()` (CLAUDE.md, Rezept). Kein DOM.
+// Neue Spielart: Modul mit einem Objekt wie CONQUEST_MODE schreiben, hier eintragen, Schalter in `new Game()` (Rezept: docs/rezepte/neuer-spielmodus.md). Kein DOM.
 //
 // Haken je Eintrag:
 //   teamCount(players)             Zahl der Teams

@@ -45,3 +45,55 @@ test('PRD aufgeteilt (seit v5.79): der Einstieg PRD.md verlinkt jede Themen-Date
   assert.deepEqual(linked.filter((f) => !files.includes(f)), [], 'PRD.md verlinkt eine fehlende Datei');
   assert.ok(prd.length < 20000, `PRD.md soll Einstieg bleiben (${prd.length} Zeichen): Regeln gehören in docs/prd/`);
 });
+
+// Schlanker Einstieg: Die CLAUDE.md im Wurzelordner wird in jeder Sitzung ganz geladen. Sie hält nur Regeln, Befehle und den
+// Wegweiser; Rezepte, Wertetabelle, Test- und Betriebswissen liegen in eigenen Dateien unter docs/.
+const ROOT_URL = new URL('../', import.meta.url);
+const rel = (p) => new URL(p, ROOT_URL);
+
+/** Alle Dateien `name` unter dem Ordner `dir` (relativ zur Wurzel), rekursiv. */
+function findFiles(dir, test, out = []) {
+  if (!existsSync(rel(dir))) return out;
+  for (const entry of readdirSync(rel(dir), { withFileTypes: true })) {
+    const path = `${dir}${entry.name}`;
+    if (entry.isDirectory()) findFiles(`${path}/`, test, out);
+    else if (test(entry.name)) out.push(path);
+  }
+  return out;
+}
+
+test('CLAUDE.md bleibt schlank: höchstens 7 000 Zeichen, keine Zeile über 200 Zeichen', () => {
+  const text = read('../CLAUDE.md');
+  assert.ok(text.length <= 7000, `CLAUDE.md: ${text.length} Zeichen (höchstens 7 000); Einzelheiten nach docs/ auslagern und im Wegweiser verlinken`);
+  const long = text.split('\n').map((line, i) => [i + 1, line.length]).filter(([, n]) => n > 200);
+  assert.deepEqual(long, [], 'CLAUDE.md: Zeilen über 200 Zeichen ([Zeile, Länge])');
+});
+
+test('CLAUDE.md: jede im Wegweiser genannte Datei existiert, jedes Rezept unter docs/rezepte/ steht im Wegweiser', () => {
+  const text = read('../CLAUDE.md');
+  const from = text.indexOf('## Wegweiser');
+  assert.ok(from >= 0, 'Abschnitt „## Wegweiser“ in CLAUDE.md nicht gefunden');
+  const guide = text.slice(from);
+  const paths = [...guide.matchAll(/`([\w./-]+\.md)`/g)].map((m) => m[1]);
+  assert.ok(paths.length >= 15, `zu wenige Dateien im Wegweiser gefunden (${paths.length}): Muster prüfen`);
+  assert.deepEqual(paths.filter((p) => !existsSync(rel(p))), [], 'Wegweiser nennt Dateien, die es nicht gibt');
+  const recipes = findFiles('docs/rezepte/', (n) => n.endsWith('.md'));
+  assert.ok(recipes.length >= 10, 'zu wenige Rezepte unter docs/rezepte/');
+  assert.deepEqual(recipes.filter((p) => !paths.includes(p)), [], 'Rezept ohne Zeile im Wegweiser der CLAUDE.md');
+});
+
+test('Einstiegs- und Strukturdoku ohne Versionsvermerke „seit v…“', () => {
+  const files = [
+    'CLAUDE.md', 'ARCHITEKTUR.md', 'docs/wo-aendern.md', 'docs/testen.md', 'docs/betrieb.md',
+    ...findFiles('js/', (n) => n === 'CLAUDE.md'),
+    ...findFiles('docs/rezepte/', (n) => n.endsWith('.md')),
+    ...findFiles('docs/architektur/', (n) => n.endsWith('.md')),
+  ];
+  const hits = [];
+  for (const file of files) {
+    readFileSync(rel(file), 'utf8').split('\n').forEach((line, i) => {
+      if (/seit v\d/.test(line)) hits.push(`${file}:${i + 1}`);
+    });
+  }
+  assert.deepEqual(hits, [], 'Versionsvermerke gehören in docs/changelog.md; „seit v…“ hier streichen');
+});

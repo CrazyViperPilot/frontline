@@ -1,4 +1,4 @@
-// Werte des Kartengenerators (js/game/map.js, js/game/landscape.js). Wegweiser: CLAUDE.md.
+// Werte des Kartengenerators (js/game/map.js, js/game/landscape.js). Wegweiser: docs/wo-aendern.md.
 // Vorsicht: Jede Änderung hier verändert ALLE Zufallskarten (gleicher Seed = andere Karte als vorher) und kann Tests brechen,
 // die feste Seeds nutzen. Gespeicherte Karten aus dem Editor bleiben unverändert. Abstände in px, Paare = punktsymmetrisch gespiegelt.
 export const MAPGEN = {

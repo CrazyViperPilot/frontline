@@ -16,6 +16,7 @@ Regeln: PRD §15 (`docs/prd/stadt*.md`), Werte `js/data/city.js`, `citykinds.js`
 ## Besonderheiten
 - Fertige Gebäude haben eine Ziel-Entity (`kind: 'building'`, `type: 'city'`, nicht in `game.buildings`), wählbar; `syncEntity`/`dropEntity` halten sie.
 - Importe ohne Zyklus: Zellgeometrie und Rastersuche sind Blattmodule; `../transport.js` und `../research.js` lesen aus der Stadt nur die Zellgeometrie und die Abfragen.
-- Neue Zellenart: Register `js/data/citykinds.js` (Rezept in der Haupt-`CLAUDE.md`).
+- Neue Zellenart: Register `js/data/citykinds.js`, Rezept `docs/rezepte/neue-stadtzellenart.md`.
+- Ablauf von `updateCity` und Felder von `game.city[team]` und Straßentransport: `docs/architektur/stadt.md`.
 - Bahn und Rollfeld sind keine Straße (`roadAt`); gesperrte Bauplätze melden ihren Grund über `BUILD_BLOCK` (`buildWhy`).
 - Ausbildung prüft `cmdTrain` (`../cmd/train.js`) über `trainerKind`; Tempo nach Versorgung rechnet `../economy.js` mit `../transport.js`.

@@ -91,7 +91,7 @@ Dann verbessern und erneut ansehen; meist reichen 2–3 Runden.
 2. In `MODELS` eintragen (Infanterie: `INFANTRY` und `soldier`); ggf. Größe in `SIZE`.
 3. `node --test test/unitpaint.test.js` (jede Einheit hat ein Modell, Bilder entstehen), dann im Spiel ansehen:
    `npm run smoke` oder `?debug=1` und die Einheit ausbilden (2D und Iso, Taste V).
-4. Die übrigen Schritte einer neuen Einheit (Werte, Ausbildung, KI, Doku) stehen in `CLAUDE.md`, Rezept „Neue Einheit“.
+4. Die übrigen Schritte einer neuen Einheit (Werte, Ausbildung, KI, Doku) stehen in `docs/rezepte/neue-einheit.md`.
 
 ## Welches Modell (KI) für welche Aufgabe
 

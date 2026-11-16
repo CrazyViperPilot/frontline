@@ -1,6 +1,6 @@
 # Frontline – Architektur
 
-Wie der Code aufgebaut ist. Regeln für Änderungen, Wegweiser zu Werten und Rezepte: [CLAUDE.md](CLAUDE.md).
+Wie der Code aufgebaut ist. Regeln für Änderungen und Wegweiser: [CLAUDE.md](CLAUDE.md); Werte: [docs/wo-aendern.md](docs/wo-aendern.md); Rezepte: [docs/rezepte/](docs/rezepte/).
 Spielregeln: [PRD.md](PRD.md) (Einstieg) und die Themen-Dateien in [docs/prd/](docs/prd/). Zahlen stehen hier bewusst nicht, sie gehören in `js/data/`.
 
 ## 1. Schichten
@@ -44,7 +44,7 @@ Die Reihenfolge ist Absicht; ein neues System kommt an die Stelle, deren Ergebni
 | 2 | `updateResearch` | `research.js` | Forschungsfortschritt |
 | 2b | `updateAbilities` | `abilities.js` | Rauch, Minen, Feldwerkstatt |
 | 3 | `updateEconomy` | `economy.js` | `team.rate` zurücksetzen, Ausbildung, Soldaten-Nachschub |
-| 3a | `updateCity` | `city/economy.js` | nur mit Stadt: Einwohner, Wachstum, Steuern, Gewerbe-Absatz, Einfuhr, Werke, Pendler (Einzelheiten unter der Tabelle) |
+| 3a | `updateCity` | `city/economy.js` | nur mit Stadt: Einwohner, Wachstum, Steuern, Gewerbe-Absatz, Einfuhr, Werke, Pendler (Einzelheiten: `docs/architektur/stadt.md`) |
 | 4 | `updateGarrison`, `updateTowers` | `garrison.js`, `tower.js` | Ein- und Aussteigen in Stadthäuser und Gefechtstürme; Dachaufbauten werden fertig |
 | 5 | `updateFormations` | `formation.js` | Tempo geschlossener Gruppen |
 | 6 | `updateMovement` | `movement.js` | zurückgestellte Wege planen (`planPending`, `pathplan.js`), Wege fahren, Verfolgen (ohne Jets); Rücksetzen von `pathWork`, `pathShare` am Ende von `update` |
@@ -66,11 +66,7 @@ Die Reihenfolge ist Absicht; ein neues System kommt an die Stelle, deren Ergebni
 | 19 | `updateAnimals`, `ageEffects`, `cleanup`, `updateScars` | `animals.js`, `game.js`, `scars.js` | Tiere, Effekte altern, Tote entfernen (Wracks, Ereignisse), Narben |
 | 20 | `checkElimination` | `game.js` (ruft `mode.checkEnd`) | klassisch: Fällt die Hauptstadt eines Teams, endet die Partie; Eroberung: Ausscheiden bei Fall der Hauptstadt oder 0 Tickets, Partie endet, wenn ein Team übrig bleibt |
 
-Schritt 3a (`updateCity`) läuft in fester Reihenfolge der Phasen: Gebiet, Ruinen, Treffer, Einwohner, Wachstum, Wirtschaft, Pflege.
-Einfuhr der Rohwaren: je Werk vom nächsten Einfuhrpunkt, bezahlt je angekommener Einheit, mit Durchsatz des Güterbahnhofs und Kassendeckel (`runWorks`).
-Ketten (Werk → Lager) und Pendler laufen über die Straßenwege aus `transport.js`: `beginLoads` (Last auf 0), Flüsse und Pendler eintragen (`addLoad`),
-Gutschrift mit der Wirkung des Weges (`pathEff`), `settleLoads` (Stau glätten, wirkt im nächsten Schritt). Wege werden nur neu gerechnet, wenn sich die Stadt
-ändert (`c.ver`, auch bei Flucht und Rückkehr der Bewohner); der geglättete Stau-Faktor je Zelle liegt in `c.congestion` (gespeichert).
+Schritt 3a im Einzelnen (Phasen, Einfuhr, Ketten und Pendler über `transport.js`): `docs/architektur/stadt.md`.
 
 Startzustand im Konstruktor von `Game`: Karte (`generateMap` oder gespeicherte Karte), Raster, Höhengelände, Brücken, Stadtstraßen der Karte (`createRoads`, `game.roads`), Teams,
 Forschung, Zone, Modus (`mode.create`: in der Eroberung Flaggen und Tickets), Hot Zone, Nebel, Hauptstädte und Startarmee, Häuser, Kisten, Tiere, Wetter. Jedes System hat dafür ein `create…(game)`.
@@ -107,15 +103,7 @@ targetId, weapons [{ spec, rounds, cd }], ammo (Getter), fuel, cargo { bm, mun, 
 **Gebäude** (`kind: 'building'`): `id, type, team, def (= BUILDINGS[type]), x, y, cx, cy, w, h, hp, maxHp, alive, built, progress,
 queue [{ unit, payerId }], queueTimes, rallyX/Y, main (Hauptstadt), store { bm, mun, fuel }, drill, fireTarget`; Eroberung: `spawnFlag` (Nummer der Flagge, an der neue Einheiten erscheinen; `null` = am Gebäude).
 
-**Stadt** (`game.city[team]`, nur mit Stadt, angelegt in `js/game/city/create.js`): Raster `cols, rows, cell`, je Zelle `kind[]` (Index in `KINDS`), `level[]`, `flee[]`, `blocked[]`, `felled`, `list` (belegte Zellen), `ver` (Zähler:
-steigt bei jeder Änderung an Zellen, Wege werden dann neu gerechnet), `hitLog`, `mapRoads` (Stadtstraßen der Karte), Eroberung `own` (je Zelle 1 = eigenes Viertel; nur dort wird gebaut). Vorräte im Stadtlager: `metal` (Stahl,
-Schlüssel bleibt `metal`), `kero` (Kerosin). `stats` ist nur Anzeige: je Schritt neu gesetzt (eingeführte Rohwaren je s `raw` mit Geld je s `importCost` und je Rohware `importCostBy`, `importScale` = Anteil der Einfuhr,
-den das Geld zulässt, `importNone` = Werke ohne Einfuhrpunkt, `cap` = Leistung je Produkt, `inp` = Produkt-Gegenwert der angekommenen Rohware je s, `gross` = Ausstoß, `n` = fertige Gebäude je Art, Gewerbe-Versorgung `shopSupply`,
-`lost` = Waren ohne Weg je s, `jam` = kleinster Stau-Faktor).
-**Straßentransport** (`transportOf(game, c)` in `js/game/transport.js`): Zustand je Stadtobjekt in einer `WeakMap` (`STATE`). Er enthält `routes` (Lieferweg je Werk zum Lager: Ziel, Weg, Länge),
-`imports` (Einfuhrweg je Werk zum nächsten Einfuhrpunkt: `from` = `'edge'` für den Kartenrand oder Anker des Güterbahnhofs, Weg, Länge; `null` = keiner), `stations` (Güterbahnhöfe mit Gleis zum Kartenrand),
-`depot` (Wege zu Kerosintank und Munitionslager), `commute` (Pendlerweg je Arbeitsstätte, `null` = keine Wohnung), `shop` (Weg Gewerbe und Markt zum Lager), `load`, `factor`, `cap` je Stadtzelle und `list` (Straßenzellen).
-Der Zustand liegt nicht im Objektgraphen und damit nicht im Spielstand; nach dem Laden wird er beim ersten Zugriff neu berechnet.
+**Stadt** (`game.city[team]`, `js/game/city/create.js`) und **Straßentransport** (`transportOf`, `js/game/transport.js`): Felder in `docs/architektur/stadt.md`.
 
 **Effekt** (nur Darstellung, `game.effects`): `{ type, x, y, x2, y2, team, t, life }`, angelegt mit `game.addEffect`.
 
@@ -127,7 +115,7 @@ Antwort immer `{ ok: true, … }` oder `{ ok: false, reason: 'deutscher Text' }`
 Alle Befehle stehen im **Befehlsregister** `COMMANDS` (`js/game/commands.js`): je Typ der Handler `run`, `drives`
 (der gleichnamige Auftrag wird von seinem Modul gefahren, `updateMovement` lässt ihn aus: `OWN_DRIVERS`) und `sound` (die Steuerung
 quittiert ihn mit dem Befehlston). `game.issue` schlägt nur dort nach; `test/docs.test.js` prüft, dass jeder Registereintrag hier steht.
-Neue Befehle: Rezept in [CLAUDE.md](CLAUDE.md).
+Neue Befehle: Rezept `docs/rezepte/neuer-befehl.md`.
 
 | `cmd.type` | Felder | Handler (`js/game/`) | Wirkung |
 |---|---|---|---|
@@ -209,7 +197,7 @@ Ein Verweis auf `Grid` oder `Relief` von anderswo im Zustand bricht das Speicher
 
 ## 9. Feature-Landkarte
 
-Wo jedes Feature liegt. Werte: Tabelle „Wo ändere ich was?“ in CLAUDE.md und das Inhaltsverzeichnis in `js/data/balance.js`. Dateilisten je Ordner: `CLAUDE.md` im Ordner (§7). Neues Feature: hier eine Zeile ergänzen.
+Wo jedes Feature liegt. Werte: Tabelle „Wo ändere ich was?“ in `docs/wo-aendern.md` und das Inhaltsverzeichnis in `js/data/balance.js`. Dateilisten je Ordner: `CLAUDE.md` im Ordner (§7). Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Datei, Hauptmodul, Test).
 
 | Feature | PRD (`docs/prd/<name>.md`) | Hauptmodul (unter `js/`, sonst ab Wurzel) | Weitere | Test (`test/<name>.test.js`) |
 |---|---|---|---|---|

@@ -2,7 +2,7 @@
 // auf die Register js/data/citykinds.js und js/data/goods.js umgestellt, Review-Paket P6, Befunde E-01, Q-03, Q-04, A-02).
 // Jede Art und jede Ware ist vollständig eingetragen; fehlt etwas, rechnete das Spiel früher still mit einem Ersatzwert weiter
 // (`?? 0`, `?? 1`) oder die Kasse wurde NaN. Neue Zellenart: Eintrag im Register mit der nächsten freien id und hier in der
-// festen Liste hinten anhängen (IDs stehen in Spielständen). Neue Ware: Eintrag in GOODS (Rezepte in CLAUDE.md).
+// festen Liste hinten anhängen (IDs stehen in Spielständen). Neue Ware: Eintrag in GOODS (Rezepte docs/rezepte/neue-ware.md, neue-stadtzellenart.md).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

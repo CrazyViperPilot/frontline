@@ -17,5 +17,6 @@ Nach jeder Änderung `npm run docs` und `npm run test:quick`; PRD-Text und Hilfe
 - KI-Werte liegen an drei Orten: Armee-KI im Modul für KI-Werte, Stadt-KI in `CITY.ai`, je Schwierigkeit verschiedene in `BALANCE.difficulty`.
 - Die beiden Register sind die Quelle; `CITY.cost`, `CITY.size`, `CITY.yield`, `CITY.market` u. a. werden daraus abgeleitet. Neue `id` = höchste + 1, nie umnummerieren.
 - Der Kartengenerator ändert mit jedem Wert alle Zufallskarten (Seeds, Tests, `test/golden.test.js`).
-- Zellenarten und Waren ändern: Rezepte „Neue Stadtzellenart“, „Neue Ware“, „Neue Rohware“ in `/CLAUDE.md`.
+- Zellenarten und Waren ändern: Rezepte in `docs/rezepte/` (`neue-stadtzellenart.md`, `neue-ware.md`, `neue-rohware.md`).
+- Welcher Schlüssel wofür: `docs/wo-aendern.md` (erst dort suchen, dann hier nur den Schlüssel lesen).
 - `BALANCE.match.tokenDays`, `walletMax`, `startRes.money` haben PHP-Spiegel in `api/lib/` (`FL_MATCH_TOKEN_DAYS`, `FL_WALLET_*`): mit ändern.

@@ -1,4 +1,4 @@
-// Alle globalen Spielzahlen. Einheiten: units.js, Gebäude: buildings.js, KI: ai.js, Kartengenerator: mapgen.js (alle in js/data/). Wegweiser: CLAUDE.md.
+// Alle globalen Spielzahlen. Einheiten: units.js, Gebäude: buildings.js, KI: ai.js, Kartengenerator: mapgen.js (alle in js/data/). Wegweiser: docs/wo-aendern.md.
 //
 // Inhalt (Suche nach dem Schlüssel):
 //   QUICK            Schnelleinstellungen: die Werte, die man am häufigsten ändert (gleich hier oben)

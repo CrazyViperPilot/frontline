@@ -1,1 +1,0 @@
-**Umbau: Stadt-KI in Module geteilt** (nur Code): js/ai/cityai.js ist in Module unter js/ai/city/ aufgeteilt (Ausbau, Güterbahnhof, Straßennetz, Fliegerhorst, Markt, Überfälle und Verteidigung); die KI verhält sich unverändert.

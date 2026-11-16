@@ -1,1 +1,0 @@
-**Umbau: Renderer in Module geteilt** (nur Code): js/render/renderer.js ist in Zeichenebenen unter js/render/layers/ aufgeteilt (2D, Iso, Boden, Nebel, Zonen, Radien, Marker); das Bild ist unverändert.

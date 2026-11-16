@@ -1,6 +1,6 @@
 // Stadt auf der Karte (PRD §15): Straßen, ausgewiesene Zonen, Gebäude, Gebietsgrenzen und im Baumodus das gezogene Rechteck.
 // Liest nur game.city (und ren.cityUi, die Stadtleiste). 2D: flach von oben; isometrisch: Boden hier, Gebäude als Stadthäuser
-// über drawTownBuilding (renderer.js).
+// über drawTownBuilding (render/layers/isoitems.js).
 import { cellRect, buildAllowed, growLinked, sizeOf, fitBig, bigCenter, bigSpan, cellsOf } from '../game/city/cells.js';
 import { BIG_KINDS, bigPlan, drawBigGround, drawBigTop, partFoot, bigTop, stationBit } from './bigbuild.js';
 import { drawWorksTop, worksLift, WORKS_GROUND, WORKS_KINDS } from './works.js';

@@ -387,7 +387,7 @@ function drawHeli(ctx, u, color, dark, light, hull, turret, now, z, iso = false)
  * dann nur die Anzeigen darüber (Baufortschritt, Besatzung des Turms, Bohrer, Fertigung).
  */
 /**
- * Einheit als Symbol (Detailstufe beim Herauszoomen, renderer.js LOD_ZOOM): Keil in Teamfarbe mit dunklem Rand, für
+ * Einheit als Symbol (Detailstufe beim Herauszoomen, render/layers/core.js LOD_ZOOM): Keil in Teamfarbe mit dunklem Rand, für
  * Luftfahrzeuge ein Dreieck. (x, y, a) in Zeichenkoordinaten (Welt oder Bildschirm), k = Bildschirmpixel je Zeicheneinheit;
  * die Länge ist fest SYMBOL_PX Bildschirmpixel, damit das Zeichen auch weit draußen lesbar bleibt.
  */

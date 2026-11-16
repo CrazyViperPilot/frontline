@@ -135,7 +135,7 @@ export function felledOf(game) {
 
 /**
  * Steht an (x, y) kein Baum mehr? Gefällt (Räumen) oder Stadtzelle ausgewiesen (Bäume weichen dem Grundstück). Für die Darstellung
- * der Bäume und Büsche (renderer.js, seit v5.13).
+ * der Bäume und Büsche (render/layers/relief.js, seit v5.13).
  */
 export function treeGone(game, x, y) {
   const c = game.city?.[0];

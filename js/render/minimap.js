@@ -25,7 +25,7 @@ export class Minimap {
     this.terrain = seasonal(buildTerrain(game.map), game.weather?.season ?? 'summer'); // Herbst- und Winterfarben
     this.fogLayer = makeFogLayer(game.fog[team], false); // ohne Wolken, weicher Rand wie im Bild
     this.dpr = 1;
-    this.maxDpr = 2; // Obergrenze der Pixeldichte (Bildauflösung, wie renderer.js; setMaxDpr)
+    this.maxDpr = 2; // Obergrenze der Pixeldichte (Bildauflösung, wie render/layers/core.js; setMaxDpr)
     this.cssW = DEFAULT_SIZE;
     this.cssH = DEFAULT_SIZE;
     this.resize();

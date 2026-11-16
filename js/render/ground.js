@@ -115,7 +115,7 @@ void main() {
 }`;
 
 // Kriegsnebel (seit v5.49 gemalt): Unerforschtes unter einer dunklen Wolkendecke aus zwei langsam ziehenden Lagen Rauschen, Erkundetes
-// kühl abgedunkelt, am Rand des Unerforschten ein heller Wolkensaum (Farben wie updateFogLayer in renderer.js). uFog: r = in Sicht,
+// kühl abgedunkelt, am Rand des Unerforschten ein heller Wolkensaum (Farben wie updateFogLayer in render/layers/fog.js). uFog: r = in Sicht,
 // a = erkundet, je Zelle weichgezeichnet; smoothstep macht daraus glatte, schmale Ränder ohne die Treppen der Zellen. uDrift: Versatz
 // der Lagen (xy, zw), auf der CPU genommen (fract), damit die Koordinaten klein und genau bleiben.
 const FS_FOG = `

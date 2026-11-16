@@ -39,7 +39,7 @@ const MSG_MAX = 5;
 const DOM_EVERY = 200; // ms
 const NEG_COLOR = '#e5484d'; // Verbrauch (negative Netto-Rate)
 // Balken der Lager- und LKW-Sorten in der Farbe ihrer Ware (Register js/data/goods.js, seit v5.64); Munition der Waffen grau-blau
-// wie der Munitionsbalken über den Einheiten (renderer.js), Ladung und Passagiere im Akzentgelb
+// wie der Munitionsbalken über den Einheiten (render/layers/top.js), Ladung und Passagiere im Akzentgelb
 const COLOR = { bm: GOOD_COLOR.bm, mun: GOOD_COLOR.mun, fuel: GOOD_COLOR.fuel, ammo: '#7f93ad', cargo: '#c9a227' };
 const PRESET_NAME = { mix: 'Gemischt', bm: 'Baumaterial', mun: 'Munition', fuel: 'Treibstoff' };
 /** Anzeige der Ladungsart: 'Gemischt', eine Sorte oder zwei Sorten mit ' + ' (z. B. „Munition + Treibstoff“). */

@@ -4,7 +4,7 @@
 // höhere Kuppel mit Laterne; Stufe 3: Ecktürme mit Fahnen in Teamfarbe, Bäume im Hof. 2D: dieselbe Anlage von oben.
 // Helfer (iso, poly, box, lit, FACE, DETAIL) nutzen auch isokit.js und darüber das Regierungsviertel der Hauptstadt (cityhall.js, govquarter.js), dazu pyramid und OUTLINE die
 // 2 × 2-Werke (works.js, seit v5.08).
-// Nur Zeichnen (liest b = { x, y, level, color, damage }; Rauch bei Schaden zeichnet renderer.js), keine Spielregeln. Boden (Pflaster, Rasen) zeichnet citylayer.js.
+// Nur Zeichnen (liest b = { x, y, level, color, damage }; Rauch bei Schaden zeichnet render/layers/world.js), keine Spielregeln. Boden (Pflaster, Rasen) zeichnet citylayer.js.
 import { ISO_K } from './camera.js';
 import { shade, tint } from './sprites.js';
 import { snowy } from './season.js';

@@ -438,7 +438,7 @@ export function drawTownBuilding(ctx, cam, b, season = 'summer') {
 function drawBigBody(ctx, cam, b, season) {
   const p = b.part;
   if (p.t === 'tree') {
-    drawTree(ctx, cam, p, season); // gemalter Baum (renderer.js nimmt vorher das Baum-Bild, wenn geladen)
+    drawTree(ctx, cam, p, season); // gemalter Baum (render/layers/relief.js nimmt vorher das Baum-Bild, wenn geladen)
     return;
   }
   if (p.t === 'veh') {
@@ -660,7 +660,7 @@ const planePt = (cam, x, y, h) => {
 
 /**
  * Spielgebäude (Team): seit v5.21 sind alle Militärgebäude und ihre Baustellen gemalt (milbuild.js), die Hauptstadt ist ein
- * Regierungsgebäude (cityhall.js; das Viertel ringsum zeichnet renderer.js über govquarter.js). Übrig bleibt nur die Baustelle der
+ * Regierungsgebäude (cityhall.js; das Viertel ringsum zeichnet render/layers/ über govquarter.js). Übrig bleibt nur die Baustelle der
  * Hauptstadt: ein halb durchsichtiger Kasten, der mit dem Fortschritt wächst.
  */
 export function drawTeamBuilding(ctx, cam, b, color) {

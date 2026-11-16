@@ -8,6 +8,7 @@ import { CITY } from '../data/city.js';
 import { WORKS, WORKPLACE_KINDS, KINDS, KIND_ID } from '../data/citykinds.js'; // Arbeitsstätten mit Pendlerweg: alle Arten mit Arbeitsplätzen
 import { GOODS } from '../data/goods.js';
 import { isPart, accessCells, mainAccess, cellsOf, anchorOf, nbrsOf, atEdge, stationLinked } from './city/cells.js';
+import { gridBfs } from './city/gridbfs.js';
 export { mainAccess }; // liegt seit dem Paket „Straßen“ in cells.js (Anschlusspflicht des Baugebiets)
 
 /** Produkte fahren zum Lager der Hauptstadt (`'main'`): Werke, deren Ware ein Lager hat (Register js/data/goods.js). */
@@ -19,8 +20,6 @@ const EDGE = -2;
 /** Weg ohne Straßenzellen (Lieferung direkt an ein angrenzendes Gebäude, seit Paket „Direkte Lieferung“; seit Paket „Import“ vom
  * Güterbahnhof an ein angrenzendes Werk): Länge 0, Wirkung 1, keine Last. */
 const NO_PATH = new Int32Array(0);
-/** Breitensuche-Warteschlange, einmal angelegt und wiederverwendet (nur innerhalb von nearestField genutzt). */
-let QUEUE = new Int32Array(0);
 
 /** Zustand je Stadt (WeakMap), nicht im Spielstand. */
 const STATE = new WeakMap();
@@ -44,40 +43,19 @@ const AIRFIELD_TRAINERS = new Set(['stand', 'heliport'].map((k) => KIND_ID[k]));
  */
 function nearestField(c, sources, cap, out = null) {
   const n = c.cols * c.rows;
-  const f = out ?? { dist: new Int32Array(n), prev: new Int32Array(n), owner: new Int32Array(n) };
-  const { dist, prev, owner } = f;
-  dist.fill(-1);
-  prev.fill(-1);
+  const f = out ?? { dist: new Int32Array(n), prev: new Int32Array(n), owner: new Int32Array(n), queue: new Int32Array(n) };
+  const { owner } = f;
+  // Startzellen: alle Straßenzellen der Quellen in deren Reihenfolge (doppelte zählt gridBfs einmal, die erste Quelle gewinnt)
+  const starts = [];
+  for (const s of sources) for (const i of s.cells) if (cap[i] > 0) starts.push(i);
+  const r = gridBfs(c, starts, (j) => cap[j] > 0, CITY.transport.maxDist, { out: f });
+  // Besitzer: Startzellen bekommen die Kennung der ersten Quelle, die sie enthält (rückwärts überschreiben, damit die erste gewinnt;
+  // kein Sentinel-Wert, denn Kennungen können negativ sein: MAIN = −1, EDGE = −2). Danach erbt jede Zelle den Besitzer ihres Vorgängers.
   owner.fill(-1);
-  if (QUEUE.length < n) QUEUE = new Int32Array(n);
-  const q = QUEUE;
-  let head = 0;
-  let tail = 0;
-  for (const s of sources) {
-    for (const i of s.cells) {
-      if (!(cap[i] > 0) || dist[i] >= 0) continue;
-      dist[i] = 0;
-      owner[i] = s.owner;
-      q[tail++] = i;
-    }
-  }
-  const maxDist = CITY.transport.maxDist;
-  const cols = c.cols;
-  while (head < tail) {
-    const i = q[head++];
-    const d = dist[i];
-    if (d >= maxDist) continue;
-    const col = i % cols;
-    const row = (i - col) / cols;
-    for (let k = 0; k < 4; k++) {
-      let j;
-      if (k === 0) { if (col === 0) continue; j = i - 1; } else if (k === 1) { if (col === cols - 1) continue; j = i + 1; } else if (k === 2) { if (row === 0) continue; j = i - cols; } else { if (row === c.rows - 1) continue; j = i + cols; }
-      if (!(cap[j] > 0) || dist[j] >= 0) continue;
-      dist[j] = d + 1;
-      prev[j] = i;
-      owner[j] = owner[i];
-      q[tail++] = j;
-    }
+  for (let s = sources.length - 1; s >= 0; s--) for (const i of sources[s].cells) if (cap[i] > 0) owner[i] = sources[s].owner;
+  for (let k = 0; k < r.count; k++) {
+    const i = r.queue[k];
+    if (r.prev[i] >= 0) owner[i] = owner[r.prev[i]];
   }
   return f;
 }
@@ -186,7 +164,7 @@ function newTransport(c) {
   // Stau-Faktor je Zelle: liegt in der Stadt (gespeichert, createTeamCity/migrateCity); fehlt er (Teststädte), eigener Puffer
   const factor = c.congestion?.length === n ? c.congestion : new Float32Array(n).fill(1);
   const fields = {};
-  for (const g of GROUPS) fields[g] = { dist: new Int32Array(n), prev: new Int32Array(n), owner: new Int32Array(n) };
+  for (const g of GROUPS) fields[g] = { dist: new Int32Array(n), prev: new Int32Array(n), owner: new Int32Array(n), queue: new Int32Array(n) };
   return {
     routes: new Map(),
     imports: new Map(), // Paket „Import“: Werk ↔ nächster Einfuhrpunkt

@@ -1,8 +1,9 @@
 // Stadt (PRD §15), Zellgeometrie und Straßenzugang: Raster, Großbauten (Anker, Quadrat), Zelle frei, Straße daneben, Zugangszellen.
-// Blattmodul ohne Rückimporte (nur Daten): transport.js, aircraft.js, research.js und die Darstellung lesen hier, ohne einen
+// Blattmodul ohne Rückimporte (nur Daten und die importfreie Breitensuche gridbfs.js): transport.js, aircraft.js, research.js und die Darstellung lesen hier, ohne einen
 // Importzyklus zu bilden (Review A-01, seit v5.60). Kein DOM, deterministisch.
 import { CITY } from '../../data/city.js';
 import { KINDS, KIND_ID, FLAT_KINDS } from '../../data/citykinds.js';
+import { gridBfs } from './gridbfs.js'; // Blattmodul ohne Importe (Paket „Rastersuche“)
 
 /** Flache Zellen (seit v5.35): Straße, Start-/Landebahn und Rollfeld (seit v5.37) wachsen nicht und haben kein Gebäude. Nur die Straße zählt
  *  als Verkehrsweg und Anschluss (roadAt); Bahn und Rollfeld sind Fahrflächen der Flugzeuge (taxiable). */
@@ -341,26 +342,10 @@ export function roadLinked(game, c) {
   const hit = LINK_CACHE.get(c);
   if (hit && hit.ver === c.ver && hit.main === key) return hit.mask;
   const n = c.cols * c.rows;
-  const dist = new Int32Array(n).fill(-1);
-  const queue = new Int32Array(n);
-  let tail = 0;
-  for (const i of mainAccess(game, c)) {
-    if (dist[i] >= 0) continue;
-    dist[i] = 0;
-    queue[tail++] = i;
-  }
-  const maxDist = CITY.transport.maxDist;
-  for (let head = 0; head < tail; head++) {
-    const i = queue[head];
-    if (dist[i] >= maxDist) continue;
-    for (const j of nbrsOf(c, i)) {
-      if (dist[j] >= 0 || !roadAt(c, j)) continue;
-      dist[j] = dist[i] + 1;
-      queue[tail++] = j;
-    }
-  }
+  // Startzellen ohne Straßenprüfung (Zugang zum Lager), weiter nur über Straßen
+  const r = gridBfs(c, mainAccess(game, c), (j) => roadAt(c, j), CITY.transport.maxDist, { scratch: true });
   const mask = new Uint8Array(n);
-  for (let h = 0; h < tail; h++) for (const j of nbrsOf(c, queue[h])) mask[j] = 1;
+  for (let h = 0; h < r.count; h++) for (const j of nbrsOf(c, r.queue[h])) mask[j] = 1;
   LINK_CACHE.set(c, { ver: c.ver, main: key, mask });
   return mask;
 }
@@ -632,23 +617,10 @@ export function airLinked(c) {
   const RW = KIND_ID.runway;
   const TX = KIND_ID.taxi;
   const mask = new Uint8Array(c.cols * c.rows);
-  const queue = [];
-  for (const g of runwayGroups(c)) {
-    if (!g.valid) continue; // zu kurze Bahn ist keine Bahn für die Jets
-    for (const i of g.cells) {
-      mask[i] = 1;
-      queue.push(i);
-    }
-  }
-  for (let h = 0; h < queue.length; h++) {
-    for (const j of nbrsOf(c, queue[h])) {
-      if (mask[j]) continue;
-      const k = c.kind[j];
-      if (k !== RW && k !== TX) continue;
-      mask[j] = 1;
-      queue.push(j);
-    }
-  }
+  const starts = [];
+  for (const g of runwayGroups(c)) if (g.valid) starts.push(...g.cells); // zu kurze Bahn ist keine Bahn für die Jets
+  const r = gridBfs(c, starts, (j) => c.kind[j] === RW || c.kind[j] === TX, Infinity, { scratch: true });
+  for (let h = 0; h < r.count; h++) mask[r.queue[h]] = 1;
   AIR_LINK.set(c, { ver: c.ver, mask });
   return mask;
 }
@@ -682,19 +654,10 @@ function railLinked(c) {
   if (hit && hit.ver === c.ver) return hit.mask;
   const RL = KIND_ID.rail;
   const mask = new Uint8Array(c.cols * c.rows);
-  const queue = [];
-  for (const i of c.list) {
-    if (c.kind[i] !== RL || !atEdge(c, i)) continue;
-    mask[i] = 1;
-    queue.push(i);
-  }
-  for (let h = 0; h < queue.length; h++) {
-    for (const j of nbrsOf(c, queue[h])) {
-      if (mask[j] || c.kind[j] !== RL) continue;
-      mask[j] = 1;
-      queue.push(j);
-    }
-  }
+  const starts = [];
+  for (const i of c.list) if (c.kind[i] === RL && atEdge(c, i)) starts.push(i);
+  const r = gridBfs(c, starts, (j) => c.kind[j] === RL, Infinity, { scratch: true });
+  for (let h = 0; h < r.count; h++) mask[r.queue[h]] = 1;
   RAIL_LINK.set(c, { ver: c.ver, mask });
   return mask;
 }

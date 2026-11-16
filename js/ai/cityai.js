@@ -10,31 +10,16 @@ import { mainRoadReach, mainZone, connectRoad, connectCells, importReach, connec
 import { totals } from '../game/city/state.js';
 import { marketBuyPrice } from '../game/city/query.js';
 import { enemiesOf, nearestOf } from '../game/teams.js';
+import { gridBfs } from '../game/city/gridbfs.js';
 
 /** Zellen höchstens `d` Schritte (4er-Nachbarschaft, alle Zellen) von einer Zelle aus `reach`, Uint8Array 1 = nah (seit v5.20, AP4). */
 function nearCells(c, reach, d) {
   const n = c.cols * c.rows;
   const near = new Uint8Array(n);
-  const dist = new Int32Array(n).fill(-1);
-  const queue = new Int32Array(n);
-  let head = 0;
-  let tail = 0;
-  for (let i = 0; i < n; i++) {
-    if (!reach[i]) continue;
-    dist[i] = 0;
-    near[i] = 1;
-    queue[tail++] = i;
-  }
-  while (head < tail) {
-    const i = queue[head++];
-    if (dist[i] >= d) continue;
-    for (const j of nbrsOf(c, i)) {
-      if (dist[j] >= 0) continue;
-      dist[j] = dist[i] + 1;
-      near[j] = 1;
-      queue[tail++] = j;
-    }
-  }
+  const starts = [];
+  for (let i = 0; i < n; i++) if (reach[i]) starts.push(i);
+  const r = gridBfs(c, starts, null, d, { scratch: true });
+  for (let k = 0; k < r.count; k++) near[r.queue[k]] = 1;
   return near;
 }
 
@@ -439,34 +424,13 @@ function parkSite(game, c, reach) {
     return why === null || why === 'road';
   };
   // BFS-Felder: Zufahrt vom Netz des Lagers (über freie Straßenzellen) und Gleis vom Kartenrand (über freie Gleiszellen)
-  const field = (starts, ok, max) => {
-    const dist = new Int32Array(n).fill(-1);
-    const prev = new Int32Array(n).fill(-1);
-    const queue = new Int32Array(n);
-    let tail = 0;
-    for (const j of starts) {
-      dist[j] = 0;
-      queue[tail++] = j;
-    }
-    for (let h = 0; h < tail; h++) {
-      const i = queue[h];
-      if (dist[i] >= max) continue;
-      for (const j of nbrsOf(c, i)) {
-        if (dist[j] >= 0 || !ok(j)) continue;
-        dist[j] = dist[i] + 1;
-        prev[j] = i;
-        queue[tail++] = j;
-      }
-    }
-    return { dist, prev };
-  };
   const linkStart = [];
   for (let j = 0; j < n; j++) if (roadOk(j) && nbrsOf(c, j).some((x) => reach[x] && roadAt(c, x))) linkStart.push(j);
   if (!linkStart.length) return null;
-  const link = field(linkStart, roadOk, A.parkLink); // dist 0 = Zelle direkt am Netz (wird selbst Straße)
+  const link = gridBfs(c, linkStart, roadOk, A.parkLink); // dist 0 = Zelle direkt am Netz (wird selbst Straße)
   const edge = [];
   for (let j = 0; j < n; j++) if (atEdge(c, j) && railOk(j)) edge.push(j);
-  const rail = field(edge, railOk, A.railMax);
+  const rail = gridBfs(c, edge, railOk, A.railMax);
   const works = [];
   for (const i of c.list) if (!isPart(c, i) && c.level[i] && WORKS.includes(KINDS[c.kind[i] - 1])) works.push(i);
   // Suchfenster: Zellen höchstens parkLink + Parkgröße um die Zufahrt
@@ -772,25 +736,11 @@ function connectNear(game, c, ac, ar, rad, mem) {
  */
 function linkField(game, c, reach) {
   const n = c.cols * c.rows;
+  const starts = [];
+  for (let j = 0; j < n; j++) if (reach[j] && roadAt(c, j)) starts.push(j);
+  const r = gridBfs(c, starts, (j) => roadAt(c, j) || roadFree(game, c, j), CITY.transport.connectMax, { scratch: true });
   const seen = new Uint8Array(n);
-  const dist = new Int32Array(n);
-  const queue = new Int32Array(n);
-  let tail = 0;
-  for (let j = 0; j < n; j++) {
-    if (!reach[j] || !roadAt(c, j)) continue;
-    seen[j] = 1;
-    queue[tail++] = j;
-  }
-  for (let h = 0; h < tail; h++) {
-    const i = queue[h];
-    if (dist[i] >= CITY.transport.connectMax) continue;
-    for (const j of nbrsOf(c, i)) {
-      if (seen[j] || !(roadAt(c, j) || roadFree(game, c, j))) continue;
-      seen[j] = 1;
-      dist[j] = dist[i] + 1;
-      queue[tail++] = j;
-    }
-  }
+  for (let k = 0; k < r.count; k++) seen[r.queue[k]] = 1;
   return seen;
 }
 
@@ -801,30 +751,15 @@ function linkField(game, c, reach) {
  */
 function linkPaths(game, c, reach, max, keep) {
   const n = c.cols * c.rows;
-  const dist = new Int32Array(n).fill(-1);
-  const prev = new Int32Array(n).fill(-1);
-  const queue = new Int32Array(n);
-  let tail = 0;
   const ok = (j) => !keep[j] && roadFree(game, c, j) && !inDanger(c, j % c.cols, Math.floor(j / c.cols), game.time);
+  // Startzellen: freie Nachbarn des Netzes, Abstand 1 (base), doppelte zählt gridBfs einmal
+  const starts = [];
   for (let j = 0; j < n; j++) {
     if (!reach[j]) continue;
-    for (const x of nbrsOf(c, j)) {
-      if (dist[x] >= 0 || !ok(x)) continue;
-      dist[x] = 1;
-      queue[tail++] = x;
-    }
+    for (const x of nbrsOf(c, j)) if (ok(x)) starts.push(x);
   }
-  for (let h = 0; h < tail; h++) {
-    const i = queue[h];
-    if (dist[i] >= max) continue;
-    for (const j of nbrsOf(c, i)) {
-      if (dist[j] >= 0 || !ok(j)) continue;
-      dist[j] = dist[i] + 1;
-      prev[j] = i;
-      queue[tail++] = j;
-    }
-  }
-  return { dist, prev };
+  const r = gridBfs(c, starts, ok, max, { base: 1 });
+  return { dist: r.dist, prev: r.prev };
 }
 
 /** Liegt Zelle i für ein 1 × 1-Gebäude der Art `kind` am Netz des Lagers: Straße aus `reach` daneben, Wohnen und Gewerbe auch über ein Nachbarhaus gleicher Art, das selbst dort liegt (Kette wie hasRoad). */

@@ -13,9 +13,15 @@
  *   wahr ist, auch wenn sie maxDist erreicht hat. Sie steht dann in `end` (sonst −1).
  * - `opts.base`: Abstand der Startzellen (Vorgabe 0).
  * - `opts.out`: Ergebnis einer früheren Suche auf demselben Raster, dessen Puffer wiederverwendet werden.
+ * - `opts.scratch`: gemeinsame Puffer des Moduls nutzen (kein Anlegen je Aufruf). Das Ergebnis gilt dann nur bis zum nächsten Aufruf
+ *   von gridBfs: für Aufrufer, die es sofort auswerten (Masken, Weg). Ruft `passable` oder `goal` selbst gridBfs auf, bekommt dieser
+ *   innere Aufruf eigene Puffer.
  * Liefert { dist, prev, queue, count, end }: dist −1 = nicht erreicht, prev −1 bei Startzellen und nicht erreichten Zellen,
  * queue[0 … count−1] = erreichte Zellen in Besuchsreihenfolge (jede Zelle nach ihrem Vorgänger).
  */
+let SCRATCH = null; // gemeinsame Puffer für opts.scratch
+let scratchBusy = false; // läuft gerade eine Suche auf SCRATCH (verschachtelter Aufruf aus passable/goal)?
+
 export function gridBfs(c, starts, passable = null, maxDist = Infinity, opts = null) {
   const cols = c.cols;
   const rows = c.rows;
@@ -23,7 +29,17 @@ export function gridBfs(c, starts, passable = null, maxDist = Infinity, opts = n
   const base = opts?.base ?? 0;
   const goal = opts?.goal ?? null;
   let r = opts?.out ?? null;
+  const shared = !r && !!opts?.scratch && !scratchBusy;
+  if (shared) {
+    if (!SCRATCH || SCRATCH.dist.length !== n) SCRATCH = { dist: new Int32Array(n), prev: new Int32Array(n), queue: new Int32Array(n), count: 0, end: -1 };
+    r = SCRATCH;
+    scratchBusy = true;
+  }
   if (!r || r.dist.length !== n) r = { dist: new Int32Array(n), prev: new Int32Array(n), queue: new Int32Array(n), count: 0, end: -1 };
+  else {
+    if (!r.prev) r.prev = new Int32Array(n);
+    if (!r.queue) r.queue = new Int32Array(n);
+  }
   const { dist, prev, queue } = r;
   dist.fill(-1);
   prev.fill(-1);
@@ -81,6 +97,7 @@ export function gridBfs(c, starts, passable = null, maxDist = Infinity, opts = n
   }
   r.count = tail;
   r.end = end;
+  if (shared) scratchBusy = false;
   return r;
 }
 

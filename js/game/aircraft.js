@@ -13,6 +13,7 @@ import { CITY } from '../data/city.js';
 import { UNITS } from '../data/units.js';
 import { KIND_ID } from '../data/citykinds.js';
 import { taxiable, taxiAccess, runwayGroups } from './city/cells.js';
+import { gridBfs, bfsPath } from './city/gridbfs.js';
 import { resolveTarget, canAttack, isFoe } from './entities.js';
 import { setIdle } from './movement.js';
 import { modOf } from './research.js';
@@ -133,32 +134,9 @@ export function runwaysOf(game, team) {
 
 /** Breitensuche über Straßen, Rollfeld und Bahn (taxiable) von `starts` bis zur ersten Zelle mit goal(i); Weg als Zellenliste oder null. */
 function cellPath(c, starts, goal) {
-  const n = c.cols * c.rows;
-  const prev = new Int32Array(n).fill(-2);
-  const queue = [];
-  for (const s of starts) {
-    if (prev[s] !== -2 || !taxiable(c, s)) continue;
-    prev[s] = -1;
-    queue.push(s);
-  }
-  for (let h = 0; h < queue.length; h++) {
-    const i = queue[h];
-    if (goal(i)) {
-      const path = [];
-      for (let k = i; k >= 0; k = prev[k]) path.push(k);
-      return path.reverse();
-    }
-    const q = i % c.cols;
-    const r = (i - q) / c.cols;
-    for (const [x, y] of [[q - 1, r], [q + 1, r], [q, r - 1], [q, r + 1]]) {
-      if (x < 0 || y < 0 || x >= c.cols || y >= c.rows) continue;
-      const j = y * c.cols + x;
-      if (prev[j] !== -2 || !taxiable(c, j)) continue;
-      prev[j] = i;
-      queue.push(j);
-    }
-  }
-  return null;
+  const from = starts.filter((s) => taxiable(c, s));
+  const r = gridBfs(c, from, (j) => taxiable(c, j), Infinity, { goal, scratch: true });
+  return r.end >= 0 ? bfsPath(r, r.end).reverse() : null;
 }
 
 /** Weg vom Stellplatz e zur nächsten gültigen Bahn: { cells (Stellplatz → erste Bahnzelle), rw } oder null; zwischengespeichert. */

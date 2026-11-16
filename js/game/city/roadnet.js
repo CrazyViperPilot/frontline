@@ -6,6 +6,7 @@ import { KIND_ID } from '../../data/citykinds.js';
 import { mainAccess } from '../transport.js';
 import { atEdge, stationLinked, anchorOf, isPart, cellsOf, cellRect, cellFree, roadAt, accessCells, roadsAround, canZone, buildAllowed, nbrsOf } from './cells.js';
 import { rebuildList, placeBuilt } from './state.js';
+import { gridBfs, bfsPath } from './gridbfs.js';
 
 /**
  * Straßenzellen, die über Straßen von den Startzellen `starts` aus erreichbar sind (seit v5.20, AP4): Breitensuche, höchstens
@@ -13,30 +14,13 @@ import { rebuildList, placeBuilt } from './state.js';
  * für den Bauanschluss keine Bahn und kein Rollfeld (Paket „Fliegerhorst-Anschluss“).
  */
 function roadReach(c, starts) {
-  const pass = (j) => roadAt(c, j);
   const n = c.cols * c.rows;
+  // Nur Straßen als Startzellen (wie die Prüfung der Zellen beim Weg)
+  const from = [];
+  for (const i of starts) if (roadAt(c, i)) from.push(i);
+  const r = gridBfs(c, from, (j) => roadAt(c, j), CITY.transport.maxDist, { scratch: true });
   const reach = new Uint8Array(n);
-  const dist = new Int32Array(n).fill(-1);
-  const queue = new Int32Array(n);
-  let head = 0;
-  let tail = 0;
-  for (const i of starts) {
-    if (dist[i] >= 0 || !pass(i)) continue;
-    dist[i] = 0;
-    reach[i] = 1;
-    queue[tail++] = i;
-  }
-  const maxDist = CITY.transport.maxDist;
-  while (head < tail) {
-    const i = queue[head++];
-    if (dist[i] >= maxDist) continue;
-    for (const j of nbrsOf(c, i)) {
-      if (dist[j] >= 0 || !pass(j)) continue;
-      dist[j] = dist[i] + 1;
-      reach[j] = 1;
-      queue[tail++] = j;
-    }
-  }
+  for (let k = 0; k < r.count; k++) reach[r.queue[k]] = 1;
   return reach;
 }
 
@@ -88,20 +72,15 @@ export function connectCells(game, c, cells, pay, goal = null, have = roadsAroun
   const atEnd = (i) => !!zone?.[i] || nbrsOf(c, i).some((j) => reach[j]);
   if (have.some((j) => reach[j])) return 0;
   const max = CITY.transport.connectMax;
+  // Ohne erlaubte Länge (max < 1) wird keine Schicht geprüft: wie vorher −1 (gridBfs prüfte die Startzellen sonst trotzdem)
+  if (max < 1) return -1;
   const n = c.cols * c.rows;
   // Baugebiet (seit v5.78) gilt für Anschlüsse, die der Spieler oder die KI bezahlen (pay); das Startviertel (pay false) baut ohne Regel
   const inside = new Set(cells);
   const ok = (j) => !inside.has(j) && (pay ? buildAllowed(game, c, j, 'road') : canZone(game, c, j)) && !c.kind[j] && cellFree(game, c, j % c.cols, Math.floor(j / c.cols));
-  const prev = new Int32Array(n).fill(-1);
-  const seen = new Uint8Array(n);
-  let frontier = [];
-  for (const i of cells) {
-    for (const j of nbrsOf(c, i)) {
-      if (seen[j] || !ok(j)) continue;
-      seen[j] = 1;
-      frontier.push(j);
-    }
-  }
+  // Startzellen (Schicht 1): freie Nachbarn der Zellen des Gebäudes
+  const starts = [];
+  for (const i of cells) for (const j of nbrsOf(c, i)) if (ok(j)) starts.push(j);
   // Auch vom Straßennetz aus, an dem das Gebäude schon hängt (seit v5.82): Sind seine freien Nachbarn schon Straße, muss der neue
   // Anschluss am Rand dieses Netzes beginnen (sonst findet die KI nie einen Weg zu einem Zielnetz, das mit dem Netz des Gebäudes nur über
   // die Hauptstadt zusammenhängt, durch die keine Ware fährt).
@@ -109,34 +88,13 @@ export function connectCells(game, c, cells, pay, goal = null, have = roadsAroun
   const own = pay ? roadReach(c, have) : null;
   for (let i = 0; own && i < n; i++) {
     if (!own[i] || !roadAt(c, i)) continue;
-    for (const j of nbrsOf(c, i)) {
-      if (seen[j] || !ok(j)) continue;
-      seen[j] = 1;
-      frontier.push(j);
-    }
+    for (const j of nbrsOf(c, i)) if (ok(j)) starts.push(j);
   }
-  // Breitensuche in Schichten: Schicht d hat Wege mit d neuen Zellen; Ende, sobald eine Zelle an eine verbundene Straße grenzt
-  let end = -1;
-  for (let d = 1; d <= max && frontier.length && end < 0; d++) {
-    const next = [];
-    for (const i of frontier) {
-      if (atEnd(i)) {
-        end = i;
-        break;
-      }
-      if (d === max) continue;
-      for (const j of nbrsOf(c, i)) {
-        if (seen[j] || !ok(j)) continue;
-        seen[j] = 1;
-        prev[j] = i;
-        next.push(j);
-      }
-    }
-    frontier = next;
-  }
-  if (end < 0) return -1;
-  const path = [];
-  for (let i = end; i >= 0; i = prev[i]) path.push(i);
+  // Breitensuche in Schichten (gridBfs, Startabstand 1): Schicht d hat Wege mit d neuen Zellen; Ende an der ersten Zelle, die an eine
+  // verbundene Straße grenzt. Zellen mit Abstand max werden nicht mehr erweitert.
+  const r = gridBfs(c, starts, ok, max, { base: 1, goal: atEnd, scratch: true });
+  if (r.end < 0) return -1;
+  const path = bfsPath(r, r.end);
   if (pay) {
     const main = game.mainFob(c.team);
     if (!main || main.store.bm < CITY.costBm.road * path.length || game.teams[c.team].res.money < CITY.cost.road * path.length) return -1;
@@ -177,39 +135,19 @@ export function connectEdge(game, c, starts, pay, max = c.cols + c.rows) {
   const reach = roadReach(c, starts);
   const n = c.cols * c.rows;
   for (let i = 0; i < n; i++) if (reach[i] && c.kind[i] === KIND_ID.road && atEdge(c, i)) return 0;
+  // Ohne erlaubte Länge (max < 1) wird keine Schicht geprüft: wie vorher −1
+  if (max < 1) return -1;
   const ok = (j) => (pay ? buildAllowed(game, c, j, 'road') : canZone(game, c, j)) && !c.kind[j] && cellFree(game, c, j % c.cols, Math.floor(j / c.cols));
-  const prev = new Int32Array(n).fill(-1);
-  const seen = new Uint8Array(n);
-  let frontier = [];
+  // Startzellen (Schicht 1) in fester Reihenfolge: Zellindex aufsteigend, Nachbarn mit ok
+  const front = [];
   for (let i = 0; i < n; i++) {
     if (!reach[i]) continue;
-    for (const j of nbrsOf(c, i)) {
-      if (seen[j] || !ok(j)) continue;
-      seen[j] = 1;
-      frontier.push(j);
-    }
+    for (const j of nbrsOf(c, i)) if (ok(j)) front.push(j);
   }
-  // Breitensuche in Schichten (feste Reihenfolge: Zellindex aufsteigend als Startreihenfolge), Ende an der ersten Randzelle
-  let end = -1;
-  for (let d = 1; d <= max && frontier.length && end < 0; d++) {
-    const next = [];
-    for (const i of frontier) {
-      if (atEdge(c, i)) {
-        end = i;
-        break;
-      }
-      for (const j of nbrsOf(c, i)) {
-        if (seen[j] || !ok(j)) continue;
-        seen[j] = 1;
-        prev[j] = i;
-        next.push(j);
-      }
-    }
-    frontier = next;
-  }
-  if (end < 0) return -1;
-  const path = [];
-  for (let i = end; i >= 0; i = prev[i]) path.push(i);
+  // Breitensuche in Schichten (gridBfs, Startabstand 1), Ende an der ersten Randzelle
+  const r = gridBfs(c, front, ok, max, { base: 1, goal: (i) => atEdge(c, i), scratch: true });
+  if (r.end < 0) return -1;
+  const path = bfsPath(r, r.end);
   if (pay) {
     const main = game.mainFob(c.team);
     if (!main || main.store.bm < CITY.costBm.road * path.length || game.teams[c.team].res.money < CITY.cost.road * path.length) return -1;

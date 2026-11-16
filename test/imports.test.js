@@ -48,7 +48,9 @@ test('Importe: jede Datei existiert, kein Zyklus', () => {
 
 test('Stadt: Zellgeometrie ist ein Blattmodul, die Stadt-KI liegt in js/ai', () => {
   const edges = graph();
-  for (const t of edges.get('js/game/city/cells.js')) assert.ok(t.startsWith('js/data/'), `cells.js importiert ${t}`);
+  // Erlaubt: Daten und die gemeinsame Breitensuche gridbfs.js (Paket „Rastersuche“), die selbst nichts importiert
+  assert.deepEqual(edges.get('js/game/city/gridbfs.js'), [], 'gridbfs.js ist ein Blattmodul ohne Importe');
+  for (const t of edges.get('js/game/city/cells.js')) assert.ok(t.startsWith('js/data/') || t === 'js/game/city/gridbfs.js', `cells.js importiert ${t}`);
   for (const [f, list] of edges) {
     if (!f.startsWith('js/game/')) continue;
     assert.ok(!list.includes('js/ai/cityai.js'), `${f}: Simulation importiert die Stadt-KI`);

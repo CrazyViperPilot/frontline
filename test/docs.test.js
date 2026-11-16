@@ -101,7 +101,7 @@ test('CLAUDE.md: jede im Wegweiser genannte Datei existiert, jedes Rezept unter 
 
 test('Einstiegs- und Strukturdoku ohne Versionsvermerke „seit v…“', () => {
   const files = [
-    'CLAUDE.md', 'ARCHITEKTUR.md', 'docs/wo-aendern.md', 'docs/testen.md', 'docs/betrieb.md',
+    'CLAUDE.md', 'test/CLAUDE.md', 'ARCHITEKTUR.md', 'docs/wo-aendern.md', 'docs/testen.md', 'docs/betrieb.md',
     ...findFiles('js/', (n) => n === 'CLAUDE.md'),
     ...findFiles('docs/rezepte/', (n) => n.endsWith('.md')),
     ...findFiles('docs/architektur/', (n) => n.endsWith('.md')),
@@ -128,4 +128,17 @@ test('Kurze Zeilen: PRD.md und docs/prd/*.md ohne Zeile über 200 Zeichen (Tabel
     });
   }
   assert.deepEqual(problems, [], 'zu lange Zeilen, ein Satz je Zeile (lange Sätze am Komma umbrechen):\n' + problems.join('\n'));
+});
+
+// Paket „Schlanke Tests“: test/CLAUDE.md ist die Vorlage für neue Tests. Klein halten, die genannten Dateien gibt es,
+// und der Codeblock ist zeichengleich mit test/vorlage.test.js (läuft also so, wie er dasteht).
+test('test/CLAUDE.md: höchstens 3 KB, Zeilen bis 200 Zeichen, Vorlage = vorlage.test.js, genannte Dateien vorhanden', () => {
+  const text = read('CLAUDE.md');
+  assert.ok(Buffer.byteLength(text, 'utf8') <= 3072, `test/CLAUDE.md: ${Buffer.byteLength(text, 'utf8')} Bytes (höchstens 3 072)`);
+  const long = text.split('\n').map((l, i) => [i + 1, [...l].length]).filter(([, n]) => n > 200);
+  assert.deepEqual(long, [], 'test/CLAUDE.md: Zeilen über 200 Zeichen ([Zeile, Länge])');
+  const block = text.match(/```js\n([\s\S]*?)```/)[1];
+  assert.ok(read('vorlage.test.js').endsWith(block), 'Vorlage in test/CLAUDE.md und test/vorlage.test.js weichen ab');
+  const named = [...text.matchAll(/`([\w-]+\.(?:test\.)?js)`/g)].map((m) => m[1]);
+  assert.deepEqual(named.filter((n) => !existsSync(new URL(n, import.meta.url))), [], 'test/CLAUDE.md nennt fehlende Dateien unter test/');
 });

@@ -52,7 +52,7 @@ function put(g, kind, c0, r0, c1, r1) {
   assert.ok(res.ok, res.reason);
   return res;
 }
-// Gebäude an (col, row) sofort fertig (Stufe 1) setzen, wie in city.test.js
+// Gebäude an (col, row) sofort fertig (Stufe 1) setzen, wie in cityhelp.js
 function finish(g, col, row) {
   const c = g.city[0];
   const i = at(g, col, row);
@@ -183,7 +183,7 @@ test('Cache: nach Bau wird neu berechnet, ohne Änderung bleibt der Stand (auch 
 });
 
 // ---- Rechnung je Gebäude (seit v5.20, AP3, PLAN 1.4): Straßen zum Lager, Pendler, Stau, Kerosin ----
-// Die Tests bauen ihre Straßen selbst: Breitensuche über freie Zellen, dann je Zelle ein Straßenbefehl (wie in city.test.js).
+// Die Tests bauen ihre Straßen selbst: Breitensuche über freie Zellen, dann je Zelle ein Straßenbefehl (wie in cityhelp.js).
 
 
 const nbOf = (c, j) => {

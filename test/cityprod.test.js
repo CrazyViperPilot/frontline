@@ -1,4 +1,4 @@
-// KI-Stadt produziert (seit v5.20, AP4; eigene Datei seit dem Review, damit die langen Partien neben city.test.js laufen):
+// KI-Stadt produziert (seit v5.20, AP4; eigene Datei seit dem Review, damit die langen Partien neben den Stadt-Tests (city-*.test.js) laufen):
 // KI gegen KI mit Stadt, 12 Spielminuten, zwei Seeds. Beide Städte führen Rohwaren ein, haben Baumaterial und erzeugen Stahl und Munition.
 import test from 'node:test';
 import assert from 'node:assert/strict';

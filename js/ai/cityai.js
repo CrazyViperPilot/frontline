@@ -93,10 +93,20 @@ function aiNeed(game, c, add, skip = null) {
     steel: c.metal < A.lowMetal,
     com: game.teams[c.team].res.money < A.lowMoney,
   };
+  // Überschuss (Paket „Straßennetz der KI“): liegt eine Ware über highStock im Lager, kommt kein weiteres Werk dafür (es kostete nur
+  // Einfuhrgeld und Straßenkapazität)
+  const high = {
+    bm: main && main.store.bm > A.highStock,
+    mun: main && main.store.mun > A.highStock,
+    fuel: main && main.store.fuel > A.highStock,
+    kero: c.kero > A.highStock,
+    steel: c.metal > A.highStock,
+  };
   let best = null;
   let lo = Infinity;
   for (const [k, w] of Object.entries(A.mix)) {
     if (k === 'market' && count.market >= 1) continue; // ein Markt reicht
+    if (high[k]) continue;
     if (skip?.has(k)) continue; // Großbau ohne Platz in diesem Takt (seit v5.08 auch die 2 × 2-Werke)
     // Kerosin-Raffinerie nur, wenn Kerosin knapp wird (seit v5.20)
     if (k === 'kero' && !low.kero) continue;
@@ -143,7 +153,7 @@ function aiCandidates(game, c, x, y, rad, reach) {
   return out;
 }
 
-/** Neue Buchhaltung der Stadt-KI (liegt seit v5.58 in der KI-Instanz, ai.js `cityMem`): Ausbautakte, Zeit seit dem letzten Überfall, letzter Verteidigungsbefehl; seit Paket „Import“ Einfuhr-Wächter (importBad, s); seit Paket „Industriepark“ abgelehnte Werksplätze (parkFail: Anker → Spielzeit) und freigehaltene Werksplätze am Güterbahnhof (parkKeep: Zelle → 1). */
+/** Neue Buchhaltung der Stadt-KI (liegt seit v5.58 in der KI-Instanz, ai.js `cityMem`): Ausbautakte, Zeit seit dem letzten Überfall, letzter Verteidigungsbefehl; seit Paket „Import“ Einfuhr-Wächter (importBad, s); seit Paket „Industriepark“ abgelehnte Werksplätze (parkFail: Anker → Spielzeit) und freigehaltene Werksplätze am Güterbahnhof (parkKeep: Zelle → 1); seit Paket „Straßennetz der KI“ überlastete Straßenzellen (laneHot: Zelle → Takte in Folge, laneFail: Zelle → Spielzeit, bis zu der sie ruht), beide entstehen bei Bedarf. */
 export function cityAiMemory() {
   return { turn: 0, raidTimer: 0, defendAt: -1e9, importBad: 0, importAt: undefined, importNext: -1e9, parkFail: {}, parkKeep: {} };
 }
@@ -538,7 +548,7 @@ function parkSite(game, c, reach) {
 /**
  * Werksplätze am Güterbahnhof (Paket „Industriepark“): Anker (links oben) der freien 2 × 2-Quadrate, die an das 3 × 3-Quadrat um
  * `center` grenzen (4er-Nachbarschaft, dann Direktlieferung ohne Straße) und mit einer Zelle an einer Straße zum Lager liegen (das
- * Produkt fährt über die Straße; `reach` = mainRoadReach). `free(j)`: Zelle frei; ausweisbar für `kind` prüft buildAllowed. Plätze,
+ * Produkt fährt über die Straße; `reach` = cargoReach). `free(j)`: Zelle frei; ausweisbar für `kind` prüft buildAllowed. Plätze,
  * an denen ein Bau zuletzt abgelehnt wurde (mem.parkFail), zählen CITY.ai.stationRetry s nicht. Feste Reihenfolge (nach Anker).
  */
 function parkSlots(game, c, center, reach, kind, free, mem = null) {
@@ -784,7 +794,7 @@ function connectNear(game, c, ac, ar, rad, mem) {
 
 /**
  * Zellen, von denen aus die KI eine Straße zum Netz des Lagers ziehen könnte (Paket „Industriepark“): Breitensuche ab den Straßen in
- * `reach` (mainRoadReach) über Straßen und freie, für Straßen ausweisbare Zellen, höchstens CITY.transport.connectMax Schritte
+ * `reach` (cargoReach) über Straßen und freie, für Straßen ausweisbare Zellen, höchstens CITY.transport.connectMax Schritte
  * (wie connectRoad). Uint8Array, 1 = erreichbar.
  */
 function linkField(game, c, reach) {

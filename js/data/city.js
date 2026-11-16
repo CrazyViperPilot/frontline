@@ -255,6 +255,7 @@ export const CITY = {
     raidSize: 4, // so viele Fahrzeuge greifen an
     // Freie Planung (seit v4.85): Engpässe heben das Gewicht einer Zone im Mix
     lowStock: 800, // BM, MUN, TS im Hauptlager darunter = knapp
+    highStock: 2500, // BM, MUN, TS (Lager der Hauptstadt), Stahl, Kerosin (Stadtlager) darüber = Überschuss: kein weiteres Werk für diese Ware (es kostete nur Einfuhrgeld und Straßenkapazität; Paket „Straßennetz der KI“)
     lowMetal: 300, // Stahl darunter = knapp
     lowKero: 200, // Kerosin im Stadtlager darunter = knapp (seit v5.20)
     lowFree: 8, // freie Einwohner darunter = Wohnen knapp
@@ -346,7 +347,7 @@ export const CITY = {
     // Wachstum vom Netz (Paket „Straßennetz der KI“): an der Hauptstadt legt die KI Straßen ihres Musters nur, wo sie an das Netz des
     // Lagers anschließen, und Gebäude nur an diesem Netz (keine Straßen-Inseln, keine Werke ohne Weg zum Lager)
     netRoads: true,
-    roadLink: 4, // eine Musterstraße ohne Anschluss baut sie nur mit einer Zufahrt vom Netz aus höchstens so vielen neuen Zellen (im selben Takt)
+    roadLink: 12, // eine Musterstraße ohne Anschluss baut sie nur mit einer Zufahrt vom Netz aus höchstens so vielen neuen Zellen (im selben Takt)
     stationBusy: 0.9, // Anteil des Durchsatzes (CITY.import.station je Stufe), ab dem ein Bahnhof als ausgelastet gilt (dann darf ein zweiter kommen)
   },
 };

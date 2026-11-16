@@ -222,7 +222,7 @@ function pauseSaveAs(s) {
   };
 }
 
-/** Angebot im Startmenü: der neueste nicht beendete Stand (Gerät oder Webspace), dazu die Liste (ui/menu.js). */
+/** Angebot im Startmenü: der neueste nicht beendete Stand (Gerät oder Webspace), dazu die Liste (ui/menu/start-saves.js). */
 let offeredId = null;
 const resumeOffer = {
   async find() {

@@ -27,7 +27,7 @@ die genannten Dateien.
 7. Regel- oder Feature-Änderung: die passende Themen-Datei unter `docs/prd/` anpassen (Abschnitt laut Übersicht in PRD.md) und den
    Eintrag für den Änderungsverlauf als eigene Datei nach [docs/changes/](docs/changes/README.md) legen (eine Zeile, ohne Versionsnummer);
    `docs/changelog.md` nicht direkt bearbeiten. Die Hilfe (F1) in `js/ui/helptext.js` liest die meisten Zahlen und Tasten aus den Daten
-   (seit v5.63); der Rest steht von Hand dort und in `js/ui/menu.js`: mitpflegen (Suche z. B. `grep -rn "300 Plätze" js docs/prd`).
+   (seit v5.63); der Rest steht von Hand dort und in den Menümodulen `js/ui/menu/` (Spielhinweise des Startmenüs: `start-html.js`): mitpflegen (Suche z. B. `grep -rn "300 Plätze" js docs/prd`).
 8. Neue Ideen, die Daniel nur festhalten will: PRD §13 „Geparkte Ideen“ (`docs/prd/ideen.md`), nicht bauen.
 9. Startmenü-Schalter (Eroberung, Sendemast, Wetter, Forschung, Fluss) sind im Menü standardmäßig an, in `new Game()` ohne Angabe aus (`conquest: true, players: 2…4` schaltet die Eroberung ein; ohne sie gibt es genau zwei Teams). Tests verlassen sich darauf. `new Game()` startet mit Stadt; `city: false` nur noch in alten Tests, Ausbau folgt.
 10. Texte im Spiel, Kommentare und Doku auf Deutsch, Bezeichner im Code englisch. Nach jeder Änderung in `js/data/`: `npm run docs`
@@ -114,7 +114,7 @@ Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 | Geld pro Sekunde je eingelagerter Versorgungskiste | balance.js | `QUICK.moneyPerCrate` |
 | Prämien für Abschüsse und Bauten | balance.js | `BALANCE.bounty` |
 | Startgeld / Obergrenze der Kasse, die von Runde zu Runde bleibt | balance.js | `QUICK.startMoney` / `QUICK.walletMax` |
-| Siegpunkte (Standard) / Takt der Punkte | balance.js | `QUICK.winPoints` / `QUICK.pointEvery` (Auswahl 25/50/100 in `js/ui/menu.js`) |
+| Siegpunkte (Standard) / Takt der Punkte | balance.js | `QUICK.winPoints` / `QUICK.pointEvery` (Auswahl 25/50/100: `POINTS` in `js/ui/menu/common.js`) |
 | Tickets der Eroberung (Auswahl, Standard, Takt, Verlust je Takt, Verlust ohne Flagge), Kommandeur-Verlust | balance.js | `BALANCE.conquest.ticketChoices` / `ticketDefault` / `tickEvery` / `noFlagLoss`; Kommandeur: `BALANCE.commander.deathPoints` (in der Eroberung Tickets) |
 | Haltezeit des Sendemasts bis zum Sieg | balance.js | `QUICK.radioHold` |
 | Startarmee | balance.js | `QUICK.startUnits` |
@@ -159,7 +159,7 @@ Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 | Weitere Stadt-Abschnitte (Gebiet, Einwohner, Wachstum, Kosten, Nachfrage, Ruinen, Abriss, Startwerte) | js/data/city.js | `CITY.cell`, `territory`, `flee`, `happy`, `housing`, `jobs*`, `immigration`, `startPop`, `taxPop`, `growTime`, `upgradeTime`, `ruinTime`, `maxLevel`, `demand`, `metalCost`, `bountyBm`, `startMetal`, `startStock`, `fobMargin`, `clearable`, `retired` |
 | Teamnamen und -farben | balance.js | `BALANCE.teamNames`, `BALANCE.teamColors` |
 
-Danach: PRD-Text und Hilfetexte in `js/ui/menu.js` auf die alte Zahl durchsuchen und anpassen (Regel 7).
+Danach: PRD-Text und Hilfetexte (`js/ui/helptext.js`, Spielhinweise des Startmenüs in `js/ui/menu/start-html.js`) auf die alte Zahl durchsuchen und anpassen (Regel 7).
 
 ## Feature-Landkarte
 
@@ -170,7 +170,7 @@ Bei einem neuen Feature dort eine Zeile ergänzen.
 
 ### Einen Wert ändern
 1. Schlüssel in „Wo ändere ich was?“ suchen, Wert in `js/data/` ändern.
-2. `npm run docs` (Tabellen in PRD §6), dann PRD-Text und Hilfetexte (`js/ui/menu.js`) auf die alte Zahl durchsuchen und anpassen; Eintrag als Datei in `docs/changes/`.
+2. `npm run docs` (Tabellen in PRD §6), dann PRD-Text und Hilfetexte (`js/ui/helptext.js`, `js/ui/menu/start-html.js`) auf die alte Zahl durchsuchen und anpassen; Eintrag als Datei in `docs/changes/`.
 3. `npm run test:quick`, dann `npm test` (`CACHE_VERSION` erhöht `npm run release`). Schlägt ein Test fehl, der genau diesen Wert prüft: Test an die neue Regel anpassen, nicht umgekehrt.
 
 ### Neue Einheit
@@ -179,7 +179,7 @@ Bei einem neuen Feature dort eine Zeile ergänzen.
 3. `js/data/research.js`: Gruppe in `RESEARCH.groups` eintragen (fehlt sie, wirken nur `all`, `veh` und `air`; Einheiten sind ohne Forschung frei). Mit Stadt: `CITY.crew` (Einwohner) und `CITY.metalCost` (Metall aus dem Stadtlager, fehlt = 0) in `js/data/city.js`.
 4. Aussehen: **eigenes Rezept [docs/rezept-einheiten.md](docs/rezept-einheiten.md)** (Maße, Bausteine, Stil, Vorschau-Schleife mit `node tools/unitpreview.mjs <typ>`, welches KI-Modell). Kurz: Modell in `js/render/unitpaint.js` (Funktion in `MODELS` bzw. `INFANTRY`, gilt für 2D und Iso; `test/unitpaint.test.js` prüft, dass jede Einheit eines hat). Ohne Modell zeichnen `js/render/sprites.js` (`drawUnit`) und der Renderer eine einfache Form.
 5. KI: Soll sie die Einheit bauen? Dann `MIX` in `js/data/ai.js` und die Ausbildung in `js/ai/army/produce.js` (`produce`, `counterMix`) ergänzen, sonst im PRD §10 vermerken, dass sie es nicht tut.
-6. Test in `test/` (Ausbildung über `game.issue(team, { type: 'train', … })`), Hilfe in `js/ui/menu.js`, `npm run docs` (Tabellen), PRD §6 (Rolle) und Eintrag in `docs/changes/`.
+6. Test in `test/` (Ausbildung über `game.issue(team, { type: 'train', … })`), Hilfe (`js/ui/helptext.js`, `js/ui/menu/start-html.js`), `npm run docs` (Tabellen), PRD §6 (Rolle) und Eintrag in `docs/changes/`.
 7. Eroberung: Ein Kampfflugzeug nimmt keine Flagge ein (`!u.def.jet` in `updateConquest`); nur die U-2 (`highAlt`) darf über fremde Viertel fliegen (Sperre `mode.locked` in `movement.js`); Luftfahrzeuge erscheinen nie an einer Flagge (Ausbildung in `economy.js`).
 
 ### Neues Gebäude
@@ -189,7 +189,7 @@ Bei einem neuen Feature dort eine Zeile ergänzen.
 2. Sonderregeln beim Setzen in `js/game/cmd/build.js` (`canPlace`), Wirkung im passenden Modul oder in einem neuen Modul (Rezept „Neues Spielsystem“).
 3. Aussehen: Maler in `js/render/milbuild.js` (Typ in `MIL_TYPES` eintragen), Höhe in `js/render/iso.js` (`BUILD_H`), Kürzel in
    `js/render/sprites.js` (`BUILD_ABBR`, 2D-Ansicht).
-4. KI optional in `js/ai/army/build.js` (`buildDefense`, `findSite`); Test, Baumenü-Zeile der Hilfe (`js/ui/menu.js`, Taste B), PRD §5 und Eintrag in `docs/changes/`. Eroberung: Das Auswahlfeld „Neue Einheiten erscheinen“ erscheint von selbst bei Gebäuden, die Bodeneinheiten ausbilden (`produces`), nicht bei Flugzeugen (`js/ui/hud/info.js`, `updateSpawnPick`).
+4. KI optional in `js/ai/army/build.js` (`buildDefense`, `findSite`); Test, Baumenü-Zeile der Hilfe (`js/ui/helptext.js`, Taste B), PRD §5 und Eintrag in `docs/changes/`. Eroberung: Das Auswahlfeld „Neue Einheiten erscheinen“ erscheint von selbst bei Gebäuden, die Bodeneinheiten ausbilden (`produces`), nicht bei Flugzeugen (`js/ui/hud/info.js`, `updateSpawnPick`).
 
 ### Neue Stadtzellenart
 1. `js/data/citykinds.js`: Eintrag in `CITY_KINDS` an der Stelle seiner Baumenü-Gruppe (`group`), mit der **nächsten freien `id`**
@@ -234,7 +234,7 @@ Für eine Rohware, die von außerhalb der Karte kommt: nicht gelagert, nicht geh
 4. Test über `game.issue` (`test/commands.test.js` prüft Register und Modi allgemein), PRD §8 (Steuerung) und Eintrag in `docs/changes/`.
 
 ### Neue Option im Startmenü
-1. Standard in `BALANCE.menuDefaults`; `js/ui/menu.js` → `showStartMenu`: Zustand, Schalter im HTML, Speicherung (`readFlag`/`writeFlag` mit eigenem Schlüssel `frontline-…`), Wert in `onStart({ … })`.
+1. Standard in `BALANCE.menuDefaults`; `js/ui/menu/` → `showStartMenu` (`start.js`): Zustand (`readStartState`, `markStart`, `applySetting` in `start-state.js`), Schalter im HTML (`start-html.js`), Speicherung (`readFlag`/`writeFlag` mit eigenem Schlüssel `frontline-…` in `prefs.js`), Wert in `onStart({ … })` (`start.js`).
 2. `js/main.js` → `startGame`: Wert an `new Game({ … })` weitergeben.
 3. `js/game/game.js` → Konstruktor-Option mit Standard **aus**, an das Feature-Modul weitergeben (Regel 9).
 
@@ -247,9 +247,9 @@ Für eine Rohware, die von außerhalb der Karte kommt: nicht gelagert, nicht geh
 1. Werte als eigener Block in `js/data/balance.js` (wie `BALANCE.conquest`), jede Zeile mit deutschem Kommentar; Regel in `docs/prd/eroberung.md` oder einer neuen Datei unter `docs/prd/` (Übersicht in PRD.md).
 2. Neuer Modus: Schalter in `new Game({ … })` mit Standard **aus** (Regel 9), Eintrag im Modus-Register `js/game/modes.js` (`MODES`, Haken wie bei `CONQUEST_MODE`); Startmenü und `js/main.js` wie im Rezept „Neue Option im Startmenü“.
 3. Regel in der Eroberung: `js/game/conquest.js` (`updateConquest`, `checkCapitals`, `eliminate`). Geometrie nur über `js/game/zonegeo.js` (`inZone`, `zoneDist`), Beziehungen nur über `js/game/teams.js` (`hostile`, `aliveTeams`, `enemiesOf`); nie eigene Kreis- oder Quadratrechnung und nie `1 - team` (bis zu vier Teams).
-4. Alle Stellen der Spielart prüfen: `foeSpawn`, `slotCap`, `checkEnd` und der Partieende-Text in `endGame` (`js/game/game.js`), Endbildschirm (`showEnd` in `js/ui/menu.js`), HUD (`js/ui/hud/`, Einstieg `js/ui/hud.js`), KI-Zweig (`aiArmy` in `js/ai/ai.js`), Punktewert (`score`).
+4. Alle Stellen der Spielart prüfen: `foeSpawn`, `slotCap`, `checkEnd` und der Partieende-Text in `endGame` (`js/game/game.js`), Endbildschirm (`showEnd` in `js/ui/menu/end.js`), HUD (`js/ui/hud/`, Einstieg `js/ui/hud.js`), KI-Zweig (`aiArmy` in `js/ai/ai.js`), Punktewert (`score`).
 5. Tests: `test/conquest.test.js` ergänzen, neue Befehle in `test/cmdfuzz.test.js` (TEMPLATES). `test/golden.test.js` bleibt unverändert; ändert sich eine Zufallskarte mit 2 Spielern, ist das eine Regeländerung für Regel 4.
-6. Neue Datei, die der Browser lädt: unter `sw.js` → `ASSETS`. `npm run docs`, `npm run test:quick`; PRD, Hilfe (`js/ui/helptext.js`, `js/ui/menu.js`), Eintrag in `docs/changes/`.
+6. Neue Datei, die der Browser lädt: unter `sw.js` → `ASSETS`. `npm run docs`, `npm run test:quick`; PRD, Hilfe (`js/ui/helptext.js`, `js/ui/menu/start-html.js`), Eintrag in `docs/changes/`.
 
 ### KI-Verhalten anpassen
 1. Schwellen und Takte zuerst über `BALANCE.difficulty` oder `js/data/ai.js` ändern.

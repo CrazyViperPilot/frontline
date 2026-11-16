@@ -15,7 +15,7 @@
 //   Texte, Farben    resNames, teamNames, teamColors
 
 // == SCHNELLEINSTELLUNGEN ==
-// Hier ändern; BALANCE unten liest diese Werte. Danach PRD und Hilfetexte (js/ui/menu.js) anpassen (CLAUDE.md, Regel 7).
+// Hier ändern; BALANCE unten liest diese Werte. Danach PRD und Hilfetexte (js/ui/helptext.js, js/ui/menu/start-html.js) anpassen (CLAUDE.md, Regel 7).
 export const QUICK = {
   unitLimit: 300, // Einheitenlimit in Plätzen je Team (Soldat, LKW, Hubschrauber 1, SPz 3, KPz 5, Flak/SAM 2: `slots` in units.js)
   startMoney: 800, // Startgeld (die Kasse bleibt von Runde zu Runde, höchstens walletMax)

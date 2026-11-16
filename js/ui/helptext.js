@@ -1,5 +1,5 @@
 // Hilfe (F1) und Tastenliste (Review E-05, seit v5.63): Zahlen und Tasten kommen aus den Daten (BALANCE, CITY, UNITS, BUILDINGS,
-// RESEARCH), nicht von Hand. Kein DOM: test/helptext.test.js lädt die Liste in Node. Angezeigt von showHelp in js/ui/menu.js.
+// RESEARCH), nicht von Hand. Kein DOM: test/helptext.test.js lädt die Liste in Node. Angezeigt von showHelp in js/ui/menu/help.js.
 import { BALANCE } from '../data/balance.js';
 import { CITY } from '../data/city.js';
 import { UNITS } from '../data/units.js';

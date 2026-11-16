@@ -102,7 +102,7 @@ angemeldete Spieler und liegt dann im Konto, also auf jedem Gerät gleich.
   `api/lib/konto.php` (`FL_WALLET_START`, `FL_WALLET_MAX`). Bei einer Änderung beide Stellen anpassen.
 - **Dateien:** `api/auth.php` (`walletreset`, Antwort `user`), `api/lib/konto.php` (Spalte, Spiegel), `api/admin.php` (Liste,
   `setwallet`), `js/ui/saves.js` (`setAccount`, `accountWallet`, `noteWallet`, `resetWallet`), `js/ui/match.js` (Endstand, Vorrat),
-  `js/main.js` (Startgeld, Partieende), `js/ui/menu.js` (Zeile im Startmenü), `admin/admin.js` und `admin/index.html`.
+  `js/main.js` (Startgeld, Partieende), `js/ui/menu/start-saves.js` (Zeile im Startmenü), `admin/admin.js` und `admin/index.html`.
 - **Tests:** `test/kasse.test.js` (Client: Gast, Anmelden, Grenzen von `noteWallet`, Zurücksetzen, 401, keine Aktion `wallet` mehr)
   und `test/match.test.js` (Client des Match-Starts, siehe unten). Von Hand gegen MariaDB und `php -S` geprüft (Migration der
   Spalte, `walletreset`, `setwallet`, 401 ohne Sitzung und bei gesperrtem Konto).
@@ -160,7 +160,7 @@ mit beliebigem Ergebnis melden, solange die Start-Kasse stimmt und die Grenze je
   eine Zeile in `matches` an. Die Antwort bleibt `{ok, wallet}`.
 - **Dateien:** `api/match.php` (Aktionen), `api/lib/match.php` (Tabellen, Geheimnis, Signatur), `js/ui/match.js` (Client),
   `js/main.js` (`matchStart` beim Start, `matchResume` beim Fortsetzen, `finishMatch` am Partieende, `meta.match` beim Speichern),
-  `js/ui/saves.js` (`remoteMeta`: kein `match` zum Webspace), `js/ui/menu.js` (Zeile „Gewertete Partien bereit“).
+  `js/ui/saves.js` (`remoteMeta`: kein `match` zum Webspace), `js/ui/menu/start-saves.js` (Zeile „Gewertete Partien bereit“).
 - **Tests:** `test/match.test.js` (Client mit gefälschtem fetch: Gast, Vorrat, Abbruch verbraucht nichts, Wertung verbraucht den Token,
   Fortsetzen mit und ohne Token, Vorrat mit alter Kasse, Vormerkung ohne Netz, Reihenfolge, 409/400/403/401, fremdes Konto, Frist),
   `test/saves.test.js` (Token nur lokal: Speichern und Abgleich mit Attrappe der IndexedDB, nie im Upload). Server gegen MariaDB und `php -S` von Hand geprüft: Vorrat
@@ -211,7 +211,7 @@ abgelehnte Adresse), steht im Protokoll der Grund, im Browser nur „Die E-Mail 
 
 ## Oberfläche (KO3, Startmenü)
 
-- **Ort:** Bereich „Konto“ direkt unter dem Titel im Startmenü (`js/ui/menu.js`, Stil in `css/style.css`, Klasse `.account`).
+- **Ort:** Bereich „Konto“ direkt unter dem Titel im Startmenü (`js/ui/menu/account.js`, `account-html.js`, `start-account.js`, Stil in `css/style.css`, Klasse `.account`).
   Die Anfragen laufen über `accountRequest`, `accountUser`, `setRemoteEnabled` aus `js/ui/saves.js`.
 - **Abgemeldet:** Hinweis „Spielstände nur auf diesem Gerät“, drei Knöpfe: Anmelden, Registrieren, Passwort vergessen. Der Knopf
   öffnet das Formular darunter, ein zweiter Druck schließt es. Registrieren verlangt die Wiederholung des Passworts; Passwörter unter
@@ -230,7 +230,7 @@ abgelehnte Adresse), steht im Protokoll der Grund, im Browser nur „Die E-Mail 
 
 ## Konto im Pausenmenü (seit v5.157)
 
-- **Ort:** Im Pausenmenü (P, Esc) steht unter den Reglern ein kompakter Bereich „Konto“ (`js/ui/menu.js`, `showPause(…, account)`,
+- **Ort:** Im Pausenmenü (P, Esc) steht unter den Reglern ein kompakter Bereich „Konto“ (`js/ui/menu/pause.js`, `showPause(…, account)`,
   Klasse `.account`). Er nutzt denselben Konto-Code wie das Startmenü (`wireAccount`), zeigt aber nur das Nötigste.
 - **Abgemeldet:** Anmelden und Registrieren (ohne „Passwort vergessen“), dieselben Formulare. **Angemeldet:** „Angemeldet als <E-Mail>“
   und Abmelden. Der Anmeldestand kommt ohne Abfrage aus dem Startmenü (`accountEmail()`); beim Anmelden holt das Spiel den Vorrat
@@ -315,7 +315,7 @@ Der Spieler sieht sie in seinem Profil.
   kann Punkte und Abschüsse beliebig melden. Die Begrenzung der Kasse (MS1) bleibt die einzige Wertungsregel.
 - **Dateien:** `api/match.php` (`match_stats_action`, `match_finish_action`), `api/lib/match.php` (Tabelle `matches`, `match_game_info`),
   `js/ui/match.js` (`gameInfo`, `tidyGame`, `matchStats`), `js/main.js` (Partieende), `js/ui/stats.js` (Anzeige als HTML),
-  `js/ui/menu.js` (Knopf und Anzeige im Konto-Bereich, Option `stats` von `wireAccount`), `css/style.css` (`.acc-stats`).
+  `js/ui/menu/account-html.js` (Knopf und Anzeige im Konto-Bereich), `js/ui/menu/account.js` (Option `stats` von `wireAccount`), `css/style.css` (`.acc-stats`).
 - **Tests:** `test/match.test.js` (Client: Partie-Infos, Vormerkung mit Partie-Infos, Abruf der Statistik), `test/spielstatistik.test.js` (Anzeige,
   Leerzustand, Vorzeichen), `test/matchphp.test.js` (Validierung von `match_game_info` mit der PHP-Kommandozeile). Von Hand gegen MariaDB
   und `php -S` geprüft: Wertung mit und ohne Partie-Infos, Dezimalzahl, ungültige Felder, negative Kasse (−350), Doppelmeldung (409), fremder
@@ -343,7 +343,7 @@ Im Admin-Panel gibt es zwei Reiter: **Konten** (wie bisher, mit neuer Spalte **S
 ## Konto-Bereich (seit KO4)
 
 Der Konto-Bereich im Startmenü (Knopf **„Konto“** neben „Meine Spiele“, nicht im Pausenmenü) klappt Angaben und Verwaltung auf.
-Oberfläche: `js/ui/menu.js` (`detailPanel`, `wireAccount` mit `details: true`), Abfragen in `js/ui/saves.js` (`setNickname`,
+Oberfläche: `js/ui/menu/account-html.js` (`detailPanel`), `js/ui/menu/account.js` (`wireAccount` mit `details: true`), Abfragen in `js/ui/saves.js` (`setNickname`,
 `premiumHistory`, `requestDeactivate`), Schnittstelle `api/auth.php`.
 
 ### Angaben

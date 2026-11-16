@@ -1,5 +1,5 @@
 // Spielstatistik im Konto-Bereich des Startmenüs (seit v5.158, docs/prd/konto.md „Spielstatistik“). Nur Anzeige: die Zahlen kommen
-// von api/match.php (Aktion stats, ui/match.js matchStats). Kein DOM: statsHtml liefert HTML mit Escape, ui/menu.js setzt es ein.
+// von api/match.php (Aktion stats, ui/match.js matchStats). Kein DOM: statsHtml liefert HTML mit Escape, ui/menu/account-html.js setzt es ein.
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const num = (v) => Math.round(v).toLocaleString('de-DE');

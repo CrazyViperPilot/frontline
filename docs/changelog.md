@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.194: **Stadt-KI: Überfälle ohne `1 - team`** (§10 „Überfälle auf Städte“): `aiRaid` bestimmt die gegnerische Stadt über `enemiesOf` (nächste lebende Hauptstadt, in der Eroberung nur mit offenem Viertel); mit zwei Teams unverändert. Cache v258.
 - v5.193: **Umbau: Menüs in Module geteilt** (nur Struktur, Verhalten unverändert): `js/ui/menu.js` ist nur noch der Einstieg mit den Re-Exporten; Startmenü, Pausenmenü, Hilfe, Endbildschirm, Konto, gemerkte Einstellungen und Gemeinsames liegen in kleinen Modulen unter `js/ui/menu/` (Verzeichnis im Kopf von `menu.js`, Dateitabelle in ARCHITEKTUR.md §7). Cache v257.
 - v5.192: **Umbau: HUD in Module geteilt** (nur Code): js/ui/hud.js ist in Module unter js/ui/hud/ aufgeteilt (Kopfleiste, Infofeld, Stadt-Infofeld, Befehlskarte, Meldungen); die Anzeige ist unverändert. Cache v257.
 - v5.191: **Umbau: Renderer in Module geteilt** (nur Code): js/render/renderer.js ist in Zeichenebenen unter js/render/layers/ aufgeteilt (2D, Iso, Boden, Nebel, Zonen, Radien, Marker); das Bild ist unverändert. Cache v257.

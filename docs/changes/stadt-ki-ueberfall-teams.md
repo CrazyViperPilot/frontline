@@ -1,1 +1,0 @@
-**Stadt-KI: Überfälle ohne `1 - team`** (§10 „Überfälle auf Städte“): `aiRaid` bestimmt die gegnerische Stadt über `enemiesOf` (nächste lebende Hauptstadt, in der Eroberung nur mit offenem Viertel); mit zwei Teams unverändert.

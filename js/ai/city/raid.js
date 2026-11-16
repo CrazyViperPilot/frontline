@@ -2,7 +2,7 @@
 // Exporte: aiRaid, aiDefend. Kein DOM, deterministisch.
 import { CITY } from '../../data/city.js';
 import { KINDS } from '../../data/citykinds.js';
-import { enemiesOf, nearestOf } from '../../game/teams.js';
+import { enemiesOf } from '../../game/teams.js';
 import { block, ready } from '../cooldown.js';
 import { cityAiMemory } from './common.js';
 
@@ -17,14 +17,12 @@ export function aiRaid(game, team, difficulty, dt, mem = cityAiMemory()) {
   mem.raidTimer += dt;
   if (mem.raidTimer < every) return;
   mem.raidTimer = 0;
-  // Ziel: die gegnerische Stadt; in der Eroberung nur eine, deren Viertel-Sperre gefallen ist (sonst kommt niemand hinein)
+  // Ziel: die gegnerische Stadt, deren Hauptstadt der eigenen am nächsten liegt (bei Gleichstand das kleinere Team; mit zwei
+  // Teams gibt es nur eine). In der Eroberung nur unter den Städten, deren Viertel-Sperre gefallen ist (sonst kommt niemand hinein).
   const main = game.mainFob(team);
   if (!main) return;
-  // Eroberung: unter den Städten mit offenem Viertel die, deren Hauptstadt am nächsten liegt
-  const open = game.conquest ? enemiesOf(game, team).filter((o) => game.conquest.open[o.id] && game.mainFob(o.id)) : [];
-  const near = nearestOf(open.map((o) => game.mainFob(o.id)), main.x, main.y);
-  const foe = game.conquest ? (near ? game.city[near.team] : null) : game.city[1 - team];
-  if (!foe || !main) return;
+  const foe = game.city[raidFoe(game, team, main)?.id];
+  if (!foe) return;
   // Ziel nach Wert: Werke, Güterbahnhof und Markt zuerst, geteilt durch die Entfernung (freie Planung seit v4.85)
   let target = null;
   let best = -Infinity;
@@ -43,6 +41,26 @@ export function aiRaid(game, team, difficulty, dt, mem = cityAiMemory()) {
     .slice(0, CITY.ai.raidSize)
     .map((u) => u.id);
   if (ids.length) game.issue(team, { type: 'attackMove', ids, x: target.x, y: target.y });
+}
+
+/**
+ * Gegnerisches Team für einen Überfall (Beziehungen über teams.js, nie `1 - team`): unter den lebenden Gegnern mit Stadt
+ * (Eroberung: nur mit offenem Viertel und Hauptstadt) das mit der nächsten Hauptstadt; ohne Hauptstadt zählt es als unendlich weit.
+ */
+function raidFoe(game, team, main) {
+  let best = null;
+  let bd = Infinity;
+  for (const o of enemiesOf(game, team)) {
+    if (!game.city[o.id]) continue;
+    const hq = game.mainFob(o.id);
+    if (game.conquest && !(game.conquest.open[o.id] && hq)) continue;
+    const d = hq ? Math.hypot(hq.x - main.x, hq.y - main.y) : Infinity;
+    if (!best || d < bd) {
+      best = o;
+      bd = d;
+    }
+  }
+  return best;
 }
 
 /**

@@ -5,24 +5,94 @@
 
 ## 14. Ton
 
-Alle Geräusche werden im Browser mit WebAudio **selbst erzeugt** (Rauschen und Schwingungen, `js/audio/sound.js`): keine Audiodateien, keine fremden Lizenzen, sofort offline da. Der Ton liest nur (`game.effects`, Meldungen, Wetter) und ändert nichts am Spiel; die Simulation hängt Effekten nur einen Hinweis `snd` an (Waffen-ID, Rüstungsklasse eines Gefallenen oder `building`).
+Alle Geräusche werden im Browser mit WebAudio **selbst erzeugt** (Rauschen und Schwingungen, `js/audio/sound.js`): keine Audiodateien, keine fremden Lizenzen, sofort offline da.
+Der Ton liest nur (`game.effects`, Meldungen, Wetter) und ändert nichts am Spiel; die Simulation hängt Effekten nur einen Hinweis `snd` an (Waffen-ID, Rüstungsklasse eines Gefallenen oder `building`).
 
-- **Schalter:** Lautsprecher-Knopf oben (🔊/🔇), Taste **F2** und im Startmenü „Ton“ An/Aus; gemerkt unter `frontline-ton`, Standard An. Aus = der AudioContext schläft, kein Rechenaufwand (auch die Musik schweigt). Der Browser erlaubt Ton erst nach der ersten Berührung oder Taste, das ist das Startmenü.
-- **Lautstärke:** zwei Regler 0–100 % im Startmenü und im Pausenmenü (wirkt dort sofort): **Geräusche** (Standard 80 %, gemerkt unter `frontline-ton-laut`) und **Musik** (Standard 50 %, `frontline-musik-laut`). Die Werte speichert `js/audio/sound.js` (`loadLevel`, `saveLevel`, `LEVEL_KEYS`).
-- **Waffen:** eigener Klang je Waffe (Gewehr, MP, MG, Scharfschützengewehr, Kanone, Granatwerfer, RPG, Raketen, Flak, SAM, Basis-MG, Mörser), Tonhöhe leicht zufällig, damit Salven nicht nach Maschine klingen.
-- **Einschläge und Gefallene:** kleine, mittlere und große Explosion (Treffer einer Panzerabwehrwaffe, Fahrzeug, Einschlag/Gebäude), Soldaten leise, abgeschossene Hubschrauber mit Absturzpfeifen, abgefangene Granate als Zing.
-- **Dauergeräusche:** Regen, Wind (Schnee, Nebel, Winter), Hubschrauber-Rotor, Düsentriebwerk der Jets (F-16, F-22, U-2: tiefes Grollen, fauchender Schubstrahl und Turbinenpfeifen, das mit dem Tempo steigt; rollend leiser als im Flug, kein Rotortakt) und Dieselbrummen fahrender Fahrzeuge im Bild; dazu im Regen gelegentlich Donner. Pegel blenden weich über.
-- **Meldungen:** Ausbildung fertig (zwei Töne), Bau fertig, Alarm bei „Basis wird angegriffen“, Münze bei Prämien, leiser Hinweiston für übrige Meldungen; Klick auf HUD-Knöpfe, Bestätigung von Marsch-, Angriffs- und Baubefehlen; Fanfare bei Sieg, Trauermarsch bei Niederlage.
-- **Musik (`js/audio/music.js`):** ein Stück in d-Moll, 96 BPM, Akkordfolge Dm – B♭ – F – C (je ein Takt, endlos). Zwei Schichten laufen immer, nur ihre Pegel ändern sich: **ruhig** (weiche, langsam eingeblendete Flächen und eine leise Glocke) und **Gefecht** (Marschtrommel, Pauke auf 1 und 3, Bass-Ostinato). Die Lage steigt auf Gefecht, wenn in den letzten 6 s mindestens sechs Kampfeffekte (Schuss, Mündung, Einschlag, Explosion, Tod) im Bild oder nahe eigenen Einheiten und Gebäuden lagen oder die Basis angegriffen wird (Meldung „Basis wird angegriffen“); sie steigt in 2 s und fällt in 8 s. Ruhige Schicht = 1 − 0,6 · Lage, Gefecht = Lage. Noten plant ein Vorausplaner (0,25 s voraus). Pause: Musik auf 30 %, nicht stumm. Spielende: Musik blendet in etwa 3 s aus. Musik-Regler 0 % oder Ton aus: keine Noten. Die Werte stehen als Konstanten oben in `music.js`; sie wirken nicht auf die Partie.
-- **Raumklang:** Stereo-Position und Lautstärke nach der Lage auf dem Bildschirm; außerhalb des Bilds leiser, weit weg stumm; Gegner im Nebel bleiben stumm (wie in der Grafik). Gleiche Geräusche werden gedrosselt und die Zahl gleichzeitiger Geräusche begrenzt (große Schlachten bleiben schlank, Explosionen haben Vorrang); ein Kompressor verhindert Übersteuern. Pause, Tabwechsel und Spielende halten die Dauergeräusche an.
+- **Schalter:** Lautsprecher-Knopf oben (🔊/🔇), Taste **F2** und im Startmenü „Ton“ An/Aus; gemerkt unter `frontline-ton`, Standard An.
+  Aus = der AudioContext schläft, kein Rechenaufwand (auch die Musik schweigt).
+  Der Browser erlaubt Ton erst nach der ersten Berührung oder Taste, das ist das Startmenü.
+- **Lautstärke:** zwei Regler 0–100 % im Startmenü und im Pausenmenü (wirkt dort sofort):
+  **Geräusche** (Standard 80 %, gemerkt unter `frontline-ton-laut`) und **Musik** (Standard 50 %, `frontline-musik-laut`).
+  Die Werte speichert `js/audio/sound.js` (`loadLevel`, `saveLevel`, `LEVEL_KEYS`).
+- **Waffen:** eigener Klang je Waffe (Gewehr, MP, MG, Scharfschützengewehr, Kanone, Granatwerfer, RPG, Raketen, Flak, SAM, Basis-MG, Mörser), Tonhöhe leicht zufällig,
+  damit Salven nicht nach Maschine klingen.
+- **Einschläge und Gefallene:** kleine, mittlere und große Explosion (Treffer einer Panzerabwehrwaffe, Fahrzeug, Einschlag/Gebäude), Soldaten leise, abgeschossene Hubschrauber mit Absturzpfeifen,
+  abgefangene Granate als Zing.
+- **Dauergeräusche:** Regen, Wind (Schnee, Nebel, Winter), Hubschrauber-Rotor,
+  Düsentriebwerk der Jets (F-16, F-22, U-2: tiefes Grollen, fauchender Schubstrahl und Turbinenpfeifen, das mit dem Tempo steigt;
+  rollend leiser als im Flug, kein Rotortakt) und Dieselbrummen fahrender Fahrzeuge im Bild; dazu im Regen gelegentlich Donner.
+  Pegel blenden weich über.
+- **Meldungen:** Ausbildung fertig (zwei Töne), Bau fertig, Alarm bei „Basis wird angegriffen“, Münze bei Prämien, leiser Hinweiston für übrige Meldungen;
+  Klick auf HUD-Knöpfe, Bestätigung von Marsch-, Angriffs- und Baubefehlen; Fanfare bei Sieg, Trauermarsch bei Niederlage.
+- **Musik (`js/audio/music.js`):** ein Stück in d-Moll, 96 BPM, Akkordfolge Dm – B♭ – F – C (je ein Takt, endlos).
+  Zwei Schichten laufen immer, nur ihre Pegel ändern sich: **ruhig** (weiche, langsam eingeblendete Flächen und eine leise Glocke) und **Gefecht** (Marschtrommel, Pauke auf 1 und 3, Bass-Ostinato).
+  Die Lage steigt auf Gefecht, wenn in den letzten 6 s mindestens sechs Kampfeffekte (Schuss, Mündung, Einschlag, Explosion,
+  Tod) im Bild oder nahe eigenen Einheiten und Gebäuden lagen oder die Basis angegriffen wird (Meldung „Basis wird angegriffen“); sie steigt in 2 s und fällt in 8 s. Ruhige Schicht = 1 − 0,6 · Lage,
+  Gefecht = Lage.
+  Noten plant ein Vorausplaner (0,25 s voraus).
+  Pause: Musik auf 30 %, nicht stumm.
+  Spielende: Musik blendet in etwa 3 s aus.
+  Musik-Regler 0 % oder Ton aus: keine Noten.
+  Die Werte stehen als Konstanten oben in `music.js`; sie wirken nicht auf die Partie.
+- **Raumklang:** Stereo-Position und Lautstärke nach der Lage auf dem Bildschirm; außerhalb des Bilds leiser, weit weg stumm; Gegner im Nebel bleiben stumm (wie in der Grafik).
+  Gleiche Geräusche werden gedrosselt und die Zahl gleichzeitiger Geräusche begrenzt (große Schlachten bleiben schlank, Explosionen haben Vorrang); ein Kompressor verhindert Übersteuern.
+  Pause, Tabwechsel und Spielende halten die Dauergeräusche an.
 
 ## 16. Spielstand speichern
-- **Beliebig viele Stände** (seit SP2): jede Partie ist ein Stand mit **id** (UUID, vom Client erzeugt), **Name**, **Spielversion** (`js/version.js`), **erstellt am** (`createdAt`) und **zuletzt gespeichert** (`updatedAt`, ms seit 1970). Der Name ist beim ersten Speichern „Partie TT.MM.JJJJ HH:MM“ (Ortszeit, `defaultName` in `js/ui/saves.js`). Die laufende Partie schreibt immer in ihren Stand; wer sie fortsetzt, schreibt in den geladenen Stand weiter. Spielen ohne Konto geht; Stände liegen dann nur auf dem Gerät. Mit Konto (§17) liegen sie zusätzlich auf dem Webspace, gehören dem Konto und sind nur dort sichtbar.
-- **Startmenü:** „Fortsetzen“ lädt den neuesten **nicht beendeten** Stand (Spielzeit, Punkte, Schwierigkeit, Spielversion, Zeitpunkt und Quelle stehen dabei). Darunter die Liste **Spielstände** (SP3): je Stand Name, Version, erstellt am, zuletzt gespeichert (Datum und Uhrzeit), Spielzeit, Punkte, Schwierigkeit; Hinweis „beendet“ bzw. „nur auf diesem Gerät“. Je Zeile **Laden** (nicht bei beendeten), **Umbenennen** (bis 60 Zeichen) und **Löschen** (mit Rückfrage). Bei vielen Ständen scrollt die Liste.
-- **Pausenmenü:** „Speichern unter …“ fragt einen Namen (Vorschlag: Name des laufenden Stands + „ (Kopie)“), legt einen neuen Stand mit neuer id und neuem `createdAt` an; die Partie spielt darin weiter. Der Name des laufenden Stands steht im Pausenmenü.
-- **Wann:** alle 90 s Echtzeit bei laufendem Spiel, beim Öffnen der Pause, bei „Speichern und zum Startmenü“ und wenn die App in den Hintergrund geht. Erst ab 20 s Spielzeit; nicht im Debug-Modus. Eine beendete Partie (Sieg/Niederlage) wird **nicht** gelöscht: sie bekommt einmal den Endstand mit `ended: true` (nicht fortsetzbar, bleibt in der Liste zum Ansehen und Löschen). Speicherungen laufen je Partie nacheinander.
-- **Wohin:** immer zuerst auf das Gerät (IndexedDB, Datenbank `frontline-save` Version 2, Store `saves` nach id, läuft offline), dazu auf den Webspace (`api/save.php` in diesem Repo, Deploy über `.github/workflows/deploy.yml`, `phpexpert.de/frontline/api/save.php`), aber nur angemeldet: ohne Sitzung (401) bleibt es beim Gerät, ohne Fehlermeldung (KO2, §17). Der alte Einzelstand (Version 1) wird beim ersten Start einmal als „Alter Spielstand“ übernommen. Die **Liste** (`listSaves`) ist die Vereinigung beider Seiten; je id gewinnt der neuere `updatedAt`, die Quelle steht dabei. Ohne Netz bleibt es beim Gerät; `syncUp` (beim Öffnen des Startmenüs) schickt neuere lokale Stände nach. Eine Speicherung, die den Webspace nicht erreicht, bleibt lokal und wird nur gemeldet. So setzt Daniel auf Pixel und Tablet dieselbe Partie fort.
-- **Löschen und Umbenennen:** gelöscht wird auf beiden Seiten. Ist der Webspace nicht erreichbar, merkt sich das Gerät die Löschung (localStorage `frontline-spielstand-loeschen`) und holt sie beim nächsten Abgleich nach; gelöschte Stände erscheinen nicht mehr in der Liste. Umbenennen ändert `updatedAt` nirgends (ein veralteter Stand darf keinen neueren überschreiben). Gelingt das Umbenennen auf dem Webspace nicht, merkt sich das Gerät den Namen (localStorage `frontline-spielstand-umbenannt`) und schickt ihn beim nächsten Abgleich nach.
-- **Inhalt:** das ganze Spiel samt KI und Zufallszuständen (`js/core/snapshot.js`, `js/game/savegame.js`), gzip-gepackt (nach 15 min KI gegen KI mit allen Schaltern rund 0,25 MB), dazu Einstellungen, Kamera, Tempo. **Abgeleitetes wird nicht gespeichert, sondern beim Laden neu erzeugt**: das Gelände aus `map.relief` bzw. aus dem gespeicherten Grobraster (Zufallskarten rechnen mit ungerundeten Höhen), das Raster aus der Karte (`terrainGrid` in `js/game/mapdata.js`) plus dem gespeicherten Unterschied (Gebäude, Brücken, gerodete Zellen), die Sichtfelder der Entities aus dem gemerkten Ort ihrer Berechnung (`e.fogAt`); Zwischenspeicher liegen in `WeakMap`s außerhalb des Spielzustands. Gleichförmige Typed Arrays (Stadt-, Nebelfelder) stehen als Füllwert plus abweichende Stellen im Stand. Ein geladenes Spiel läuft bitgenau wie ohne Unterbrechung weiter (`test/save.test.js`). Beim Fortsetzen startet die Partie pausiert.
-- **Server:** `api/save.php` speichert beliebig viele Stände in MySQL 8 (Tabelle `saves`, legt sich beim ersten Aufruf selbst an; Zugang in `api/config.php`, die der Deploy aus den Secrets `DB_*` schreibt, nicht im Repo). Seit KO2 nur mit Sitzung des Kontos (Cookie `fl_session`), jeder Stand hat `user_id`; fremde Stände sind nicht sichtbar, eine fremde id überschreibt nichts (403). Stände sind über ihre UUID (`id`) getrennt: Speichern legt an oder ersetzt (`createdAt` bleibt beim ersten Wert), Umbenennen und Löschen sind eigene Aktionen, die Liste kommt ohne Spieldaten, neueste zuerst. Prüft Größe (12 MB), gzip-Kopf, Name (1 bis 60 Zeichen) und Herkunft (nur phpexpert.de und localhost schreiben aus dem Browser). Ohne Anmeldung antwortet er mit 401. Ohne `api/config.php` antwortet er mit HTTP 500 und klarer Meldung.
-- **Format-Version** `SAVE_FORMAT` (`js/game/savegame.js`): bei jeder Änderung, die gespeicherte Zustände unlesbar macht (neue Pflichtfelder im Spielzustand ohne Vorgabe, umbenannte Klassen), erhöhen; alte Stände werden dann nicht mehr angeboten. Seit v5.14 ist es 2 (größere Karte), seit v5.56 ist es 3: Daniels Entscheidung „alte Spielstände müssen nicht laden“; statt Migrationen (Flughafen räumen, Uni und Werke als Großbau, alter Forschungsbaum, FOB-Baustellen) wird das Format erhöht, Stände von v5.55 und älter werden nicht mehr fortgesetzt. Seit v5.58 ist es 4 (Buchhaltung der Stadt-KI in der KI-Instanz). Seit v5.62 ist es 5 (schlanker Stand ohne Abgeleitetes). Seit dem Paket „Import“ ist es 6: Rohwaren kommen von außerhalb der Karte, Vorkommen und Förderanlagen gibt es nicht mehr, Gleis und Güterbahnhof sind neu, und die Stadtzahlen haben sich geändert. **Stände davor laden nicht mehr** (die Liste zeigt sie mit „andere Version, nicht ladbar“, Fortsetzen und Laden fehlen). Keine Migrationen bauen: bricht ein Stand, `SAVE_FORMAT` erhöhen. Neue Klassen mit Instanzen im Spielzustand in `CLASSES` (`savegame.js`) eintragen, sonst meldet `test/save.test.js` einen Fehler. Funktionen oder Getter im Zustand werden nicht gespeichert (Beispiel `ammo`: `Game.restoreAccessors`).
+- **Beliebig viele Stände** (seit SP2): jede Partie ist ein Stand mit **id** (UUID, vom Client erzeugt), **Name**,
+  **Spielversion** (`js/version.js`), **erstellt am** (`createdAt`) und **zuletzt gespeichert** (`updatedAt`, ms seit 1970).
+  Der Name ist beim ersten Speichern „Partie TT.MM.JJJJ HH:MM“ (Ortszeit, `defaultName` in `js/ui/saves.js`).
+  Die laufende Partie schreibt immer in ihren Stand; wer sie fortsetzt, schreibt in den geladenen Stand weiter.
+  Spielen ohne Konto geht; Stände liegen dann nur auf dem Gerät.
+  Mit Konto (§17) liegen sie zusätzlich auf dem Webspace, gehören dem Konto und sind nur dort sichtbar.
+- **Startmenü:** „Fortsetzen“ lädt den neuesten **nicht beendeten** Stand (Spielzeit, Punkte, Schwierigkeit, Spielversion, Zeitpunkt und Quelle stehen dabei).
+  Darunter die Liste **Spielstände** (SP3): je Stand Name, Version, erstellt am, zuletzt gespeichert (Datum und Uhrzeit), Spielzeit, Punkte, Schwierigkeit;
+  Hinweis „beendet“ bzw. „nur auf diesem Gerät“.
+  Je Zeile **Laden** (nicht bei beendeten), **Umbenennen** (bis 60 Zeichen) und **Löschen** (mit Rückfrage).
+  Bei vielen Ständen scrollt die Liste.
+- **Pausenmenü:** „Speichern unter …“ fragt einen Namen (Vorschlag: Name des laufenden Stands + „ (Kopie)“), legt einen neuen Stand mit neuer id und neuem `createdAt` an;
+  die Partie spielt darin weiter.
+  Der Name des laufenden Stands steht im Pausenmenü.
+- **Wann:** alle 90 s Echtzeit bei laufendem Spiel, beim Öffnen der Pause, bei „Speichern und zum Startmenü“ und wenn die App in den Hintergrund geht.
+  Erst ab 20 s Spielzeit; nicht im Debug-Modus.
+  Eine beendete Partie (Sieg/Niederlage) wird **nicht** gelöscht: sie bekommt einmal den Endstand mit `ended: true` (nicht fortsetzbar, bleibt in der Liste zum Ansehen und Löschen).
+  Speicherungen laufen je Partie nacheinander.
+- **Wohin:** immer zuerst auf das Gerät (IndexedDB, Datenbank `frontline-save` Version 2, Store `saves` nach id, läuft offline),
+  dazu auf den Webspace (`api/save.php` in diesem Repo, Deploy über `.github/workflows/deploy.yml`, `phpexpert.de/frontline/api/save.php`),
+  aber nur angemeldet: ohne Sitzung (401) bleibt es beim Gerät, ohne Fehlermeldung (KO2, §17).
+  Der alte Einzelstand (Version 1) wird beim ersten Start einmal als „Alter Spielstand“ übernommen.
+  Die **Liste** (`listSaves`) ist die Vereinigung beider Seiten; je id gewinnt der neuere `updatedAt`, die Quelle steht dabei.
+  Ohne Netz bleibt es beim Gerät; `syncUp` (beim Öffnen des Startmenüs) schickt neuere lokale Stände nach.
+  Eine Speicherung, die den Webspace nicht erreicht, bleibt lokal und wird nur gemeldet.
+  So setzt Daniel auf Pixel und Tablet dieselbe Partie fort.
+- **Löschen und Umbenennen:** gelöscht wird auf beiden Seiten.
+  Ist der Webspace nicht erreichbar, merkt sich das Gerät die Löschung (localStorage `frontline-spielstand-loeschen`) und holt sie beim nächsten Abgleich nach;
+  gelöschte Stände erscheinen nicht mehr in der Liste.
+  Umbenennen ändert `updatedAt` nirgends (ein veralteter Stand darf keinen neueren überschreiben).
+  Gelingt das Umbenennen auf dem Webspace nicht, merkt sich das Gerät den Namen (localStorage `frontline-spielstand-umbenannt`) und schickt ihn beim nächsten Abgleich nach.
+- **Inhalt:** das ganze Spiel samt KI und Zufallszuständen (`js/core/snapshot.js`, `js/game/savegame.js`), gzip-gepackt (nach 15 min KI gegen KI mit allen Schaltern rund 0,25 MB), dazu Einstellungen,
+  Kamera, Tempo.
+  **Abgeleitetes wird nicht gespeichert, sondern beim Laden neu erzeugt**: das Gelände aus `map.relief` bzw. aus dem gespeicherten Grobraster (Zufallskarten rechnen mit ungerundeten Höhen),
+  das Raster aus der Karte (`terrainGrid` in `js/game/mapdata.js`) plus dem gespeicherten Unterschied (Gebäude, Brücken, gerodete Zellen),
+  die Sichtfelder der Entities aus dem gemerkten Ort ihrer Berechnung (`e.fogAt`); Zwischenspeicher liegen in `WeakMap`s außerhalb des Spielzustands.
+  Gleichförmige Typed Arrays (Stadt-, Nebelfelder) stehen als Füllwert plus abweichende Stellen im Stand.
+  Ein geladenes Spiel läuft bitgenau wie ohne Unterbrechung weiter (`test/save.test.js`).
+  Beim Fortsetzen startet die Partie pausiert.
+- **Server:** `api/save.php` speichert beliebig viele Stände in MySQL 8 (Tabelle `saves`, legt sich beim ersten Aufruf selbst an;
+  Zugang in `api/config.php`, die der Deploy aus den Secrets `DB_*` schreibt, nicht im Repo).
+  Seit KO2 nur mit Sitzung des Kontos (Cookie `fl_session`), jeder Stand hat `user_id`; fremde Stände sind nicht sichtbar, eine fremde id überschreibt nichts (403).
+  Stände sind über ihre UUID (`id`) getrennt: Speichern legt an oder ersetzt (`createdAt` bleibt beim ersten Wert),
+  Umbenennen und Löschen sind eigene Aktionen, die Liste kommt ohne Spieldaten, neueste zuerst.
+  Prüft Größe (12 MB), gzip-Kopf, Name (1 bis 60 Zeichen) und Herkunft (nur phpexpert.de und localhost schreiben aus dem Browser).
+  Ohne Anmeldung antwortet er mit 401. Ohne `api/config.php` antwortet er mit HTTP 500 und klarer Meldung.
+- **Format-Version** `SAVE_FORMAT` (`js/game/savegame.js`): bei jeder Änderung, die gespeicherte Zustände unlesbar macht (neue Pflichtfelder im Spielzustand ohne Vorgabe, umbenannte Klassen), erhöhen;
+  alte Stände werden dann nicht mehr angeboten.
+  Seit v5.14 ist es 2 (größere Karte), seit v5.56 ist es 3: Daniels Entscheidung „alte Spielstände müssen nicht laden“;
+  statt Migrationen (Flughafen räumen, Uni und Werke als Großbau, alter Forschungsbaum, FOB-Baustellen) wird das Format erhöht, Stände von v5.55 und älter werden nicht mehr fortgesetzt.
+  Seit v5.58 ist es 4 (Buchhaltung der Stadt-KI in der KI-Instanz).
+  Seit v5.62 ist es 5 (schlanker Stand ohne Abgeleitetes).
+  Seit dem Paket „Import“ ist es 6: Rohwaren kommen von außerhalb der Karte, Vorkommen und Förderanlagen gibt es nicht mehr, Gleis und Güterbahnhof sind neu, und die Stadtzahlen haben sich geändert.
+  **Stände davor laden nicht mehr** (die Liste zeigt sie mit „andere Version, nicht ladbar“, Fortsetzen und Laden fehlen).
+  Keine Migrationen bauen: bricht ein Stand, `SAVE_FORMAT` erhöhen.
+  Neue Klassen mit Instanzen im Spielzustand in `CLASSES` (`savegame.js`) eintragen, sonst meldet `test/save.test.js` einen Fehler.
+  Funktionen oder Getter im Zustand werden nicht gespeichert (Beispiel `ammo`: `Game.restoreAccessors`).

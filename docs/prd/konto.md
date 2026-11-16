@@ -17,7 +17,8 @@ Admin-Panel (Benutzerverwaltung, Abschnitt unten), die Kasse am Konto (KA1, Absc
 
 | Tabelle | Spalten | Hinweis |
 |---|---|---|
-| `users` | `id`, `email` (klein, eindeutig), `pass_hash`, `verified_at`, `plan` (Standard `free`), `premium_until`, `created_at`, `last_login`, `nickname` (seit KO4), `active` (seit KO4, Standard 1) | Zeiten in Sekunden seit 1970; `verified_at` leer = unbestätigt; `active` = 0: selbst deaktiviert (Abschnitt „Konto-Bereich“) |
+| `users` | `id`, `email` (klein, eindeutig), `pass_hash`, `verified_at`, `plan` (Standard `free`), `premium_until`, | Zeiten in Sekunden seit 1970; `verified_at` leer = unbestätigt; |
+| `users` | `created_at`, `last_login`, `nickname` (seit KO4), `active` (seit KO4, Standard 1) | `active` = 0: selbst deaktiviert (Abschnitt „Konto-Bereich“) |
 | `tokens` | `hash` (SHA-256 des Links, Schlüssel), `user_id`, `kind` (`verify`, `reset` oder `deactivate` seit KO4), `expires_at` | Link nur einmal gültig; ein neuer Link derselben Art macht den alten ungültig |
 | `premium_history` | `id`, `user_id`, `plan`, `premium_until` (leer = unbefristet oder Kostenlos), `note` (bis 80 Zeichen, leer erlaubt), `changed_by` (`admin`), `created_at` | Premium-Historie (seit KO4): ein Eintrag je Änderung der Konto-Art im Admin-Panel; beim Löschen des Kontos mit gelöscht |
 | `sessions` | `hash` (SHA-256 des Cookies), `user_id`, `created_at`, `expires_at` | 30 Tage |
@@ -25,7 +26,8 @@ Admin-Panel (Benutzerverwaltung, Abschnitt unten), die Kasse am Konto (KA1, Absc
 | `admin_sessions` | `hash` (SHA-256 des Cookies `fl_admin`), `created_at`, `expires_at` | Admin-Panel, 8 Stunden (Abschnitt „Admin-Panel“) |
 | `meta` | `k` (Schlüssel, Primärschlüssel), `v` (Text) | Match-Start (MS1): hält das Geheimnis unter `match_secret` |
 | `match_tokens` | `jti` (32 Hex, Primärschlüssel), `user_id`, `w0` (Kasse bei der Ausgabe), `issued_at`, `used_at` (leer = noch nicht gewertet) | Match-Start (MS1), Zeilen älter als 7 Tage werden gelöscht |
-| `matches` | `id`, `user_id`, `jti` (eindeutig: eine Partie zählt nur einmal), `started_at` (Ausgabezeit des Tokens), `finished_at`, `wallet_before`, `wallet_after`, `earned` (negativ möglich), `result` (`win`, `loss` oder leer), `duration` (Sekunden), `difficulty`, `seed`, `points_own`, `points_enemy`, `kills` | Spielstatistik (seit v5.158, Abschnitt unten): je gewerteter Partie eine Zeile, in derselben Transaktion wie die Kasse; beim Löschen des Kontos mit gelöscht |
+| `matches` | `id`, `user_id`, `jti` (eindeutig: eine Partie zählt nur einmal), `started_at` (Ausgabezeit des Tokens), `finished_at`, `wallet_before`, `wallet_after`, | Spielstatistik (seit v5.158, Abschnitt unten): je gewerteter Partie eine Zeile, in derselben Transaktion wie die Kasse; |
+| `matches` | `earned` (negativ möglich), `result` (`win`, `loss` oder leer), `duration` (Sekunden), `difficulty`, `seed`, `points_own`, `points_enemy`, `kills` | beim Löschen des Kontos mit gelöscht |
 
 Die Spalte `users.blocked` (`TINYINT`, Standard 0) kommt seit dem Admin-Panel dazu, die Spalte `users.wallet` (`BIGINT`, Standard
 800) seit KA1 (Kasse am Konto; Bestandskonten bekommen 800), `users.nickname` und `users.active` sowie die Tabelle `premium_history`
@@ -243,7 +245,9 @@ abgelehnte Adresse), steht im Protokoll der Grund, im Browser nur „Die E-Mail 
 
 ## Tests
 
-Kein automatischer Test im Paket (`npm test` läuft ohne PHP). Pausenmenü: `test/pausekonto.test.js` (Anzeige je Stand, Anmelden, Abmelden, gewertete Sperre ohne Browser). Geprüft wurde von Hand: `php -l` je Datei; Antworten des PHP-Servers
+Kein automatischer Test im Paket (`npm test` läuft ohne PHP).
+Pausenmenü: `test/pausekonto.test.js` (Anzeige je Stand, Anmelden, Abmelden, gewertete Sperre ohne Browser).
+Geprüft wurde von Hand: `php -l` je Datei; Antworten des PHP-Servers
 ohne `config.php`; Ablauf mit MariaDB und einem SMTP-Fake (Registrieren, Bestätigen, Anmelden, Abmelden, Passwort vergessen und
 Zurücksetzen, Bremsen, Cookie-Attribute, Fehlerpfade); Versand über STARTTLS und implizites TLS. KO2: `test/saves.test.js`
 (Client ohne Anmeldung: 401 führt zu reinem Gerätebetrieb, Anmelden stößt den Abgleich an) und von Hand gegen MariaDB mit zwei
@@ -276,7 +280,9 @@ Nicht im Offline-Cache (`admin/` steht nicht in `sw.js`), aber im Deploy hochgel
 
 - **Oberfläche:** Anmeldeformular, danach Tabelle mit Suche nach E-Mail, Knöpfen je Zeile (Freigeben nur bei unbestätigtem Konto,
   Reaktivieren nur bei selbst deaktiviertem Konto (seit KO4), Sperren/Entsperren, Auf Premium/Auf Kostenlos (fragt nach einer optionalen
-  Notiz für die Historie), Premium-Historie (klappt eine Zeile darunter auf), Kasse setzen, Löschen). Spalte „Aktiv“ (seit KO4). Löschen fragt mit einer Meldung, die die E-Mail und die Zahl der Spielstände
+  Notiz für die Historie), Premium-Historie (klappt eine Zeile darunter auf), Kasse setzen, Löschen).
+  Spalte „Aktiv“ (seit KO4).
+  Löschen fragt mit einer Meldung, die die E-Mail und die Zahl der Spielstände
   nennt. Auf dem Handy wird jede Zeile zu einer Karte (Spaltenüberschrift als Beschriftung).
 - **Dateien:** `api/admin.php` (Schnittstelle und Sitzung), `admin/index.html`, `admin/admin.js` (ohne Modul), `admin/admin.css`;
   `api/lib/konto.php` (Spalte `blocked`, Sperre in der Sitzungsabfrage), `api/auth.php` (403 bei gesperrten Konten).

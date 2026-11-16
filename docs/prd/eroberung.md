@@ -14,7 +14,8 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
   eigene Schwierigkeit** (Leicht, Normal, Schwer; gemerkt). **Jeder gegen jeden**, keine Allianzen.
 - Jeder Spieler startet in einer Kartenecke mit Hauptstadt, Stadt und Startarmee wie bisher. Startecken: Blau unten links, Rot oben
   rechts, Grün oben links, Gelb unten rechts.
-- **Kein kostenloser Soldaten-Nachschub** (`reinforce: false`): Die Hauptstadt stellt in der Eroberung keine Schützen von selbst nach (klassisch weiter alle 6 s, solange weniger als 29 Soldaten leben, §4); Truppen kosten immer Geld, Einwohner und Stahl.
+- **Kein kostenloser Soldaten-Nachschub** (`reinforce: false`):
+  Die Hauptstadt stellt in der Eroberung keine Schützen von selbst nach (klassisch weiter alle 6 s, solange weniger als 29 Soldaten leben, §4); Truppen kosten immer Geld, Einwohner und Stahl.
 - **Einheitenlimit** je Spieler nach Spielerzahl (`slotCap`): **500** bei 2, 3 und 4 Spielern (klassisch 300). Viele Einheiten kosten Bildrate, vor allem auf Tablet und Telefon.
 - Zufallskarten mit 2 Spielern sind je Seed dieselben wie klassisch. Mit 3 oder 4 Spielern bekommen auch die beiden anderen Ecken
   Bauland, flaches Gelände und eine Zufahrt; die Karte bleibt **punktsymmetrisch** (Blau/Rot und Grün/Gelb spiegeln sich, die beiden

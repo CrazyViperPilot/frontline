@@ -114,3 +114,18 @@ test('Einstiegs- und Strukturdoku ohne Versionsvermerke „seit v…“', () => 
   }
   assert.deepEqual(hits, [], 'Versionsvermerke gehören in docs/changelog.md; „seit v…“ hier streichen');
 });
+
+// Paket „Kurze Zeilen“: Eine Suche liefert ganze Zeilen; damit ein Treffer nicht einen ganzen Absatz kostet, steht im PRD
+// ein Satz je Zeile. Grenze 200 Zeichen, Tabellenzeilen 300 (die erzeugten Bereiche von `npm run docs` gelten mit).
+test('Kurze Zeilen: PRD.md und docs/prd/*.md ohne Zeile über 200 Zeichen (Tabellenzeilen 300)', () => {
+  const files = ['PRD.md', ...readdirSync(new URL('../docs/prd/', import.meta.url)).filter((f) => f.endsWith('.md')).map((f) => 'docs/prd/' + f)];
+  const problems = [];
+  for (const f of files) {
+    read('../' + f).split('\n').forEach((line, i) => {
+      const len = [...line].length;
+      const max = line.trimStart().startsWith('|') ? 300 : 200;
+      if (len > max) problems.push(`${f}:${i + 1} hat ${len} Zeichen (höchstens ${max})`);
+    });
+  }
+  assert.deepEqual(problems, [], 'zu lange Zeilen, ein Satz je Zeile (lange Sätze am Komma umbrechen):\n' + problems.join('\n'));
+});

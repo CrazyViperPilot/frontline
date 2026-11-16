@@ -10,7 +10,7 @@ Der Änderungsverlauf steht in [docs/changelog.md](docs/changelog.md) (nur bei B
 
 | § | Thema | Datei | Kurz |
 |---|---|---|---|
-| 3, 4, 5, 5a | Ressourcen, Logistik, FOB, Gebäude, Festung | [ressourcen-bau.md](docs/prd/ressourcen-bau.md) | Geld, Baumaterial, Munition, Treibstoff (auch Stahl, Kerosin); Hauptstadt und vordere FOB-Lager, LKW, Nachfüllen, Soldaten-Nachschub; FOB-Fahrzeug und Bauradius; Militärgebäude; Festung mit Gefechtstürmen |
+| 3, 4, 5, 5a | Ressourcen, Logistik, FOB, Gebäude, Festung | [ressourcen-bau.md](docs/prd/ressourcen-bau.md) | Geld, Baumaterial, Munition, Treibstoff (auch Stahl, Kerosin); (weiter unten) |
 | 6 | Einheiten, Waffen, Schaden | [einheiten.md](docs/prd/einheiten.md) | Rollen aller Einheiten, Wertetabellen (erzeugt mit `npm run docs`), Waffen je Panzerklasse, Treffer bis zum Abschuss |
 | 7 | Konfliktzone, Gelände, Kisten, Hot Zone, Sendemast, Fluss, Bohrer | [zone-gelaende.md](docs/prd/zone-gelaende.md) | Zonenkontrolle, Punkte und Zonengeld; Hügel, Seen, Natur und Kleinkram der Karte; Versorgungskisten; wandernde Hot Zone; Sendemast-Sieg; Fluss mit Brücken und Furten; Bohrer |
 | 7 | Eroberung | [eroberung.md](docs/prd/eroberung.md) | Modus mit 2 bis 4 Spielern, jeder gegen jeden: quadratische Konfliktzone mit 16 Flaggen, Tickets, gesperrte Viertel, Einheiten an Flaggen erscheinen lassen, KI in der Eroberung |
@@ -20,13 +20,20 @@ Der Änderungsverlauf steht in [docs/changelog.md](docs/changelog.md) (nur bei B
 | 10 | KI-Gegner | [ki.md](docs/prd/ki.md) | Verhalten der Armee-KI (Wellen, Späher, Expansion, Konter-Mix, Luftabwehr), was sie nicht baut, Tabelle „KI-Konstanten“ |
 | 13 | Geparkte Ideen | [ideen.md](docs/prd/ideen.md) | Ideen, die nur festgehalten werden (nicht bauen, Regel 8 in CLAUDE.md) |
 | 14, 16 | Ton, Musik, Spielstand | [ton-speichern.md](docs/prd/ton-speichern.md) | Synthetisierte Geräusche und Musik, Lautstärke; Speichern und Laden |
-| 17 | Benutzerkonten | [konto.md](docs/prd/konto.md) | Gast spielt ohne Konto; Konto mit E-Mail und Passwort, Bestätigungslink, Passwort vergessen, Sitzungs-Cookie, Mailversand per SMTP (Backend, Spielstände am Konto, Oberfläche im Startmenü); Kasse am Konto und signierter Match-Start (gewertete Partien nur mit Server-Token) |
-| 15 | Stadt (Kern) | [stadt.md](docs/prd/stadt.md) | Zonenstadt: Startviertel, Ausbildung in Kaserne/Fabrikhalle/Heliport, Großbauten, Heilen und Krankenhaus, Universität und Rechenzentrum, Strom, Zufriedenheit, Baugebiet, Bedienung, Wachstum, Einwohner (auch als Truppen), Flucht, Arbeit, Stadtgebäude wählen, Angriff auf die Stadt, Stadt-KI |
+| 17 | Benutzerkonten | [konto.md](docs/prd/konto.md) | Gast spielt ohne Konto; (weiter unten) |
+| 15 | Stadt (Kern) | [stadt.md](docs/prd/stadt.md) | Zonenstadt: Startviertel, Ausbildung in Kaserne/Fabrikhalle/Heliport, (weiter unten) |
 | 15 | Stadt: Wirtschaft | [stadt-wirtschaft.md](docs/prd/stadt-wirtschaft.md) | Rohwaren und Import (Einfuhr am Kartenrand und über Güterbahnhof mit Gleis, Preise), Werke als 2 × 2-Großbauten, Ertrag, Stahl, Markt, Straßenkosten, Steuern, Ressourcenanzeige |
 | 15 | Stadt: Aussehen | [stadt-aussehen.md](docs/prd/stadt-aussehen.md) | Schilder und Farben, gemalte 1 × 1-Gebäude, Baustellen und Ruinen, Universität als Bild, Darstellung auf der Karte |
 | 15 | Stadt: Fliegerhorst, Heliport | [stadt-luft.md](docs/prd/stadt-luft.md) | Bahn, Rollfeld, Stellplätze, Tower, Kerosintank, Munitionslager, F-16; Heliport als Landeplatz |
 | 15 | Stadt: Straßentransport | [stadt-transport.md](docs/prd/stadt-transport.md) | Wege über Straßen zum Lager und zu den Einfuhrpunkten, Kapazität und Stau, Pendler, Gewerbe-Absatz, Kerosin, Werkslager und LKW am Werk |
 
+- **Ressourcen, Logistik, FOB, Gebäude, Festung:** Hauptstadt und vordere FOB-Lager, LKW, Nachfüllen, Soldaten-Nachschub; FOB-Fahrzeug und Bauradius;
+  Militärgebäude; Festung mit Gefechtstürmen
+- **Benutzerkonten:** Konto mit E-Mail und Passwort, Bestätigungslink, Passwort vergessen, Sitzungs-Cookie, Mailversand per SMTP (Backend, Spielstände
+  am Konto, Oberfläche im Startmenü);
+- **Benutzerkonten:** Kasse am Konto und signierter Match-Start (gewertete Partien nur mit Server-Token)
+- **Stadt (Kern):** Großbauten, Heilen und Krankenhaus, Universität und Rechenzentrum, Strom, Zufriedenheit, Baugebiet, Bedienung, Wachstum, Einwohner
+  (auch als Truppen), Flucht, Arbeit, Stadtgebäude wählen, Angriff auf die Stadt, Stadt-KI
 
 ## 1. Ziel & Rahmen
 
@@ -43,13 +50,27 @@ Nicht im Umfang: Netzwerk-Multiplayer, Kampagne. Speichern laufender Partien gib
 
 ## 2. Spielablauf
 
-1. Startmenü: **Modus** (Eroberung · Klassisch, gemerkt; Standard Eroberung, §7), in der Eroberung **Computergegner** (1 bis 3) mit Schwierigkeit je Gegner (Leicht/Normal/Schwer), Siegpunkte (100 Standard; 25/50 für Schnellpartie; in der Eroberung stattdessen Tickets 75/150/300/1000), **Sendemast-Sieg** (An/Aus, gemerkt; Standard An, §7), **Wetter** (Aus · Zufall · Sommer · Herbst · Winter, gemerkt; Standard Zufall, §7), **Forschung** (An/Aus, gemerkt; Standard An, §7), **Fluss** (An/Aus, gemerkt; Standard An, nur Zufallskarten, §7), **Baugebiet** der Stadt (An/Aus, gemerkt; Standard An, §15), **Ton** (An/Aus, gemerkt; Standard An, §14), **Karte** (Zufall · Gespeichert · Neue Karte, siehe Abschnitt 9a), Start.
-2. Jede Partei startet in einer Ecke der großen Karte mit der **Hauptstadt** (Lager: Baumaterial, Munition, Treibstoff; gefüllt von den Werken der Stadt, die Rohwaren einführen, §15), Geld (800; angemeldet die Kasse des Kontos, §17), 1 Baufahrzeug, **3 LKW** (leer), **2 Kampfpanzern, 3 Schützenpanzern, 22 Schützen und 7 Panzerabwehrsoldaten** (29 Soldaten, Startaufstellung nach Truppengattung getrennt um die FOB: Panzer vorn, Schützen links, Panzerabwehr rechts, LKW und Baufahrzeug hinten, Kommandeur dicht hinter der FOB; `BALANCE.startLayout`). Zusammen belegen sie 52 der 300 Plätze des Einheitenlimits (klassisch; in der Eroberung 500, siehe §6 und §7).
-3. Kaserne, Fabrikhalle und Heliport der Stadt bilden Einheiten aus (§15; nur gegen Geld; mit Forschung Schützenpanzer, Scharfschützen und Hubschrauber erst ab Stufe 2, Kampfpanzer und AH-64 ab Stufe 3, §7). Man bringt Einheiten und Nachschub per LKW an die Front, gründet vordere FOBs (seit v5.09 mit dem FOB-Fahrzeug)
+1. Startmenü: **Modus** (Eroberung · Klassisch, gemerkt; Standard Eroberung, §7), in der Eroberung **Computergegner** (1 bis 3) mit Schwierigkeit je Gegner (Leicht/Normal/Schwer),
+   Siegpunkte (100 Standard; 25/50 für Schnellpartie; in der Eroberung stattdessen Tickets 75/150/300/1000), **Sendemast-Sieg** (An/Aus, gemerkt; Standard An, §7),
+   **Wetter** (Aus · Zufall · Sommer · Herbst · Winter, gemerkt; Standard Zufall, §7), **Forschung** (An/Aus, gemerkt; Standard An, §7),
+   **Fluss** (An/Aus, gemerkt; Standard An, nur Zufallskarten, §7), **Baugebiet** der Stadt (An/Aus, gemerkt; Standard An, §15), **Ton** (An/Aus, gemerkt; Standard An, §14),
+   **Karte** (Zufall · Gespeichert · Neue Karte, siehe Abschnitt 9a), Start.
+2. Jede Partei startet in einer Ecke der großen Karte mit der **Hauptstadt** (Lager: Baumaterial, Munition, Treibstoff; gefüllt von den Werken der Stadt, die Rohwaren einführen, §15),
+   Geld (800; angemeldet die Kasse des Kontos, §17), 1 Baufahrzeug, **3 LKW** (leer), **2 Kampfpanzern, 3 Schützenpanzern,
+   22 Schützen und 7 Panzerabwehrsoldaten** (29 Soldaten, Startaufstellung nach Truppengattung getrennt um die FOB:
+   Panzer vorn, Schützen links, Panzerabwehr rechts, LKW und Baufahrzeug hinten, Kommandeur dicht hinter der FOB; `BALANCE.startLayout`).
+   Zusammen belegen sie 52 der 300 Plätze des Einheitenlimits (klassisch; in der Eroberung 500, siehe §6 und §7).
+3. Kaserne, Fabrikhalle und Heliport der Stadt bilden Einheiten aus (§15; nur gegen Geld; mit Forschung Schützenpanzer,
+   Scharfschützen und Hubschrauber erst ab Stufe 2, Kampfpanzer und AH-64 ab Stufe 3, §7).
+   Man bringt Einheiten und Nachschub per LKW an die Front, gründet vordere FOBs (seit v5.09 mit dem FOB-Fahrzeug)
    (Verschanzen mit Mauern und Tore, Mörser, Flak, Nachladen und Tanken) und hält die Zone.
-4. In der Mitte liegt die **Konfliktzone** (eine Stadt). Klassisch ist sie ein großer Kreis: Wer dort mehr Spieler hat (Hot Zone doppelt), füllt den Punktebalken und bekommt Geld. In der Eroberung ist sie ein Quadrat aus 16 Flaggengebieten: Wer eine Flagge hält, bekommt Geld, und statt Punkten zählen Tickets (§7). In ihr wandert die **Hot Zone** (Abschnitt 7).
+4. In der Mitte liegt die **Konfliktzone** (eine Stadt).
+   Klassisch ist sie ein großer Kreis: Wer dort mehr Spieler hat (Hot Zone doppelt), füllt den Punktebalken und bekommt Geld.
+   In der Eroberung ist sie ein Quadrat aus 16 Flaggengebieten: Wer eine Flagge hält, bekommt Geld, und statt Punkten zählen Tickets (§7).
+   In ihr wandert die **Hot Zone** (Abschnitt 7).
 5. **Eroberung (§7):** Statt des Punktebalkens gibt es 16 Flaggen und Tickets; der letzte Spieler mit Tickets gewinnt. Klassisch:
-   **Sieg:** zuerst die Siegpunktzahl (Standard 100) erreichen – oder der Gegner hat keine FOB und kein Baufahrzeug mehr – oder (wenn eingeschaltet) einen **Sendemast** 30 Minuten halten (§7). Der Endbildschirm zeigt danach die Statistik aller Teams (§9).
+   **Sieg:** zuerst die Siegpunktzahl (Standard 100) erreichen – oder der Gegner hat keine FOB und kein Baufahrzeug mehr – oder (wenn eingeschaltet) einen **Sendemast** 30 Minuten halten (§7).
+   Der Endbildschirm zeigt danach die Statistik aller Teams (§9).
 
 ## 11. Qualitätsanforderungen
 
@@ -64,7 +85,6 @@ Nicht im Umfang: Netzwerk-Multiplayer, Kampagne. Speichern laufender Partien gib
 - **Must:** alles in 2–9, KI aus 10, Sieg/Niederlage, Pause.
 - **Should:** Nebel des Krieges, Kontrollgruppen, Doppelklick-Auswahl, Hilfe-Overlay, PWA/offline.
 - **Could:** Statistik am Spielende (gebaut in v5.65, §9 „Endbildschirm“). (Sound ist seit v4.59 gebaut, §14.)
-
 
 ## Änderungsverlauf
 

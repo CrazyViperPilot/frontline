@@ -16,10 +16,18 @@ function roleRows() {
   const start = text.indexOf('## 6. Einheiten');
   const end = text.indexOf('### Werte');
   assert.ok(start >= 0 && end > start, 'Abschnitt „## 6. Einheiten“ mit „### Werte“ fehlt in docs/prd/einheiten.md');
-  return text
-    .slice(start, end)
-    .split('\n')
-    .filter((line) => line.startsWith('| ') && !line.startsWith('| Einheit |'));
+  const lines = text.slice(start, end).split('\n');
+  const rows = lines.filter((line) => line.startsWith('| ') && !line.startsWith('| Einheit |'));
+  // Paket „Kurze Zeilen“: lange Rollen stehen als Aufzählung unter der Tabelle („- **Einheit:** …“, Fortsetzung eingerückt);
+  // jeder Punkt wird wie eine Tabellenzeile „| Einheit | Text |“ geprüft.
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(/^- \*\*(.+?):\*\* (.*)$/);
+    if (!m) continue;
+    let body = m[2];
+    while (i + 1 < lines.length && /^\s+\S/.test(lines[i + 1])) body += ' ' + lines[++i].trim();
+    rows.push(`| ${m[1]} | ${body} |`);
+  }
+  return rows;
 }
 
 /** Einheit, die eine Zeile nennt: der längste Name (Groß-/Kleinschreibung beachtet), der in der ersten Zelle steht. */

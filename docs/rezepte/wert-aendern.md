@@ -5,6 +5,8 @@ Teil der Rezepte für Erweiterungen (Einstieg: `CLAUDE.md` im Wurzelordner, Absc
 1. Schlüssel in der Tabelle `docs/wo-aendern.md` suchen, Wert in `js/data/` ändern.
 2. `npm run docs` (Tabellen in PRD §6).
    Dann PRD-Text und Hilfetexte (`js/ui/helptext.js`, `js/ui/menu/start-html.js`) auf die alte Zahl durchsuchen und anpassen.
+   Suche z. B. mit `grep -rn "300 Plätze" js docs/prd`. Die Hilfe (F1) liest die meisten Zahlen und Tasten aus den Daten;
+   der Rest steht von Hand in `js/ui/helptext.js` und den Menümodulen `js/ui/menu/`.
    Eintrag als Datei in `docs/changes/` (Regel 7 der `CLAUDE.md`: PRD und Änderungseintrag pflegen).
 3. `npm run test:quick`, dann `npm test`.
    `CACHE_VERSION` erhöht `npm run release` (Abschnitt „Zusammenarbeit“ der `CLAUDE.md`).

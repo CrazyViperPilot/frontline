@@ -26,6 +26,8 @@ npm run metrics                   # KI-Kennzahlen: 3 Seeds × 15 min KI gegen KI
 
 ## Regeln für Tests
 
+- Regel 9 der `CLAUDE.md`: Schalter sind in `new Game()` ohne Angabe aus; `conquest: true, players: 2…4` schaltet die Eroberung ein
+  (ohne sie gibt es genau zwei Teams). `city: false` (ohne Stadt) nur noch in alten Tests.
 - Tests, die länger als etwa 5 s laufen, tragen „[langsam]“ im Namen (`test:fast` lässt sie aus).
 - Neue lange Tests ebenso markieren.
 - **KI-Kennzahlen:** Bei Paketen, die KI, Stadt-Wirtschaft oder Kampf ändern, `npm run metrics` laufen lassen.

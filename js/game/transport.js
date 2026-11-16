@@ -7,7 +7,7 @@ import { laneGrid } from './roads.js';
 import { CITY } from '../data/city.js';
 import { WORKS, WORKPLACE_KINDS, KINDS, KIND_ID } from '../data/citykinds.js'; // Arbeitsstätten mit Pendlerweg: alle Arten mit Arbeitsplätzen
 import { GOODS } from '../data/goods.js';
-import { isPart, roadAt, accessCells, mainAccess, cellsOf, anchorOf, nbrsOf, atEdge, stationLinked } from './city/cells.js';
+import { isPart, accessCells, mainAccess, cellsOf, anchorOf, nbrsOf, atEdge, stationLinked } from './city/cells.js';
 export { mainAccess }; // liegt seit dem Paket „Straßen“ in cells.js (Anschlusspflicht des Baugebiets)
 
 /** Produkte fahren zum Lager der Hauptstadt (`'main'`): Werke, deren Ware ein Lager hat (Register js/data/goods.js). */
@@ -33,6 +33,9 @@ const GROUPS = ['imp', 'res', 'main']; // imp: Einfuhrpunkte (Paket „Import“
 
 /** Ausbildungsgebäude der Stadt (CITY.produces: Kaserne, Fabrikhalle, Heliport, Stellplatz), versorgt über ihren Weg zum Lager (Paket „Straßen“). */
 const TRAINERS = new Set(Object.keys(CITY.produces).map((k) => KIND_ID[k]));
+/** Flugplatz-Bauten, die ohne Straße auskommen (Paket „Fliegerhorst-Anschluss“): Stellplatz (über die Bahn) und Heliport (über Rollfeld).
+ *  Sie werden versorgt, wenn ein Kerosintank oder Munitionslager mit Straßenweg im Umkreis steht (fedNearby). */
+const AIRFIELD_TRAINERS = new Set(['stand', 'heliport'].map((k) => KIND_ID[k]));
 
 /**
  * Breitensuche von mehreren Startzellen (Quellen) aus über Straßenzellen (cap > 0), höchstens CITY.transport.maxDist Schritte.
@@ -229,29 +232,18 @@ function routeOf(c, tr, a, group, adj = []) {
 }
 
 /**
- * Anschluss eines Ausbildungsgebäudes oder Lagers des Fliegerhorsts an das Straßennetz (Paket „Straßen“): seine Straßenzellen
- * (accessCells); an Rollfeld oder Bahn erreicht es die Straße über diese Betonflächen (sie tragen selbst keinen Verkehr), dann zählen
- * die Straßen an ihrem Rand (wie beim Anschluss ans Lager, der Bahn und Rollfeld als Straße zählt).
+ * Hat ein Kerosintank oder Munitionslager mit Straßenweg zum Lager (depot: Weg je Anker) einen Platz im Umkreis CITY.air.supplyRadius
+ * um den Bau a? Dann ist ein Stellplatz oder Heliport versorgt, auch ohne eigene Straße (wie die Jets dort tanken und laden).
  */
-function supplyAccess(c, tr, a) {
-  const start = accessCells(c, a);
-  const out = start.filter((i) => tr.cap[i] > 0);
-  const seen = new Set(start);
-  const queue = start.filter((i) => !(tr.cap[i] > 0)); // Bahn und Rollfeld (flach, ohne Kapazität)
-  for (let h = 0; h < queue.length; h++) {
-    const i = queue[h];
-    const col = i % c.cols;
-    const row = (i - col) / c.cols;
-    for (const [x, y] of [[col - 1, row], [col + 1, row], [col, row - 1], [col, row + 1]]) {
-      if (x < 0 || y < 0 || x >= c.cols || y >= c.rows) continue;
-      const j = y * c.cols + x;
-      if (seen.has(j) || !roadAt(c, j)) continue;
-      seen.add(j);
-      if (tr.cap[j] > 0) out.push(j);
-      else queue.push(j);
-    }
+function fedNearby(c, a, depot) {
+  const e = c.ents?.get(a);
+  if (!e) return false;
+  const R = CITY.air.supplyRadius * c.cell;
+  for (const [i, path] of depot) {
+    const s = c.ents.get(i);
+    if (path && s?.alive && Math.hypot(s.x - e.x, s.y - e.y) <= R) return true;
   }
-  return out;
+  return false;
 }
 
 /** Berechnet Wege, Pendler und Stau-Puffer neu (Aufruf aus transportOf). */
@@ -326,9 +318,11 @@ function build(game, c, tr) {
     }
     if (WORKPLACE_KINDS.includes(k)) commute.set(a, pathFrom(tr.fields.res, accessCells(c, a))?.path ?? null);
     if (k === 'com' || k === 'market') shop.set(a, pathFrom(tr.fields.main, accessCells(c, a))?.path ?? null);
-    if (k === 'ktank' || k === 'mdepot') depot.set(a, pathFrom(tr.fields.main, supplyAccess(c, tr, a))?.path ?? null); // Fliegerhorst (seit v5.35; seit Paket „Straßen“ auch über Bahn und Rollfeld)
-    if (TRAINERS.has(c.kind[a])) supply.set(a, pathFrom(tr.fields.main, supplyAccess(c, tr, a))?.path ?? null); // Ausbildung (Paket „Straßen“)
+    if (k === 'ktank' || k === 'mdepot') depot.set(a, pathFrom(tr.fields.main, accessCells(c, a))?.path ?? null); // Fliegerhorst (seit v5.35); nur über Straßen (Paket „Fliegerhorst-Anschluss“)
+    if (TRAINERS.has(c.kind[a])) supply.set(a, pathFrom(tr.fields.main, accessCells(c, a))?.path ?? null); // Ausbildung (Paket „Straßen“)
   }
+  // Stellplatz und Heliport ohne Straßenweg: versorgt über einen Kerosintank oder Munitionslager mit Straßenweg im Umkreis (Weg 0, keine Last)
+  for (const a of anchors) if (AIRFIELD_TRAINERS.has(c.kind[a]) && supply.get(a) == null && fedNearby(c, a, depot)) supply.set(a, NO_PATH);
   tr.routes = routes;
   tr.imports = imports;
   tr.stations = stations;

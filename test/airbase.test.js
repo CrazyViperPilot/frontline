@@ -5,7 +5,7 @@ import { Game } from '../js/game/game.js';
 import { CITY } from '../js/data/city.js';
 import { BALANCE } from '../js/data/balance.js';
 import { UNITS } from '../js/data/units.js';
-import { canZone, roadAt, buildWhy } from '../js/game/city/cells.js';
+import { canZone, roadAt, taxiable, buildWhy } from '../js/game/city/cells.js';
 import { KINDS, KIND_ID } from '../js/data/citykinds.js';
 import { connectRoad } from '../js/game/city/roadnet.js';
 import { isFoe } from '../js/game/entities.js';
@@ -74,8 +74,15 @@ function airbase(g, t = 0, opts = {}) {
   if (opts.atc !== false) put('atc', 4, 2);
   if (opts.ktank !== false) put('ktank', 6, 2);
   if (opts.mdepot !== false) put('mdepot', 8, 2);
-  // Straßenweg zum Lager ab dem Ende der Bahn (Paket „Straßen“: Stellplätze bilden nur mit Weg aus), kostenlos wie beim Startviertel
-  if (opts.link !== false) withValue(CITY.transport, 'connectMax', 400, () => assert.ok(connectRoad(g, c, r * c.cols + q + 9, false) >= 0, 'Weg zum Lager'));
+  // Straßenweg zum Lager ab dem Ende der Bahn (Paket „Straßen“), kostenlos wie beim Startviertel. Tank und Lager brauchen eine eigene
+  // Straße zum Lager (Paket „Fliegerhorst-Anschluss“), sonst wachsen sie nicht
+  if (opts.link !== false) {
+    withValue(CITY.transport, 'connectMax', 400, () => {
+      assert.ok(connectRoad(g, c, r * c.cols + q + 9, false) >= 0, 'Weg zum Lager');
+      if (opts.ktank !== false) connectRoad(g, c, (r + 2) * c.cols + q + 6, false);
+      if (opts.mdepot !== false) connectRoad(g, c, (r + 2) * c.cols + q + 8, false);
+    });
+  }
   run(g, CITY.growTime + 1);
   const ents = [...c.ents.entries()].filter(([, e]) => e.alive);
   const of = (k) => ents.filter(([i]) => kindAt(c, i) === k).map(([, e]) => e);
@@ -96,7 +103,8 @@ test('Bahn: gültig nur als volles Rechteck 2 Zellen breit und mindestens CITY.a
   assert.ok(rw.valid, 'jetzt lang genug');
   assert.equal(rw.axis, 'x');
   assert.equal(rw.len, CITY.air.runwayMin);
-  assert.ok(roadAt(c, rw.cells[0]), 'Bahn zählt als Fahrweg');
+  assert.equal(roadAt(c, rw.cells[0]), false, 'Bahn ist keine Straße (Paket „Fliegerhorst-Anschluss“)');
+  assert.ok(taxiable(c, rw.cells[0]), 'Bahn ist Fahrweg der Jets');
   const r2 = g.issue(0, { type: 'city', kind: 'airport', c0: q, r0: r + 4, c1: q, r1: r + 4 });
   assert.equal(r2.ok, false, 'Flughafen 10 × 10 gibt es nicht mehr');
 });

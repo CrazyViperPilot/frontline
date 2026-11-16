@@ -1,7 +1,7 @@
 // Stadt auf der Karte (PRD §15): Straßen, ausgewiesene Zonen, Gebäude, Gebietsgrenzen und im Baumodus das gezogene Rechteck.
 // Liest nur game.city (und ren.cityUi, die Stadtleiste). 2D: flach von oben; isometrisch: Boden hier, Gebäude als Stadthäuser
 // über drawTownBuilding (renderer.js).
-import { cellRect, buildAllowed, hasRoad, sizeOf, fitBig, bigCenter, bigSpan, cellsOf } from '../game/city/cells.js';
+import { cellRect, buildAllowed, growLinked, sizeOf, fitBig, bigCenter, bigSpan, cellsOf } from '../game/city/cells.js';
 import { BIG_KINDS, bigPlan, drawBigGround, drawBigTop, partFoot, bigTop, stationBit } from './bigbuild.js';
 import { drawWorksTop, worksLift, WORKS_GROUND, WORKS_KINDS } from './works.js';
 import { CITY } from '../data/city.js';
@@ -1432,7 +1432,7 @@ export function drawCityBadges(ren, ctx, team, known, inRect, iso) {
  */
 function siteBar(ren, ctx, c, i, r, n, iso) {
   const at = c.part?.[i] ? c.part[i] - 1 : i; // Großbau: Zeitgeber und Anschluss der Mitte
-  const linked = hasRoad(c, at % c.cols, Math.floor(at / c.cols));
+  const linked = growLinked(c, at);
   const grow = growOf(c, at);
   const f = linked ? grow : 1;
   let x;

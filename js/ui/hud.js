@@ -10,7 +10,7 @@ import { radios, radioLeft } from '../game/radio.js';
 import { SEASON_NAMES, WEATHER_NAMES, weatherEffect } from '../game/weather.js';
 import { RESEARCH } from '../data/research.js';
 import { CITY } from '../data/city.js';
-import { hasRoad } from '../game/city/cells.js';
+import { growLinked } from '../game/city/cells.js';
 import { hasMarket } from '../game/city/query.js';
 import { careOf } from '../game/city/care.js';
 import { transportInfo, transportOf, supplyOf } from '../game/transport.js';
@@ -661,7 +661,7 @@ export class Hud {
     }
     if (CITY_TIP[k] && k !== 'market' && !b.produces && !care) h += `<div class="muted small">${esc(CITY_TIP[k])}</div>`;
     const col = i % c.cols;
-    if (!hasRoad(c, col, (i - col) / c.cols)) h += '<div class="warn small">Keine Straße daneben: wächst nicht weiter</div>';
+    if (!growLinked(c, i)) h += '<div class="warn small">Kein Anschluss (Straße, beim Stellplatz die Bahn): wächst nicht weiter</div>';
     if (s.powerRatio < 1 && CITY.power.use[k] && k !== 'res' && k !== 'com') h += `<div class="warn small">Strommangel: arbeitet mit ${Math.round(s.powerRatio * 100)} %</div>`;
     if (k === 'res' && c.flee[i] > 0) h += `<div class="warn small">Bewohner geflohen (Beschuss), Rückkehr frühestens in ${Math.ceil(c.flee[i])} s</div>`;
     return h;

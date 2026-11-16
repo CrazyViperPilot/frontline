@@ -4,7 +4,7 @@ import { BALANCE } from '../../data/balance.js';
 import { CITY } from '../../data/city.js';
 import { KINDS, KIND_ID, KIND_NAME } from '../../data/citykinds.js';
 import { STORED_GOODS, MARKET_GOODS, CITY_STORE_GOODS } from '../../data/goods.js';
-import { isFlat, idx, sizeOf, anchorOf, bigCells, cellsOf, fitBig, releaseCell, hasRoad, canZone, buildAllowed, buildWhy, roadLinkWhy, airLinkWhy, BUILD_BLOCK } from './cells.js';
+import { isFlat, idx, sizeOf, anchorOf, bigCells, cellsOf, fitBig, releaseCell, growLinked, canZone, buildAllowed, buildWhy, roadLinkWhy, airLinkWhy, BUILD_BLOCK } from './cells.js';
 import { woodScan, fellTiles, clearableAt, demolish, felledOf } from './clearing.js';
 import { hasMarket, marketBuyPrice } from './query.js';
 import { zeroGoods, rebuildList, syncEntity, refundQueue, dropEntity } from './state.js';
@@ -58,7 +58,7 @@ function placeBig(game, team, c, kind, col, row) {
   }
   rebuildList(c);
   const q = a % c.cols;
-  return { ok: true, placed: 1, broke: false, noRoad: !hasRoad(c, q, (a - q) / c.cols), anchor: a };
+  return { ok: true, placed: 1, broke: false, noRoad: !growLinked(c, a), anchor: a };
 }
 
 /**
@@ -188,7 +188,7 @@ export function cmdCity(game, team, cmd) {
   // Zonen ohne Straße daneben wachsen nicht: melden
   let noRoad = false;
   if (!erase && !isFlat(KIND_ID[cmd.kind])) {
-    for (let row = r0; row <= r1 && !noRoad; row++) for (let col = c0; col <= c1; col++) if (city.kind[idx(city, col, row)] === id && !hasRoad(city, col, row)) noRoad = true;
+    for (let row = r0; row <= r1 && !noRoad; row++) for (let col = c0; col <= c1; col++) if (city.kind[idx(city, col, row)] === id && !growLinked(city, idx(city, col, row))) noRoad = true;
   }
   return { ok: true, placed: f.placed, broke: !!f.broke, noRoad, occupied: f.occupied, felled: f.felled, razed: f.razed, manned: f.manned };
 }

@@ -423,6 +423,35 @@ test('Eroberung: die Stadt-KI greift nur eine Stadt an, deren Viertel offen ist'
   assert.equal(sent.length, 0, 'ohne offene Sperre kein Angriff');
 });
 
+test('Eroberung mit 4 Teams: aiRaid wählt nur ein feindliches, lebendes Team (nächste offene Hauptstadt), auch nach einem Ausscheiden', () => {
+  const g = new Game({ seed: 3, conquest: true, players: 4 });
+  g.fog.forEach((f) => f.revealAll());
+  const m = g.mainFob(0);
+  for (let i = 0; i < 4; i++) put(g, 0, 'tank', m.x + 250 + i * 40, m.y);
+  const sent = [];
+  const issue = g.issue.bind(g);
+  g.issue = (team, cmd) => {
+    if (cmd.type === 'attackMove') sent.push({ team, cmd });
+    return issue(team, cmd);
+  };
+  const every = CITY.ai.raidEvery.hard;
+  for (const t of [1, 2, 3]) g.conquest.open[t] = true;
+  const dist = (t) => Math.hypot(g.mainFob(t).x - m.x, g.mainFob(t).y - m.y);
+  const order = [1, 2, 3].sort((a, b) => dist(a) - dist(b) || a - b);
+  aiRaid(g, 0, 'hard', every, cityAiMemory());
+  assert.equal(sent.length, 1, 'ein Angriff');
+  assert.equal(quarterAt(g, sent[0].cmd.x, sent[0].cmd.y), order[0], 'Ziel in der nächsten offenen Stadt');
+  // das nächste Team scheidet aus: kein Fehler, Ziel ist jetzt das nächste lebende
+  eliminate(g, order[0], 'Test');
+  for (const u of g.units) if (u.team === 0) u.order = { type: 'idle' };
+  sent.length = 0;
+  assert.doesNotThrow(() => aiRaid(g, 0, 'hard', every, cityAiMemory()));
+  assert.equal(sent.length, 1, 'wieder ein Angriff');
+  const q = quarterAt(g, sent[0].cmd.x, sent[0].cmd.y);
+  assert.equal(q, order[1], 'Ziel im Viertel des nächsten lebenden Gegners');
+  assert.ok(!g.teams[q].out && q !== 0, 'Ziel feindlich und lebend');
+});
+
 test('Eroberung: umkämpfte eigene Flagge: die neue Einheit erscheint am Gebäude, nicht im Gebiet', () => {
   const g = new Game({ seed: 3, conquest: true, players: 2 });
   g.teams[0].res.money = 1e6;

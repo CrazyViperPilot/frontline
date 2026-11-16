@@ -10,6 +10,7 @@
     "release": "node tools/release.mjs",
     "metrics": "node tools/metrics.mjs",
     "docs": "node tools/doc-tables.mjs",
-    "preview": "node tools/unitpreview.mjs"
+    "preview": "node tools/unitpreview.mjs",
+    "deadcode": "node tools/deadcode.mjs"
   }
 }

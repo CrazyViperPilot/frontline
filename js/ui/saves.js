@@ -12,7 +12,7 @@ import { BALANCE } from '../data/balance.js';
 
 // Basis der Spiel-Adresse (Wurzel dieses Repos, z. B. https://phpexpert.de/frontline/): die API liegt daneben unter api/.
 const DEPLOY_BASE = new URL('../../', import.meta.url);
-export const REMOTE_URL = new URL('api/save.php', DEPLOY_BASE).href;
+const REMOTE_URL = new URL('api/save.php', DEPLOY_BASE).href;
 export const NAME_MAX = 60;
 const DB = 'frontline-save';
 const DB_VERSION = 2; // 1: ein Stand unter `current` im Store `save`; 2: Store `saves` nach id
@@ -22,7 +22,7 @@ const OLD_KEY = 'current';
 const TOMB_KEY = 'frontline-spielstand-loeschen'; // ids, die auf dem Webspace noch gelöscht werden müssen
 const RENAME_KEY = 'frontline-spielstand-umbenannt'; // { id: name }: Umbenennungen, die der Webspace noch nicht bestätigt hat
 const TIMEOUT = 15000;
-export const ACCOUNT_URL = new URL('api/auth.php', DEPLOY_BASE).href; // Konten (KO1), Sitzung über das Cookie fl_session
+const ACCOUNT_URL = new URL('api/auth.php', DEPLOY_BASE).href; // Konten (KO1), Sitzung über das Cookie fl_session
 export const MATCH_URL = new URL('api/match.php', DEPLOY_BASE).href; // Match-Start (MS1, ui/match.js), gleiche Sitzung
 let remoteOn = true; // false: nicht angemeldet (401 vom Webspace oder setRemoteEnabled(false)); dann kein Webspace-Zugriff
 

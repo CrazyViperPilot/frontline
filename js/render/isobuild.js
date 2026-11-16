@@ -23,7 +23,7 @@ const TRAIN_PAINT = { loco: '#b3423a', container: '#3f8a5e', tank: '#7c8190' };
 const DETAIL_ZOOM = 0.5; // darunter keine Fenster/Türen (Leistung)
 
 /** Austauschpunkt für Sprites: Schlüssel = Stadtart (house, hall, factory) oder Gebäudetyp (fob, depot, helipad …). */
-export const spriteOverrides = {};
+const spriteOverrides = {};
 
 
 function path(ctx, polys) {

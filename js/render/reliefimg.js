@@ -3,7 +3,7 @@
 import { RELIEF } from '../game/relief.js';
 import { clamp } from './color.js';
 
-export const RELIEF_SCALE = 1 / 8; // Bildpunkte je Weltpixel (1 Bildpunkt = 8 px)
+const RELIEF_SCALE = 1 / 8; // Bildpunkte je Weltpixel (1 Bildpunkt = 8 px)
 const LIGHT_2D = (() => {
   const l = [-0.55, -0.55, 0.62];
   const n = Math.hypot(...l);

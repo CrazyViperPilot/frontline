@@ -11,7 +11,7 @@ export function careOf(game, e) {
 }
 
 /** Welche Pflege braucht die Einheit? 'inf' Soldaten, 'air' Hubschrauber, 'ground' Bodenfahrzeuge. */
-export const careClass = (u) => (u.def.air ? 'air' : u.def.armor === 'inf' ? 'inf' : 'ground');
+const careClass = (u) => (u.def.air ? 'air' : u.def.armor === 'inf' ? 'inf' : 'ground');
 
 /**
  * Heilen und Reparieren (seit v5.01): Kaserne, Fabrikhalle, Heliport und Krankenhaus pflegen eigene Einheiten in ihrem Umkreis

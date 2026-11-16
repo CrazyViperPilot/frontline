@@ -22,7 +22,7 @@ function axis(br, x, y) {
 }
 
 /** Zellen unter der Fahrbahn einer Brücke {x1, y1, x2, y2} (Zellmitte höchstens deck/2 + 8 px neben der Achse, zwischen den Enden). */
-export function deckCells(grid, br) {
+function deckCells(grid, br) {
   const half = RV.deck / 2 + 8;
   const out = [];
   const c0 = Math.max(0, grid.toCell(Math.min(br.x1, br.x2) - half));

@@ -14,7 +14,7 @@ export { poly, box, lit, FACE, OUTLINE, DETAIL, pyramid, shade, tint, snowy, roo
 
 // ---------- Grundformen (isometrisch) ----------
 
-export const GLOW = '#ffb347';
+const GLOW = '#ffb347';
 
 /** Kegelstumpf (r0 unten, r1 oben) mit Mitte (u, v) von h0 bis h1; r0 = r1 ergibt einen Zylinder. Licht von links. */
 export function frustum(g, u, v, r0, r1, h0, h1, color, top = true) {
@@ -169,7 +169,7 @@ export function ring(ctx, x, y, r, color) {
 
 // ---------- Farben, Zufall, Zeichenkontext und Bauteile (isometrisch) ----------
 export const GLASS = '#34506d';
-export const WARM = '#f3d885';
+const WARM = '#f3d885';
 export const SILL = '#ece7dc';
 export const LAWN = '#86b35c';
 export const LAWN2 = '#92bd67';

@@ -24,7 +24,7 @@ export const GOODS = {
 };
 
 /** Waren, deren Eintrag `test` erfüllt (Reihenfolge des Registers). */
-export const goodsWhere = (test) => Object.keys(GOODS).filter((g) => test(GOODS[g]));
+const goodsWhere = (test) => Object.keys(GOODS).filter((g) => test(GOODS[g]));
 /** Waren mit Lager (Hauptstadt oder Stadtlager). */
 export const STORED_GOODS = goodsWhere((d) => d.store);
 /** Waren im Stadtlager (Stahl heißt intern metal). */

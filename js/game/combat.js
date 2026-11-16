@@ -23,7 +23,7 @@ const NO_FIRE = new Set(['move', 'build', 'repair', 'load', 'unload', 'route', '
 const GAR = BALANCE.garrison;
 
 /** Waffenwerte eines Gebäudes; null, wenn unbewaffnet. (Einheiten haben mehrere Waffen: u.weapons.) */
-export function weaponOf(e) {
+function weaponOf(e) {
   return e.kind === 'unit' ? null : (e.def.weapon ?? null);
 }
 
@@ -48,7 +48,7 @@ const meant = (spec, e) => {
 const reachBonus = (game, u) => (u.house ? (game.entities.get(u.house)?.reach ?? 0) : 0);
 
 /** Schadensfaktor gegen Stadthäuser: schwere Waffen (Kanone, RPG, Granaten, Mörser) mehr, Handwaffen weniger. */
-export const houseMult = (damage) => ((damage.struct || 0) >= GAR.heavy ? GAR.heavyMult : GAR.lightMult);
+const houseMult = (damage) => ((damage.struct || 0) >= GAR.heavy ? GAR.heavyMult : GAR.lightMult);
 
 /** Seite, auf der der Schütze das Ziel trifft: 'front' (±45° zur Fahrtrichtung), 'rear' (±45° hinten), sonst 'side'. */
 export function sectorOf(s, t) {

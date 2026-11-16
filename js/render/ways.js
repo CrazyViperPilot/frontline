@@ -458,7 +458,7 @@ function railShapes(B, rails, discs, bars) {
 }
 
 /** Alle Pfade der Feldwege und Gleise einer Karte (relief: Pfadkoordinaten mit Gelände, u: Iso-Achsen bei Zoom 1). */
-export function buildWays(map, relief, u) {
+function buildWays(map, relief, u) {
   const P = u && relief ? (x, y) => [x * u[0] + y * u[2], x * u[1] + y * u[3] - relief.displayAt(x, y)] : (x, y) => [x, y];
   const B = new Builder(P);
   const rails = railList(map.town);
@@ -620,7 +620,7 @@ function viewOf(cam, drape, z) {
 }
 
 /** Gleise der Stadt (Paket „Import“) aus Strecken, Scheiben und Prellböcken (siehe railShapes) in Kacheln, relief und u wie buildWays. */
-export function buildRailChunks(list, relief, u) {
+function buildRailChunks(list, relief, u) {
   const P = u && relief ? (x, y) => [x * u[0] + y * u[2], x * u[1] + y * u[3] - relief.displayAt(x, y)] : (x, y) => [x, y];
   const B = new Builder(P);
   railShapes(B, list.rails, list.discs, list.bars);

@@ -52,7 +52,8 @@ export const CITY = {
   size: byKind('size'), // Register js/data/citykinds.js (Feld size)
   // Nicht mehr baubar: der Flughafen 10 × 10 (bis v5.34), ersetzt durch den Fliegerhorst aus Bausteinen (seit v5.35: Bahn, Stellplatz,
   // Tower, Kerosintank, Munitionslager; CITY.air). Die Zellenart bleibt nur als Platzhalter in KINDS (Nummer 17), damit die Nummern
-  // der späteren Arten gleich bleiben; Werkzeug, Bild und Daten gibt es seit v5.56 nicht mehr (alte Stände laden nicht, SAVE_FORMAT 3).
+  // der späteren Arten gleich bleiben; Werkzeug, Bild und Daten gibt es seit v5.56 nicht mehr (Stände im aktuellen Format mit so einer
+  // Zelle laden, Stände anderen Formats nicht: SAVE_FORMAT).
   retired: CITY_KINDS.filter((e) => e.retired).map((e) => e.key), // Register js/data/citykinds.js (Feld retired): ['airport']
   // Räumen reißt seit v5.16 auch diese Gebäude der Karte ab (Häuser, Hallen, Fabriken der Zonenstadt und außerhalb), kostenlos wie das
   // übrige Räumen; besetzte Häuser nicht. Wachtürme, Zug, Mauern, Fels und Wasser bleiben.

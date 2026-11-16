@@ -56,10 +56,12 @@ export const CITY_KINDS = [
   { key: 'mdepot', id: 24, name: 'Munitionslager', short: 'Mun.-Lager', icon: '🚀', color: '#b88a3a', group: 'Fliegerhorst', cost: 60, bm: 60, size: 2, power: 2, target: 2.5, tip: (C) => `Großbau 2 × 2 (seit v5.35): Munitionslager. Wird über die Straße aus dem Lager der Hauptstadt befüllt; Flugzeuge auf Stellplätzen im Umkreis von ${C.air.supplyRadius} Feldern laden daraus nach` },
   // ---- Nicht mehr baubar ----
   // Flughafen 10 × 10 (bis v5.34), ersetzt durch den Fliegerhorst aus Bausteinen; bleibt nur, damit die Nummern der späteren Arten
-  // gleich bleiben (Werkzeug, Bild und Daten seit v5.56 weg, alte Stände laden nicht).
+  // gleich bleiben (Werkzeug, Bild und Daten seit v5.56 weg). Ein Spielstand im aktuellen Format mit so einer Zelle lädt und spielt
+  // weiter (test/retired.test.js); Stände anderen Formats laden ohnehin nicht (SAVE_FORMAT).
   // Förderanlage (Nummer 8) und Hütte (18) bis Paket „Import“: Rohstoffe kommen seitdem von außerhalb der Karte, Vorkommen gibt es
   // nicht mehr. Reihenfolge der Platzhalter nach Nummer (CITY.retired).
   { key: 'mine', id: 8, name: 'Förderanlage', retired: true },
+  // nur für alte Spielstände, nicht baubar
   { key: 'airport', id: 17, name: 'Flughafen', retired: true },
   { key: 'smelter', id: 18, name: 'Hütte', retired: true },
 ];
@@ -71,9 +73,7 @@ export const KINDS = CITY_KINDS.filter((e) => e.id).sort((a, b) => a.id - b.id).
 export const KIND_ID = Object.fromEntries(KINDS.map((k) => [k, KIND[k].id]));
 export const KIND_NAME = Object.fromEntries(KINDS.map((k) => [k, KIND[k].name]));
 /** Zellenarten (in Code-Reihenfolge), deren Eintrag `test` erfüllt. */
-export const kindsWhere = (test) => KINDS.filter((k) => test(KIND[k]));
-/** Nicht mehr baubare Arten (CITY.retired). */
-export const RETIRED_KINDS = kindsWhere((e) => e.retired);
+const kindsWhere = (test) => KINDS.filter((k) => test(KIND[k]));
 /** Werke (Verarbeitung nach CITY.chain). */
 export const WORKS = kindsWhere((e) => e.works);
 /** Lieferanten (Förderung und Werke): ihr Ausstoß fährt über die Straße zu einem Werk oder ins Lager. */

@@ -208,7 +208,7 @@ function mods(tech) {
 }
 
 /** Gruppen einer Einheit: eigene (RESEARCH.groups), veh (Bodenfahrzeug) oder air (Hubschrauber, Jet), immer all. */
-export function unitGroups(u) {
+function unitGroups(u) {
   const out = ['all'];
   const g = R.groups[u.type];
   if (Array.isArray(g)) out.push(...g);
@@ -219,7 +219,7 @@ export function unitGroups(u) {
 }
 
 /** Wirkung `stat` auf die Gruppen `groups` eines Teams (Produkt, regen: Summe); ohne Forschung 1 bzw. 0. */
-export function teamMod(game, team, groups, stat) {
+function teamMod(game, team, groups, stat) {
   const add = ADD.has(stat);
   if (!game.research || team < 0 || !game.teams[team]) return add ? 0 : 1;
   const m = mods(game.teams[team].tech);

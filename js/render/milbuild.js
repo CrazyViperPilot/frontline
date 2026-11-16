@@ -9,7 +9,7 @@ import {
 } from './isokit.js';
 import { sprite, blit, spriteDpr } from './spritecache.js';
 
-export const MIL_TYPES = new Set(['fob', 'wall', 'gate', 'mortar', 'aa', 'phalanx', 'tower', 'radio', 'drill']);
+const MIL_TYPES = new Set(['fob', 'wall', 'gate', 'mortar', 'aa', 'phalanx', 'tower', 'radio', 'drill']);
 
 const TAU = Math.PI * 2;
 const SAND = '#c4b088'; // Sandsäcke

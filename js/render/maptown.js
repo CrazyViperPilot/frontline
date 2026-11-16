@@ -1494,7 +1494,7 @@ function platformTop(c, o) {
 
 const decoCache = new WeakMap();
 /** Bänke und Bäume eines Parks (terrain.js parkDeco), je Park einmal berechnet. */
-export function parkDecoOf(p) {
+function parkDecoOf(p) {
   let d = decoCache.get(p);
   if (!d) decoCache.set(p, (d = parkDeco(p)));
   return d;

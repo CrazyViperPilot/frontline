@@ -5,7 +5,7 @@ import { KIND_ID } from '../../data/citykinds.js';
 import { cellAt, anchorOf, isPart } from './cells.js';
 
 /** Ausbildungsgebäude der Stadt (seit v4.96): Zellenart → Einheiten (CITY.produces). */
-export const TRAINER_KINDS = Object.keys(CITY.produces);
+const TRAINER_KINDS = Object.keys(CITY.produces);
 
 /** Welches Stadtgebäude bildet `unit` aus? (Zellenart oder null) */
 export function trainerKind(unit) {

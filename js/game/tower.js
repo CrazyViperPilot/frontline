@@ -10,12 +10,12 @@ const KEYS = ['bm', 'mun', 'fuel'];
 const fail = (reason) => ({ ok: false, reason });
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 
-export const isTower = (b) => !!b && b.kind === 'building' && b.type === 'tower';
+const isTower = (b) => !!b && b.kind === 'building' && b.type === 'tower';
 
 const variants = {};
 
 /** Gebäudewerte eines Turms mit Aufbau: Turm plus Waffe (und Abfangwerte) des Aufbaus. So greifen Mörser-Zielwahl, Flak und Renderer ohne Sonderfälle. */
-export function roofDef(kind) {
+function roofDef(kind) {
   if (!variants[kind]) {
     const r = BUILDINGS.tower.roofs[kind];
     variants[kind] = { ...BUILDINGS.tower, weapon: r.weapon, aa: r.aa, roofKind: kind };
@@ -42,7 +42,7 @@ export function cmdRoof(game, team, cmd) {
  * Plan für den Ausbau einer FOB: Mauerring im Abstand `ring` Zellen von der FOB-Mitte, ein Tor (2 Felder) in der Mitte jeder Seite,
  * `n` Türme an den Ecken, die am nächsten zu (tx, ty) liegen. Alle Angaben in Weltkoordinaten (Zellmitten).
  */
-export function planFortress(game, fob, tx, ty, n) {
+function planFortress(game, fob, tx, ty, n) {
   const g = game.grid;
   const R = F.ring;
   const mc = fob.cx + Math.floor(fob.w / 2);

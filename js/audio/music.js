@@ -15,7 +15,6 @@ const PAUSE_MUL = 0.3; // Pause: Musik auf 30 %, nicht stumm
 const END_TC = 0.8; // s: Zeitkonstante beim Spielende; nach 3 s ist die Musik fast stumm
 const BATTLE_EFFECTS = 6; // so viele Kampfeffekte …
 const BATTLE_WINDOW = 6; // … in so vielen Sekunden Spielzeit (oder ein Alarm „Basis wird angegriffen“) bedeuten Gefecht
-const NEAR_OWN = 240; // Weltpunkte: Kampf nahe eigenen Einheiten oder Gebäuden zählt auch außerhalb des Bilds
 const RISE = 2; // s, bis die Lage von ruhig auf Gefecht steht
 const FALL = 8; // s, bis sie wieder ruhig ist
 const QUIET_DUCK = 0.6; // im Gefecht sinkt die ruhige Schicht auf 1 − 0,6 = 0,4

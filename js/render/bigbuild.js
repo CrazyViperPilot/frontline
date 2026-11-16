@@ -18,7 +18,7 @@ import { CITY } from '../data/city.js';
 const showUnit = (p) => ({ id: 0, type: p.unit, team: SHOWROOM, x: p.x, y: p.y, angle: p.angle, def: UNITS[p.unit], weapons: [], parked: true });
 
 /** Ausstellungsstück von oben (2D). */
-export function drawShowTop(ctx, p, zoom) {
+function drawShowTop(ctx, p, zoom) {
   drawUnitTop(ctx, showUnit(p), zoom);
 }
 
@@ -457,7 +457,7 @@ function boxTop(ctx, p, color) {
 }
 
 /** Halbe Ausdehnung eines Fahrzeugs in x und y. */
-export function vehHalf(p) {
+function vehHalf(p) {
   const d = VEH[p.v];
   return p.ax === 'x' ? [d.l / 2, d.w / 2] : [d.w / 2, d.l / 2];
 }

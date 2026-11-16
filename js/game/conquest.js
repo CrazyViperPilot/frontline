@@ -10,7 +10,7 @@ const H = BALANCE.hot;
 const CLOSED = 9; // Viertel ohne Spieler: für alle gesperrt
 
 /** Startzustand; ohne `on` bleibt `game.conquest` null und die Partie klassisch (Punktebalken, 2 Teams). */
-export function createConquest(game, on, tickets = null) {
+function createConquest(game, on, tickets = null) {
   game.conquest = null;
   if (!on) return;
   const z = game.map.zone;
@@ -43,7 +43,7 @@ export function createConquest(game, on, tickets = null) {
 }
 
 /** Sperre ins Wegeraster hängen (auch nach dem Laden eines Spielstands): grid.lock je Zelle = Viertel, -1 in der Zone. */
-export function bindLock(game) {
+function bindLock(game) {
   const cq = game.conquest;
   const g = game.grid;
   if (!cq) return;
@@ -90,7 +90,7 @@ export function spawnFlags(game, team) {
 }
 
 /** Einheitenlimit je Team: klassisch BALANCE.slotCap, in der Eroberung nach Spielerzahl. */
-export function slotCapOf(game) {
+function slotCapOf(game) {
   return game.conquest ? (Q.slotCap[game.teams.length] ?? BALANCE.slotCap) : BALANCE.slotCap;
 }
 
@@ -128,7 +128,7 @@ function checkEnd(game) {
 }
 
 /** Tickets abziehen; bei 0 scheidet das Team aus (einzige Stelle, die Tickets senkt: Takt, Kommandeur). */
-export function loseTickets(game, t, n) {
+function loseTickets(game, t, n) {
   const team = game.teams[t];
   if (!game.conquest || team.out) return;
   team.tickets -= n;
@@ -136,12 +136,12 @@ export function loseTickets(game, t, n) {
 }
 
 /** Hauptstadt gefallen (nur möglich, wenn die Sperre des Viertels gefallen ist): das Team scheidet aus. */
-export function checkCapitals(game) {
+function checkCapitals(game) {
   for (const t of game.teams) if (!t.out && !game.mainFob(t.id)) eliminate(game, t.id, 'Hauptstadt gefallen');
 }
 
 /** Ein Schritt: Einheiten je Gebiet zählen, Flaggen umfärben, Geld (Zone, Hot Zone, Flaggen), Tickets, Sperren. */
-export function updateConquest(game, dt) {
+function updateConquest(game, dt) {
   const cq = game.conquest;
   const z = game.zone;
   const hot = game.hot;

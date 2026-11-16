@@ -18,7 +18,7 @@ const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 export const canCarry = (u) => u.def.armor === 'inf' && !u.crate;
 
 /** Eigene fertige FOB (auch die Hauptstadt): dort werden Kisten eingelagert. */
-export const isDepot = (b, team) => !!b && b.alive && b.kind === 'building' && b.type === 'fob' && b.built && b.team === team;
+const isDepot = (b, team) => !!b && b.alive && b.kind === 'building' && b.type === 'fob' && b.built && b.team === team;
 
 /** Nächste freie Zellmitte (kein Gelände, kein Gebäude), damit beide Teams eine abgelegte Kiste erreichen. */
 function nearestFree(grid, x, y) {

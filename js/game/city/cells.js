@@ -627,7 +627,7 @@ export function atEdge(c, i) {
 // (4er-Nachbarschaft) ein Gleis am Kartenrand erreicht. Neu, sobald sich die Stadt ändert (c.ver).
 const RAIL_LINK = new WeakMap(); // Stadt → { ver, mask }
 
-export function railLinked(c) {
+function railLinked(c) {
   const hit = RAIL_LINK.get(c);
   if (hit && hit.ver === c.ver) return hit.mask;
   const RL = KIND_ID.rail;

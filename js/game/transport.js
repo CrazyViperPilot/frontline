@@ -39,7 +39,7 @@ const TRAINERS = new Set(Object.keys(CITY.produces).map((k) => KIND_ID[k]));
  * `sources`: Array von { cells: Zellenindizes (Straßen am Ziel), owner: Kennung des Ziels }. Liefert { dist, prev, owner } je Zelle:
  * dist −1 = nicht erreichbar, prev −1 bei Quellen, owner = Ziel der nächsten Quelle. `out` (optional) wird wiederverwendet.
  */
-export function nearestField(c, sources, cap, out = null) {
+function nearestField(c, sources, cap, out = null) {
   const n = c.cols * c.rows;
   const f = out ?? { dist: new Int32Array(n), prev: new Int32Array(n), owner: new Int32Array(n) };
   const { dist, prev, owner } = f;
@@ -83,7 +83,7 @@ export function nearestField(c, sources, cap, out = null) {
  * Kürzester Weg von einer der Zellen `starts` (Anschluss des Gebäudes) zu seinem Ziel im Feld. Liefert { path, owner } mit path als
  * Int32Array der Straßenzellen (erste = Start, letzte = Ziel-Anschluss), oder null, wenn keine Start-Zelle das Feld erreicht.
  */
-export function pathFrom(field, starts) {
+function pathFrom(field, starts) {
   let best = -1;
   let bd = Infinity;
   for (const s of starts) {

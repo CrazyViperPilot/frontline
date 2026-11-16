@@ -14,7 +14,7 @@ import { rebuildList } from './city/state.js';
 const X = BALANCE.excavator;
 
 /** Kann der Bagger von `team` die Stadtzelle i räumen (Stadtstraße der Karte, Hindernis, eigenes Gebäude)? */
-export function diggable(game, team, i) {
+function diggable(game, team, i) {
   if (game.roads?.kind[i] === MAP_ROAD) return true;
   if (clearable(game, team, i)) return true; // Schutt einer eigenen Straße oder Stadtstraße (Paket „Straßen“): räumen
   const c = game.city?.[team];

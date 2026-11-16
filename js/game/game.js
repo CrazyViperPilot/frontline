@@ -14,7 +14,6 @@ import { cityNoise } from './city/state.js';
 import { cityTrainers } from './city/query.js';
 import { updateMovement, nearestPassable, separate } from './movement.js';
 import { updateCombat } from './combat.js';
-import { updateZone } from './zone.js';
 import { enemiesOf } from './teams.js';
 import { MODES, modeOf } from './modes.js';
 import { createHot, updateHot } from './hotzone.js';

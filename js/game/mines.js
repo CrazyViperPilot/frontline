@@ -68,7 +68,7 @@ export function cmdLayMine(game, team, cmd) {
 }
 
 /** Pionier mit Befehl layMine: hinlaufen bis layReach px, dann die Mine legen (in updateMines aufgerufen). */
-export function updateLayMines(game, dt) {
+function updateLayMines(game, dt) {
   for (const u of game.units) {
     if (!u.alive || u.house || u.type !== 'sapper' || u.order.type !== 'layMine') continue;
     const o = u.order;

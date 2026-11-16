@@ -585,7 +585,7 @@ function degree(v, col, row) {
 }
 
 /** Bitmaske einer Straßenzelle im Straßenbild v: Nachbarn (RN, RE, RS, RW), Diagonalen (DNE …) und Zebrastreifen (ZN …). */
-export function roadMask(v, col, row) {
+function roadMask(v, col, row) {
   let m = 0;
   if (isRoad(v, col, row - 1)) m |= RN;
   if (isRoad(v, col + 1, row)) m |= RE;

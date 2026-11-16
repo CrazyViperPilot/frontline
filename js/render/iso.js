@@ -9,7 +9,7 @@ const OUTLINE = 'rgba(0,0,0,0.55)';
 
 /** Höhe (Bildschirm-Pixel bei Zoom 1) der Stadtgebäude und der Spielgebäude je Typ. */
 export const TOWN_H = { house: 46, hall: 60, tower: 118, factory: 92, station: 54, platform: 8, barracks: 26, vhall: 40, heliport: 18, clinic: 50 };
-export const BUILD_H = {
+const BUILD_H = {
   // Militärgebäude: Höhe des Hauptkörpers der Bilder aus milbuild.js (seit v5.21), für Lebensbalken, Rauch und Antippen
   fob: 40,
   radio: 14, // Sockel des Sendemasts (der Mast selbst ist viel höher und dünn)
@@ -22,9 +22,9 @@ export const BUILD_H = {
   gate: 24,
 };
 /** Flughöhe der Hubschrauber und Hebung normaler Einheiten über dem Boden (Bildschirm-Pixel bei Zoom 1). */
-export const AIR_LIFT = 46;
-export const GROUND_LIFT = 4;
-export const JET_LIFT = BALANCE.jets.lift; // Flughöhe der Jets (höher als Hubschrauber)
+const AIR_LIFT = 46;
+const GROUND_LIFT = 4;
+const JET_LIFT = BALANCE.jets.lift; // Flughöhe der Jets (höher als Hubschrauber)
 /** Höhe einer Einheit über dem Boden: Jets je nach Flughöhe (am Boden, beim Start steigend, beim Landen sinkend), dann Hubschrauber. */
 /** Wird die Einheit über allem gezeichnet (fliegt)? Jets am Boden (abgestellt, rollend, Startlauf, Ausrollen) nicht. */
 export const flying = (u) => !!u.def.air && !u.parked && !jetGrounded(u) && !(u.heli && u.heli.phase !== 'air'); // seit v5.51: Hubschrauber auf dem Heliport stehen am Boden

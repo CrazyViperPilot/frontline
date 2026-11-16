@@ -25,11 +25,8 @@ export function isHeliport(game, e) {
 /** Steht der Hubschrauber auf seinem Heliport oder startet bzw. landet er gerade (dann schießt er nicht und gilt als Bodenziel)? */
 export const heliGrounded = (u) => !!u.heli && u.heli.phase !== 'air';
 
-/** Flughöhe 0 … 1 für die Darstellung (ohne Landeplatz immer 1). */
-export const heliAlt = (u) => (u.heli ? u.heli.alt : 1);
-
 /** Hubschrauber, die zu Heliport e gehören (dort, in der Luft oder in seiner Warteschlange). */
-export function helisAt(game, e) {
+function helisAt(game, e) {
   let n = 0;
   for (const u of game.units) if (u.alive && u.heli?.home === e.id) n++;
   return n + (e.queue?.length ?? 0);

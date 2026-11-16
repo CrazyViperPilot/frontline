@@ -949,7 +949,7 @@ function boulder(r, cx, cy, rx, ry, rz, col, top) {
 
 const rockModels = new Map();
 /** Fels (Variante v 0 … 3): Hauptblock mit 0 … 2 Begleitern; Moos oder Schnee auf den Oberseiten. */
-export function rockModel(v, season = 'summer') {
+function rockModel(v, season = 'summer') {
   const key = `${v}|${season}`;
   let m = rockModels.get(key);
   if (m) return m;
@@ -1079,7 +1079,7 @@ function boarModel(o) {
 
 const animalModels = new Map();
 /** Modell eines Tiers (deer, boar) in einer Haltung; klein, bleibt im Speicher. */
-export function animalModel(kind, look) {
+function animalModel(kind, look) {
   const key = `${kind}|${look.key}`;
   let m = animalModels.get(key);
   if (!m) animalModels.set(key, (m = kind === 'boar' ? boarModel(look) : deerModel(look)));

@@ -135,7 +135,7 @@ export function readLowRes() {
   return readFlag(LOWRES_KEY, false);
 }
 /** Bildauflösung merken (Startmenü und Pausenmenü). */
-export function writeLowRes(on) {
+function writeLowRes(on) {
   writeFlag(LOWRES_KEY, on);
 }
 function readMapSel() {

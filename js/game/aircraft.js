@@ -40,12 +40,12 @@ export function standsOf(game, team) {
 }
 
 /** Plätze, die eine Einheit auf einem Stellplatz belegt (units.js standSlots; fehlt = 1; die U-2 belegt beide). */
-export const needOf = (u) => u.def.standSlots ?? 1;
+const needOf = (u) => u.def.standSlots ?? 1;
 
 /**
  * Belegte Plätze von Stellplatz e: Jets, die zu ihm gehören (dort, in der Luft), und seine Warteschlange, je nach standSlots.
  */
-export function jetsAt(game, e) {
+function jetsAt(game, e) {
   let n = 0;
   for (const u of game.units) if (u.alive && u.jet?.home === e.id) n += needOf(u);
   for (const q of e.queue ?? []) n += UNITS[q.unit ?? q]?.standSlots ?? 1;
@@ -83,7 +83,7 @@ const cellCenter = (c, i) => {
 
 /** Bahnen und Wege einer Stadt, neu bei jeder Änderung der Stadt (c.ver); Sperrzeiten in c.runwayBusy (gehören zum Spielstand). */
 const CACHE = new WeakMap();
-export function airOf(c) {
+function airOf(c) {
   let st = CACHE.get(c);
   if (st && st.ver === c.ver) return st;
   st = buildAir(c);

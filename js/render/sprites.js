@@ -539,7 +539,7 @@ function drawOverlays(ctx, b, x0, y0, w, h, z, pic) {
   }
 }
 
-export const CRATE_COLOR = '#66713c'; // Versorgungskiste: olivgrünes Holz
+const CRATE_COLOR = '#66713c'; // Versorgungskiste: olivgrünes Holz
 export const CRATE_MARK = '#e8b830'; // Markierung (Gurtschloss, Minimap)
 
 /**

@@ -26,7 +26,7 @@ const TREE_TOP = 145; // Helligkeit, ab der eine Fläche des Baum-Sprites oben l
  * 'tree' (Baum-Sprite: alles Grün ist Laub; Herbst je variant eine Färbung, Winter dunkle Krone mit Schnee auf den hellen Oberseiten).
  * f: Maßstab des Rauschens (Pixel je Weltpixel), variant verschiebt es (andere Farben).
  */
-export function tintPixels(d, w, h, season, kind = 'ground', f = 1, variant = 0) {
+function tintPixels(d, w, h, season, kind = 'ground', f = 1, variant = 0) {
   const tree = kind === 'tree';
   const ox = variant * 97;
   const oy = variant * 61;

@@ -7,12 +7,7 @@ export function inZone(zone, x, y, pad = 0) {
   return Math.hypot(x - zone.x, y - zone.y) <= zone.r + pad;
 }
 
-/** „Abstand zur Zonenmitte“ in der Form der Zone: im Kreis der Abstand, im Quadrat die größere Achsenentfernung. zoneDist <= zoneSize heißt: in der Zone. */
+/** „Abstand zur Zonenmitte“ in der Form der Zone: im Kreis der Abstand, im Quadrat die größere Achsenentfernung. Liegt der Punkt in der Zone, ist zoneDist <= zone.r bzw. <= zone.half. */
 export function zoneDist(zone, x, y) {
   return zone.half ? Math.max(Math.abs(x - zone.x), Math.abs(y - zone.y)) : Math.hypot(x - zone.x, y - zone.y);
-}
-
-/** Größe der Zone in der Einheit von zoneDist: Radius bzw. halbe Kantenlänge. */
-export function zoneSize(zone) {
-  return zone.half || zone.r;
 }

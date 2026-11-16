@@ -4,7 +4,7 @@ import { BALANCE } from '../data/balance.js';
 import { reliefOf } from '../game/relief.js';
 import { reliefLayers } from './reliefimg.js';
 
-export const TERRAIN_SCALE = 0.25;
+const TERRAIN_SCALE = 0.25;
 // Je Ansicht ein Bild: '2d' mit Gebäuden und Bäumen, 'iso' ohne (die zeichnet die isometrische Ansicht als Körper),
 // 'gl' wie 'iso', aber ohne Schummerung, Fels und Wasser (die rechnet der WebGL-Boden selbst)
 const caches = { '2d': new WeakMap(), iso: new WeakMap(), gl: new WeakMap() };

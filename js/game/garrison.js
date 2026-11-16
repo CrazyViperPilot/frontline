@@ -82,12 +82,12 @@ export function createHouses(game) {
 }
 
 /** Das Haus, in dem die Einheit sitzt, oder null. */
-export function houseOf(game, u) {
+function houseOf(game, u) {
   return u.house ? (game.entities.get(u.house) ?? null) : null;
 }
 
 /** Plätze, die noch frei sind (Besatzer und Einheiten auf dem Weg hinein zählen). */
-export function freeSeats(game, h, team) {
+function freeSeats(game, h, team) {
   let n = h.occupants.length;
   for (const u of game.units) if (u.alive && u.team === team && u.order.type === 'garrison' && u.order.targetId === h.id) n++;
   return h.def.cap - n;

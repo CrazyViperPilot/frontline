@@ -13,7 +13,7 @@ const FINAL_ARRIVE = 32; // Endziel erreicht (px): Einheiten am selben Sammelpun
 const SETTLE_DONE = 4; // Formation: so nah am eigenen Platz gilt er als erreicht (px)
 const SETTLE_TIME = 3; // s, höchstens so lange rückt eine Einheit am Ende auf ihren Platz nach
 const CORNER = 48; // nahe einer Wegecke: bei freier Sicht gleich zum nächsten Wegpunkt (sonst Stau an der Ecke)
-export const HASH_CELL = 128; // räumliches Hash-Gitter
+const HASH_CELL = 128; // räumliches Hash-Gitter
 const TILE = BALANCE.map.tile;
 
 
@@ -243,7 +243,7 @@ function replanBlocked(game, u) {
  * Fährt einen Schritt auf dem geplanten Weg. Fahrzeuge verbrauchen Treibstoff aus u.fuel nur,
  * wenn sie sich wirklich bewegen; leer → Meldung (Tempo wird in updateMovement gesetzt).
  */
-export function drive(game, u, dt) {
+function drive(game, u, dt) {
   if (pathPending(u)) return true; // wartet auf den Weg (Wegbudget)
   const x0 = u.x;
   const y0 = u.y;

@@ -77,7 +77,7 @@ export const MAX_DPR_FAST = 1;
 // Symbol statt als Modell, lässt kleine Effekte weg und zeigt Lebensbalken nur für gewählte oder beschädigte Einheiten.
 // Maßstab: Infanterie (Radius LOD_REF_R, units.js) ist 2D unter 0,8 und in Iso unter 0,6 kleiner als ~10 Bildschirmpixel.
 // Größere Einheiten wechseln nach ihrem Radius (Radius × Zoom unter LOD_ZOOM × LOD_REF_R), Iso-Modelle sind 1,35× größer.
-export const LOD_ZOOM = { top: 0.8, iso: 0.6 };
+const LOD_ZOOM = { top: 0.8, iso: 0.6 };
 const LOD_REF_R = 6;
 const SMALL_FX = new Set(['tracer', 'muzzle']); // Leuchtspur und Mündungsfeuer: unter der Schwelle weg (Granaten, Explosionen bleiben)
 // Turm und Waffe zeichnen (aimOf, nur Darstellung): Drehtempo in rad/s (Fahrzeuge, Infanterie) und Haltezeit nach Zielverlust in ms

@@ -50,8 +50,9 @@ python3 -m http.server 8765
 npm run test:quick                # Config-Prüfung und PRD-Tabellen, wenige Sekunden
 npm run docs                      # Wertetabellen in docs/prd/ (§6, Forschung) aus js/data/ neu erzeugen
 npm run test:fast                 # alle Tests ohne die langsamen „[langsam]“ (KI-gegen-KI-Läufe): zum Iterieren
-npm test                          # alle Tests (node --test, Node 22), einige Minuten: vor dem Push und in der CI
-node --test test/radio.test.js    # nur eine Datei
+npm test                          # alle Tests, Kurzausgabe (dot), einige Minuten: vor dem Push
+npm run test:verbose              # alle Tests mit ausführlicher Ausgabe (spec): für Menschen, Fehlersuche und CI
+node --test --test-reporter=dot test/radio.test.js    # nur eine Datei
 npm run smoke                     # Browser-Rundgang (Playwright): Start, 2D, Iso, Hilfe, Pause, Baumodus, Ressourcen, Ausbildung, Bildrate; Fotos in .smoke/<gerät>/
 npm run smoke -- --device all     # dasselbe als desktop, tablet (iPad quer, Tippen) und phone (Android quer); einzeln: --device phone
 npm run smoke -- --long 30        # langer Lauf: 30 Spielminuten bei 10× Tempo, beide Seiten KI, Kamera über Basis/Front/Städte, 2D und Iso; meldet Browserfehler und Einfrieren
@@ -60,6 +61,7 @@ npm run release                   # Versionen vergeben (nur beim Zusammenführen
 npm run metrics                   # KI-Kennzahlen: 3 Seeds × 15 min KI gegen KI (~30 s), warnt bei groben Ausreißern; auch in der CI
 ```
 
+- Modelle starten einzelne Testdateien immer mit `--test-reporter=dot`, weil die TAP-Standardausgabe viel Kontext kostet (Fehlschläge zeigt dot trotzdem mit Name, Meldung, Datei und Zeile). Ausnahme: `GOLDEN=print` ohne dot starten, sonst fehlen die gedruckten Zeilen.
 - Tests, die länger als etwa 5 s laufen, tragen „[langsam]“ im Namen (`test:fast` lässt sie aus). Neue lange Tests ebenso markieren.
 - **KI-Kennzahlen:** Bei Paketen, die KI, Stadt-Wirtschaft oder Kampf ändern, `npm run metrics` laufen lassen. Warnt es und ist die
   Änderung gewollt, Referenzwerte neu setzen: `npm run metrics -- --update` (wie die Prüfsummen in `test/golden.test.js`).

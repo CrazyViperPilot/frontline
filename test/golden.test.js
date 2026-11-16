@@ -15,7 +15,7 @@
 //      Die Tests laufen dann ohne Vergleich und drucken am Ende je Seed eine fertige Zeile `N: { … },` (der Testläufer
 //      setzt `# ` davor; das gehört nicht dazu).
 //   2. Die Zeilen in GOLDEN unten ersetzen, im Commit sagen, welche Änderung die Werte verschiebt (PRD-Änderungsverlauf).
-//   3. Normal laufen lassen: node --test test/golden.test.js (grün).
+//   3. Normal laufen lassen: node --test --test-reporter=dot test/golden.test.js (grün).
 // Bei einem Umbau, der bitgleich sein soll, NIE neu setzen: eine rote Prüfsumme heißt, der Umbau verändert Partien.
 // Laufzeit: 1 bis 3 s je Test, zusammen etwa 17 s (die Datei läuft in `npm test` parallel zu den anderen).
 import test, { after } from 'node:test';

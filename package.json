@@ -3,9 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test",
-    "test:quick": "node --test test/config.test.js test/doctables.test.js",
-    "test:fast": "node --test --test-skip-pattern=\"\\[langsam\\]\"",
+    "test": "node --test --test-reporter=dot",
+    "test:verbose": "node --test --test-reporter=spec",
+    "test:quick": "node --test --test-reporter=dot test/config.test.js test/doctables.test.js",
+    "test:fast": "node --test --test-reporter=dot --test-skip-pattern=\"\\[langsam\\]\"",
     "smoke": "node tools/smoke.mjs",
     "release": "node tools/release.mjs",
     "metrics": "node tools/metrics.mjs",

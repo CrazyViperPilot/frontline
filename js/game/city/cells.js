@@ -397,16 +397,32 @@ export function roadLinkWhy(game, c, cells, kind) {
   return 'road';
 }
 
+/** Liegt neben den Zellen ein Rollfeld, das über Rollfeld und Bahn an einer gültigen Bahn hängt (airLinked)? */
+function taxiLinked(c, cells) {
+  const air = airLinked(c);
+  return cells.some((j) => nbrsOf(c, j).some((n) => c.kind[n] === KIND_ID.taxi && air[n]));
+}
+
 /**
  * Heliport (Paket „Fliegerhorst-Anschluss“): an einer Straße zum Lager oder an einem Rollfeld, das über Rollfeld und Bahn an einer gültigen
- * Bahn hängt (airLinked). Ergibt 'heli' oder null. Ohne Baugebiet gilt die Regel nicht (needsLink).
+ * Bahn hängt (taxiLinked). Ergibt 'heli' oder null. Ohne Baugebiet gilt die Regel nicht (needsLink).
  */
 function heliLinkWhy(game, c, cells) {
   const mask = roadLinked(game, c);
   if (cells.some((j) => mask[j])) return null;
-  const air = airLinked(c);
-  if (cells.some((j) => nbrsOf(c, j).some((n) => c.kind[n] === KIND_ID.taxi && air[n]))) return null;
-  return 'heli';
+  return taxiLinked(c, cells) ? null : 'heli';
+}
+
+/**
+ * Wächst das Gebäude mit Anker i (Großbau: seine Mitte)? Gebäude wachsen nur mit Anschluss (Paket „Fliegerhorst-Anschluss“): Straße daneben
+ * (hasRoad); der Stellplatz an der Bahn (airLinkWhy), ohne Straße; der Tower steht frei; der Heliport an einer Straße oder am Rollfeld mit Bahn.
+ */
+export function growLinked(c, i) {
+  const kind = KINDS[c.kind[i] - 1];
+  if (kind === 'atc') return true;
+  if (kind === 'stand') return airLinkWhy(c, cellsOf(c, i), kind) === null;
+  if (kind === 'heliport') return hasRoad(c, i % c.cols, Math.floor(i / c.cols)) || taxiLinked(c, [i]);
+  return hasRoad(c, i % c.cols, Math.floor(i / c.cols));
 }
 
 // Feindnähe je Team (Zwischenspeicher, nicht im Spielstand): Uint8Array über das Stadtraster, 1 = Zellmitte höchstens CITY.build.enemyR

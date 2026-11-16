@@ -6,7 +6,7 @@ import { KIND, KINDS, KIND_ID, WORKS } from '../../data/citykinds.js';
 import { STORED_GOODS, GOODS } from '../../data/goods.js';
 import { transportOf, pathEff, addLoad, beginLoads, settleLoads, minFactor, supplyOf } from '../transport.js';
 import { updateCare } from './care.js';
-import { isFlat, isPart, cellsOf, cellFree, releaseCell, hasRoad } from './cells.js';
+import { isFlat, isPart, cellsOf, cellFree, releaseCell, growLinked } from './cells.js';
 import { draftedCount, freePop, trainersOf } from './query.js';
 import { UNITS } from '../../data/units.js';
 import { zeroGoods, zeroStats, updateClaim, occupyCell, totals, syncEntity, dropEntity } from './state.js';
@@ -154,9 +154,7 @@ function growCells(game, c, P, dt) {
   for (const i of c.list) {
     if (isPart(c, i)) continue; // Großbau wächst über seine Mitte
     const kind = KINDS[c.kind[i] - 1];
-    const col = i % c.cols;
-    const row = (i - col) / c.cols;
-    if (isFlat(c.kind[i]) || !hasRoad(c, col, row)) continue; // ohne Straße wächst nichts
+    if (isFlat(c.kind[i]) || !growLinked(c, i)) continue; // ohne Anschluss wächst nichts (Straße, beim Stellplatz die Bahn)
     const lv = c.level[i];
     if (lv >= CITY.maxLevel) continue;
     if (lv >= 1 && kind === 'stand') continue; // Stellplatz: Ausbau nur über den Befehl cityUpgrade (seit v5.39)

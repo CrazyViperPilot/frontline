@@ -1,6 +1,6 @@
-// Straßennetz der Stadt-KI (Paket „Straßennetz der KI“, PRD §10): „angeschlossen“ heißt Transportweg zum Lager (Bahn und Rollfeld
-// tragen keine Ware), die KI baut an der Hauptstadt keine Straßen-Inseln und keine Werke ohne Weg zum Lager, und sie verbreitert
-// überlastete Straßen (Spuren).
+// Straßennetz der Stadt-KI (Paket „Straßennetz der KI“, PRD §10): „angeschlossen“ heißt Straße mit Weg zum Lager (seit dem Paket
+// „Fliegerhorst-Anschluss“ ein einziger Begriff: Bahn und Rollfeld sind keine Straße), die KI baut an der Hauptstadt keine Straßen-Inseln
+// und keine Werke ohne Weg zum Lager, und sie verbreitert überlastete Straßen (Spuren).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
@@ -8,14 +8,14 @@ import { AI } from '../js/ai/ai.js';
 import { CITY } from '../js/data/city.js';
 import { KINDS, KIND_ID, WORKS } from '../js/data/citykinds.js';
 import { transportOf } from '../js/game/transport.js';
-import { cargoReach, mainRoadReach } from '../js/game/city/roadnet.js';
+import { mainRoadReach } from '../js/game/city/roadnet.js';
 import { isPart, nbrsOf, cellAt, canZone, cellFree } from '../js/game/city/cells.js';
 import { placeBuilt, rebuildList } from '../js/game/city/state.js';
 
-test('Straßennetz der KI: eine Straße, die nur über die Bahn des Fliegerhorsts am Lager hängt, gilt nicht als angeschlossen (cargoReach)', () => {
+test('Straßennetz: eine Straße, die nur über die Bahn des Fliegerhorsts am Lager hängt, gilt nicht als angeschlossen (mainRoadReach)', () => {
   const g = new Game({ seed: 3 });
   const c = g.city[0];
-  const reach = cargoReach(g, c);
+  const reach = mainRoadReach(g, c);
   const free = (j) => !c.kind[j] && !c.mapRoads?.[j] && canZone(g, c, j) && cellFree(g, c, j % c.cols, Math.floor(j / c.cols));
   // Gerade aus vier freien Zellen ab einer Straße am Lager: zwei Zellen Bahn, dahinter zwei Zellen Straße
   let run = null;
@@ -38,8 +38,7 @@ test('Straßennetz der KI: eine Straße, die nur über die Bahn des Fliegerhorst
   placeBuilt(g, c, run[2], 'road');
   placeBuilt(g, c, run[3], 'road');
   rebuildList(c);
-  assert.equal(mainRoadReach(g, c)[run[3]], 1, 'für den Bauanschluss zählt die Bahn als Straße');
-  assert.equal(cargoReach(g, c)[run[3]], 0, 'für die KI zählt nur der Transportweg');
+  assert.equal(mainRoadReach(g, c)[run[3]], 0, 'die Bahn ist keine Straße: kein Weg zum Lager über sie');
   assert.ok(transportOf(g, c).fields.main.dist[run[3]] < 0, 'transport.js sieht dort auch keinen Weg zum Lager');
 });
 
@@ -59,7 +58,7 @@ for (const seed of [3, 7]) {
       const main = g.mainFob(t);
       assert.ok(main, `Team ${t}: Hauptstadt steht`);
       const tr = transportOf(g, c);
-      const reach = cargoReach(g, c);
+      const reach = mainRoadReach(g, c);
       let works = 0;
       let cut = 0;
       for (const i of c.list) {

@@ -113,7 +113,7 @@ test('Stellplatz: mit Verbindung zur Bahn ohne Straße baubar, sonst nicht', () 
   assert.equal(far.reason, BUILD_BLOCK.air);
 });
 
-test('Kerosintank ohne Straße zum Lager versorgt nichts, mit Straße schon', () => {
+test('Kerosintank ohne Straße zum Lager wächst nicht und versorgt nichts, mit Straße schon', () => {
   const g = game(false);
   const c = g.city[0];
   const { q, r } = area(g, 14, 8);
@@ -121,14 +121,14 @@ test('Kerosintank ohne Straße zum Lager versorgt nichts, mit Straße schon', ()
   assert.ok(put(g, 'ktank', q + 6, r + 2, 1, 1).ok, 'Kerosintank');
   run(g, CITY.growTime + 1);
   const a = cell(c, q + 6, r + 2);
-  const tank = c.ents.get(a);
-  assert.equal(transportOf(g, c).depot.get(a), null, 'an der Bahn allein kein Weg zum Lager');
-  run(g, 20);
-  assert.ok(!(tank.stock > 0), 'ohne Straße wird nichts befüllt');
+  assert.equal(c.level[a], 0, 'ohne Straße wächst der Tank nicht');
+  assert.equal(transportOf(g, c).depot.get(a) ?? null, null, 'an der Bahn allein kein Weg zum Lager');
   withValue(CITY.transport, 'connectMax', 400, () => assert.ok(connectRoad(g, c, a, false) > 0, 'Straße zum Lager'));
-  run(g, 20);
+  run(g, CITY.growTime + 1);
+  assert.ok(c.level[a] > 0, 'mit Straße gebaut');
   assert.ok(transportOf(g, c).depot.get(a), 'mit Straße ein Weg');
-  assert.ok(tank.stock > 0, 'mit Straße wird der Tank befüllt');
+  run(g, 20);
+  assert.ok(c.ents.get(a).stock > 0, 'mit Straße wird der Tank befüllt');
 });
 
 test('Kerosintank braucht mit Baugebiet eine Straße zum Lager', () => {
@@ -140,7 +140,7 @@ test('Kerosintank braucht mit Baugebiet eine Straße zum Lager', () => {
   assert.equal(res.reason, BUILD_BLOCK.road);
 });
 
-test('Stellplatz ohne Straße wird über einen Kerosintank mit Straßenweg im Umkreis versorgt', () => {
+test('Stellplatz ohne Straße wächst an der Bahn und wird über einen Kerosintank mit Straßenweg im Umkreis versorgt', () => {
   const g = game(false);
   const c = g.city[0];
   const { q, r } = area(g, 14, 8);
@@ -150,8 +150,10 @@ test('Stellplatz ohne Straße wird über einen Kerosintank mit Straßenweg im Um
   run(g, CITY.growTime + 1);
   const sa = cell(c, q + 2, r + 2);
   const ta = cell(c, q + 7, r + 5);
-  assert.equal(transportOf(g, c).supply.get(sa), null, 'ohne Tank mit Straße keine Versorgung');
+  assert.ok(c.level[sa] > 0, 'Stellplatz wächst ohne Straße an der Bahn');
+  assert.equal(transportOf(g, c).supply.get(sa) ?? null, null, 'ohne Tank mit Straße keine Versorgung');
   withValue(CITY.transport, 'connectMax', 400, () => assert.ok(connectRoad(g, c, ta, false) > 0, 'Straße des Tanks zum Lager'));
+  run(g, CITY.growTime + 1);
   assert.equal(accessCells(c, sa).length, 0, 'der Stellplatz selbst hat keine Straße');
   assert.equal(transportOf(g, c).supply.get(sa)?.length, 0, 'versorgt über den Tank im Umkreis (Weg 0)');
   assert.equal(supplyOf(g, c, sa).v, 1, 'Versorgungsgrad 100 %');
@@ -167,6 +169,7 @@ test('Tower braucht keinen Anschluss und lotst nur Bahnen in seinem Umkreis', ()
   assert.ok(far, 'Platz für eine Bahn außer Reichweite des Towers');
   assert.ok(put(g, 'runway', far.q, far.r, 9, 1).ok, 'Bahn weit weg');
   run(g, CITY.growTime + 1);
+  assert.ok(c.level[cell(c, q + 2, r + 2)] > 0, 'Tower wächst ohne Straße');
   const near = runwaysOf(g, 0).find((x) => x.valid && x.cells.includes(cell(c, q, r)));
   const away = runwaysOf(g, 0).find((x) => x.valid && x.cells.includes(cell(c, far.q, far.r)));
   assert.ok(near && away, 'beide Bahnen gültig');
@@ -204,8 +207,10 @@ test('Heliport wird über einen Kerosintank mit Straßenweg im Umkreis ausgebild
   run(g, CITY.growTime + 1);
   const ha = cell(c, q + 10, r + 2);
   const ta = cell(c, q + 4, r + 4);
-  assert.equal(transportOf(g, c).supply.get(ha), null, 'ohne Tank mit Straße keine Ausbildung');
+  assert.ok(c.level[ha] > 0, 'Heliport wächst am Rollfeld mit Bahn');
+  assert.equal(transportOf(g, c).supply.get(ha) ?? null, null, 'ohne Tank mit Straße keine Ausbildung');
   withValue(CITY.transport, 'connectMax', 400, () => assert.ok(connectRoad(g, c, ta, false) > 0, 'Straße des Tanks zum Lager'));
+  run(g, CITY.growTime + 1);
   assert.equal(accessCells(c, ha).length, 0, 'der Heliport hat keine Straße');
   assert.equal(transportOf(g, c).supply.get(ha)?.length, 0, 'ausgebildet über den Tank im Umkreis');
   assert.equal(supplyOf(g, c, ha).v, 1, 'Versorgungsgrad 100 %');

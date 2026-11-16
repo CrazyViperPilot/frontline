@@ -62,7 +62,12 @@ function airbase(g, t = 0) {
   put('atc', 4, 2);
   put('ktank', 6, 2);
   put('mdepot', 8, 2);
-  withValue(CITY.transport, 'connectMax', 400, () => assert.ok(connectRoad(g, c, r * c.cols + q + 9, false) >= 0, 'Weg zum Lager'));
+  withValue(CITY.transport, 'connectMax', 400, () => {
+    assert.ok(connectRoad(g, c, r * c.cols + q + 9, false) >= 0, 'Weg zum Lager');
+    // Tank und Lager brauchen eine eigene Straße zum Lager (Paket „Fliegerhorst-Anschluss“), sonst wachsen sie nicht
+    connectRoad(g, c, (r + 2) * c.cols + q + 6, false);
+    connectRoad(g, c, (r + 2) * c.cols + q + 8, false);
+  });
   run(g, CITY.growTime + 1);
   const ents = [...c.ents.entries()].filter(([, e]) => e.alive);
   const stands = ents.filter(([i]) => KINDS[c.kind[i] - 1] === 'stand').map(([, e]) => e);

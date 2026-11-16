@@ -116,6 +116,8 @@ jobs:
           # Kein --delete: api/data/ (Spielstände) bleibt unberührt.
           mkdir site
           cp -r .htaccess index.html editor.html manifest.json sw.js css js icons api admin site/
+          # Doku für Entwickler (CLAUDE.md je Ordner unter js/) nicht hochladen.
+          find site -name CLAUDE.md -delete
           ssl=$([ "$FTP_PROTOCOL" = "ftp" ] && echo false || echo true)
           verify=$([ "$FTP_SECURITY" = "loose" ] && echo no || echo yes)
           lftp --env-password -u "$FTP_USER" "$FTP_SERVER" <<LFTP

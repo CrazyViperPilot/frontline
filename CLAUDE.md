@@ -7,7 +7,8 @@ die genannten Dateien.
 - **Regeln des Spiels:** [PRD.md](PRD.md) ist der Einstieg (Ziel, Ablauf, Übersicht); die Regeln je Thema stehen seit v5.79 in
   [docs/prd/](docs/prd/) (Abschnittsnummern §3 … §16 wie früher, Zuordnung in der Übersicht von PRD.md). **Für ein Paket nur PRD.md
   und die Themen-Datei(en) lesen, nicht alle.** Änderungsverlauf: [docs/changelog.md](docs/changelog.md) (nur bei Bedarf).
-- **Aufbau des Codes:** [ARCHITEKTUR.md](ARCHITEKTUR.md) (Schichten, Simulationsschritt, Datenmodelle, Befehle)
+- **Aufbau des Codes:** [ARCHITEKTUR.md](ARCHITEKTUR.md) (Schichten, Simulationsschritt, Datenmodelle, Befehle, Feature-Landkarte).
+  Die Dateiliste eines Ordners steht in seiner eigenen `CLAUDE.md` (z. B. `js/game/CLAUDE.md`); sie wird beim Arbeiten im Ordner geladen.
 - **Aussehen neuer Einheiten (3D-Modelle):** [docs/rezept-einheiten.md](docs/rezept-einheiten.md) – Rezept mit Vorschau-Werkzeug, auch für Sonnet/Haiku.
 - **Entstehung:** [docs/verlauf.md](docs/verlauf.md) (alter Umsetzungsplan v1 bis v4.23, nur zum Nachlesen; Code-Kommentare verweisen auf seine Abschnitte)
 
@@ -22,7 +23,7 @@ die genannten Dateien.
 4. Zufall in der Simulation nur über `game.rng` bzw. `makeRng(seed)` (`js/core/rng.js`), nie `Math.random()`. Gleicher Seed = gleiche Partie.
    Zufallskarten ohne Fluss müssen je Seed unverändert bleiben (gespeicherte Seeds, Tests).
 5. Imports immer mit Endung (`'./zone.js'`), nie über den Repo-Ordner hinaus, keine CDNs oder externen Dateien.
-6. Neue Datei, die der Browser lädt: in `sw.js` unter `ASSETS` eintragen. `CACHE_VERSION` in `sw.js` **nicht** von Hand erhöhen: das macht
+6. Neue Datei, die der Browser lädt: in `sw.js` unter `ASSETS` eintragen und eine Zeile in die `CLAUDE.md` ihres Ordners. `CACHE_VERSION` in `sw.js` **nicht** von Hand erhöhen: das macht
    `npm run release` beim Zusammenführen auf `main` (Abschnitt „Zusammenarbeit“).
 7. Regel- oder Feature-Änderung: die passende Themen-Datei unter `docs/prd/` anpassen (Abschnitt laut Übersicht in PRD.md) und den
    Eintrag für den Änderungsverlauf als eigene Datei nach [docs/changes/](docs/changes/README.md) legen (eine Zeile, ohne Versionsnummer);
@@ -163,8 +164,9 @@ Danach: PRD-Text und Hilfetexte (`js/ui/helptext.js`, Spielhinweise des Startmen
 
 ## Feature-Landkarte
 
-Wo jedes Feature liegt (PRD-Abschnitt, Werte, Logik, KI, Darstellung, Test): Tabelle in [ARCHITEKTUR.md §9](ARCHITEKTUR.md).
-Bei einem neuen Feature dort eine Zeile ergänzen.
+Wo jedes Feature liegt (PRD-Datei, Hauptmodul, weitere Module, Test): Tabelle in [ARCHITEKTUR.md §9](ARCHITEKTUR.md).
+Bei einem neuen Feature dort eine kurze Zeile ergänzen. Bei einer neuen Datei unter `js/` eine Zeile (Zweck, wichtigste Exporte)
+in die `CLAUDE.md` ihres Ordners; `test/featuremap.test.js` prüft das (höchstens 4 KB je Ordnerdatei).
 
 ## Rezepte
 
@@ -241,7 +243,7 @@ Für eine Rohware, die von außerhalb der Karte kommt: nicht gelagert, nicht geh
 ### Neues Spielsystem (eigenes Modul)
 1. `js/game/<name>.js` mit Kopfkommentar (Zweck, „Kein DOM“), `create<Name>(game)` für den Startzustand und `update<Name>(game, dt)` für einen Schritt.
 2. In `js/game/game.js` importieren, `create…` im Konstruktor aufrufen und `update…` in `update()` an der passenden Stelle der Reihenfolge einfügen (siehe ARCHITEKTUR.md). Abgeleiteter Zustand, den der Spielstand nicht speichert (wie das Sperrraster `grid.lock`), wird in `restoreAccessors` (`game.js`) nach dem Laden neu gebunden.
-3. Werte als eigener Abschnitt in `js/data/balance.js`, Datei in `sw.js` → `ASSETS`, Test `test/<name>.test.js`, Zeile in der Feature-Landkarte (ARCHITEKTUR.md §9).
+3. Werte als eigener Abschnitt in `js/data/balance.js`, Datei in `sw.js` → `ASSETS`, Test `test/<name>.test.js`, Zeile in der Feature-Landkarte (ARCHITEKTUR.md §9) und in `js/game/CLAUDE.md`.
 
 ### Neuer Spielmodus oder neue Flaggen-/Ticketregel
 1. Werte als eigener Block in `js/data/balance.js` (wie `BALANCE.conquest`), jede Zeile mit deutschem Kommentar; Regel in `docs/prd/eroberung.md` oder einer neuen Datei unter `docs/prd/` (Übersicht in PRD.md).

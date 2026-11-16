@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.183: **Offenes Netz** (§10 „Stadt mit Anschlusspflicht“, Stadt-KI): Die KI lässt ihre Ausgänge am Straßennetz des Lagers auch ohne Baugebiet offen (`keepsOutlets`, `CITY.ai.linkOutlets` = 2), damit das Netz nicht rundum bebaut wird und Platz für den Industriepark bleibt. Cache v251.
 - v5.182: **Schmale Wischleiste** (§8 „Steuerung“): Auf dem Telefon ist die Befehlskarte drei Knöpfe breit (der Rest wird gewischt) und steht links neben der Knopfspalte, damit „Bauer“ sie auch bei eingeblendeter Adressleiste nicht verdeckt. Cache v250.
 - v5.181: **Wischleiste auf dem Telefon** (§9 „Telefon quer“): Die Befehlskarte bildet im Telefon-Querformat die Ausbildung eines Gebäudes in einer wischbaren Zeile ab, die übrigen Aktionen darunter; sie liegt nicht mehr unter der Knopfspalte (Bauer, Ressourcen). Am Desktop und Tablet unverändert. Cache v249.
 - v5.180: **Detailstufen beim Herauszoomen** (§9 „Oberfläche“): Unter Zoom 0,8 (2D) bzw. 0,6 (Iso) zeichnen Bodeneinheiten als Keil oder Dreieck in Teamfarbe, Iso ohne Schatten; Leuchtspur, Mündungsfeuer und Fahrzeugrauch entfallen, Lebensbalken nur für gewählte oder beschädigte Einheiten. Cache v248.

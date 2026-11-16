@@ -1,1 +1,0 @@
-**Rastersuche** (Umbau, ohne Regeländerung): Die Breitensuchen auf dem Stadtraster (Straßennetz, Anschluss ans Lager und an den Kartenrand, Gleis- und Rollfeldverbindung, Rollwege der Jets, Lieferwege im Straßentransport, Felder der Stadt-KI) laufen über einen gemeinsamen Helfer `gridBfs` in `js/game/city/gridbfs.js`; Ergebnisse und Partien bleiben gleich.

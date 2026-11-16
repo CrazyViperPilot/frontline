@@ -334,6 +334,19 @@ export const CITY = {
     // Die Werksplätze hält sie frei; neue Werke kommen zuerst dorthin, erst dann anderswo hin.
     parkLink: 12, // längste bezahlte Zufahrt (Zellen) vom Straßennetz des Lagers bis zur Straße des Parks
     parkLinkCost: 2, // Gewicht je Zelle Zufahrt gegen die Gleislänge (Zellen) bei der Wahl des Platzes
+    // Spuren (Paket „Straßennetz der KI“, Logik aiLanes in js/ai/cityai.js): die KI legt neben dauerhaft überlastete Straßenzellen eine
+    // zweite (dritte, vierte) Straße; Straßen nebeneinander zählen als Spuren (CITY.transport.maxLanes). Straßen kosten nur Baumaterial.
+    laneLoad: 1.0, // Last ÷ Kapazität einer Straßenzelle, ab der sie als überlastet gilt
+    laneKeep: 0.6, // Last ÷ Kapazität, ab der die freien Zellen neben der Straße für eine Spur frei bleiben (kein Gebäude dorthin)
+    laneTurns: 2, // so viele Ausbautakte in Folge überlastet, bevor die KI verbreitert
+    laneStep: 2, // höchstens so viele neue Spurzellen je Ausbautakt (0 = die KI baut keine Spuren)
+    laneTries: 12, // so viele überlastete Zellen prüft sie je Takt (die am stärksten überlasteten zuerst)
+    laneBm: 300, // Baumaterial im Lager der Hauptstadt, ab dem sie Spuren baut (Gebäude und Anschlüsse gehen vor)
+    laneRetry: 60, // s: eine überlastete Zelle ohne Platz für eine Spur so lange nicht erneut prüfen
+    // Wachstum vom Netz (Paket „Straßennetz der KI“): an der Hauptstadt legt die KI Straßen ihres Musters nur, wo sie an das Netz des
+    // Lagers anschließen, und Gebäude nur an diesem Netz (keine Straßen-Inseln, keine Werke ohne Weg zum Lager)
+    netRoads: true,
+    roadLink: 4, // eine Musterstraße ohne Anschluss baut sie nur mit einer Zufahrt vom Netz aus höchstens so vielen neuen Zellen (im selben Takt)
     stationBusy: 0.9, // Anteil des Durchsatzes (CITY.import.station je Stufe), ab dem ein Bahnhof als ausgelastet gilt (dann darf ein zweiter kommen)
   },
 };

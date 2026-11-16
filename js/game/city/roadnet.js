@@ -7,11 +7,18 @@ import { mainAccess } from '../transport.js';
 import { atEdge, stationLinked, anchorOf, isPart, cellsOf, cellRect, cellFree, roadAt, accessCells, canZone, buildAllowed, nbrsOf } from './cells.js';
 import { rebuildList, placeBuilt } from './state.js';
 
+/** Trägt die Zelle Verkehr (eigene Straße oder Stadtstraße der Karte)? Bahn und Rollfeld zählen für den Bauanschluss als Straße (roadAt), tragen aber keine Ware. */
+function carries(c, i) {
+  return c.kind[i] === KIND_ID.road || !!c.mapRoads?.[i];
+}
+
 /**
  * Straßenzellen, die über Straßen von den Startzellen `starts` aus erreichbar sind (seit v5.20, AP4): Breitensuche, höchstens
- * CITY.transport.maxDist Schritte (wie der Lieferweg). Liefert ein Uint8Array je Zelle, 1 = erreichbar.
+ * CITY.transport.maxDist Schritte (wie der Lieferweg). Liefert ein Uint8Array je Zelle, 1 = erreichbar. Mit `cargo` (Paket
+ * „Straßennetz der KI“) nur über Zellen, die Verkehr tragen (ohne Bahn und Rollfeld), wie die Wege in transport.js.
  */
-function roadReach(c, starts) {
+function roadReach(c, starts, cargo = false) {
+  const pass = cargo ? (j) => carries(c, j) : (j) => roadAt(c, j);
   const n = c.cols * c.rows;
   const reach = new Uint8Array(n);
   const dist = new Int32Array(n).fill(-1);
@@ -19,7 +26,7 @@ function roadReach(c, starts) {
   let head = 0;
   let tail = 0;
   for (const i of starts) {
-    if (dist[i] >= 0) continue;
+    if (dist[i] >= 0 || !pass(i)) continue;
     dist[i] = 0;
     reach[i] = 1;
     queue[tail++] = i;
@@ -29,7 +36,7 @@ function roadReach(c, starts) {
     const i = queue[head++];
     if (dist[i] >= maxDist) continue;
     for (const j of nbrsOf(c, i)) {
-      if (dist[j] >= 0 || !roadAt(c, j)) continue;
+      if (dist[j] >= 0 || !pass(j)) continue;
       dist[j] = dist[i] + 1;
       reach[j] = 1;
       queue[tail++] = j;
@@ -43,8 +50,17 @@ export function mainRoadReach(game, c) {
   return roadReach(c, mainAccess(game, c));
 }
 
+/**
+ * Straßen mit Transportweg zum Lager der Hauptstadt (Paket „Straßennetz der KI“): wie mainRoadReach, aber nur über Zellen, die Verkehr
+ * tragen. Eine Straße, die nur über die Bahn oder das Rollfeld des Fliegerhorsts am Lager hängt, zählt nicht (darüber fährt keine Ware).
+ * Maß der Stadt-KI für „angeschlossen“.
+ */
+export function cargoReach(game, c) {
+  return roadReach(c, mainAccess(game, c), true);
+}
+
 /** Zellen, deren Rechteck die Zone des Lagers schneidet (wie mainAccess, aber für alle Zellen, nicht nur Straßen; seit v5.20, AP4). */
-function mainZone(game, c) {
+export function mainZone(game, c) {
   const n = c.cols * c.rows;
   const zone = new Uint8Array(n);
   const m = game.mainFob(c.team);
@@ -67,11 +83,14 @@ function mainZone(game, c) {
  * Straßenzelle, die mit dem Lager verbunden ist. Nur ausweisbare, leere, freie Zellen; höchstens
  * CITY.transport.connectMax neue Zellen. Mit `pay` über game.issue (kostet Baumaterial je Zelle), sonst direkt wie beim Startviertel.
  * Optional `goal` (Uint8Array wie roadReach): Ziel statt des Lagers, z. B. das Netz der Einfuhrpunkte für ein Werk (Ausbau der KI).
+ * Bezahlte Anschlüsse (KI) zählen als Ziel und als eigenes Netz nur Straßen, die Verkehr tragen (cargoReach; Paket „Straßennetz der
+ * KI“): sonst galt ein Werk an einer Straße, die nur über die Bahn des Fliegerhorsts am Lager hängt, als angeschlossen. Mit `flat` läuft
+ * das eigene Netz auch über Bahn und Rollfeld (Stellplatz, der seine Straße über diese Flächen erreicht).
  * Rückgabe: Zahl der gelegten Zellen; 0, wenn der Anschluss schon besteht; −1, wenn es keinen Weg gibt oder das Baumaterial fehlt.
  */
-export function connectRoad(game, c, a, pay, goal = null) {
+export function connectRoad(game, c, a, pay, goal = null, flat = false) {
   const anchor = anchorOf(c, a);
-  const reach = goal ?? mainRoadReach(game, c);
+  const reach = goal ?? (pay ? cargoReach(game, c) : mainRoadReach(game, c));
   // Ohne Ziel (Lager): auch eine freie Zelle in der Zone des Lagers ist Anschluss, sie wird Straße dort
   const zone = goal ? null : mainZone(game, c);
   const atEnd = (i) => !!zone?.[i] || nbrsOf(c, i).some((j) => reach[j]);
@@ -95,7 +114,7 @@ export function connectRoad(game, c, a, pay, goal = null) {
   // Anschluss am Rand dieses Netzes beginnen (sonst findet die KI nie einen Weg zu einem Zielnetz, das mit dem Netz des Gebäudes nur über
   // die Hauptstadt zusammenhängt, durch die keine Ware fährt).
   // Nur für bezahlte Anschlüsse (KI, Spieler); das Startviertel (pay false) baut wie bisher, damit Startzustände je Seed gleich bleiben.
-  const own = pay ? roadReach(c, accessCells(c, anchor)) : null;
+  const own = pay ? roadReach(c, accessCells(c, anchor), !flat) : null;
   for (let i = 0; own && i < n; i++) {
     if (!own[i] || !roadAt(c, i)) continue;
     for (const j of nbrsOf(c, i)) {
@@ -153,7 +172,7 @@ export function importReach(c) {
     if (c.kind[i] === RD && atEdge(c, i)) starts.push(i);
     else if (c.kind[i] === ST && !isPart(c, i) && c.level[i] && stationLinked(c, i)) for (const j of accessCells(c, i)) starts.push(j);
   }
-  return starts.length ? roadReach(c, starts) : null;
+  return starts.length ? roadReach(c, starts, true) : null;
 }
 
 /**
@@ -163,7 +182,7 @@ export function importReach(c) {
  * gelegten Zellen; 0, wenn das Netz den Rand schon erreicht; −1 ohne Weg oder ohne Baumaterial.
  */
 export function connectEdge(game, c, starts, pay, max = c.cols + c.rows) {
-  const reach = roadReach(c, starts);
+  const reach = roadReach(c, starts, pay); // bezahlt (KI): nur über Straßen, die Verkehr tragen
   const n = c.cols * c.rows;
   for (let i = 0; i < n; i++) if (reach[i] && c.kind[i] === KIND_ID.road && atEdge(c, i)) return 0;
   const ok = (j) => (pay ? buildAllowed(game, c, j, 'road') : canZone(game, c, j)) && !c.kind[j] && cellFree(game, c, j % c.cols, Math.floor(j / c.cols));

@@ -52,7 +52,7 @@ function put(g, kind, c0, r0, c1, r1) {
   assert.ok(res.ok, res.reason);
   return res;
 }
-// Gebäude an (col, row) sofort fertig (Stufe 1) setzen, wie in cityhelp.js
+// Gebäude an (col, row) sofort fertig (Stufe 1) setzen, wie setLevel in cityhelp.js
 function finish(g, col, row) {
   const c = g.city[0];
   const i = at(g, col, row);

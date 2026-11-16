@@ -1,1 +1,0 @@
-**Toter Code** (reiner Umbau): ungenutzte Exporte `RETIRED_KINDS`, `heliAlt`, `zoneSize` und eine tote Konstante entfernt, 60 nur intern genutzte Namen nicht mehr exportiert; Prüfskript `npm run deadcode` (`tools/deadcode.mjs`); Test für den stillgelegten Flughafen (nicht baubar, Spielstand lädt).

@@ -1,1 +1,0 @@
-**Doku synchron** (§6 „Einheiten“, nur Doku): Zahlen aus den Rollenbeschreibungen der Einheiten entfernt (Preise, Stahl, HP, Tempo, Reichweite, Schaden, Tasten stehen in den Tabellen „Werte“ und „Waffen und Schaden“), Test prüft Rollentext gegen die Daten; Feature-Landkarte und Dateiliste in ARCHITEKTUR.md ergänzt, Test prüft, dass jede Datei unter js/ genannt ist.

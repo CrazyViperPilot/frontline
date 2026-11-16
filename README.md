@@ -10,8 +10,7 @@ Spieler (Blau) gegen Computer (Rot). Vanilla JS, Canvas 2D und WebGL, kein Build
 | [CLAUDE.md](CLAUDE.md) | Einstieg: Regeln, Befehle, Wegweiser zu Rezepten (`docs/rezepte/`) und Werten (`docs/wo-aendern.md`); Feature-Landkarte in ARCHITEKTUR.md §9 |
 | [ARCHITEKTUR.md](ARCHITEKTUR.md) | Aufbau des Codes: Schichten, Simulationsschritt, Datenmodelle, Befehle, Ordner (Dateilisten in `CLAUDE.md` je Ordner unter `js/`), Feature-Landkarte |
 | [PRD.md](PRD.md) | Einstieg in die Spielregeln mit Übersicht; die Regeln je Thema in [docs/prd/](docs/prd/), Änderungsverlauf in [docs/changelog.md](docs/changelog.md) |
-| [docs/verlauf.md](docs/verlauf.md) | Ursprünglicher Umsetzungsplan (v1 bis v4.23), nur zum Nachlesen |
-| [docs/plan-v5.20.md](docs/plan-v5.20.md) | Umsetzungsplan Straßentransport (v5.20), historisch |
+| [docs/archiv/](docs/archiv/README.md) | Alte Pläne und der ursprüngliche Umsetzungsplan (v1 bis v4.23), nur zum Nachlesen, nicht der gültige Stand |
 
 Alle Spielwerte (Einheitenlimit, Geld pro Sekunde, Preise, Schaden …) stehen in `js/data/`; wo genau, sagt [docs/wo-aendern.md](docs/wo-aendern.md).
 Im Spiel zeigt **F1** oder **?** alle Tasten.

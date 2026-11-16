@@ -53,6 +53,8 @@ URL-Parameter, Smoke-Varianten, Prüfsummen und Prüftests: `docs/testen.md`.
 
 - Datendateien (`js/data/*.js`) und große Dateien nie ganz lesen: Schlüssel suchen (`grep -n`), dann nur den Ausschnitt.
 - Tests immer mit kurzem Reporter (`--test-reporter=dot`); lange Läufe an einen Hilfsagenten, der nur „grün“ oder die Fehlschläge meldet.
+- `docs/archiv/` und `docs/changelog.md` sind per `.ignore` von der Suche ausgenommen; nur lesen, wenn ein Auftrag
+  ausdrücklich nach der Geschichte fragt.
 - Ein Paket je Sitzung.
 
 ## Modelle
@@ -91,4 +93,4 @@ URL-Parameter, Smoke-Varianten, Prüfsummen und Prüftests: `docs/testen.md`.
 - KI verhält sich falsch (greift zu früh an, baut zu wenig …) → `docs/rezepte/ki-verhalten.md`.
 - Test schlägt fehl, neuer Test, Browserfehler nachstellen, URL-Parameter → `docs/testen.md`.
 - CI, Deploy auf den Webspace, Secrets → `docs/betrieb.md`.
-- Änderungsverlauf (nur bei Bedarf): `docs/changelog.md`; alter Umsetzungsplan: `docs/verlauf.md`.
+- Änderungsverlauf (nur bei Bedarf): `docs/changelog.md`; alter Umsetzungsplan und erledigte Pläne: `docs/archiv/`.

@@ -1,4 +1,4 @@
-// Startmenü (docs/verlauf.md §5): showStartMenu setzt den Dialog zusammen und verdrahtet die Ereignisse. Aufteilung:
+// Startmenü (docs/archiv/verlauf.md §5): showStartMenu setzt den Dialog zusammen und verdrahtet die Ereignisse. Aufteilung:
 // start-html.js (HTML), start-state.js (Zustand der Schalter), start-saves.js (Kasse, Spielstände), start-account.js (Konto),
 // start-maps.js (Kartenwahl). Reines DOM, keine Spiellogik. Export: showStartMenu.
 import { saveLevel } from '../../audio/sound.js';

@@ -1,4 +1,4 @@
-// Haupt-Renderer (docs/verlauf.md §5 render/renderer.js). Zeichnet Terrain, Zone, Gebäude, Einheiten,
+// Haupt-Renderer (docs/archiv/verlauf.md §5 render/renderer.js). Zeichnet Terrain, Zone, Gebäude, Einheiten,
 // Granaten, Effekte, Nebel und Overlays. Liest game.projectiles/effects bei jedem Aufruf frisch. Kein Zugriff auf den Controller.
 // Seit dem Umbau „Renderer in Module geteilt“ ist diese Datei nur noch der Einstieg: sie führt die Namen zusammen, die andere Dateien
 // importieren. Der Code liegt in Zeichenebenen unter js/render/layers/ (Methoden der Klasse Renderer, eingehängt per Object.assign):

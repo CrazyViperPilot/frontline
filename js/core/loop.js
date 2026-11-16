@@ -1,4 +1,4 @@
-// Haupt-Schleife (docs/verlauf.md §5 core/loop.js): feste Schrittweite für update(), render() pro Frame. DOM: requestAnimationFrame.
+// Haupt-Schleife (docs/archiv/verlauf.md §5 core/loop.js): feste Schrittweite für update(), render() pro Frame. DOM: requestAnimationFrame.
 // Messanzeige (ui/perfmeter.js): setzt jemand loop.onFrame, misst die Schleife Simulations- und Bildzeit je Frame und ruft den Haken
 // am Bildende auf. Ohne Haken (null) läuft alles wie vorher, ohne Zeitmessung.
 

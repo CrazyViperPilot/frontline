@@ -1,0 +1,5 @@
+# Von der Suche ausgenommen (ripgrep und damit das Suchwerkzeug von Claude Code beachten diese Datei, git nicht):
+# alte Doku mit überholtem Stand, die sonst jede Suche über das Repo aufbläht. Die Dateien bleiben versioniert und lesbar;
+# gültig sind PRD.md, docs/prd/ und ARCHITEKTUR.md.
+docs/archiv/
+docs/changelog.md

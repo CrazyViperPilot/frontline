@@ -1,4 +1,4 @@
-// Overlay-Menüs (docs/verlauf.md §5 ui/menu.js): Start, Pause, Hilfe, Ende. Reines DOM, keine Spiellogik.
+// Overlay-Menüs (docs/archiv/verlauf.md §5 ui/menu.js): Start, Pause, Hilfe, Ende. Reines DOM, keine Spiellogik.
 // Jedes Menü setzt root.dataset.kind ('start' | 'pause' | 'help' | 'end'), damit die Tastatur weiß, was offen ist.
 // Diese Datei ist nur noch der Einstieg: sie führt die Module unter js/ui/menu/ zusammen, alle Namen wie früher.
 //

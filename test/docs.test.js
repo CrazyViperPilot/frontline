@@ -30,10 +30,27 @@ test('Änderungsverlauf (docs/changelog.md, seit v5.79): Versionen absteigend un
   }
 });
 
-test('Dokumente liegen einmal vor: PLAN.md ist nach docs/ verschoben, kein doppeltes verlauf.md im Wurzelordner', () => {
-  assert.equal(existsSync(new URL('../PLAN.md', import.meta.url)), false, 'PLAN.md gehört nach docs/');
-  assert.equal(existsSync(new URL('../verlauf.md', import.meta.url)), false, 'verlauf.md gibt es nur unter docs/');
-  assert.ok(existsSync(new URL('../docs/plan-v5.20.md', import.meta.url)), 'docs/plan-v5.20.md fehlt');
+test('Dokumente liegen einmal vor: alte Pläne und verlauf.md nur unter docs/archiv/', () => {
+  assert.equal(existsSync(new URL('../PLAN.md', import.meta.url)), false, 'PLAN.md gehört nach docs/archiv/');
+  assert.equal(existsSync(new URL('../verlauf.md', import.meta.url)), false, 'verlauf.md gibt es nur unter docs/archiv/');
+  assert.equal(existsSync(new URL('../docs/verlauf.md', import.meta.url)), false, 'verlauf.md gibt es nur unter docs/archiv/');
+  assert.ok(existsSync(new URL('../docs/archiv/verlauf.md', import.meta.url)), 'docs/archiv/verlauf.md fehlt');
+  assert.ok(existsSync(new URL('../docs/archiv/README.md', import.meta.url)), 'docs/archiv/README.md fehlt');
+});
+
+// Paket „Archiv“: Erledigte Pläne liegen unter docs/archiv/ (ein noch offener Plan darf in docs/ bleiben, steht dann hier),
+// und .ignore nimmt Archiv und Changelog aus der Suche (ripgrep), damit sie Suchen nicht aufblähen.
+const OPEN_PLANS = ['plan-stadt-kern.md'];
+
+test('Archiv: unter docs/ liegt keine erledigte plan-*.md auf oberster Ebene', () => {
+  const plans = readdirSync(rel('docs/')).filter((f) => /^plan-.*\.md$/.test(f) && !OPEN_PLANS.includes(f));
+  assert.deepEqual(plans, [], 'erledigte Pläne nach docs/archiv/');
+});
+
+test('Archiv: .ignore nimmt docs/archiv/ und docs/changelog.md von der Suche aus', () => {
+  const lines = read('../.ignore').split('\n').map((l) => l.trim());
+  assert.ok(lines.includes('docs/archiv/'), '.ignore nennt docs/archiv/ nicht');
+  assert.ok(lines.includes('docs/changelog.md'), '.ignore nennt docs/changelog.md nicht');
 });
 
 test('PRD aufgeteilt (seit v5.79): der Einstieg PRD.md verlinkt jede Themen-Datei unter docs/prd/, und jede verlinkte Datei gibt es', () => {

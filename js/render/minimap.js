@@ -1,4 +1,4 @@
-// Minimap (docs/verlauf.md §5 render/minimap.js): Gelände, Zone, Gebäude und Einheiten als Punkte, Nebel, Kamerarahmen.
+// Minimap (docs/archiv/verlauf.md §5 render/minimap.js): Gelände, Zone, Gebäude und Einheiten als Punkte, Nebel, Kamerarahmen.
 // Zeichnet in Weltkoordinaten (Transformation Welt → Canvas) und nutzt dieselben Sichtregeln wie der Hauptrenderer.
 import { BALANCE } from '../data/balance.js';
 import { buildTerrain } from './terrain.js';

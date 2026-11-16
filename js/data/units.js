@@ -1,4 +1,4 @@
-// Einheitenwerte (docs/verlauf.md §3.2, §11.2, §11.8).
+// Einheitenwerte (docs/archiv/verlauf.md §3.2, §11.2, §11.8).
 // weapons: Waffen mit rounds (Schuss im Vorrat), munCost (Munition aus dem FOB-Lager je Schuss beim Nachladen), cooldown, damage nach Panzerklasse,
 // optional targets (Klassen, gegen die diese Waffe bevorzugt wird). Daraus entstehen range, damage (bester Wert je Klasse) und ammoMax.
 // Schadensklasse jet (seit v5.15) = Flugzeuge (F-16); fehlt sie, gilt air (Hubschrauber). Soldaten treffen keine Flugzeuge (jet: 0),

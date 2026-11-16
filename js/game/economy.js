@@ -1,4 +1,4 @@
-// Wirtschaft: Produktion (Hauptstadt, mit Stadt Kaserne/Fabrikhalle/Heliport) und Geldrate (docs/verlauf.md §5, §11.1). Geld kommt nur aus Zone und Hot Zone. Kein DOM.
+// Wirtschaft: Produktion (Hauptstadt, mit Stadt Kaserne/Fabrikhalle/Heliport) und Geldrate (docs/archiv/verlauf.md §5, §11.1). Geld kommt nur aus Zone und Hot Zone. Kein DOM.
 // Baufortschritt: construction.js. Nachfüllen und LKW: logistics.js.
 import { crewOf, cityTrainers } from './city/query.js';
 import { BALANCE } from '../data/balance.js';

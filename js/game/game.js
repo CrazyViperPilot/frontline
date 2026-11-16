@@ -1,4 +1,4 @@
-// Spielzustand, Befehle (issue), Platzierung, Lager, Spawn, Aufräumen und Sieg (docs/verlauf.md §4, §5, §11). Kein DOM.
+// Spielzustand, Befehle (issue), Platzierung, Lager, Spawn, Aufräumen und Sieg (docs/archiv/verlauf.md §4, §5, §11). Kein DOM.
 import { BALANCE } from '../data/balance.js';
 import { UNITS } from '../data/units.js';
 import { makeRng } from '../core/rng.js';

@@ -1,4 +1,4 @@
-// Kamera: Weltausschnitt, Zoom und Umrechnung Welt <-> Bildschirm (docs/verlauf.md §5 render/camera.js). Kein DOM.
+// Kamera: Weltausschnitt, Zoom und Umrechnung Welt <-> Bildschirm (docs/archiv/verlauf.md §5 render/camera.js). Kein DOM.
 import { clamp } from './color.js';
 
 const ZOOM_MIN = 0.35;

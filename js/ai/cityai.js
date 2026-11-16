@@ -242,8 +242,8 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
       n = -Infinity; // Geld reicht nicht: Schluss für diesen Takt
       return;
     }
-    // Anschlusspflicht (Paket „Straßen“): kein Gebäude, das das Straßennetz einschließt (es bleiben CITY.ai.linkOutlets Ausgänge)
-    if (kind !== 'road' && linkNeeded(game) && !keepsOutlets(game, city, sizeOf(kind) > 1 ? bigCells(city, idx(city, col, row), sizeOf(kind)) : [idx(city, col, row)])) {
+    // Netz offen halten (Paket „Straßen“, seit Paket „Offenes Netz“ auch ohne Baugebiet): kein Gebäude, das das Straßennetz einschließt (es bleiben CITY.ai.linkOutlets Ausgänge)
+    if (kind !== 'road' && !keepsOutlets(game, city, sizeOf(kind) > 1 ? bigCells(city, idx(city, col, row), sizeOf(kind)) : [idx(city, col, row)])) {
       if (sizeOf(kind) > 1) skip.add(kind);
       return;
     }

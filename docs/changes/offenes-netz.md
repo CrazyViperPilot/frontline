@@ -1,0 +1,1 @@
+**Offenes Netz** (§10 „Stadt mit Anschlusspflicht“, Stadt-KI): Die KI lässt ihre Ausgänge am Straßennetz des Lagers auch ohne Baugebiet offen (`keepsOutlets`, `CITY.ai.linkOutlets` = 2), damit das Netz nicht rundum bebaut wird und Platz für den Industriepark bleibt.

@@ -18,6 +18,7 @@ import { cmdAbility } from './abilities.js';
 import { cmdResearch, cmdCancelResearch } from './research.js';
 import { cmdRepairBridge, cmdLayBridge } from './river.js';
 import { cmdLand } from './aircraft.js';
+import { cmdScramble } from './scramble.js';
 import { cmdHeliLand, isHeliport } from './helipad.js';
 import { cmdDig } from './excavator.js';
 import { cmdShellRoad, cmdClearRubble } from './roadwar.js';
@@ -94,6 +95,7 @@ export const COMMANDS = {
   drill: { run: cmdDrill },
   // Heliport als Ziel: Hubschrauber (seit v5.51, helipad.js), sonst Stellplatz: Jets (aircraft.js)
   land: { run: (g, t, c) => (isHeliport(g, g.getEntity(c.airportId)) ? cmdHeliLand(g, t, c) : cmdLand(g, t, c)), drives: true, sound: true },
+  scramble: { run: cmdScramble, sound: true }, // Alarmbereitschaft der Jets an/aus (Paket „Alarmrotte“)
   dig: { run: cmdDig, drives: true, sound: true },
   layBridge: { run: cmdLayBridge, drives: true, sound: true },
   shellRoad: { run: cmdShellRoad, drives: true, sound: true },

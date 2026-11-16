@@ -3,6 +3,7 @@
 
 import { CITY } from '../../data/city.js';
 import { standsOf, freeSpace, isHighAlt } from '../../game/aircraft.js';
+import { alertable, alertOn } from '../../game/scramble.js';
 import { supplyOf } from '../../game/transport.js';
 import { marketBuyPrice } from '../../game/city/query.js';
 import { BALANCE } from '../../data/balance.js';
@@ -73,6 +74,10 @@ export const combatMethods = {
     const ports = standsOf(g, t);
     if (!ports.length) return;
     const jets = s.units.filter((u) => u.def.jet);
+    // Alarmrotte (Paket „Alarmrotte“): Bereitschaft der Jets mit Luft-Luft-Waffe nach BALANCE.difficulty[…].scramble (Standard an)
+    const alert = BALANCE.difficulty[this.difficulty]?.scramble !== false;
+    const flip = jets.filter((u) => alertable(u) && alertOn(u) !== alert);
+    if (flip.length) g.issue(t, { type: 'scramble', ids: flip.map((u) => u.id), on: alert });
     const fighters = jets.filter((u) => !u.def.highAlt); // U-2 nicht mitzählen (recon)
     const queuedFighters = ports.flatMap((p) => p.queue.map((e) => e.unit ?? e)).filter((ty) => !UNITS[ty].highAlt);
     const want = CITY.ai.jets[this.difficulty] ?? CITY.ai.jets.normal;
@@ -98,7 +103,7 @@ export const combatMethods = {
         if (b && steelFor(g, t, type)) g.issue(t, { type: 'train', buildingId: b.id, unit: type });
       }
     }
-    const ready = fighters.filter((u) => u.parked && u.jet?.ready && u.order.type === 'idle').sort((a, b) => a.id - b.id);
+    const ready = fighters.filter((u) => u.parked && u.jet?.ready && u.order.type === 'idle' && !u.jet.qra).sort((a, b) => a.id - b.id);
     if (!ready.length || !this.once('jets', JET_EVERY)) return;
     const air = s.enemies.filter((e) => e.def.air && !e.parked);
     const armor = s.enemies.filter((e) => (e.def.armor === 'heavy' || e.def.armor === 'light') && (inZoneOf(s.zone, e.x, e.y) || dist(e.x, e.y, s.ax, s.ay) <= DEF_RANGE * 2));

@@ -5,6 +5,7 @@ import { freePop, crewOf } from '../../game/city/query.js';
 import { KINDS as CITY_KINDS } from '../../data/citykinds.js';
 import { trainCheck, standsOf, standRoute } from '../../game/aircraft.js';
 import { heliTrainCheck, isHeliport } from '../../game/helipad.js';
+import { alertable, alertOn } from '../../game/scramble.js';
 import { CITY } from '../../data/city.js';
 import { BALANCE } from '../../data/balance.js';
 import { UNITS } from '../../data/units.js';
@@ -293,6 +294,19 @@ export const cardMethods = {
           action: () => this.setMode('landAt'),
         }),
       );
+      // Alarmrotte (Paket „Alarmrotte“): Bereitschaft der Jets mit Luft-Luft-Waffe an oder aus
+      const qra = jets.filter(alertable);
+      if (qra.length) {
+        const on = qra.every(alertOn);
+        const A = CITY.air.scramble;
+        card.push(
+          entry(on ? 'Bereitschaft aus' : 'Bereitschaft an', 'Q', {
+            tip: `Alarmbereitschaft (Q, ${on ? 'an' : 'aus'}): startbereite Jets mit Luft-Luft-Waffe starten von selbst nach ${A.react} s, sobald ein sichtbares feindliches Luftfahrzeug ${A.radius} px um einen Tower (ohne Tower ${A.radiusNoAtc} px um die Stellplätze) fliegt, fangen es ab und landen wieder · je Ziel ein Jet, höchstens ${A.maxJets} · danach ${A.cooldown} s Sperrzeit · ein Befehl beendet den Alarmflug`,
+            active: on,
+            action: () => this.issue({ type: 'scramble', ids: qra.map((u) => u.id), on: !on }),
+          }),
+        );
+      }
     }
     if (units.some((u) => u.def.digger)) {
       card.push(

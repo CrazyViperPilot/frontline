@@ -48,6 +48,7 @@ Die Reihenfolge ist Absicht; ein neues System kommt an die Stelle, deren Ergebni
 | 4 | `updateGarrison`, `updateTowers` | `garrison.js`, `tower.js` | Ein- und Aussteigen in Stadthäuser und Gefechtstürme; Dachaufbauten werden fertig |
 | 5 | `updateFormations` | `formation.js` | Tempo geschlossener Gruppen |
 | 6 | `updateMovement` | `movement.js` | zurückgestellte Wege planen (`planPending`, `pathplan.js`), Wege fahren, Verfolgen (ohne Jets); Rücksetzen von `pathWork`, `pathShare` am Ende von `update` |
+| 6a′ | `updateScramble` | `scramble.js` | Alarmrotte: Jets in Bereitschaft gegen Luftziele am Fliegerhorst starten (über `cmdAttack`), Ziel weg → Landung (`cmdLand`); vor `updateAircraft` |
 | 6a | `updateAircraft` | `aircraft.js` | Jets: fliegen, kreisen, Rückkehr, Landung, Rollen über Straßen und Bahn, Tanken und Nachladen am Stellplatz aus Kerosintank und Munitionslager, Absturz ohne Treibstoff |
 | 6b | `updateHelis` | `helipad.js` | Hubschrauber mit Heliport: senkrecht starten und landen, Luftraumsperre, gelandet tanken und nachladen aus Kerosintank und Munitionslager, Heimflug |
 | 7 | `updateCrates` | `crates.js` | Kisten aufheben, tragen, einlagern, Kistengeld |
@@ -130,6 +131,7 @@ Neue Befehle: Rezept `docs/rezepte/neuer-befehl.md`.
 | `mortarTarget` | `ids, x, y` | `cmd/units.js` `cmdMortarTarget` | Mörser auf einen Punkt richten |
 | `layMine` | `ids, x, y` | `mines.js` `cmdLayMine` | Pionier legt an einer Stelle eine getarnte Panzermine (Munition aus dem Teamlager, höchstens `BALANCE.sapper.maxMines` je Pionier) |
 | `land` | `ids, airportId` | `aircraft.js` `cmdLand`, Heliport als Ziel `helipad.js` `cmdHeliLand` | Flugzeuge landen am Fliegerhorst des eigenen Stellplatzes `airportId` (Anflug, Bahn, Ausrollen, Rollen zum Stellplatz) |
+| `scramble` | `ids, on?` | `scramble.js` `cmdScramble` | Alarmbereitschaft der gewählten Jets mit Luft-Luft-Waffe an (`on: true`) oder aus; ohne `on` umschalten |
 | `cityUpgrade` | `buildingId` | `city/commands.js` `cmdCityUpgrade` | Stellplatz eine Stufe ausbauen (Überdachung, Stahlbeton-Shelter) gegen Geld, BM und Stahl |
 | `layBridge` | `ids, c, r` | `river.js` `cmdLayBridge` | Brückenleger legt auf einer Flusszelle am Ufer eine Behelfsbrücke (E14); Schritt `updateBridgeLayers` (nach `updateBridges`) |
 | `dig` | `ids, c0, r0, c1, r1, append?` | `excavator.js` `cmdDig` | Bagger räumen die Zellen des Rechtecks nacheinander (Zonenstraße, Bäume, Häuser, eigene Gebäude, Schutt und gegnerische Straßen) |
@@ -237,6 +239,7 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Einfuhr der Rohwaren, Güterbahnhof | `stadt-wirtschaft` | `game/transport.js` | `game/city/roadnet.js`; KI `ai/city/roads.js` | `import`, `flow` |
 | Industriepark der Stadt-KI | `ki` | `ai/city/station.js` | `ai/city/park.js` | `industriepark` |
 | Fliegerhorst, F-16, F-22, Su-27, Anschluss | `stadt-luft` | `game/aircraft.js` | KI `ai/city/airbase.js`; Bild `render/airbase.js` | `airbase`, `airfield-link` |
+| Alarmrotte (Jets starten selbst gegen Luftziele) | `stadt-luft` | `game/scramble.js` | KI `ai/army/combat.js` `jets()` | `scramble` |
 | Heliport als Landeplatz | `stadt-luft` | `game/helipad.js` | KI `ai/army/produce.js` | `helipad` |
 | KI allgemein | `ki` | `ai/ai.js` | – | `ai` |
 | Steuerung, Befehlskarte, HUD, Hilfe | `steuerung-oberflaeche` | `game/commands.js` | UI `ui/controller.js`, `ui/hud.js` | `commands` |

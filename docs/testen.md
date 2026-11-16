@@ -58,6 +58,7 @@ npm run metrics                   # KI-Kennzahlen: 3 Seeds × 15 min KI gegen KI
 - Mit `?debug=1` ist die Partie unter `window.__frontline.session()` erreichbar.
 - `shot(name)` macht ein Foto.
 - Das Skript ist die Vorlage für eigene Prüfskripte.
+- Beispiel: `node tools/smoke-scramble.mjs` legt einen Fliegerhorst an, löst einen Alarmstart aus (Alarmrotte) und fotografiert den rollenden und den fliegenden Jet nach `.smoke/scramble/`.
 - Mit `device: 'tablet'` bzw. `'phone'` öffnet es das Spiel mit Bildschirm, Pixeldichte und Touch des Geräts.
 - `press(sel)` tippt dort (sonst Klick).
 - `measureFps(g, ms)` misst Bildrate und langsamstes Bild.

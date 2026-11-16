@@ -7,6 +7,7 @@ import { seasonal } from './season.js';
 import { makeFogLayer, updateFogLayer } from './renderer.js';
 import { hexA, CRATE_MARK } from './sprites.js';
 import { KIND_ID } from '../data/citykinds.js';
+import { CITY } from '../data/city.js';
 
 const TILE = BALANCE.map.tile;
 const W = BALANCE.map.width;
@@ -175,6 +176,17 @@ export class Minimap {
       const s = 3.6 * px;
       ctx.fillRect(c.x - s / 2, c.y - s / 2, s, s);
       ctx.strokeRect(c.x - s / 2, c.y - s / 2, s, s);
+    }
+
+    // Alarmrotte (Paket „Alarmrotte“): Ort des letzten Alarmstarts des eigenen Teams, CITY.air.scramble.mark s lang ein pulsierender Ring
+    const qm = g.teams[team]?.qraMark;
+    if (qm && g.time - qm.at < CITY.air.scramble.mark) {
+      const f = ((g.time - qm.at) % 1.2) / 1.2;
+      ctx.strokeStyle = `rgba(255,80,60,${(1 - f).toFixed(2)})`;
+      ctx.lineWidth = 1.6 * px;
+      ctx.beginPath();
+      ctx.arc(qm.x, qm.y, (4 + f * 10) * px, 0, Math.PI * 2);
+      ctx.stroke();
     }
 
     // Kamerarahmen

@@ -19,6 +19,7 @@ Regeln: PRD.md und `docs/prd/`, Werte `js/data/`. Stadt: `city/CLAUDE.md`. Jede 
 - `transport.js`, `flow.js` – Straßentransport der Stadt; Ressourcenanzeige (liest nur). `transportOf`, `resourceFlow`
 - `roads.js`, `roadwar.js`, `excavator.js` – Kartenstraßen, Straßen zerstören/räumen, Bagger. `updateRoadWar`, `cmdDig`
 - `aircraft.js`, `helipad.js`, `paradrop.js` – Fliegerhorst und Jets, Heliport, Absetzen aus der C-130. `runwaysOf`, `trainCheck`, `heliTrainCheck`
+- `scramble.js` – Alarmrotte: Jets in Bereitschaft starten selbst gegen Luftziele. `updateScramble`, `cmdScramble`, `alertOn`
 - `abilities.js`, `mines.js` – Nebel, Minen, Selbstheilung (Forschung); Pionier-Minen. `cmdAbility`, `cmdLayMine`
 - `medic.js`, `recovery.js`, `fpv.js` – Einheiten mit eigener Logik: Sanitäter, Bergepanzer, Kamikazedrohne
 - `fog.js` – Nebel des Krieges, `version` zählt Neuberechnungen. `Fog`

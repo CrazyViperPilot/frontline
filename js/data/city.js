@@ -207,6 +207,18 @@ export const CITY = {
     // Zellen sep s, mit Tower (atcRadius) sepAtc s. Heimflug, wenn der Treibstoff nur noch für den Heimweg × home + reserve s reicht
     // oder die Bordwaffen leer sind.
     heli: { liftTime: 2.5, sep: 6, sepAtc: 2, sepRadius: 6, home: 1.3, reserve: 6 },
+    // Alarmrotte (Paket „Alarmrotte“, Logik js/game/scramble.js, PRD docs/prd/stadt-luft.md): Jets mit Luft-Luft-Waffe in Bereitschaft
+    // starten von selbst, sobald ein für das Team sichtbares feindliches Luftfahrzeug im Alarmradius liegt. Gemessen an KI gegen KI
+    // (Seeds 3, 7, 11, 21, bis 40 min): feindliche Luftfahrzeuge kamen nie näher als rund 4400 px an die Hauptstadt; der Radius schützt
+    // darum Stadt und Fliegerhorst gegen Überfälle (Spieler), nicht die Front.
+    scramble: {
+      radius: 2000, // px um jeden fertigen Tower: deckt Fliegerhorst, Stadt und Anflug (rund 5 s Flug einer F-16), weit über atcSight
+      radiusNoAtc: 900, // px um jeden fertigen Stellplatz (Fliegerhorst ohne Tower: kleiner, kein Radar)
+      react: 4, // s vom Erfassen bis zum Losrollen (Reaktionszeit der Besatzung), danach normaler Start über Rollweg und Bahn
+      maxJets: 4, // höchstens so viele Jets je Team gleichzeitig im Alarm (je Ziel einer, mindestens einer)
+      cooldown: 60, // s Sperrzeit nach einem Alarmstart, bis derselbe Jet wieder von selbst startet; ebenso Abstand der Meldungen je Team
+      mark: 8, // s, so lange markiert die Minimap den Ort des letzten Alarms (nur Anzeige)
+    },
     tank: { cap: [0, 300, 600, 1000], rate: [0, 3, 6, 10], fill: [0, 6, 12, 20] }, // Kerosin: Lager, Tanken je s, Befüllen je s
     depot: { cap: [0, 400, 800, 1400], rate: [0, 6, 12, 20], fill: [0, 10, 20, 32] }, // Munition: Lager, Nachladen je s, Befüllen je s
   },

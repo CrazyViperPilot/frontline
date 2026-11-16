@@ -634,6 +634,7 @@ export class Sound {
     const text = ev.text ?? '';
     if (/ bereit$/.test(text)) this.play('ready');
     else if (/ fertig$/.test(text)) this.play('built');
+    else if (text.startsWith('Alarmstart')) this.play('alarm'); // Alarmrotte (Paket „Alarmrotte“)
     else if (text === 'Basis wird angegriffen') {
       this.play('alarm');
       if (this.game) this.music.alert(this.game.time);

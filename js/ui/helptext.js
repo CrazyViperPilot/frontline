@@ -94,6 +94,11 @@ export const KEYS = [
   ['L (F-16)', 'Flugzeug gewählt: Landen, dann einen eigenen Stellplatz anklicken (oder Rechtsklick darauf) · Start und Landung wie ein Flugzeug: ' +
     'Rollen über Straßen und Rollfeld zur Bahn, Startlauf, Anflug, Landung, Ausrollen, Rollen zum Stellplatz · Soldaten treffen keine Flugzeuge, Panzer-MGs kaum, ' +
     'Kampfhubschrauber mittel, Flak und SAM gut'],
+  ['Q (Alarmrotte)', `Jets mit Luft-Luft-Waffe (F-16, F-22, Su-27) gewählt: Alarmbereitschaft an/aus (neue Jets: an) · ` +
+    `startbereit am Stellplatz starten sie nach ${AIR.scramble.react} s von selbst, sobald ein sichtbares feindliches Luftfahrzeug ` +
+    `${AIR.scramble.radius} px um einen Tower fliegt (ohne Tower ${AIR.scramble.radiusNoAtc} px um die Stellplätze) · je Ziel ein Jet, höchstens ` +
+    `${AIR.scramble.maxJets}, Meldung „Alarmstart“ mit Ton und Ring auf der Minimap · Ziel abgeschossen oder außer Sicht: Landung · ` +
+    `danach ${AIR.scramble.cooldown} s Sperrzeit je Jet · ein eigener Befehl beendet den Alarmflug`],
   ['E', `Einheiten mit Granaten oder Raketen gewählt (Panzer, Schützenpanzer, Panzerabwehr, Kampfhubschrauber, Haubitze): Beschuss: Straße beschießen, ` +
     `dann eine Straßenzelle anklicken (Shift: mehrere) · nach ${CITY.roadWar.hp} Trefferpunkten wird sie zu Schutt und unterbricht alle Wege darüber (Lieferungen, Pendler, ` +
     `Versorgung der Ausbildung) · Brücken, Bahn und Rollfeld nicht · von selbst schießt niemand auf Straßen`],

@@ -9,6 +9,7 @@ import { careOf } from '../../game/city/care.js';
 import { transportInfo, transportOf, supplyOf } from '../../game/transport.js';
 import { standRoute, runwaysOf, runwayBusy, freeSpace } from '../../game/aircraft.js';
 import { padBusy } from '../../game/helipad.js';
+import { alertText } from '../status.js';
 import { CITY_TIP } from '../citypanel.js';
 import { esc, bar, hpColor, fmtDe, fmtRate } from './common.js';
 
@@ -89,7 +90,12 @@ export const cityInfoMethods = {
     const up = CITY.air.upgrade[lv + 1];
     if (up) h += line(`Ausbauen (U) zu ${CITY.air.standName[lv + 1]}: ${up.money} Geld, ${up.bm} BM${up.steel ? `, ${up.steel} Stahl` : ''} · dann Schaden ${Math.round(CITY.air.shelter[lv + 1] * 100)} %`);
     // je Platz ein Flugzeug (CITY.air.standJets): alle nennen, dazu die freien Plätze
-    const parts = jets.map((jet) => `${jet.def.name}: ${jet.parked ? (jet.jet.ready ? 'startbereit' : 'wird betankt und munitioniert') : 'unterwegs'}`);
+    const parts = jets.map((jet) => {
+      // Alarmrotte: Alarmstart bzw. Alarmflug statt des Zustands, am Stellplatz dazu „in Bereitschaft“ oder „Bereitschaft aus“
+      const st = jet.jet.qra ? alertText(jet) : jet.parked ? (jet.jet.ready ? 'startbereit' : 'wird betankt und munitioniert') : 'unterwegs';
+      const qra = jet.parked && !jet.jet.qra ? alertText(jet) : '';
+      return `${jet.def.name}: ${st}${qra ? `, ${qra}` : ''}`;
+    });
     if (b.queue?.length) parts.push(`${b.queue.length} in Bau`);
     h += line(parts.length ? parts.join(' · ') : 'Frei');
     h += line(`${Math.max(0, freeSpace(g, b))} von ${CITY.air.standJets} Plätzen frei`);

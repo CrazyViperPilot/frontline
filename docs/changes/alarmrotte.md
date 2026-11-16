@@ -1,0 +1,1 @@
+**Alarmrotte** (§15 „Alarmrotte“, Taste Q): Jets mit Luft-Luft-Waffe in Alarmbereitschaft starten von selbst, sobald ein sichtbares feindliches Luftfahrzeug am Fliegerhorst auftaucht, fangen es ab und landen wieder; Meldung mit Alarmton und Ring auf der Minimap, Sperrzeit je Jet, die KI nutzt es ab Normal.

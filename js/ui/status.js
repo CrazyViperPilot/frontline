@@ -1,5 +1,14 @@
 // Lesende Hilfen für die UI: Auftragstext, FOB-Namen (kein DOM, keine Änderung am Spiel). Der Bauzustand von Baustellen
 // (builderState) liegt seit v5.64 in js/game/construction.js, damit der Renderer nichts aus js/ui/ braucht (Review-Paket P11).
+import { alertable, alertOn } from '../game/scramble.js';
+
+/** Zustand der Alarmrotte eines Jets (Paket „Alarmrotte“): Alarmstart, Alarmflug, in Bereitschaft, Bereitschaft aus; sonst leer. */
+export function alertText(u) {
+  if (!alertable(u)) return '';
+  if (u.jet?.qra?.phase === 'react') return 'Alarmstart';
+  if (u.jet?.qra) return 'Alarmflug';
+  return alertOn(u) ? 'in Bereitschaft' : 'Bereitschaft aus';
+}
 
 /** Name einer eigenen FOB nach Reihenfolge der Gründung: „FOB 2“ bzw. „FOB 2 (Baustelle)“. */
 export function fobLabel(game, b) {
@@ -14,10 +23,12 @@ export function fobLabel(game, b) {
 /** Kurztext des Auftrags einer eigenen Einheit (Auftragstyp aus Engine). */
 export function orderText(game, u) {
   const o = u.order;
+  if (u.jet?.qra) return alertText(u); // Alarmstart bzw. Alarmflug (Paket „Alarmrotte“)
   switch (o.type) {
     case 'idle':
       if (u.house) return 'Im Gebäude';
       if (u.crate) return 'Trägt eine Versorgungskiste';
+      if (alertable(u)) return `Bereit · ${alertText(u)}`; // Jet mit Luft-Luft-Waffe: Alarmbereitschaft
       return u.def.builder ? 'Bereit (hilft bei Baustellen)' : 'Bereit';
     case 'move':
       return 'Bewegung';

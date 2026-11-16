@@ -92,6 +92,7 @@ const ASSETS = [
   './js/game/excavator.js',
   './js/game/roadwar.js',
   './js/game/helipad.js',
+  './js/game/scramble.js',
   './js/game/zone.js',
   './js/game/conquest.js',
   './js/game/modes.js',

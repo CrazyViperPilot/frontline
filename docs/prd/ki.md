@@ -210,6 +210,9 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   Alle 6 s schickt sie startbereite Jets zu zweit los (`JET_EVERY`, `JET_GROUP`):
   zuerst gegen gesehene Hubschrauber und Flugzeuge, dann gegen Fahrzeuge in der Zone oder nahe ihrer Basis, sonst auf Angriffsmarsch über die Zone.
   Ihre Wellen, Verteidigung und Rückzüge führen Jets nicht.
+- **Alarmrotte (Paket „Alarmrotte“):** Normal und Schwer lassen ihre Jets mit Luft-Luft-Waffe in Alarmbereitschaft (§15 „Alarmrotte“), Leicht schaltet sie ab
+  (`BALANCE.difficulty[…].scramble`, Befehl `scramble` in `jets()`, `js/ai/army/combat.js`).
+  Jets im Alarm schickt sie nicht zusätzlich auf eigene Einsätze.
 
 ### KI-Konstanten (Quelle: `js/data/ai.js` (Armee), `CITY.ai` in `js/data/city.js` (Stadt), `BALANCE.difficulty` in `js/data/balance.js`; hier zum Nachschlagen für Erweiterungen)
 

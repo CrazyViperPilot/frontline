@@ -18,6 +18,7 @@
 | B | Baumenü (Baufahrzeug: alles, Soldaten: nur Mauer/Tor); darin E Mauer, R Tor, T Mörser, Z Flugabwehr, C Phalanx, F Gefechtsturm, X Bohrer, G Sendemast (wenn eingeschaltet) · FOBs baut das FOB-Fahrzeug (D) |
 | Mörser gewählt | G Ziel wählen (oder Rechtsklick auf die Karte) · C Ziel löschen |
 | Bohrer gewählt | G aktivieren |
+| Jets mit Luft-Luft-Waffe gewählt | **Q Bereitschaft** an/aus (Alarmrotte, §15): startbereite Jets starten von selbst gegen feindliche Luftfahrzeuge am Fliegerhorst |
 | Transportfahrzeuge | Infanterie wählen + **I** (Einsteigen, dann Fahrzeug antippen) oder Rechtsklick auf LKW / Baufahrzeug / Schützenpanzer / Hubschrauber = einsteigen · Fahrzeug wählen + **O** und Zielpunkt = absetzen · Transporthubschrauber: L/U/T wie LKW |
 | Versorgungskisten | Infanterie wählen + Rechtsklick/Tippen auf eine Kiste = holen (der nächste trägt, die übrigen begleiten) · Träger + Rechtsklick auf eigene FOB = dorthin bringen · **K** = Kiste ablegen |
 | Häuserkampf | Infanterie wählen + Rechtsklick/Tippen auf ein Haus der Stadt (oder **I**, dann Haus antippen) = besetzen · (weiter unten) |

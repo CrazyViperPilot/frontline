@@ -29,7 +29,7 @@ function howtoHtml() {
         <li>Werke, Wohnen und Gewerbe liegen an Straßen. Rohwaren fahren zu den Werken, Produkte zum Lager der Hauptstadt; ohne Straße keine Lieferung. ` +
         `Straßen können voll werden (Stau: gelb, rot), dann kommen Waren und Pendler langsamer. Fahrzeuge, Reparaturen und Munition brauchen Stahl; ` +
         `Gewerbe braucht Baumaterial vom Lager. F-16 tanken Kerosin am Kerosintank des Fliegerhorsts, Hubschrauber gelandet auf ihrem Heliport (ein Hubschrauber je Heliport, ` +
-        `Kerosintank und Munitionslager in der Nähe).</li>
+        `Kerosintank und Munitionslager in der Nähe). Jets mit Luft-Luft-Waffe stehen in Alarmbereitschaft (Taste Q): Sie starten von selbst gegen feindliche Flugzeuge am Fliegerhorst.</li>
         <li>Spielstände: Die Liste oben zeigt alle Partien (Spielzeit, Punkte, Schwierigkeit, Version); je Zeile laden, umbenennen oder löschen. ` +
         `Beendete Partien bleiben zum Ansehen in der Liste.</li>
         <li>Konto (oben, optional): Ohne Konto bleiben Spielstände auf diesem Gerät, und jede Partie startet mit dem Startbetrag und zählt nicht für eine Kasse. ` +

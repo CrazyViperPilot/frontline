@@ -63,6 +63,21 @@
     Genau auf der Mitte bleiben der Punkt am Stellplatz, die Einfahrt in die Bahn und der Startlauf; hinter einem Jet in gleicher Richtung hält er wie bisher Abstand.
     **Landen (L)**: danach einen eigenen Stellplatz anklicken (der Jet nimmt seinen eigenen oder einen freien an derselben Bahn).
     Stellplatz oder Tower gewählt: **Staffel (W)** wählt die Jets aller Stellplätze an derselben Bahn.
+  - **Alarmrotte (Paket „Alarmrotte“, Werte `CITY.air.scramble`, Code `js/game/scramble.js`):** Jets mit Luft-Luft-Waffe (F-16, F-22, Su-27) stehen in **Alarmbereitschaft**;
+    neu ausgebildete Jets sind es von selbst, A-10, C-130 und U-2 können es nicht.
+    **Bereitschaft (Q)** schaltet sie für die gewählten Jets an oder aus; Infofeld des Jets und des Stellplatzes zeigen „in Bereitschaft“, „Alarmstart“ oder „Alarmflug“.
+    Auslöser: ein für das Team sichtbares feindliches Luftfahrzeug in der Luft (Jet, Hubschrauber, Drohne) bis **2000 px** um einen fertigen Tower (`radius`)
+    oder bis **900 px** um einen fertigen Stellplatz (`radiusNoAtc`, Fliegerhorst ohne Tower).
+    Getarnte oder nicht sichtbare Ziele lösen nicht aus, die U-2 in großer Höhe nur für Jets, die sie treffen können (F-22, `antiHighAlt`).
+    Es starten nur Jets, die am Stellplatz stehen, betankt, bewaffnet und heil sind und keinen Befehl haben; je erfasstes Ziel einer, insgesamt höchstens **4** (`maxJets`).
+    Nach **4 s** (`react`) rollen sie wie nach einem Befehl über Rollweg und Bahn los (Bahnsperre und Tower wie sonst) und greifen das Ziel an.
+    Ist es abgeschossen, außer Sicht oder in einem gesperrten Viertel (Eroberung), landen sie auf ihrem Stellplatz; leer geschossen oder knapp an Treibstoff kehren sie wie bisher heim.
+    Nach einem Alarmstart startet derselbe Jet **60 s** lang nicht wieder von selbst (`cooldown`).
+    Ein eigener Befehl hat immer Vorrang und beendet den Alarmflug.
+    Meldung „Alarmstart“ mit Alarmton und rotem Ring auf der Minimap (8 s, `mark`), höchstens einmal je Sperrzeit und Team.
+    Ziele in einem gesperrten Viertel lösen keinen Alarm aus.
+    Gemessen (KI gegen KI, Seeds 3, 7, 11, 21, Normal 20 min und Schwer 40 min): feindliche Luftfahrzeuge kamen nie näher als rund 4400 px an die Hauptstadt,
+    die Regel schützt also Fliegerhorst und Stadt gegen gezielte Überfälle, nicht die Front.
   - **Aussehen:** Alle Bausteine sind gemalt wie die Werke (2D und Iso, je Maßstab einmal gemalt).
     **Stellplatz** Stufe 1 Beton mit Fugen, je Platz eine gelbe Führungslinie bis zur Haltemarke, Fahrwerksmarken, Bodenstromgerät, Feuerlöscher, Flutlicht und Leitkegeln;
     Stufe 2 **Überdachung**: Stahlstützen auf Fundamenten mit Kopfbändern, Traufpfetten, drei Fachwerkbinder, seitlicher Windschutz aus Wellblech, Satteldach aus Wellblech mit Rinnen und First,

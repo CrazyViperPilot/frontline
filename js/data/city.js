@@ -310,7 +310,6 @@ export const CITY = {
     linkTries: 4,
     linkRetry: 120, // s: eine Startzelle, von der aus kein Weg ging (eingeschlossene Lücke), so lange nicht erneut versuchen
     linkBm: 200, // Baumaterial, das im Lager der Hauptstadt bleiben muss, bevor die KI ihr Netz verlängert (Anschlüsse der Werke gehen vor)
-    runwayLink: 12, // Zellen: mit Anschlusspflicht darf die Bahn der KI so weit von einer Straße zum Lager entfernt liegen; sie zieht die Straße gleich danach
     linkOutlets: 2, // so viele Ausgänge (freie Zelle am Netz mit freiem Nachbarn außerhalb) lässt die KI beim Bauen offen, damit ihr Netz nicht eingeschlossen wird; seit Paket „Offenes Netz“ gilt das auch ohne Baugebiet (gemessen: 4 oder 6 Ausgänge bremsen die Werke, 2 hält das Netz offen)
     // Güterbahnhof der KI (Paket „Import“, seit Paket „Industriepark“ als Park, Logik aiStation/parkSite in js/ai/cityai.js). Den ersten
     // Park legt sie voraus an (später ist das Netz am Lager rundum bebaut und es fehlt der Platz), einen zweiten (stationMax) nur bei

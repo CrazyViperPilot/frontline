@@ -4,11 +4,11 @@
 import { CITY } from '../../data/city.js';
 import { KINDS, KIND_ID, FLAT_KINDS } from '../../data/citykinds.js';
 
-/** Flache Zellen (seit v5.35): Straße, Start-/Landebahn und Rollfeld (seit v5.37) wachsen nicht, haben kein Gebäude und zählen als Straßenanschluss. */
+/** Flache Zellen (seit v5.35): Straße, Start-/Landebahn und Rollfeld (seit v5.37) wachsen nicht und haben kein Gebäude. Nur die Straße zählt
+ *  als Verkehrsweg und Anschluss (roadAt); Bahn und Rollfeld sind Fahrflächen der Flugzeuge (taxiable). */
 const FLAT_ID = new Uint8Array(KINDS.length + 1);
 for (const k of FLAT_KINDS) FLAT_ID[KIND_ID[k]] = 1;
 export const isFlat = (id) => FLAT_ID[id] === 1;
-const RAIL_ID = KIND_ID.rail;
 
 /** Liegt die Zelle mit linker oberer Ecke (cx0, cy0) unter oder am Rand einer Hauptstadt (CITY.fobMargin)? */
 export function nearMain(mains, T, cx0, cy0) {
@@ -166,11 +166,28 @@ export function releaseCell(game, c, col, row) {
   });
 }
 
-/** Eigene Straße oder Stadtstraße der Karte (Zone, Brücke; seit v5.03) in Zelle i? */
+/**
+ * Eigene Straße oder Stadtstraße der Karte (Zone, Brücke; seit v5.03) in Zelle i? Der einzige Begriff für „Straße“: Warenwege, Pendler,
+ * Anschluss des Baugebiets, Wachstum. Bahn, Rollfeld und Gleis zählen nicht (seit Paket „Fliegerhorst-Anschluss“).
+ */
 export function roadAt(c, i) {
-  // seit v5.35 auch die Start-/Landebahn (Rollen, Anschluss); ein Gleis (Paket „Import“) ist keine Straße: darauf fährt keine Ware,
-  // also darf es auch keinen Bauanschluss und kein Wachstum geben
-  return (isFlat(c.kind[i]) && c.kind[i] !== RAIL_ID) || !!c.mapRoads?.[i];
+  return c.kind[i] === KIND_ID.road || !!c.mapRoads?.[i];
+}
+
+/** Fläche, auf der Flugzeuge rollen: Straße, Rollfeld oder Bahn (aircraft.js: Rollweg, Stellplatz-Zugang). Waren fahren nur über roadAt. */
+export function taxiable(c, i) {
+  const k = c.kind[i];
+  return roadAt(c, i) || k === KIND_ID.taxi || k === KIND_ID.runway;
+}
+
+/** Rollflächen direkt an einem Gebäude mit Anker a (Stellplatz: Zugang für die Jets, ohne Straße). */
+export function taxiAccess(c, a) {
+  const cells = cellsOf(c, anchorOf(c, a));
+  const out = [];
+  for (const j of cells) {
+    for (const n of nbrsOf(c, j)) if (!out.includes(n) && taxiable(c, n)) out.push(n);
+  }
+  return out;
 }
 
 /** Hat die Zelle eine Straße als direkten Nachbarn (4er-Nachbarschaft)? Stadtstraßen der Karte zählen mit. */
@@ -223,7 +240,7 @@ export function hasRoad(c, col, row) {
 }
 
 /** Straßenzellen (4er-Nachbarschaft) um die Zellen `cells`, ohne Doppelte, an `out` angehängt. */
-function roadsAround(c, cells, out) {
+export function roadsAround(c, cells, out) {
   for (const j of cells) {
     const q = j % c.cols;
     const r = (j - q) / c.cols;
@@ -280,6 +297,7 @@ export const BUILD_BLOCK = {
   quarter: 'Nur im eigenen Viertel bauen',
   road: 'Nur an einer Straße bauen, die mit dem Lager der Hauptstadt verbunden ist',
   air: 'Stellplatz braucht eine Verbindung zur Startbahn (direkt oder über das Rollfeld)',
+  heli: 'Heliport braucht eine Straße zum Lager oder ein Rollfeld, das mit einer Bahn verbunden ist',
 };
 
 /**
@@ -347,10 +365,13 @@ export function roadLinked(game, c) {
   return mask;
 }
 
-/** Gilt die Anschlusspflicht für die Zellenart `kind`? Nicht für flache Zellen (Straße, Gleis, Bahn, Rollfeld). */
+/**
+ * Gilt die Anschlusspflicht für die Zellenart `kind`? Nicht für flache Zellen (Straße, Gleis, Bahn, Rollfeld). Der Stellplatz hängt an
+ * der Bahn (airLinkWhy), der Tower steht frei (Paket „Fliegerhorst-Anschluss“): beide ohne Straße.
+ */
+const NO_ROAD_LINK = new Set(['stand', 'atc']);
 function needsLink(game, kind) {
-  // Der Stellplatz ist vom Straßenanschluss befreit (ersetzt durch die Bahn-Regel airLinkWhy, immer gültig, auch ohne Baugebiet)
-  return !!game.buildRules && CITY.build.needRoad && kind !== 'stand' && !(kind && isFlat(KIND_ID[kind]));
+  return !!game.buildRules && CITY.build.needRoad && !NO_ROAD_LINK.has(kind) && !(kind && isFlat(KIND_ID[kind]));
 }
 
 /**
@@ -360,6 +381,7 @@ function needsLink(game, kind) {
  */
 export function roadLinkWhy(game, c, cells, kind) {
   if (!needsLink(game, kind)) return null;
+  if (kind === 'heliport') return heliLinkWhy(game, c, cells);
   const mask = roadLinked(game, c);
   if (cells.some((j) => mask[j])) return null;
   const id = KIND_ID[kind];
@@ -373,6 +395,18 @@ export function roadLinkWhy(game, c, cells, kind) {
     }
   }
   return 'road';
+}
+
+/**
+ * Heliport (Paket „Fliegerhorst-Anschluss“): an einer Straße zum Lager oder an einem Rollfeld, das über Rollfeld und Bahn an einer gültigen
+ * Bahn hängt (airLinked). Ergibt 'heli' oder null. Ohne Baugebiet gilt die Regel nicht (needsLink).
+ */
+function heliLinkWhy(game, c, cells) {
+  const mask = roadLinked(game, c);
+  if (cells.some((j) => mask[j])) return null;
+  const air = airLinked(c);
+  if (cells.some((j) => nbrsOf(c, j).some((n) => c.kind[n] === KIND_ID.taxi && air[n]))) return null;
+  return 'heli';
 }
 
 // Feindnähe je Team (Zwischenspeicher, nicht im Spielstand): Uint8Array über das Stadtraster, 1 = Zellmitte höchstens CITY.build.enemyR

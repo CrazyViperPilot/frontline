@@ -12,7 +12,7 @@ import { BALANCE } from '../data/balance.js';
 import { CITY } from '../data/city.js';
 import { UNITS } from '../data/units.js';
 import { KIND_ID } from '../data/citykinds.js';
-import { roadAt, accessCells, runwayGroups } from './city/cells.js';
+import { taxiable, taxiAccess, runwayGroups } from './city/cells.js';
 import { resolveTarget, canAttack, isFoe } from './entities.js';
 import { setIdle } from './movement.js';
 import { modOf } from './research.js';
@@ -113,9 +113,10 @@ function buildAir(c) {
     rw.cy = (rw.ends[0].y + rw.ends[1].y) / 2;
     rw.atc = false;
     if (valid) {
+      // Ein Tower lotst die Bahn, wenn eine ihrer Zellen im Umkreis atcRadius Zellen um seine Mitte liegt (Paket „Fliegerhorst-Anschluss“)
       for (const [ia, e] of c.ents) {
         if (!e.alive || c.kind[ia] !== KIND_ID.atc || !c.level[ia]) continue;
-        if (dist(e.x, e.y, rw.cx, rw.cy) <= AIR.atcRadius * S + (rw.len * S) / 2) rw.atc = true;
+        if (cells.some((i) => dist(e.x, e.y, c.x0 + ((i % c.cols) + 0.5) * S, c.y0 + (Math.floor(i / c.cols) + 0.5) * S) <= AIR.atcRadius * S)) rw.atc = true;
       }
       for (const i of cells) byCell[i] = runways.length + 1;
     }
@@ -130,13 +131,13 @@ export function runwaysOf(game, team) {
   return c ? airOf(c).runways : [];
 }
 
-/** Breitensuche über Straßen- und Bahnzellen von `starts` bis zur ersten Zelle mit goal(i); Weg als Zellenliste oder null. */
+/** Breitensuche über Straßen, Rollfeld und Bahn (taxiable) von `starts` bis zur ersten Zelle mit goal(i); Weg als Zellenliste oder null. */
 function cellPath(c, starts, goal) {
   const n = c.cols * c.rows;
   const prev = new Int32Array(n).fill(-2);
   const queue = [];
   for (const s of starts) {
-    if (prev[s] !== -2 || !roadAt(c, s)) continue;
+    if (prev[s] !== -2 || !taxiable(c, s)) continue;
     prev[s] = -1;
     queue.push(s);
   }
@@ -152,7 +153,7 @@ function cellPath(c, starts, goal) {
     for (const [x, y] of [[q - 1, r], [q + 1, r], [q, r - 1], [q, r + 1]]) {
       if (x < 0 || y < 0 || x >= c.cols || y >= c.rows) continue;
       const j = y * c.cols + x;
-      if (prev[j] !== -2 || !roadAt(c, j)) continue;
+      if (prev[j] !== -2 || !taxiable(c, j)) continue;
       prev[j] = i;
       queue.push(j);
     }
@@ -166,7 +167,7 @@ export function standRoute(game, e) {
   if (!c) return null;
   const st = airOf(c);
   if (st.paths.has(e.id)) return st.paths.get(e.id);
-  const cells = cellPath(c, accessCells(c, e.cityCell), (i) => st.byCell[i] > 0);
+  const cells = cellPath(c, taxiAccess(c, e.cityCell), (i) => st.byCell[i] > 0);
   const res = cells ? { cells, rw: st.runways[st.byCell[cells[cells.length - 1]] - 1] } : null;
   st.paths.set(e.id, res);
   return res;
@@ -516,7 +517,7 @@ function stepRollout(game, u, dt) {
   const q = Math.floor((u.x - c.x0) / c.cell);
   const r = Math.floor((u.y - c.y0) / c.cell);
   const here = r * c.cols + q;
-  const goal = new Set(accessCells(c, e.cityCell));
+  const goal = new Set(taxiAccess(c, e.cityCell));
   const cells = cellPath(c, [here], (i) => goal.has(i));
   const pts = (cells ?? []).map((i, k) => ({ ...cellCenter(c, i), enter: 0, side: k > 0 }));
   u.jet.slot = takeSlot(game, u, e); // Platz für die Einfahrt reservieren

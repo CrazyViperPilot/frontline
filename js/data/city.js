@@ -312,7 +312,7 @@ export const CITY = {
     linkRetry: 120, // s: eine Startzelle, von der aus kein Weg ging (eingeschlossene Lücke), so lange nicht erneut versuchen
     linkBm: 200, // Baumaterial, das im Lager der Hauptstadt bleiben muss, bevor die KI ihr Netz verlängert (Anschlüsse der Werke gehen vor)
     linkOutlets: 2, // so viele Ausgänge (freie Zelle am Netz mit freiem Nachbarn außerhalb) lässt die KI beim Bauen offen, damit ihr Netz nicht eingeschlossen wird; seit Paket „Offenes Netz“ gilt das auch ohne Baugebiet (gemessen: 4 oder 6 Ausgänge bremsen die Werke, 2 hält das Netz offen)
-    // Güterbahnhof der KI (Paket „Import“, seit Paket „Industriepark“ als Park, Logik aiStation/parkSite in js/ai/cityai.js). Den ersten
+    // Güterbahnhof der KI (Paket „Import“, seit Paket „Industriepark“ als Park, Logik aiStation in js/ai/city/station.js, parkSite in js/ai/city/park.js). Den ersten
     // Park legt sie voraus an (später ist das Netz am Lager rundum bebaut und es fehlt der Platz), einen zweiten (stationMax) nur bei
     // anhaltendem Einfuhrmangel (Stau, nicht Geld) und wenn der erste voll umbaut oder ausgelastet ist. Ein Güterbahnhof wächst mit den
     // Einwohnern selbst. Gemessen (Paket „Industriepark“, Seeds 3, 7, 11, 25 min, normal, Straße 24 je Spur): angekommene Rohwaren
@@ -329,13 +329,13 @@ export const CITY = {
     stationNear: 1, // Gewicht der Entfernung zum nächsten Werk gegen die Gleislänge bei der Wahl des Platzes (je Zelle; Paket „Industriepark“ 1, vorher 3)
     stationRetry: 120, // s: eine Stelle, an der der Bau scheiterte, und eine Suche ohne Platz werden so lange nicht wiederholt
     stationWait: 20, // s: Platz gefunden, aber Geld oder Baumaterial reichen noch nicht für Park, Zufahrt und Gleis: so lange keine neue Suche
-    // Industriepark (Paket „Industriepark“, Logik aiStation/parkSite in js/ai/cityai.js): statt eines einzelnen Bahnhofs legt die KI einen
+    // Industriepark (Paket „Industriepark“, Logik aiStation in js/ai/city/station.js, parkSite in js/ai/city/park.js): statt eines einzelnen Bahnhofs legt die KI einen
     // Park an: Güterbahnhof (3 × 3) mit Straße an drei Seiten, vier 2 × 2-Werksplätze daneben (grenzen an den Bahnhof, Direktlieferung
     // ohne Straße, und an die Parkstraße, über die das Produkt zum Lager fährt), Zufahrt zum Netz des Lagers und Gleis zum Kartenrand.
     // Die Werksplätze hält sie frei; neue Werke kommen zuerst dorthin, erst dann anderswo hin.
     parkLink: 12, // längste bezahlte Zufahrt (Zellen) vom Straßennetz des Lagers bis zur Straße des Parks
     parkLinkCost: 2, // Gewicht je Zelle Zufahrt gegen die Gleislänge (Zellen) bei der Wahl des Platzes
-    // Spuren (Paket „Straßennetz der KI“, Logik aiLanes in js/ai/cityai.js): die KI legt neben dauerhaft überlastete Straßenzellen eine
+    // Spuren (Paket „Straßennetz der KI“, Logik aiLanes in js/ai/city/roads.js): die KI legt neben dauerhaft überlastete Straßenzellen eine
     // zweite (dritte, vierte) Straße; Straßen nebeneinander zählen als Spuren (CITY.transport.maxLanes). Straßen kosten nur Baumaterial.
     laneLoad: 1.0, // Last ÷ Kapazität einer Straßenzelle, ab der sie als überlastet gilt
     laneKeep: 0.6, // Last ÷ Kapazität, ab der die freien Zellen neben der Straße für eine Spur frei bleiben (kein Gebäude dorthin)

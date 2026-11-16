@@ -77,7 +77,7 @@ npm run metrics                   # KI-Kennzahlen: 3 Seeds × 15 min KI gegen KI
 - `test/golden.test.js` hält Prüfsummen je Seed (Karte, Startzustand, kurzer Lauf KI gegen KI). Reine Umbauten müssen sie
   unverändert lassen; nur bei gewollter Regeländerung neu setzen (`GOLDEN=print node --test test/golden.test.js`, Anleitung im Testkopf).
   `test/registry.test.js` prüft jede Stadtzellenart auf vollständige Einträge, `test/assets.test.js` die Liste in `sw.js`,
-  `test/imports.test.js`, dass `js/` keinen Importzyklus hat (Stadt: Blattmodul `js/game/city/cells.js`, Stadt-KI in `js/ai/cityai.js`). `js/game/zonegeo.js` und `js/game/teams.js` haben ebenfalls keine Importe.
+  `test/imports.test.js`, dass `js/` keinen Importzyklus hat (Stadt: Blattmodul `js/game/city/cells.js`, Stadt-KI in `js/ai/cityai.js` und `js/ai/city/`). `js/game/zonegeo.js` und `js/game/teams.js` haben ebenfalls keine Importe.
 - `test/config.test.js` findet Tippfehler in der Config (unbekannte Einheit, doppelte Taste, Taste auf einer festen Taste, Startarmee über dem Limit, NaN,
   tote Datenschlüssel …),
   `test/doctables.test.js` meldet veraltete PRD-Tabellen, `test/docs.test.js` u. a. eine Themen-Datei ohne Eintrag in der Übersicht von
@@ -202,7 +202,7 @@ Bei einem neuen Feature dort eine Zeile ergänzen.
 3. Logik in `js/game/city/`, wenn die Art mehr tut als Arbeitsplätze und Strom: z. B. `totals` in `state.js` (Wohnen, Strom, Forschung), Werk:
    Eintrag in `CITY.chain` (`js/data/city.js`: `need` je Rohware, `to` je Ware; im Register `works: true`) und `WORK_ORDER` in `economy.js`
    (leitet sich aus dem Register ab). Die Einfuhr eines neuen Werks läuft über `tr.imports` ohne weiteren Eintrag;
-   Ausbildung `CITY.produces`, Pflege `CITY.care.by`; Infozeilen in `js/ui/hud.js` (`cityInfo`); KI optional (`CITY.ai.mix`, `aiNeed` in `js/ai/cityai.js`).
+   Ausbildung `CITY.produces`, Pflege `CITY.care.by`; Infozeilen in `js/ui/hud.js` (`cityInfo`); KI optional (`CITY.ai.mix`, `aiNeed` in `js/ai/city/need.js`).
 4. Test, PRD §15 und Eintrag in `docs/changes/`.
 
 ### Neue Ware

@@ -88,11 +88,7 @@ Häuser und Kisten haben negative IDs. Vollständige Felder: `createUnit` und `c
 **Game** (`js/game/game.js`): `seed, rng, map, grid, relief, time, teams[2 bis 4], entities (Map id → Einheit/Gebäude), units[], buildings[],
 projectiles[], effects[], events[], zone, hot, fog[je Team], formations, winner (null | Team-Index), winReason, winPoints, radioWin`,
 dazu von den Systemen: `houses, crates, bridges, wrecks, animals, weather, research`.
-**Eroberung** (nur mit `conquest`, sonst `null`): `game.conquest = { startTickets, half, x0, y0, size, flags[16], quad[4], open[], held[], noFlag[], timer }`.
-Je Flagge `{ id, letter, x, y, owner (−1 = neutral), capTeam, p (Balken 0 bis 1), counts[] (Einheiten je Team im Gebiet), contested }`.
-`quad` nennt das Team je Viertel (9 = kein Spieler), `open` die gefallenen Sperren; `zone` bekommt `half` (die Zone ist dann ein Quadrat).
-Im Wegraster: `grid.lock` je Zelle das Viertel (Team, 9 = ohne Spieler, −1 = Zone) und `grid.lockOpen` (dasselbe Array wie `conquest.open`),
-gebunden von `bindLock` in `conquest.js`, auch nach dem Laden. `game.mode` (Getter) liefert den Modus-Eintrag aus `js/game/modes.js`.
+**Eroberung** (`game.conquest`, nur mit `conquest`), Flaggen, Wegraster-Sperre `grid.lock` und `game.mode`: Felder in `docs/architektur/eroberung.md`.
 
 **Team:** `id, name, color, res { money, bm, mun, fuel }` (bm/mun/fuel = Summe der FOB-Lager, als Getter), `income`, `rate`, `flow`,
 `points, pointProgress, incomeMult, isAI, tech { tier, done, cur }`; Eroberung zusätzlich `tickets` und `out` (ausgeschieden).
@@ -189,15 +185,12 @@ Kleine Ordner ohne eigene Datei:
   alles gemalt), `tools/doc-tables.mjs` (Wertetabellen der PRD, `npm run docs`), `test/` (node --test), `api/` und `admin/` (PHP, §9).
 
 ## 8. Spielstand
-`core/snapshot.js` wandelt einen Objektgraphen (Maps, Sets, Typed Arrays, Zyklen, Klasseninstanzen, `makeRng`-Zustand) in JSON und zurück; `game/savegame.js` meldet Klassen (`CLASSES`) und feste Spieldaten (`STATICS`: nur Verweise)
-an und bietet `snapshotGame` / `restoreGame`. Abgeleitetes steht nicht im Stand: `snapshotGame` ersetzt beim Kodieren das Gelände durch sein Grobraster (oder nichts) und das Raster durch den Unterschied zum Raster der Karte (`terrainGrid`),
-`restoreGame` baut beide neu auf; Zwischenspeicher (Sichtfelder in `fog.js`, beste Zielklasse in `combat.js`, Straßentransport) liegen in `WeakMap`s.
-Ein Verweis auf `Grid` oder `Relief` von anderswo im Zustand bricht das Speichern ab (beide fehlen in `CLASSES`). `ui/saves.js` speichert in IndexedDB und auf dem Webspace (PHP `api/save.php` in diesem Repo),
-`main.js` ruft es auf (`captureSave`, `resumeGame`). Regeln und Pflege: PRD §16. `SAVE_FORMAT` steht auf 6; Stände mit einem anderen Format laden nicht (`main.js`, Liste im Startmenü: „andere Version, nicht ladbar“).
+Speichern und Laden (`core/snapshot.js`, `game/savegame.js`, `ui/saves.js`, `SAVE_FORMAT`): `docs/architektur/spielstand.md`. Regeln: PRD §16.
 
 ## 9. Feature-Landkarte
 
-Wo jedes Feature liegt. Werte: Tabelle „Wo ändere ich was?“ in `docs/wo-aendern.md` und das Inhaltsverzeichnis in `js/data/balance.js`. Dateilisten je Ordner: `CLAUDE.md` im Ordner (§7). Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Datei, Hauptmodul, Test).
+Wo jedes Feature liegt. Werte: Tabelle „Wo ändere ich was?“ in `docs/wo-aendern.md` und das Inhaltsverzeichnis in `js/data/balance.js`. Dateilisten je Ordner: `CLAUDE.md` im Ordner (§7).
+Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Datei, Hauptmodul, Test).
 
 | Feature | PRD (`docs/prd/<name>.md`) | Hauptmodul (unter `js/`, sonst ab Wurzel) | Weitere | Test (`test/<name>.test.js`) |
 |---|---|---|---|---|

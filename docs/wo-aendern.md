@@ -49,7 +49,8 @@ Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 | Gewerbe-Absatz: Steuer je Arbeiter, Baumaterial-Bedarf, Anteil ohne Versorgung, eigene Nachfrage | js/data/city.js | `CITY.taxCom`, `CITY.shop` (`need`, `base`, `per`) |
 | Kerosin: Startvorrat im Stadtlager, Markt | js/data/city.js | `CITY.startKero`, `CITY.market` |
 | Heliport als Landeplatz: Start- und Landezeit, Luftraumsperre mit/ohne Tower, Heimflug-Reserve (Tanken aus Kerosintank/Munitionslager wie die Jets) | js/data/city.js | `CITY.air.heli` (Lager-Raten `CITY.air.tank`, `CITY.air.depot`) |
-| Preis, Baumaterial, Größe, Strom, KI-Zielwert einer Stadtzellenart (z. B. Güterbahnhof, Kerosin-Raffinerie) | js/data/citykinds.js | Eintrag in `CITY_KINDS` (`cost`, `bm`, `size`, `power`, `target`, …); `CITY.cost`, `CITY.costBm`, `CITY.size`, `CITY.power.use`, `CITY.ai.targetValue` werden daraus abgeleitet |
+| Preis, Baumaterial, Größe, Strom, KI-Zielwert einer Stadtzellenart (z. B. Güterbahnhof) | js/data/citykinds.js | Eintrag in `CITY_KINDS` (`cost`, `bm`, `size`, `power`, `target`, …) |
+| Preis, Baumaterial, Größe, Strom, KI-Zielwert: abgeleitete Werte | js/data/citykinds.js | `CITY.cost`, `CITY.costBm`, `CITY.size`, `CITY.power.use`, `CITY.ai.targetValue` werden aus `CITY_KINDS` abgeleitet (z. B. Kerosin-Raffinerie) |
 | Name, Farbe, Symbol, Tipp, Baumenü-Gruppe einer Stadtzellenart (z. B. Güterbahnhof, Kerosin-Raffinerie) | js/data/citykinds.js | Eintrag in `CITY_KINDS` (`name`, `short`, `icon`, `color`, `tip`, `group`, …) |
 | Ertrag, Marktpreise, Name, Kürzel, Farbe einer Ware (Stahl, Kerosin …) | js/data/goods.js | Eintrag in `GOODS` (`yield`, `sell`, `buy`, …); `CITY.yield`, `CITY.market.sell/buy` werden daraus abgeleitet |
 | Einfuhrpreis je Rohware (Rohmaterial, Eisen, Öl, Sprengstoff): Geld je angekommener Einheit | js/data/goods.js | Eintrag in `IMPORTS` (`price`); `CITY.import.price` wird daraus abgeleitet |
@@ -73,7 +74,8 @@ Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 | Baugebiet der Stadt (Schalter im Startmenü): Radius der FOB-Gebiete, Abstand zum Feind, Konfliktzone | js/data/city.js | `CITY.build` (`fobClaim`, `enemyR`, `noZone`); Regel in `buildWhy` (`js/game/city/cells.js`) |
 | Baugebiet der Stadt in der Eroberung | js/data/city.js | Eroberung: Stadt immer nur im eigenen Viertel, auch ohne Schalter (`canZone`); `CITY.build`, `buildWhy` (`js/game/city/cells.js`) |
 | Weitere Stadt-Abschnitte (Gebiet, Einwohner, Wachstum, Kosten, Nachfrage, Ruinen, Abriss, Startwerte) | js/data/city.js | `CITY.cell`, `territory`, `flee`, `happy`, `housing`, `jobs*`, `immigration`, `startPop`, `taxPop` |
-| Weitere Stadt-Abschnitte: Wachstum, Nachfrage, Ruinen, Abriss, Startwerte | js/data/city.js | `CITY.growTime`, `upgradeTime`, `ruinTime`, `maxLevel`, `demand`, `metalCost`, `bountyBm`, `startMetal`, `startStock`, `fobMargin`, `clearable`, `retired` |
+| Weitere Stadt-Abschnitte: Wachstum, Nachfrage, Ruinen | js/data/city.js | `CITY.growTime`, `upgradeTime`, `ruinTime`, `maxLevel`, `demand`, `metalCost`, `bountyBm` |
+| Weitere Stadt-Abschnitte: Abriss, Startwerte | js/data/city.js | `CITY.startMetal`, `startStock`, `fobMargin`, `clearable`, `retired` |
 | Teamnamen und -farben | js/data/balance.js | `BALANCE.teamNames`, `BALANCE.teamColors` |
 
 Danach: PRD-Text und Hilfetexte (`js/ui/helptext.js`, Spielhinweise des Startmenüs in `js/ui/menu/start-html.js`) auf die alte Zahl durchsuchen und anpassen (Regel 7 der `CLAUDE.md`).

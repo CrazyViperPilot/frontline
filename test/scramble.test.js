@@ -1,5 +1,5 @@
 // Alarmrotte (Paket „Alarmrotte“, js/game/scramble.js): Jets in Bereitschaft starten von selbst gegen feindliche Luftfahrzeuge im
-// Alarmradius des Fliegerhorsts, fangen sie ab und landen wieder. Hilfen (Stadt, Fliegerhorst) wie in test/airbase.test.js.
+// Alarmradius des Fliegerhorsts, fangen sie ab und landen wieder. Hilfen (Stadt, Fliegerhorst) wie in test/airbasehelp.js.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';

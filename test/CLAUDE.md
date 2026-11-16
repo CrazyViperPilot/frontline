@@ -1,4 +1,4 @@
-# test/ – Tests (node --test)
+# test/
 
 Für einen neuen Test diese Vorlage nehmen; keine große Testdatei ganz lesen. Helfer: `util.js`.
 
@@ -32,20 +32,22 @@ test('Wert kurz verstellen: withValue stellt ihn danach zurück', () => {
 
 ## Regeln
 - Spiel nur über `game.issue(team, cmd)` steuern; Werte aus `js/data/` nur mit `withValue` ändern.
-- Zufall nur über den Seed. `new Game()` ohne Angaben: alle Menü-Schalter aus (Eroberung, Sendemast, Wetter, Forschung, Fluss).
-- Läuft ein Test länger als etwa 5 s, kommt „[langsam]“ in den Namen (`npm run test:fast` lässt ihn aus).
-- Einzeln starten: `node --test --test-reporter=dot test/<datei>.test.js`; vor dem Push `npm test`.
-- Jede Datei ist ein eigener Prozess: kein Test darf auf Zustand eines früheren Tests bauen.
+- Zufall nur über den Seed. `new Game()` ohne Angaben: alle Menü-Schalter aus.
+- Test über etwa 5 s: „[langsam]“ in den Namen (`npm run test:fast` lässt ihn aus).
+- Einzeln: `node --test --test-reporter=dot test/<datei>.test.js`; vor dem Push `npm test`.
+- Jede Datei ist ein eigener Prozess; kein Test baut auf Zustand eines früheren.
 
 ## Wohin mit einem neuen Test
-- Meist nach Modul: `radio.test.js`, `airbase.test.js` … (`ls test/`). Stadt und Spielkern sind nach Thema geteilt:
-- Stadt-Grundlagen (Lager, Bauen, Zonen, Raster, Räumen, Strom, Steuer) → `city-bau.test.js`
-- Stadt-Großbauten, Straßenanschluss, Universität, Startviertel → `city-grossbau.test.js`
-- Stadt-Markt, Stahl, Flucht, Angriff auf Stadtgebäude → `city-markt.test.js`
+- Meist nach Modul (`radio.test.js` …, `ls test/`). Stadt, Spielkern, Fliegerhorst sind nach Thema geteilt:
+- Stadt: Lager, Bauen, Zonen, Raster, Räumen, Strom, Steuer → `city-bau.test.js`
+- Großbauten, Straßenanschluss, Universität, Startviertel → `city-grossbau.test.js`
+- Markt, Stahl, Flucht, Beschuss der Stadt → `city-markt.test.js`
 - Ausbildung mit Stadt, Heilen, Krankenhaus → `city-ausbildung.test.js`
-- KI-Stadt → `city-ki.test.js`; gemeinsame Hilfen der Stadt-Tests → `cityhelp.js`
+- Stadt-KI → `city-ki.test.js`; Hilfen → `cityhelp.js`
 - Startzustand, Ressourcen, Ausbildung, Erstattung → `game-start.test.js`
 - Platzierung, FOB, Baustellen, Mauer, Reparatur → `game-bau.test.js`
 - Kampf, Zone, Sieg, Eliminierung, Determinismus, Befehle → `game-regeln.test.js`
 - Mörser, Flugabwehr, Hubschrauber → `game-moerser.test.js`
-- Munition, Treibstoff, Waffen, Tanken, Bohrer → `game-verbrauch.test.js`; gemeinsame Hilfen → `gamehelp.js`
+- Munition, Treibstoff, Waffen, Tanken, Bohrer → `game-verbrauch.test.js`; Hilfen → `gamehelp.js`
+- Fliegerhorst: Bahn, Tower → `airbase-bahn.test.js`; Stellplatz, Einsatz → `airbase-einsatz.test.js`
+- Zwei Jets je Stellplatz, F-22, Su-27 → `airbase-jets.test.js`; Hilfen → `airbasehelp.js`

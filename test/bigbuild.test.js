@@ -1,4 +1,4 @@
-// v5.03: Stadtstraßen der Karte (Zone, Brücken), Großbauten mit gerader Kante. Fliegerhorst und F-16: test/airbase.test.js.
+// v5.03: Stadtstraßen der Karte (Zone, Brücken), Großbauten mit gerader Kante. Fliegerhorst und F-16: test/airbase-*.test.js.
 // Hieß bis v5.54 aircraft.test.js (enthielt nie Flugzeugtests).
 import test from 'node:test';
 import assert from 'node:assert/strict';

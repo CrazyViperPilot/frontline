@@ -1,4 +1,4 @@
-// Paket E12: Erdkampfflugzeug A-10 (Fliegerhorst, eine Bordkanone, nur Bodenziele). Hilfsfunktionen wie in test/airbase.test.js.
+// Paket E12: Erdkampfflugzeug A-10 (Fliegerhorst, eine Bordkanone, nur Bodenziele). Hilfsfunktionen wie in test/airbasehelp.js.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';

@@ -17,7 +17,7 @@ const run = (g, s) => {
   for (let i = 0; i < s / DT; i++) g.update(DT);
 };
 
-/** Reiche Stadt für Team t (wie airbase.test.js). */
+/** Reiche Stadt für Team t (wie rich in airbasehelp.js). */
 function rich(g, t = 0) {
   const c = g.city[t];
   const m = g.mainFob(t);
@@ -53,7 +53,7 @@ function freeArea(g, c, m, W, H) {
 
 const kindAt = (c, i) => KINDS[c.kind[i] - 1];
 
-/** Fliegerhorst mit Bahn, zwei Stellplätzen, Tower, Tank und Lager (wie airbase.test.js). */
+/** Fliegerhorst mit Bahn, zwei Stellplätzen, Tower, Tank und Lager (wie airbase in airbasehelp.js). */
 function airbase(g, t = 0) {
   const { c, m } = rich(g, t);
   const a = freeArea(g, c, m, 12, 6);

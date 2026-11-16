@@ -1,0 +1,1 @@
+**Umbau: Menüs in Module geteilt** (nur Struktur, Verhalten unverändert): `js/ui/menu.js` ist nur noch der Einstieg mit den Re-Exporten; Startmenü, Pausenmenü, Hilfe, Endbildschirm, Konto, gemerkte Einstellungen und Gemeinsames liegen in kleinen Modulen unter `js/ui/menu/` (Verzeichnis im Kopf von `menu.js`, Dateitabelle in ARCHITEKTUR.md §7).

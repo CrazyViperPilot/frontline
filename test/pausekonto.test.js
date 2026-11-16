@@ -1,5 +1,5 @@
 // Konto im Pausenmenü (seit v5.157, docs/prd/konto.md „Konto im Pausenmenü“): Anzeige je Stand, Anmelden und Abmelden über
-// wireAccount (js/ui/menu.js, gemeinsam mit dem Startmenü), ohne Browser. Gewertete Partie: nur Anzeige, kein Wechsel.
+// wireAccount (js/ui/menu/account.js, gemeinsam mit dem Startmenü), ohne Browser. Gewertete Partie: nur Anzeige, kein Wechsel.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { showPause, wireAccount } from '../js/ui/menu.js';

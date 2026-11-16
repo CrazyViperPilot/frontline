@@ -570,6 +570,6 @@ export function describe(meta, source) {
   const t = Math.floor(meta.gameTime);
   const mm = `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
   const when = new Date(meta.updatedAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
-  const score = `${meta.tickets ? 'Tickets' : 'Punkte'} ${meta.points.join(' : ')}${meta.tickets ? '' : ` von ${meta.winPoints}`}`; // wie die Liste im Startmenü (menu.js)
+  const score = `${meta.tickets ? 'Tickets' : 'Punkte'} ${meta.points.join(' : ')}${meta.tickets ? '' : ` von ${meta.winPoints}`}`; // wie die Liste im Startmenü (menu/start-saves.js)
   return `Spielzeit ${mm} · ${score} · ${meta.difficulty} · ${meta.version} · gespeichert ${when} (${source})`;
 }

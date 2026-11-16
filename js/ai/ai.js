@@ -4,6 +4,7 @@
 
 import { CITY } from '../data/city.js';
 import { cityAiMemory, aiCity, aiRaid, aiDefend } from './cityai.js';
+import { take, prune } from './cooldown.js';
 import { cityTrainers } from '../game/city/query.js';
 import { BALANCE } from '../data/balance.js';
 import { UNITS } from '../data/units.js';
@@ -37,7 +38,8 @@ export class AI {
     this.routes = new Map(); // LKW-ID -> { fromId, toId, k, t0 } (Pendler; fromId = Quelle, eine FOB oder ein eigenes Werk, seit v5.70)
     this.engTarget = new Map(); // Baufahrzeug-ID -> Baustelle, zu der es geschickt wurde
     this.supplyAt = new Map(); // Versorger-ID -> letzter Zielpunkt
-    this.memo = new Map(); // Befehlsschlüssel -> Zeitpunkt (gegen Befehls-Spam)
+    this.memo = {}; // Befehlsschlüssel → Spielzeit, bis zu der once() ihn sperrt (cooldown.js)
+    this.airMemo = {}; // Zielart → { n, t }: gemerkte Zahl gesehener Ziele (rememberSeen)
     this.hadZoneFob = false; // eine Zonen-FOB (auch Baustelle) existierte im letzten Denkschritt
     this.saveForScout = false; // produce bildet keine Kampfeinheiten aus, bis der Späher bezahlt ist
     this.saveForFob = false; // ebenso, bis das nächste FOB-Fahrzeug bezahlt ist
@@ -64,6 +66,7 @@ export class AI {
   }
 
   think() {
+    prune(this.memo, this.game.time);
     this.cityTimer = (this.cityTimer ?? 0) + this.cfg.think;
     if (this.game.city) {
       aiRaid(this.game, this.team, this.difficulty, this.cfg.think, this.cityMem); // Angriffe auf die gegnerische Stadt (Werke zuerst)
@@ -164,12 +167,22 @@ export class AI {
     };
   }
 
-  /** Befehls-Drosselung: true, wenn der Schlüssel seit `secs` s nicht benutzt wurde (und merkt ihn sich). */
+  /** Befehls-Drosselung: true, wenn der Schlüssel `secs` s lang nicht gesperrt war; dann sperrt once() ihn für `secs` s (cooldown.js). */
   once(key, secs) {
-    const now = this.game.time;
-    if (now - (this.memo.get(key) ?? -1e9) < secs) return false;
-    this.memo.set(key, now);
-    return true;
+    return take(this.memo, key, secs, this.game.time);
+  }
+
+  /**
+   * Ergänzt nach dem Laden eines älteren Standes fehlende Felder: cityMem bekommt die Standardfelder dazu, die alten Sperrfelder
+   * (importNext, defendAt, parkFail, linkFail, laneFail) entfallen (dann beginnt nur die Drosselung neu), die Map memo wird eine
+   * Tabelle und airMemo entsteht, falls es fehlt.
+   */
+  restoreMemory() {
+    this.cityMem = { ...cityAiMemory(), ...this.cityMem };
+    for (const k of ['importNext', 'defendAt', 'parkFail', 'linkFail', 'laneFail']) delete this.cityMem[k];
+    if (this.cityMem.importAt === undefined) this.cityMem.importAt = null;
+    if (this.memo instanceof Map || !this.memo) this.memo = {};
+    if (!this.airMemo) this.airMemo = {};
   }
 }
 

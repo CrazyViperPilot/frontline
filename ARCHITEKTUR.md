@@ -202,6 +202,7 @@ seit v5.59). Die beiden Register importieren nichts; Simulation, UI und Darstell
 
 `js/ai/ai.js` – Klasse `AI`: `update(dt)` ruft im Takt `BALANCE.difficulty.<stufe>.think` die Methode `think()`; Werte aus `js/data/ai.js` und `BALANCE.difficulty`. Kern: Konstruktor, `update`, `think`, `snapshot`, `once`. Die übrigen Methoden stehen als Mixins in `js/ai/army/` (Objekte mit Methoden, über `Object.assign(AI.prototype, …)` eingehängt; Spielstände bleiben gleich, weil nur Methoden wandern): `build.js` (Stellungen, FOB-Fahrzeuge, Verteidigung, Mauer, Festung, Heliport, Brücken, Baufahrzeuge, Funkmast), `produce.js` (Ausbildung, Gegenmischung, Forschung, Kommandeur), `logistics.js` (LKW-Rollen, Pendler, Versorger, Kisten), `combat.js` (Armee, Angriffswellen, Rückzug, Artillerie, Späher, Flankenangriff, Häuserkampf, Jets; die Armee `army()` gilt klassisch), `conquest.js` (Eroberung: `conquestArmy` statt `army()`, Flaggenziele, Erscheinungsort der Einheiten per `spawnAt`); gemeinsame Konstanten und Hilfen in `army/util.js`. Die Module importieren `ai.js` nicht.
 `js/ai/cityai.js` – Stadt-KI (seit v5.60 aus der Simulation hierher): `aiCity` (Ausbau), `aiRaid`, `aiDefend`; Werte aus `CITY.ai`, Buchhaltung `cityAiMemory()` in `AI.cityMem`, Befehle nur über `game.issue`.
+`js/ai/cooldown.js` – Sperrzeiten-Helfer (`block`, `ready`, `take`, `prune`) für Stadt- und Armee-KI: Tabellen Schlüssel → Spielzeit in `cityAiMemory()` (`wait`, `parkWait`, `linkWait`, `laneWait`) und `AI.memo` (`once`). Keine Imports.
 
 `js/render/` (Zeichnen, liest nur)
 

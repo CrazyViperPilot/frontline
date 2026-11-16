@@ -11,6 +11,7 @@ import { totals } from '../game/city/state.js';
 import { marketBuyPrice } from '../game/city/query.js';
 import { enemiesOf, nearestOf } from '../game/teams.js';
 import { gridBfs } from '../game/city/gridbfs.js';
+import { block, ready, prune } from './cooldown.js';
 
 /** Zellen höchstens `d` Schritte (4er-Nachbarschaft, alle Zellen) von einer Zelle aus `reach`, Uint8Array 1 = nah (seit v5.20, AP4). */
 function nearCells(c, reach, d) {
@@ -138,15 +139,32 @@ function aiCandidates(game, c, x, y, rad, reach) {
   return out;
 }
 
-/** Neue Buchhaltung der Stadt-KI (liegt seit v5.58 in der KI-Instanz, ai.js `cityMem`): Ausbautakte, Zeit seit dem letzten Überfall, letzter Verteidigungsbefehl; seit Paket „Import“ Einfuhr-Wächter (importBad, s); seit Paket „Industriepark“ abgelehnte Werksplätze (parkFail: Anker → Spielzeit) und freigehaltene Werksplätze am Güterbahnhof (parkKeep: Zelle → 1); seit Paket „Straßennetz der KI“ überlastete Straßenzellen (laneHot: Zelle → Takte in Folge, laneFail: Zelle → Spielzeit, bis zu der sie ruht), beide entstehen bei Bedarf. */
+/**
+ * Buchhaltung der Stadt-KI (liegt in der KI-Instanz, ai.js `cityMem`). Ein Feld je Zeile, Erläuterung am Feld. Sperrzeiten sind Tabellen
+ * Schlüssel → Spielzeit (s) und laufen über cooldown.js (block, ready, prune). Ältere Stände ergänzt ai.js restoreMemory.
+ */
 export function cityAiMemory() {
-  return { turn: 0, raidTimer: 0, defendAt: -1e9, importBad: 0, importAt: undefined, importNext: -1e9, parkFail: {}, parkKeep: {} };
+  return {
+    turn: 0, // Ausbautakte von aiCity (zählt hoch; wählt das Viertel, das als Nächstes ausgebaut wird)
+    raidTimer: 0, // s seit dem letzten Überfall auf die gegnerische Stadt (aiRaid)
+    importBad: 0, // s, in denen die Einfuhr knapp ist (importWatch; ohne Mangel zurück auf 0)
+    importAt: null, // Spielzeit des letzten Einfuhr-Wächters (null = noch nie)
+    steelWant: null, // offener Stahlbedarf { amount, cost, time, max? } einer gescheiterten Ausbildung (produce.js; aiMarket kauft dann)
+    laneHot: {}, // überlastete Straßenzelle → Takte in Folge über der Last (aiLanes)
+    parkKeep: {}, // Zelle → 1: Werksplätze am Güterbahnhof, nur Werke dürfen dorthin (Industriepark)
+    wait: {}, // einzelne Sperren: 'station' = Suche nach Güterbahnhof, 'defend' = Verteidigungsbefehl; Wert: Spielzeit bis
+    parkWait: {}, // Werksplatz-Anker → Spielzeit, bis zu der er nach einer Ablehnung nicht erneut versucht wird
+    linkWait: {}, // Startzelle des Straßenanschlusses ohne Weg → Spielzeit bis
+    laneWait: {}, // überlastete Straßenzelle ohne Platz für eine zweite Spur → Spielzeit bis
+  };
 }
 
 /** KI-Schritt (alle ai.interval s von ai.js): weist die nächsten Zellen aus, solange Geld über der Reserve bleibt. mem: cityAiMemory() der KI. */
 export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
   const city = game.city?.[team];
   if (!city) return;
+  prune(mem.wait, game.time);
+  prune(mem.parkWait, game.time);
   const reserve = CITY.ai.reserve[difficulty] ?? CITY.ai.reserve.normal;
   const money = () => game.teams[team].res.money;
   importWatch(game, city, mem);
@@ -191,7 +209,7 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
   const near = nearCells(city, reach, CITY.ai.connectNear);
   // hot: Zellen neben einer überlasteten Straße bleiben frei (dort kommt die zweite Spur hin)
   const free = (j) => !city.kind[j] && !hot[j] && !inDanger(city, j % city.cols, Math.floor(j / city.cols), game.time);
-  const keep = (mem.parkKeep ??= {}); // Werksplätze am Güterbahnhof (Paket „Industriepark“): nur Werke dürfen dorthin
+  const keep = mem.parkKeep; // Werksplätze am Güterbahnhof (Paket „Industriepark“): nur Werke dürfen dorthin
   const freeFor = (kind) => (WORKS.includes(kind) ? free : (j) => free(j) && !keep[j]);
   // Werk (2 × 2, seit v5.20 AP4): seit Paket „Industriepark“ zuerst ein freier Platz am Güterbahnhof (Direktlieferung), dann ein
   // Quadrat an einer Straße zum Lager, sonst an einer beliebigen Straße in Reichweite (aiConnect verbindet es danach, Baumaterial
@@ -278,7 +296,7 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
     }
     if (!r.ok) {
       if (kind !== 'road') skip.add(kind); // z. B. zu wenig Baumaterial: in diesem Takt etwas anderes (seit v5.03)
-      if (isWork(kind)) (mem.parkFail ??= {})[idx(city, col, row)] = game.time; // abgelehnter Werksplatz: nicht jeden Takt neu (Paket „Industriepark“)
+      if (isWork(kind)) block(mem.parkWait, idx(city, col, row), CITY.ai.stationRetry, game.time); // abgelehnter Werksplatz: nicht jeden Takt neu (Paket „Industriepark“)
       return;
     }
     if (kind !== 'road') add[kind] = (add[kind] ?? 0) + 1;
@@ -307,7 +325,7 @@ function storeFullOf(game, c, prod) {
  * ein Lager die Ware braucht. Jede andere Lage setzt die Zeit auf 0.
  */
 function importWatch(game, c, mem) {
-  const dt = mem.importAt === undefined ? 0 : game.time - mem.importAt;
+  const dt = mem.importAt === null ? 0 : game.time - mem.importAt;
   mem.importAt = game.time;
   const s = c.stats ?? {};
   let cap = 0;
@@ -333,7 +351,7 @@ function importWatch(game, c, mem) {
 function aiStation(game, c, main, money, reserve, difficulty, mem) {
   const A = CITY.ai;
   const from = A.stationFrom[difficulty];
-  if (from == null || !main || game.time < from || game.time < mem.importNext) return false;
+  if (from == null || !main || game.time < from || !ready(mem.wait, 'station', game.time)) return false;
   const stations = c.list.filter((i) => c.kind[i] === KIND_ID.station && !isPart(c, i));
   if (stations.length >= A.stationMax || stations.some((i) => !stationLinked(c, i))) return false;
   // Den ersten Park plant sie voraus (später ist das Netz am Lager rundum bebaut und es fehlt der Platz), jeden weiteren erst bei
@@ -349,25 +367,25 @@ function aiStation(game, c, main, money, reserve, difficulty, mem) {
   if (money < reserve + A.stationMoney + CITY.cost.station || main.store.bm < CITY.costBm.station + A.stationBm) return false;
   const site = parkSite(game, c, reach);
   if (!site) {
-    mem.importNext = game.time + A.stationRetry; // ohne Platz nicht jeden Takt neu suchen
+    block(mem.wait, 'station', A.stationRetry, game.time); // ohne Platz nicht jeden Takt neu suchen
     return false;
   }
   const roads = site.link.length + site.roads.length;
   const rails = site.rail.length;
   if (money < reserve + A.stationMoney + CITY.cost.station + rails * CITY.cost.rail + roads * CITY.cost.road
     || main.store.bm < CITY.costBm.station + rails * CITY.costBm.rail + roads * CITY.costBm.road + A.stationBm) {
-    mem.importNext = game.time + A.stationWait; // Platz da, Geld oder Baumaterial noch nicht: die Suche nicht jeden Takt wiederholen
+    block(mem.wait, 'station', A.stationWait, game.time); // Platz da, Geld oder Baumaterial noch nicht: die Suche nicht jeden Takt wiederholen
     return false;
   }
   // Reihenfolge: Zufahrt vom Netz aus, Straßen des Parks, Gleis (flach, sofort fertig), zuletzt der Bahnhof (hängt dann an Straße und Gleis)
   const fail = () => {
-    mem.importNext = game.time + A.stationRetry; // abgelehnt: nicht jeden Takt neu (gebaute Straßen und Gleise bleiben stehen)
+    block(mem.wait, 'station', A.stationRetry, game.time); // abgelehnt: nicht jeden Takt neu (gebaute Straßen und Gleise bleiben stehen)
     return false;
   };
   for (const j of [...site.link, ...site.roads]) if (!game.issue(c.team, cellCmd(c, 'road', j)).ok) return fail();
   for (const j of site.rail) if (!game.issue(c.team, cellCmd(c, 'rail', j)).ok) return fail();
   if (!game.issue(c.team, cellCmd(c, 'station', site.center)).ok) return fail();
-  for (const j of site.works) (mem.parkKeep ??= {})[j] = 1; // Werksplätze freihalten (andere Bauten und Straßen meiden sie)
+  for (const j of site.works) mem.parkKeep[j] = 1; // Werksplätze freihalten (andere Bauten und Straßen meiden sie)
   mem.importBad = 0;
   return true;
 }
@@ -513,7 +531,7 @@ function parkSite(game, c, reach) {
  * Werksplätze am Güterbahnhof (Paket „Industriepark“): Anker (links oben) der freien 2 × 2-Quadrate, die an das 3 × 3-Quadrat um
  * `center` grenzen (4er-Nachbarschaft, dann Direktlieferung ohne Straße) und mit einer Zelle an einer Straße zum Lager liegen (das
  * Produkt fährt über die Straße; `reach` = mainRoadReach). `free(j)`: Zelle frei; ausweisbar für `kind` prüft buildAllowed. Plätze,
- * an denen ein Bau zuletzt abgelehnt wurde (mem.parkFail), zählen CITY.ai.stationRetry s nicht. Feste Reihenfolge (nach Anker).
+ * an denen ein Bau zuletzt abgelehnt wurde (mem.parkWait), zählen CITY.ai.stationRetry s nicht. Feste Reihenfolge (nach Anker).
  */
 function parkSlots(game, c, center, reach, kind, free, mem = null) {
   const sc = center % c.cols;
@@ -525,8 +543,7 @@ function parkSlots(game, c, center, reach, kind, free, mem = null) {
   for (const [q, r] of anchors) {
     if (q < 0 || r < 0 || q + 1 >= c.cols || r + 1 >= c.rows) continue;
     const a = r * c.cols + q;
-    const fail = mem?.parkFail?.[a];
-    if (fail !== undefined && game.time - fail < CITY.ai.stationRetry) continue;
+    if (mem && !ready(mem.parkWait, a, game.time)) continue;
     if (!bigFits(game, c, a, 2, free, (j) => buildAllowed(game, c, j, kind))) continue;
     if (!bigCells(c, a, 2).some((j) => touchesRoad(c, j, reach))) continue;
     out.push(a);
@@ -704,12 +721,12 @@ function extendNet(game, c, anchor, rad, mem) {
 
 /**
  * Straße (connectRoad, bezahlt) ab der nächsten freien Zelle im eigenen Gebiet ohne Anschluss um (ac, ar), Ringe nach außen; höchstens
- * CITY.ai.linkTries Versuche je Takt. Startzellen ohne Weg (eingeschlossene Lücken) merkt sich die KI CITY.ai.linkRetry s in mem.linkFail.
+ * CITY.ai.linkTries Versuche je Takt. Startzellen ohne Weg (eingeschlossene Lücken) merkt sich die KI CITY.ai.linkRetry s in mem.linkWait.
  */
 function connectNear(game, c, ac, ar, rad, mem) {
   const mask = roadLinked(game, c);
-  const fail = (mem.linkFail ??= {});
-  for (const k in fail) if (fail[k] <= game.time) delete fail[k];
+  const fail = mem.linkWait;
+  prune(fail, game.time);
   let tries = 0;
   for (let d = 1; d <= rad && tries < CITY.ai.linkTries; d++) {
     for (let dy = -d; dy <= d && tries < CITY.ai.linkTries; dy++) {
@@ -719,10 +736,10 @@ function connectNear(game, c, ac, ar, rad, mem) {
         const r = ar + dy;
         if (q < 0 || r < 0 || q >= c.cols || r >= c.rows) continue;
         const j = idx(c, q, r);
-        if (fail[j] || !c.claim[j] || mask[j] || !roadFree(game, c, j) || inDanger(c, q, r, game.time)) continue;
+        if (!ready(fail, j, game.time) || !c.claim[j] || mask[j] || !roadFree(game, c, j) || inDanger(c, q, r, game.time)) continue;
         tries++;
         if (connectRoad(game, c, j, true) > 0) return true;
-        fail[j] = game.time + CITY.ai.linkRetry;
+        block(fail, j, CITY.ai.linkRetry, game.time);
       }
     }
   }
@@ -837,7 +854,7 @@ function aiLanes(game, c, main, mem) {
   const tr = transportOf(game, c);
   const turns = {};
   const over = [];
-  const before = mem.laneHot ?? {};
+  const before = mem.laneHot;
   for (const i of tr.list) {
     if (!(tr.load[i] > tr.cap[i] * A.laneKeep)) continue;
     if (tr.lanes[i] < CITY.transport.maxLanes) for (const j of nbrsOf(c, i)) if (!c.kind[j]) hot[j] = 1;
@@ -848,14 +865,14 @@ function aiLanes(game, c, main, mem) {
   mem.laneHot = turns;
   if (!over.length || main.store.bm < A.laneBm) return hot;
   over.sort((p, o) => tr.load[o] / tr.cap[o] - tr.load[p] / tr.cap[p] || p - o);
-  const fail = (mem.laneFail ??= {});
-  for (const k in fail) if (fail[k] <= game.time) delete fail[k];
-  const keep = mem.parkKeep ?? {};
+  const fail = mem.laneWait;
+  prune(fail, game.time);
+  const keep = mem.parkKeep;
   let built = 0;
   let tries = 0;
   for (const i of over) {
     if (built >= A.laneStep || tries >= A.laneTries) break;
-    if (fail[i]) continue;
+    if (!ready(fail, i, game.time)) continue;
     tries++;
     const lanes = lanesAt(c, tr, i);
     let done = false;
@@ -867,7 +884,7 @@ function aiLanes(game, c, main, mem) {
       done = true;
       break;
     }
-    if (!done) fail[i] = game.time + A.laneRetry;
+    if (!done) block(fail, i, A.laneRetry, game.time);
   }
   return hot;
 }
@@ -1049,7 +1066,7 @@ export function aiDefend(game, team, mem = cityAiMemory()) {
   const c = game.city?.[team];
   if (!c) return;
   const A = CITY.ai;
-  if (game.time - mem.defendAt < A.defendCooldown) return;
+  if (!ready(mem.wait, 'defend', game.time)) return;
   let spot = null;
   let best = -1;
   for (const e of c.ents.values()) {
@@ -1066,6 +1083,6 @@ export function aiDefend(game, team, mem = cityAiMemory()) {
     .sort((a, b) => Math.hypot(a.x - spot.x, a.y - spot.y) - Math.hypot(b.x - spot.x, b.y - spot.y) || a.id - b.id)
     .slice(0, A.defendSize);
   if (!near.length) return;
-  mem.defendAt = game.time;
+  block(mem.wait, 'defend', A.defendCooldown, game.time);
   game.issue(team, { type: 'attackMove', ids: near.map((u) => u.id), x: spot.x, y: spot.y });
 }

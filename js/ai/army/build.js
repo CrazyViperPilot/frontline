@@ -4,6 +4,7 @@
 import { BALANCE } from '../../data/balance.js';
 import { UNITS } from '../../data/units.js';
 import { BUILDINGS } from '../../data/buildings.js';
+import { block } from '../cooldown.js';
 import { CITY } from '../../data/city.js';
 import { ZONE_REACH, WALL_RETRY, RELAY_STEP, FLANK_R, FOBV_MAX, DEPLOY_REACH, FOBV_RETRY, BAD_TIME, WALL_OFFSET, WALL_HALF, ENG_NEAR, RADIO_SITE, BRIDGE_EVERY, ROAD_REPAIR_EVERY, ROAD_REPAIR_SAFE, BRIDGE_RESERVE, FORT_EVERY, FORT_BM_MIN, FORT_CREW_RANGE, FORT_ROOFS, FORT_CLEAR, ZONE_CAND_STEP, ZONE_CAND_MARGIN, ZONE_CAND_RING_N, ZONE_HELD_MIN, RELAY_STOP, FRONT_SITE_R, FRONT_SITE_ANGLES, FLANK_ANGLES, SITE_ANGLES_DEG, SITE_RING_STEP, FREE_SEARCH_CELLS, BAD_SITE_R, CORRIDOR_FROM, CORRIDOR_TO, CORRIDOR_HALF, HIGH_CENTER_BONUS, DEF_FULL_FOBS, DEF_BUSY_MAX, DEF_PER_FOB, DEF_ZONE_MORTARS, DEF_RING_MIN, DEF_RING_MAX, WALL_EVERY, WALL_BUILDERS_R, WALL_BUILDERS, ENG_EVERY, ENG_GAP, ENG_TAKEN_PEN } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
@@ -301,7 +302,7 @@ export const buildMethods = {
     // Tor = 2 Felder entlang der Mauer (senkrechte Mauer: untereinander, sonst nebeneinander)
     g.issue(t, { type: 'buildWall', building: 'gate', ids, x1: grid.center(gc), y1: grid.center(gr), x2: grid.center(gc + (vertical ? 0 : 1)), y2: grid.center(gr + (vertical ? 1 : 0)) });
     const r = g.issue(t, { type: 'buildWall', building: 'wall', ids, x1, y1, x2, y2 });
-    if (!r.ok) this.memo.set('wall', g.time + WALL_RETRY); // Linie steht bereits (oder nichts baubar): lange nicht erneut versuchen
+    if (!r.ok) block(this.memo, 'wall', WALL_RETRY + WALL_EVERY, g.time); // Linie steht bereits (oder nichts baubar): lange nicht erneut versuchen (once('wall') sperrt danach WALL_EVERY)
   },
 
   // ---- Festung ---------------------------------------------------------------------

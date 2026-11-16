@@ -107,6 +107,7 @@ const ASSETS = [
   './js/ai/army/produce.js',
   './js/ai/army/util.js',
   './js/ai/cityai.js',
+  './js/ai/cooldown.js',
   './js/render/camera.js',
   './js/render/iso.js',
   './js/render/isobuild.js',

@@ -96,14 +96,14 @@ test('Industriepark: ohne Platz nicht jeden Takt neu suchen', () => {
     const mem = cityAiMemory();
     runCity(g, mem, 1, { money: 5000, bm: 5000 });
     assert.equal(stationsOf(c).length, 0, 'ohne Gleis kein Park');
-    const first = mem.importNext;
+    const first = mem.wait.station;
     assert.ok(Math.abs(first - (g.time + CITY.ai.stationRetry)) < 1e-6, `Suche verschoben um stationRetry: ${first} bei ${g.time}`);
     runCity(g, mem, 3, { money: 5000, bm: 5000 }); // 30 s, noch innerhalb der Frist
-    assert.equal(mem.importNext, first, 'innerhalb der Frist keine neue Suche');
+    assert.equal(mem.wait.station, first, 'innerhalb der Frist keine neue Suche');
     while (g.time <= first) runCity(g, mem, 1, { money: 5000, bm: 5000 });
     // Nach der Frist sucht sie wieder: findet sie jetzt einen Platz (die Stadt ist in der Zwischenzeit gewachsen; gemessen bei 140 s),
     // baut sie den Park, sonst setzt sie die Frist neu
-    assert.ok(stationsOf(c).length === 1 || mem.importNext > first, 'nach der Frist wieder Suche');
+    assert.ok(stationsOf(c).length === 1 || mem.wait.station > first, 'nach der Frist wieder Suche');
   }))));
 });
 

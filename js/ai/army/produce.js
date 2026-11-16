@@ -259,7 +259,7 @@ export const produceMethods = {
    */
   rememberSeen(kind, n) {
     const now = this.game.time;
-    const memo = (this.airMemo ??= {});
+    const memo = this.airMemo;
     const m = (memo[kind] ??= { n: 0, t: -1e9 });
     if (n > 0) {
       m.n = Math.max(m.n, n);

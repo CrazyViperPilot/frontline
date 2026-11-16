@@ -66,6 +66,7 @@ const ASSETS = [
   './js/game/city/query.js',
   './js/game/city/state.js',
   './js/game/city/care.js',
+  './js/game/city/gridbfs.js',
   './js/game/city/roadnet.js',
   './js/game/city/clearing.js',
   './js/game/city/create.js',

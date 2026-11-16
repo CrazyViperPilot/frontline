@@ -189,7 +189,7 @@ Bei einem neuen Feature dort eine Zeile ergänzen.
 2. Sonderregeln beim Setzen in `js/game/cmd/build.js` (`canPlace`), Wirkung im passenden Modul oder in einem neuen Modul (Rezept „Neues Spielsystem“).
 3. Aussehen: Maler in `js/render/milbuild.js` (Typ in `MIL_TYPES` eintragen), Höhe in `js/render/iso.js` (`BUILD_H`), Kürzel in
    `js/render/sprites.js` (`BUILD_ABBR`, 2D-Ansicht).
-4. KI optional in `js/ai/army/build.js` (`buildDefense`, `findSite`); Test, Baumenü-Zeile der Hilfe (`js/ui/menu.js`, Taste B), PRD §5 und Eintrag in `docs/changes/`. Eroberung: Das Auswahlfeld „Neue Einheiten erscheinen“ erscheint von selbst bei Gebäuden, die Bodeneinheiten ausbilden (`produces`), nicht bei Flugzeugen (`js/ui/hud.js`).
+4. KI optional in `js/ai/army/build.js` (`buildDefense`, `findSite`); Test, Baumenü-Zeile der Hilfe (`js/ui/menu.js`, Taste B), PRD §5 und Eintrag in `docs/changes/`. Eroberung: Das Auswahlfeld „Neue Einheiten erscheinen“ erscheint von selbst bei Gebäuden, die Bodeneinheiten ausbilden (`produces`), nicht bei Flugzeugen (`js/ui/hud/info.js`, `updateSpawnPick`).
 
 ### Neue Stadtzellenart
 1. `js/data/citykinds.js`: Eintrag in `CITY_KINDS` an der Stelle seiner Baumenü-Gruppe (`group`), mit der **nächsten freien `id`**
@@ -202,7 +202,7 @@ Bei einem neuen Feature dort eine Zeile ergänzen.
 3. Logik in `js/game/city/`, wenn die Art mehr tut als Arbeitsplätze und Strom: z. B. `totals` in `state.js` (Wohnen, Strom, Forschung), Werk:
    Eintrag in `CITY.chain` (`js/data/city.js`: `need` je Rohware, `to` je Ware; im Register `works: true`) und `WORK_ORDER` in `economy.js`
    (leitet sich aus dem Register ab). Die Einfuhr eines neuen Werks läuft über `tr.imports` ohne weiteren Eintrag;
-   Ausbildung `CITY.produces`, Pflege `CITY.care.by`; Infozeilen in `js/ui/hud.js` (`cityInfo`); KI optional (`CITY.ai.mix`, `aiNeed` in `js/ai/city/need.js`).
+   Ausbildung `CITY.produces`, Pflege `CITY.care.by`; Infozeilen in `js/ui/hud/cityinfo.js` (`cityInfo`); KI optional (`CITY.ai.mix`, `aiNeed` in `js/ai/city/need.js`).
 4. Test, PRD §15 und Eintrag in `docs/changes/`.
 
 ### Neue Ware
@@ -247,7 +247,7 @@ Für eine Rohware, die von außerhalb der Karte kommt: nicht gelagert, nicht geh
 1. Werte als eigener Block in `js/data/balance.js` (wie `BALANCE.conquest`), jede Zeile mit deutschem Kommentar; Regel in `docs/prd/eroberung.md` oder einer neuen Datei unter `docs/prd/` (Übersicht in PRD.md).
 2. Neuer Modus: Schalter in `new Game({ … })` mit Standard **aus** (Regel 9), Eintrag im Modus-Register `js/game/modes.js` (`MODES`, Haken wie bei `CONQUEST_MODE`); Startmenü und `js/main.js` wie im Rezept „Neue Option im Startmenü“.
 3. Regel in der Eroberung: `js/game/conquest.js` (`updateConquest`, `checkCapitals`, `eliminate`). Geometrie nur über `js/game/zonegeo.js` (`inZone`, `zoneDist`), Beziehungen nur über `js/game/teams.js` (`hostile`, `aliveTeams`, `enemiesOf`); nie eigene Kreis- oder Quadratrechnung und nie `1 - team` (bis zu vier Teams).
-4. Alle Stellen der Spielart prüfen: `foeSpawn`, `slotCap`, `checkEnd` und der Partieende-Text in `endGame` (`js/game/game.js`), Endbildschirm (`showEnd` in `js/ui/menu.js`), HUD (`js/ui/hud.js`), KI-Zweig (`aiArmy` in `js/ai/ai.js`), Punktewert (`score`).
+4. Alle Stellen der Spielart prüfen: `foeSpawn`, `slotCap`, `checkEnd` und der Partieende-Text in `endGame` (`js/game/game.js`), Endbildschirm (`showEnd` in `js/ui/menu.js`), HUD (`js/ui/hud/`, Einstieg `js/ui/hud.js`), KI-Zweig (`aiArmy` in `js/ai/ai.js`), Punktewert (`score`).
 5. Tests: `test/conquest.test.js` ergänzen, neue Befehle in `test/cmdfuzz.test.js` (TEMPLATES). `test/golden.test.js` bleibt unverändert; ändert sich eine Zufallskarte mit 2 Spielern, ist das eine Regeländerung für Regel 4.
 6. Neue Datei, die der Browser lädt: unter `sw.js` → `ASSETS`. `npm run docs`, `npm run test:quick`; PRD, Hilfe (`js/ui/helptext.js`, `js/ui/menu.js`), Eintrag in `docs/changes/`.
 

@@ -550,7 +550,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .sel .small, .sel .gauge .gl, .sel .srow { font-size: 10.5px; }
   .bar { height: 5px; margin: 3px 0; }
   /* Befehlskarte: Ausbildung (data-g=t) in der oberen Zeile, Aktionen (a) darunter; eine gemeinsame Wischleiste links/rechts.
-     Ohne Ausbildung (data-rows=1) stehen alle Aktionen in der einen Zeile. Tippen bildet aus, Wischen nicht (hud.js, Klick). */
+     Ohne Ausbildung (data-rows=1) stehen alle Aktionen in der einen Zeile. Tippen bildet aus, Wischen nicht (hud/core.js, Klick). */
   /* Schmal: drei Knöpfe breit (3 × 50 px + Abstände), der Rest wird gewischt; rechts frei für die Knopfspalte (Stadt, Forschung, Ressourcen,
      Bauer), die bei niedriger Höhe (Handy mit Adressleiste) bis in die Kartenzeile reicht */
   .cmd-wrap { flex: none; width: 164px; margin-right: calc(160px + env(safe-area-inset-right, 0px)); }

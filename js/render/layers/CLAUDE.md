@@ -17,7 +17,8 @@
 
 ## Besonderheiten
 - Jede Ebene ist ein Objekt mit Methoden (`topMethods`, `isoViewMethods`, …), das `core.js` einhängt; Methoden rufen sich über `this` auf.
-- Ein Bild läuft in Durchläufen: `render` → `frameOf` (Kamera, Ausschnitt `inRect`, Sichtregeln `seen`/`known`/`shown`) → `renderTop` oder `renderIso` → `runPasses` über `TOP_PASSES` bzw. `ISO_PASSES` (`passes.js`). Neuer Durchlauf: Eintrag dort, nie `pf.lap` von Hand.
+- Ein Bild: `render` → `frameOf` (Kamera, `inRect`, Sichtregeln `seen`/`known`/`shown`) → `renderTop`/`renderIso` → `runPasses` (`passes.js`).
+- Neuer Durchlauf: Eintrag in `TOP_PASSES` bzw. `ISO_PASSES`, nie `pf.lap` von Hand.
 - Nebel: `fogData` liefert dem WebGL-Nebel (`ground.renderFog`) weichgezeichnete Werte; ohne WebGL und für die Minimap `updateFogLayer`.
 - Neue Ebene: Methodenobjekt anlegen, in `core.js` einhängen, keine Importe von `core.js`.
 

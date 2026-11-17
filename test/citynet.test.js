@@ -46,11 +46,11 @@ test('Straßennetz: eine Straße, die nur über die Bahn des Fliegerhorsts am La
 /** Güterbahnhöfe (Anker) einer Stadt; angeschlossen heißt: Gleis zum Kartenrand (Industriepark). */
 const stationsOf = (c) => c.list.filter((i) => c.kind[i] === KIND_ID.station && !isPart(c, i));
 const parkLinked = (g) => g.city.some((c) => stationsOf(c).some((i) => stationLinked(c, i)));
-const PARK_STEPS = Math.round((8 * 60) / 0.05);
+const PARK_STEPS = Math.round((10 * 60) / 0.05);
 
 /**
  * Gemeinsamer Lauf je Seed: KI gegen KI (normal) mit Fluss und Forschung, 20 Spielminuten in Schritten von 0,05 s. Daran hängen die
- * Tests „Straßennetz der KI“ (Seeds 3, 7), „Offenes Netz“ (Seed 11) und „Industriepark“ (Seeds 3, 11: die ersten 8 Minuten derselben
+ * Tests „Straßennetz der KI“ (Seeds 3, 7), „Offenes Netz“ (Seed 11) und „Industriepark“ (Seeds 3, 11: die ersten 10 Minuten derselben
  * Partie). Die Abfragen unterwegs (Spuren am Start, Güterbahnhof je Schritt) lesen nur: Spielstand nach 8 min mit und ohne sie bitgleich
  * (gemessen beim Paket „Schnellere Tests“).
  */
@@ -58,7 +58,7 @@ function roadRun(seed) {
   const g = new Game({ seed, river: true, research: true });
   const ais = [new AI(g, 0, 'normal'), new AI(g, 1, 'normal')];
   const lanes0 = [0, 1].map((t) => lanesOf(g, g.city[t]));
-  // Industriepark: bis 8 min (wie der frühere eigene Lauf: Abfrage vor jedem Schritt und nach dem letzten)
+  // Industriepark: bis 10 min (wie der frühere eigene Lauf: Abfrage vor jedem Schritt und nach dem letzten)
   let park = null;
   const steps = Math.round((20 * 60) / 0.05);
   for (let k = 0; k < steps; k++) {
@@ -132,13 +132,14 @@ test('Offenes Netz [langsam]: Seed 11 ohne Baugebiet, nach 20 min hat das Netz v
   assert.ok(outlets(g, g.city[0]) > 0, 'Netz des Lagers hat noch Ausgänge');
 });
 
-// Industriepark (bis zum Paket „Schnellere Tests“ ein eigener Lauf in industriepark.test.js): die ersten 8 Minuten der gemeinsamen Läufe.
-test('[langsam] Industriepark: KI gegen KI, Seeds 3 und 11, 8 Spielminuten: je Seed hat eine Stadt einen angeschlossenen Güterbahnhof', () => {
-  // Gemessen (normal, Straßen 24 je Spur, Seeds 3 und 11): Team 1 baut den Park bei 377 s (Seed 3) und 465 s (Seed 11), Team 0 nie
-  // (sein Geld bleibt unter Reserve + stationMoney + Bahnhof ≈ 700). Die Erwartung gilt je Seed für mindestens eine der beiden Städte.
+// Industriepark (bis zum Paket „Schnellere Tests“ ein eigener Lauf in industriepark.test.js): die ersten 10 Minuten der gemeinsamen Läufe.
+test('[langsam] Industriepark: KI gegen KI, Seeds 3 und 11, 10 Spielminuten: je Seed hat eine Stadt einen angeschlossenen Güterbahnhof', () => {
+  // Gemessen (normal, Straßen 24 je Spur) seit dem Paket „Startaufstellung mit Stadt“: Seed 3 Team 0 bei 574 s, Team 1 bei 481 s;
+  // Seed 11 Team 0 bei 646 s, Team 1 bei 385 s (vorher nur Team 1: 377 s und 465 s, Fenster 8 min). Die Erwartung gilt je Seed
+  // für mindestens eine der beiden Städte.
   for (const seed of [3, 11]) {
     const { park } = roadRuns[seed]();
-    assert.ok(park !== null, `Seed ${seed}: in 8 min kein angeschlossener Güterbahnhof`);
+    assert.ok(park !== null, `Seed ${seed}: in 10 min kein angeschlossener Güterbahnhof`);
   }
 });
 

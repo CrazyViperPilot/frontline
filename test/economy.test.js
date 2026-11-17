@@ -119,8 +119,7 @@ test('Start: 39 Einheiten je Team (3 LKW, Baufahrzeug, 2 MBT, 3 SPz, 22 Schütze
 
 test('Startaufstellung: keine Einheit auf unpassierbarer Zelle, keine Überlappung, vorn zur Zone', () => {
   for (const seed of [1, 7, 42]) {
-    // noch ohne Stadt: mit Stadt schiebt das Startviertel (occupyCell, js/game/city/state.js) verdrängte Einheiten auf einen Punkt
-    const g = mk({ seed, city: false });
+    const g = mk({ seed }); // mit Stadt: die Aufstellung meidet das Startviertel (früher stapelte es verdrängte Einheiten)
     for (let t = 0; t < 2; t++) {
       const us = unitsOf(g, t);
       for (const u of us) {

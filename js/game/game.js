@@ -201,14 +201,18 @@ export class Game {
     for (let t = 0; t < teamCount; t++) {
       const sp = this.map.spawns[t];
       this.spawnBuilding('fob', t, this.grid.toCell(sp.x) - 1, this.grid.toCell(sp.y) - 1, { built: true, main: true });
+    }
+    createHouses(this); // Stadthäuser zum Besetzen (Häuserkampf)
+    createCity(this, city); // Zonenstadt je Team, Hauptstadt mit endlichem Lager (nur wenn eingeschaltet)
+    // Startunits erst nach dem Startviertel aufstellen: sonst schöbe es verdrängte Einheiten auf einen Punkt (occupyCell)
+    for (let t = 0; t < teamCount; t++) {
+      const sp = this.map.spawns[t];
       const spots = startFormation(this.grid, t, sp.x, sp.y, BALANCE.startUnits);
       BALANCE.startUnits.forEach((type, i) => {
         const p = spots[i] || nearestPassable(this.grid, sp.x, sp.y, t) || sp;
         this.spawnUnit(type, t, p.x, p.y);
       });
     }
-    createHouses(this); // Stadthäuser zum Besetzen (Häuserkampf)
-    createCity(this, city); // Zonenstadt je Team, Hauptstadt mit endlichem Lager (nur wenn eingeschaltet)
     createCrates(this); // Versorgungskisten der Karte
     createMines(this); // Pionier-Minen (Paket E8)
     createAnimals(this); // Rehe und Wildschweine (nur Optik)

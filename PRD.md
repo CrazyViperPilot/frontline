@@ -58,7 +58,8 @@ Nicht im Umfang: Netzwerk-Multiplayer, Kampagne. Speichern laufender Partien gib
 2. Jede Partei startet in einer Ecke der großen Karte mit der **Hauptstadt** (Lager: Baumaterial, Munition, Treibstoff; gefüllt von den Werken der Stadt, die Rohwaren einführen, §15),
    Geld (800; angemeldet die Kasse des Kontos, §17), 1 Baufahrzeug, **3 LKW** (leer), **2 Kampfpanzern, 3 Schützenpanzern,
    22 Schützen und 7 Panzerabwehrsoldaten** (29 Soldaten, Startaufstellung nach Truppengattung getrennt um die FOB:
-   Panzer vorn, Schützen links, Panzerabwehr rechts, LKW und Baufahrzeug hinten, Kommandeur dicht hinter der FOB; `BALANCE.startLayout`).
+   Panzer vorn, Schützen links, Panzerabwehr rechts, LKW und Baufahrzeug hinten, Kommandeur dicht hinter der FOB; `BALANCE.startLayout`;
+   aufgestellt erst nach dem Startviertel der Stadt, auf freien Plätzen).
    Zusammen belegen sie 52 der 300 Plätze des Einheitenlimits (klassisch; in der Eroberung 500, siehe §6 und §7).
 3. Kaserne, Fabrikhalle und Heliport der Stadt bilden Einheiten aus (§15; nur gegen Geld; mit Forschung Schützenpanzer,
    Scharfschützen und Hubschrauber erst ab Stufe 2, Kampfpanzer und AH-64 ab Stufe 3, §7).

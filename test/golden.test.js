@@ -33,11 +33,11 @@ const PLAY_S = 120; // Länge des Laufs mit allen Schaltern (vorher sind beide S
 const FULL = { radio: true, weather: 'random', research: true, river: true, city: true }; // wie BALANCE.menuDefaults
 
 // prettier-ignore
-// Läufe (play) neu gesetzt mit v5.61 (Review-Paket P8: Wegsuche mit Budget je Schritt, unerreichbare Ziele, lange Suchen); Paket K1: KI bildet Unterstützer aus; Paket K2: KI bildet Artillerie aus und lässt sie feuern
+// Läufe (play) neu gesetzt mit v5.61 (Review-Paket P8: Wegsuche mit Budget je Schritt, unerreichbare Ziele, lange Suchen); Paket K1: KI bildet Unterstützer aus; Paket K2: KI bildet Artillerie aus und lässt sie feuern; Start und Läufe: Paket „Startaufstellung mit Stadt“ (Einheiten nach dem Startviertel aufgestellt)
 const GOLDEN = {
-  2: { map: '894406ba81d0', river: '533ace5a08d3', start: '17a88db39a61', play: ['ec78337d7d67', '4a630e168e69', '0fde64af7e7f', 'e2a74e397182'] },
-  3: { map: 'b8095c497a39', river: 'de3f5da9bcba', start: '1305f1fa2351', play: ['ba9771d11b7e', '375e3497f1ea', 'f23b14e1bcb1', 'e7d1081b1097'] },
-  7: { map: 'e6c2e69a3dc6', river: 'b5fa8dc32b8a', start: '1498509d7fba', play: ['45cfc866fd74', 'd0b46f19cf18', 'db02fed0a8f2', 'ca308b5c34c3'] },
+  2: { map: '894406ba81d0', river: '533ace5a08d3', start: '22569bcc0b96', play: ['e35960bed766', 'b3ca96f07c3f', '42f6bce7b8f6', 'f9a32ab64e9b'] },
+  3: { map: 'b8095c497a39', river: 'de3f5da9bcba', start: 'edc66d25a734', play: ['7f059594b614', '56c597e75c64', '23de1ee85c37', '40108dd83841'] },
+  7: { map: 'e6c2e69a3dc6', river: 'b5fa8dc32b8a', start: 'eb52cc8c8cf9', play: ['937b7ac9ca6b', '3f8cab77ae62', 'ae4478ecb67b', '3ac95221db2a'] },
 };
 
 /** Prüfsumme (12 Hex-Zeichen) über einen Wert: Zahlen exakt (String), Typed Arrays als Bytes, Objekte mit sortierten Schlüsseln. */

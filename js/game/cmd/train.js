@@ -29,7 +29,7 @@ export function cmdTrain(game, team, cmd) {
   if (game.city && freePop(game, team) < crewOf(cmd.unit)) return fail('Zu wenig freie Einwohner (Stadt: Wohnen ausbauen)');
   const cost = UNITS[cmd.unit].cost;
   if (!game.canAfford(team, cost)) return fail(game.missingMoney());
-  if (!payMetal(game, team, cmd.unit)) return fail('Zu wenig Stahl (Stadt: Erzmine, Hütte und Stahlwerk oder Markt)');
+  if (!payMetal(game, team, cmd.unit)) return fail('Zu wenig Stahl (Stadt: Stahlwerk mit Eiseneinfuhr oder Markt)');
   game.pay(team, cost);
   b.queue.push({ unit: cmd.unit, payerId: b.id });
   b.queueTimes.push(0);

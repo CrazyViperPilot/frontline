@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.206: **Startaufstellung mit Stadt** (§2): Die Start-Einheiten werden erst nach dem Startviertel der Stadt aufgestellt; vorher schob es bei Team 1 alle verdrängten Schützen auf einen Punkt. Dazu nennt die Meldung „Zu wenig Stahl“ das Stahlwerk mit Eiseneinfuhr statt Erzmine und Hütte. Cache v270.
 - v5.205: **Tests mit Stadt** (nur Tests, S2b Teil 1, `docs/plan-stadt-kern.md`): 20 Testdateien laufen jetzt mit Stadt statt mit `city: false`; Ausbildung in Kaserne und Fabrikhalle, Geldrechnung ohne Steuern und Einfuhr der Stadt (Hilfen `trainer`, `noCrew`, `runCityMoney` in `test/util.js`). Cache v269.
 - v5.204: **PRD bereinigt: KI-Flugzeuge und Scharfschütze** (§6, §10, §13, nur Doku): §6 sagt jetzt richtig, dass die KI F-22, A-10 und Scharfschützen baut; die geparkte Idee „Straßen zerstören“ ist als gebaut nachgetragen. Cache v268.
 - v5.203: **Schnellere Tests** (nur Tests, keine Spielregel): Tests mit derselben KI-gegen-KI-Partie rechnen sie einmal je Datei (`ai.test.js`: Seed 7 und Seed 2; `citynet.test.js` nimmt „Offenes Netz“ und den Industriepark-Lauf auf, `opennet.test.js` entfällt), `npm test` und `npm run test:fast` starten über `tools/runtests.mjs` einen Prozess je Kern; `npm test` auf 4 Kernen rund 5:30 statt 6:52 min, gleiche 924 Tests und 4345 Prüfungen. Cache v267.

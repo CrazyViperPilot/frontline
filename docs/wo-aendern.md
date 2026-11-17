@@ -59,6 +59,8 @@ Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 | Einfuhr: Durchsatz des Güterbahnhofs je Stufe, Straßendurchsatz | js/data/city.js | `CITY.import.station` (je s und Stufe, alle Rohwaren zusammen), `CITY.transport.cap`, `maxLanes` (Straßen) |
 | Einfuhr: Baukosten Gleis und Güterbahnhof | js/data/citykinds.js | Baukosten Gleis und Güterbahnhof in `js/data/citykinds.js` (`rail`, `station`) |
 | Wetter, Häuserkampf, Kisten, Kommandeur, Formationen, Fluss, Tiere, Wracks, Tarnung, Flugabwehr | js/data/balance.js | `weather`, `garrison`, `crates`, `commander`, `formation`, `river`, `animals`, `scars`, `stealth`, `airFire` |
+| Bewegung, Wegsuche, Sicht, Effektdauern, Meldedauern, Startplätze | js/data/balance.js | `BALANCE.move`, `path`, `fog`, `effects`, `notify`, `startLayout` |
+| Hinweise und Messfenster der Ressourcenanzeige (Stadt) | js/data/city.js | `CITY.flow` |
 | Kartengröße | js/data/balance.js | `BALANCE.map` (Vorsicht: ändert alle Karten und Tests) |
 | Aufbau der Zufallskarte (Hügel, Seen, Fluss, Stadt, Häuser, Felder, Kisten-Abstände) | js/data/mapgen.js | `MAPGEN.<abschnitt>` (ändert alle Zufallskarten) |
 | Fliegerhorst: Bahnlänge/-breite, Sperrzeit mit/ohne Tower, Umkreise, Schutz der Stellplätze, Kerosintank/Munitionslager | js/data/city.js | `CITY.air` |

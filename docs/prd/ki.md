@@ -286,5 +286,5 @@ je Zeile mit Kommentar; die Tabelle nennt nur die wichtigsten.
 | Stellwerte der Stadt-KI (Paket „KI-Zahlen in die Daten“) | Ausbau-Umkreis (`CITY.ai.growRing` × `territory.building`) · Ring × `ringWeight` + Abstand · Großbau-Versuche (`bigTries`) · Reihe an der Bahn (`airportRow`) | 4 · 100 · 8 · 2 Stellplätze, Tower |
 | Stellwerte der Stadt-KI (Paket „KI-Zahlen in die Daten“) | Grundriss des Industrieparks `CITY.parkPlan` (9 × 5, Bahnhof in der Mitte, Gleis nach unten) · Fliegerhorst-Geometrie aus `CITY.air.runwayWidth` und `CITY.size.stand` | – |
 
-Prüftest `test/config.test.js` („js/ai: keine Spielwerte als Zahlenliterale“): in `js/ai` sind außer 0, 1, 2 und 0,5 keine Zahlenliterale
-erlaubt; Ausnahmen (Geometrie, Rechengenauigkeit, Sortierschlüssel) stehen begründet in `AI_LITERAL_OK`.
+Prüftest `test/literals.test.js` („js/ai: keine Spielwerte als Zahlenliterale“, ebenso für `js/game`): in `js/ai` sind außer 0, 1, 2 und 0,5 keine Zahlenliterale
+erlaubt; Ausnahmen (Geometrie, Rechengenauigkeit, Sortierschlüssel) stehen begründet in `ALLOWED`.

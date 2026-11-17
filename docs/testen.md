@@ -50,6 +50,7 @@ npm run metrics                   # KI-Kennzahlen: 3 Seeds × 15 min KI gegen KI
 - `test/config.test.js` findet Tippfehler in der Config (unbekannte Einheit, doppelte Taste, Taste auf einer festen Taste, Startarmee über dem Limit, NaN,
   tote Datenschlüssel …).
 - `test/doctables.test.js` meldet veraltete PRD-Tabellen.
+- `test/literals.test.js` (Regel 3) meldet Zahlenliterale in `js/ai` und `js/game` außer 0, 1, 2, 0,5; Technik-Ausnahmen je Datei mit Grund in `ALLOWED`.
 - `test/docs.test.js` meldet u. a. eine Themen-Datei ohne Eintrag in der Übersicht von PRD.md und einen zu großen Einstieg (über 20 000 Zeichen).
 - Alle laufen auch in `npm test`.
 

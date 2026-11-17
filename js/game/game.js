@@ -38,6 +38,7 @@ import { createBridges, updateBridges, updateBridgeLayers, bridgeUnder } from '.
 import { createRoads } from './roads.js';
 import { updateAircraft } from './aircraft.js';
 import { updateScramble } from './scramble.js';
+import { updateAirstrike } from './airstrike.js';
 import { updateParadrop } from './paradrop.js'; // C-130 setzt Fallschirmjäger ab (Paket E13 b)
 import { updateHelis } from './helipad.js';
 import { updateDig } from './excavator.js';
@@ -763,6 +764,7 @@ export class Game {
     updateMovement(this, dt, OWN_DRIVERS);
     updateParadrop(this, dt); // Absetzen: C-130 im Anflug, Fallschirm-Zeiten (Paket E13 b)
     updateScramble(this); // Alarmrotte: Jets in Bereitschaft starten gegen Luftziele am Fliegerhorst (Paket „Alarmrotte“)
+    updateAirstrike(this); // Luftschlag: Jets nach dem Einsatz heimschicken (Paket „Luftschlag“)
     updateAircraft(this, dt); // Jets: Flug, Rückkehr, Landung, Rollen, Tanken am Stellplatz (seit v5.03, Fliegerhorst seit v5.35)
     updateHelis(this, dt); // Hubschrauber: Start, Landung, Tanken am Heliport (seit v5.51)
     updateCrates(this, dt);

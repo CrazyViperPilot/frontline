@@ -78,6 +78,14 @@
     Ziele in einem gesperrten Viertel lösen keinen Alarm aus.
     Gemessen (KI gegen KI, Seeds 3, 7, 11, 21, Normal 20 min und Schwer 40 min): feindliche Luftfahrzeuge kamen nie näher als rund 4400 px an die Hauptstadt,
     die Regel schützt also Fliegerhorst und Stadt gegen gezielte Überfälle, nicht die Front.
+  - **Luftschlag (Paket „Luftschlag“, Werte `CITY.air.strike`, Code `js/game/airstrike.js`):** Knopf **✈ Luftschlag** in der rechten Knopfspalte
+    oder Taste **F4**, dann ein Ziel oder einen Punkt auf der Karte anklicken (Befehl `airstrike`), ohne die Jets vorher zu wählen.
+    Es starten bis zu **4** (`maxJets`) eigene Jets mit Bodenwaffen (F-16, Su-27, A-10; nicht F-22, U-2, C-130), die nächsten zum Ziel zuerst;
+    nur solche, die am Stellplatz stehen, betankt, bewaffnet und untätig sind und nicht im Alarm fliegen.
+    Ein sichtbares feindliches Ziel greifen sie an; sonst fliegen sie im Angriffsmarsch zum Punkt und greifen an, was sie dort sehen.
+    Ist das Ziel vernichtet, landen sie auf ihrem Stellplatz (vor dem Start: sie bleiben stehen); am Punkt suchen sie **3 s** (`linger`) und landen,
+    wenn sie nichts finden. Treibstoff und Raketen wie sonst; ein eigener Befehl beendet den Luftschlag.
+    Ohne startbereiten Jet meldet der Knopf das nur. Die KI nutzt den Befehl nicht (sie schickt ihre Jets über `jets()`).
   - **Aussehen:** Alle Bausteine sind gemalt wie die Werke (2D und Iso, je Maßstab einmal gemalt).
     **Stellplatz** Stufe 1 Beton mit Fugen, je Platz eine gelbe Führungslinie bis zur Haltemarke, Fahrwerksmarken, Bodenstromgerät, Feuerlöscher, Flutlicht und Leitkegeln;
     Stufe 2 **Überdachung**: Stahlstützen auf Fundamenten mit Kopfbändern, Traufpfetten, drei Fachwerkbinder, seitlicher Windschutz aus Wellblech, Satteldach aus Wellblech mit Rinnen und First,

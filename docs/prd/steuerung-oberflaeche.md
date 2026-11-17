@@ -35,6 +35,7 @@
 | Leertaste / H | Kamera auf Auswahl / Hauptstadt |
 | P | Pause; `+` / `-` Spielgeschwindigkeit 1×–3× |
 | F2 / Lautsprecher-Knopf oben | Ton an/aus (wird gemerkt, §14) |
+| F4 / Knopf „✈ Luftschlag“ rechts | Luftschlag: Ziel oder Punkt anklicken, startbereite Jets mit Bodenwaffen fliegen hin und landen danach (§15 „Luftschlag“) |
 | F3 | Messanzeige an/aus: Bildrate, Bildzeit, Zeit je Ebene, Eingabeverzögerung (wird gemerkt; `?perf=1` startet damit, §9 „Messanzeige“) |
 | F1 / ? | Hilfe |
 | Minimap | Linksklick = Kamera, Rechtsklick = Bewegen |
@@ -75,7 +76,7 @@
   Befehlskarte mit Spalten à 50 × 48 px (Touch-Ziele; Tastenkürzel ausgeblendet), wischbar (Wischleiste, seit v5.182): Ausbildung eines Gebäudes in der oberen
   Zeile, die übrigen Aktionen (Baumodus, Abreißen, Abbruch, Abwählen …) darunter; beide Zeilen wischen gemeinsam, Schatten am Rand zeigt Inhalt dahinter.
   Ein Wischen zählt nicht als Tippen (Klick nur ohne Bewegung).
-  Die Karte liegt links neben der rechten Knopfspalte (Stadt, Forschung, Ressourcen, Bauer), die sich nicht überdeckt.
+  Die Karte liegt links neben der rechten Knopfspalte (Stadt, Forschung, Ressourcen, Bauer, Luftschlag), die sich nicht überdeckt.
   Der Knopf „▾“ neben der Minimap klappt Auswahl und Befehle ein (nur die Minimap
   bleibt, Zustand wird gemerkt, `localStorage` `frontline-hud-fold`). Die Kamera zentriert Ziele (Spielstart, Minimap-Klick, Meldung antippen, Taste für Basis) in der
   vom HUD nicht verdeckten Mitte (`camera.insetTop/insetBottom`). Tooltips der Befehlstasten gibt es nur mit Maus (Hover), nicht auf Touch.

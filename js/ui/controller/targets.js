@@ -3,6 +3,7 @@
 
 import { isStand } from '../../game/aircraft.js';
 import { isHeliport } from '../../game/helipad.js';
+import { cityEntityAt } from '../../game/city/query.js';
 import { CITY } from '../../data/city.js';
 import { lineCells } from '../../game/grid.js';
 import { BUILDINGS } from '../../data/buildings.js';
@@ -192,6 +193,16 @@ export const targetMethods = {
       this.moveMarker(wx, wy);
       this.setMode('normal');
     }
+  },
+
+  /** Luftschlag (Paket „Luftschlag“): sichtbares feindliches Ziel unter dem Punkt angreifen, sonst Angriffsmarsch dorthin (js/game/airstrike.js). */
+  confirmAirstrike(wx, wy) {
+    const foe = (e) => e.team !== this.team && this.game.sees(this.team, e);
+    const city = cityEntityAt(this.game, wx, wy);
+    const target = (city && foe(city) ? city : null) ?? this.pick(wx, wy, foe);
+    const r = this.issue({ type: 'airstrike', x: wx, y: wy, targetId: target?.id ?? null });
+    if (r.ok) this.moveMarker(target?.x ?? wx, target?.y ?? wy);
+    this.setMode('normal');
   },
 
   /** Brücke legen (E14): gewählte Brückenleger legen auf der angetippten Flusszelle eine Behelfsbrücke (js/game/river.js). */

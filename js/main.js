@@ -24,6 +24,7 @@ import * as saves from './ui/saves.js';
 import { matchStart, matchResume, finishMatch, gameInfo } from './ui/match.js';
 import { GAME_VERSION } from './version.js';
 import { WEATHER_NAMES, WEATHER_SETTINGS } from './game/weather.js';
+import { strikeJets } from './game/airstrike.js';
 import { PerfMeter, PerfPanel, watchInput } from './ui/perfmeter.js';
 
 const params = new URLSearchParams(location.search);
@@ -428,6 +429,15 @@ const app = {
     if (!s) return;
     s.loop.speed = SPEEDS[(nearestSpeedIndex(s.loop.speed) + 1) % SPEEDS.length];
     s.hud.pushMessage(`Tempo ${s.loop.speed}×`);
+  },
+  /** Luftschlag (F4, Knopf „Luftschlag“): Zielmodus; ohne startbereiten Jet mit Bodenwaffen nur eine Meldung (js/game/airstrike.js). */
+  airstrike() {
+    const s = session;
+    if (!s || s.ended || !overlay.hidden) return;
+    const n = strikeJets(s.game, s.controller.team).length;
+    if (!n) s.hud.pushMessage('Luftschlag: kein startbereiter Jet mit Bodenwaffen am Fliegerhorst (F-16, Su-27, A-10)');
+    else s.controller.setMode(s.controller.view.mode === 'airstrike' ? 'normal' : 'airstrike');
+    s.hud.refresh?.(); // Hinweis des Zielmodus sofort zeigen
   },
   /** Nächstes Baufahrzeug wählen und anfahren (J, Knopf „Bauer“). */
   nextBuilder() {

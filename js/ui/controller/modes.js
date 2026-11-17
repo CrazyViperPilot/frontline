@@ -50,6 +50,11 @@ export const MODES = {
     hint: () => 'Pendeln: Ziel-FOB anklicken · Esc bricht ab',
     click: (c, wx, wy) => c.confirmRouteTo(wx, wy),
   },
+  airstrike: {
+    target: true,
+    hint: () => 'Luftschlag: Ziel oder Punkt auf der Karte anklicken, startbereite Jets mit Bodenwaffen fliegen hin · Esc bricht ab',
+    click: (c, wx, wy) => c.confirmAirstrike(wx, wy),
+  },
   mortarTarget: {
     target: true,
     hint: () => 'Mörser / Artillerie: Ziel auf der Karte anklicken (Kreis zeigt Reichweite) · Esc bricht ab',

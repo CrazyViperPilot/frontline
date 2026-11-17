@@ -55,6 +55,7 @@ const TEMPLATES = {
   layBridge: { ids: 'ids', c: 'col', r: 'row' },
   land: { ids: 'ids', airportId: 'cityEnt' },
   scramble: { ids: 'ids', on: 'bool' },
+  airstrike: { x: 'x', y: 'y', targetId: 'target' },
   cityUpgrade: { buildingId: 'cityEnt' },
   dig: { ids: 'ids', c0: 'col', r0: 'row', c1: 'col', r1: 'row', append: 'bool' },
   shellRoad: { ids: 'ids', c0: 'col', r0: 'row', c1: 'col', r1: 'row' },

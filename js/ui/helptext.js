@@ -189,6 +189,8 @@ export const KEYS = [
     'Linienbreite = Menge je s, rot = Engpass, gelb = Werk wartet auf Rohwaren, unten die Engpässe mit Rat · Esc schließt'],
   ['F3', 'Messanzeige an/aus: Bilder je s, Bildzeit, Simulation, Zeichenzeit je Ebene und Verzögerung der Eingaben (auch mit ?perf=1 in der Adresse); hilft, ' +
     'Ruckler und träge Befehle auf dem eigenen Gerät zu finden'],
+  ['F4', `Luftschlag (auch der Knopf „✈ Luftschlag“ rechts): Ziel oder Punkt anklicken; bis zu ${CITY.air.strike.maxJets} startbereite Jets mit ` +
+    'Bodenwaffen (F-16, Su-27, A-10) starten, greifen an und landen danach wieder'],
   ['F2', 'Ton an/aus (auch der Lautsprecher-Knopf oben) · Lautstärke für Geräusche und Musik im Start- und Pausenmenü (P)'],
   ['Minimap', 'Linksklick = Kamera, Rechtsklick = Bewegen'],
 ];

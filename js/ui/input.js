@@ -425,6 +425,10 @@ export class Input {
         e.preventDefault();
         app.toggleSound?.();
         return;
+      case 'F4':
+        e.preventDefault();
+        app.airstrike?.();
+        return;
       case 'F1':
       case '?':
         e.preventDefault();

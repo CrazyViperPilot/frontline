@@ -251,6 +251,12 @@ export const CITY = {
       cooldown: 60, // s Sperrzeit nach einem Alarmstart, bis derselbe Jet wieder von selbst startet; ebenso Abstand der Meldungen je Team
       mark: 8, // s, so lange markiert die Minimap den Ort des letzten Alarms (nur Anzeige)
     },
+    // Luftschlag (Paket „Luftschlag“, Logik js/game/airstrike.js, PRD docs/prd/stadt-luft.md): ein Befehl schickt die startbereiten
+    // Jets mit Bodenwaffen auf ein Ziel oder einen Punkt; danach landen sie wieder
+    strike: {
+      maxJets: 4, // höchstens so viele Jets je Luftschlag (die nächsten zum Ziel zuerst)
+      linger: 3, // s, so lange suchen sie am Zielpunkt nach Gegnern, bevor sie heimfliegen
+    },
     tank: { cap: [0, 300, 600, 1000], rate: [0, 3, 6, 10], fill: [0, 6, 12, 20] }, // Kerosin: Lager, Tanken je s, Befüllen je s
     depot: { cap: [0, 400, 800, 1400], rate: [0, 6, 12, 20], fill: [0, 10, 20, 32] }, // Munition: Lager, Nachladen je s, Befüllen je s
   },

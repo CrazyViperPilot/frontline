@@ -19,3 +19,5 @@
 - Ein Bild läuft in Durchläufen: `render` → `frameOf` (Kamera, Ausschnitt `inRect`, Sichtregeln `seen`/`known`/`shown`) → `renderTop` oder `renderIso`.
 - Nebel: `fogData` liefert dem WebGL-Nebel (`ground.renderFog`) weichgezeichnete Werte; ohne WebGL und für die Minimap `updateFogLayer`.
 - Neue Ebene: Methodenobjekt anlegen, in `core.js` einhängen, keine Importe von `core.js`.
+
+Exporte dieses Ordners: `docs/index/render-layers.md` (erzeugt; nach Änderungen an Exporten `npm run index`).

@@ -16,3 +16,5 @@ Einstieg `js/ai/cityai.js` (Re-Exporte). Werte `CITY.ai` in `js/data/city.js`. B
 - Das Grundmodul ist ein Blatt (keine Importe von Schwestern), damit es keinen Importzyklus gibt; `test/imports.test.js` prüft das.
 - Neue Entscheidung als eigene Funktion in das passende Modul, aufgerufen aus `aiCity`; neue Werte nach `CITY.ai`.
 - Sperrzeiten über `js/ai/cooldown.js` (Tabellen in `cityAiMemory()`), Zufall nur über `game.rng`.
+
+Exporte dieses Ordners: `docs/index/ai-city.md` (erzeugt; nach Änderungen an Exporten `npm run index`).

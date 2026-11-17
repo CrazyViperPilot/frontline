@@ -20,3 +20,5 @@ Nach jeder Änderung `npm run docs` und `npm run test:quick`; PRD-Text und Hilfe
 - Zellenarten und Waren ändern: Rezepte in `docs/rezepte/` (`neue-stadtzellenart.md`, `neue-ware.md`, `neue-rohware.md`).
 - Welcher Schlüssel wofür: `docs/wo-aendern.md` (erst dort suchen, dann hier nur den Schlüssel lesen).
 - `BALANCE.match.tokenDays`, `walletMax`, `startRes.money` haben PHP-Spiegel in `api/lib/` (`FL_MATCH_TOKEN_DAYS`, `FL_WALLET_*`): mit ändern.
+
+Exporte dieses Ordners: `docs/index/data-*.md`, nach Anfangsbuchstaben geteilt (erzeugt; nach Änderungen an Exporten `npm run index`).

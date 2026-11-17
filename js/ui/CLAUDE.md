@@ -31,3 +31,5 @@
 - Mixins: `Object.assign(Hud.prototype, …)` bzw. `Controller`; die Gruppen importieren `core.js` nicht (kein Zyklus).
 - Die Hilfe liest Zahlen und Tasten aus den Daten; bei Regeländerungen auch die Spielhinweise des Startmenüs (`menu/`) mitpflegen.
 - Neuer Befehl mit Ziel auf der Karte: Zeile in `MODES` plus `confirmX` in `targets.js`.
+
+Exporte dieses Ordners: `docs/index/ui.md`, Unterordner `ui-hud.md`, `ui-controller.md`, `ui-menu.md` (erzeugt; nach Änderungen an Exporten `npm run index`).

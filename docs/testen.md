@@ -11,8 +11,9 @@ Tests mit kurzem Reporter laufen lassen (`node --test --test-reporter=dot …`),
 python3 -m http.server 8765
 # Spiel:  http://localhost:8765/          Editor: http://localhost:8765/editor.html
 
-npm run test:quick                # Config-Prüfung und PRD-Tabellen, wenige Sekunden
+npm run test:quick                # Config-Prüfung, PRD-Tabellen und Symbol-Index, wenige Sekunden
 npm run docs                      # Wertetabellen in docs/prd/ (§6, Forschung) aus js/data/ neu erzeugen
+npm run index                     # Symbol-Index docs/index/ (Exporte je Ordner) neu erzeugen; nach Änderungen an Exporten unter js/
 npm run test:fast                 # alle Tests ohne die langsamen „[langsam]“ (KI-gegen-KI-Läufe): zum Iterieren
 npm test                          # alle Tests (node --test, Node 22), einige Minuten: vor dem Push und in der CI
 node --test test/radio.test.js    # nur eine Datei

@@ -33,3 +33,5 @@ Regeln: PRD.md und `docs/prd/`, Werte `js/data/`. Stadt: `city/CLAUDE.md`. Jede 
 - Neuer Befehl: Eintrag in `COMMANDS`, Vorlage in `test/cmdfuzz.test.js`; in der Eroberung prüft `lockedFor` die Sperre.
 - Die KI und der Spieler ändern das Spiel nur über `game.issue`; Zufall nur über `game.rng`.
 - Sicht: Tarnung und besetzte Häuser entscheidet `game.sees`; Straßenkrieg hält `game.roadHp`/`game.rubble`, Schutt sperrt `canZone` (`city/cells.js`).
+
+Exporte dieses Ordners: `docs/index/game-*.md`, nach Anfangsbuchstaben geteilt, Unterordner `game-cmd.md`, `game-city.md` (erzeugt; nach Änderungen an Exporten `npm run index`).

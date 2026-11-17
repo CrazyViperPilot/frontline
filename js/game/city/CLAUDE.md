@@ -20,3 +20,5 @@ Regeln: PRD §15 (`docs/prd/stadt*.md`), Werte `js/data/city.js`, `citykinds.js`
 - Ablauf von `updateCity` und Felder von `game.city[team]` und Straßentransport: `docs/architektur/stadt.md`.
 - Bahn und Rollfeld sind keine Straße (`roadAt`); gesperrte Bauplätze melden ihren Grund über `BUILD_BLOCK` (`buildWhy`).
 - Ausbildung prüft `cmdTrain` (`../cmd/train.js`) über `trainerKind`; Tempo nach Versorgung rechnet `../economy.js` mit `../transport.js`.
+
+Exporte dieses Ordners: `docs/index/game-city.md` (erzeugt; nach Änderungen an Exporten `npm run index`).

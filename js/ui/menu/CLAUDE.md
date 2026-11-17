@@ -20,3 +20,5 @@ Start, Pause, Hilfe, Ende und Konto; Einstieg mit Re-Exporten ist `../menu.js`. 
 ## Besonderheiten
 - Neue Option im Startmenü: Standard in `BALANCE.menuDefaults`, dann Zustand, HTML, Einstellungen (eigener Schlüssel) und `showStartMenu`.
 - Der Zugriff auf Spielstände und Konto läuft über `../saves.js`, nicht direkt über `fetch`.
+
+Exporte dieses Ordners: `docs/index/ui-menu.md` (erzeugt; nach Änderungen an Exporten `npm run index`).

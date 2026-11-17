@@ -185,6 +185,8 @@ Kleine Ordner ohne eigene Datei:
 - `js/editor/editor.js` + `editor.html`: Karteneditor; speichert Karten über `js/game/mapdata.js` im `localStorage`.
 - Sonstiges: `sw.js` Service Worker (network-first, Präfix `frontline-`), `manifest.json`, `css/`, `icons/` (keine weiteren Bilddateien,
   alles gemalt), `tools/doc-tables.mjs` (Wertetabellen der PRD, `npm run docs`), `test/` (node --test), `api/` und `admin/` (PHP, §9).
+- Symbol-Index `docs/index/`: je Ordner unter `js/` „Datei → Exporte“ mit Methoden und erstem Kommentarsatz, erzeugt von `npm run index`
+  (`tools/index.mjs`, nicht von Hand ändern; `test/index.test.js` prüft die Aktualität). Kleine Ordner stehen in `core.md`.
 
 ## 8. Spielstand
 Speichern und Laden (`core/snapshot.js`, `game/savegame.js`, `ui/saves.js`, `SAVE_FORMAT`): `docs/architektur/spielstand.md`. Regeln: PRD §16.

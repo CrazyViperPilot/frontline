@@ -18,3 +18,5 @@ Die Stadt-KI liegt in `js/ai/city/` (eigene Datei dort).
 - Neues Verhalten als Methode in das passende Modul, aufgerufen aus `think()`. Zustand der Instanz bleibt in `AI` (Spielstände gleich).
 - Je Spielart verschieden (`game.mode.aiArmy`): Wellen-, Späher- und Flankenlogik gelten nur klassisch, die Eroberung läuft über `conquestArmy`.
 - Konstanten je Feature mit Präfix in `js/data/ai.js` (`WAVE_*`, `AIR_*`, `CQ_*` …); Bedeutung in PRD §10 „KI-Konstanten“ (`docs/prd/ki.md`).
+
+Exporte dieses Ordners: `docs/index/ai.md`, Unterordner `ai-army.md`, `ai-city.md` (erzeugt; nach Änderungen an Exporten `npm run index`).

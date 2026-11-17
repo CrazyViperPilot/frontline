@@ -5,7 +5,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## airbase.js (8.1 KB)
 - aiAirport(game, c, main, reserve, want, difficulty) – Fliegerhorst der KI (ersetzt den Flughafen): ab CITY.ai.airportFrom Arbeitsstät…
 
-## build.js (9.7 KB)
+## build.js (3.0 KB)
 - aiCity(game, team, difficulty, mem) – KI-Schritt (alle ai.interval s von ai.js): weist die nächsten Zellen aus, solan…
 
 ## common.js (4.7 KB)
@@ -17,6 +17,9 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - cellCmd(c, kind, j) – Befehl „Zelle j als Art kind bauen“ (ein Feld des Rasters)
 - roadFree(game, c, j) – Für eine Straße frei: leer, ausweisbar (Baugebiet für Straßen), ohne Hindernis
 - touchesRoad(c, i, reach) – Liegt eine verbundene Straße (mit dem Lager) neben Zelle i?
+
+## grow.js (9.2 KB)
+- growCells(game, team, city, main, anchor, rad, n, reserve, mem, hot) – Zweiter Teil des Ausbau-Schritts: weist die nächsten Zellen um den Anker aus, s…
 
 ## market.js (1.6 KB)
 - aiMarket(game, team, reserve, mem) – Markt der KI: Überschuss verkaufen, Metall zukaufen, wenn es knapp ist

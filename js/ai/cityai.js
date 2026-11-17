@@ -5,6 +5,7 @@
 //   common.js   Buchhaltung (cityAiMemory), Gefahrenzonen, Zellenbefehl, Kandidaten des Ausbaus
 //   need.js     Bedarf: welche Zone als Nächstes (aiNeed)
 //   build.js    Ausbau-Schritt aiCity (ruft alle anderen Module auf)
+//   grow.js     Wachstum: nächste Zellen ausweisen (growCells, Kontext je Takt statt eingebetteter Hilfen)
 //   station.js  Güterbahnhof, Einfuhr-Wächter (aiStation, importWatch); park.js: Grundriss und Platzsuche des Industrieparks
 //   roads.js    Straßennetz: Anschluss, Netz verlängern, Straße zum Rand, Spuren
 //   airbase.js  Fliegerhorst (aiAirport)

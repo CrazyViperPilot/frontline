@@ -111,6 +111,7 @@ const ASSETS = [
   './js/ai/city/common.js',
   './js/ai/city/need.js',
   './js/ai/city/build.js',
+  './js/ai/city/grow.js',
   './js/ai/city/station.js',
   './js/ai/city/park.js',
   './js/ai/city/roads.js',

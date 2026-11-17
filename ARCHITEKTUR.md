@@ -230,7 +230,7 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Zufallskarte, Gehöfte, Felder | `zone-gelaende` | `game/map.js` | `game/landscape.js`; Bild `render/terrain.js` | `map`, `golden` |
 | Wracks und Krater, Tiere (nur Optik) | `steuerung-oberflaeche` | `game/scars.js` | `game/animals.js`; Bild `render/nature.js` | `scars`, `animals` |
 | Karteneditor, gespeicherte Karten | `steuerung-oberflaeche` | `editor/editor.js` | `game/mapdata.js` | `mapdata` |
-| Stadt (Gebiet, Einwohner, Strom, Ausbildung, Pflege) | `stadt` | `game/city/economy.js` | KI `ai/city/build.js`; UI `ui/citypanel.js` | `city`, `buildrules` |
+| Stadt (Gebiet, Einwohner, Strom, Ausbildung, Pflege) | `stadt` | `game/city/economy.js` | KI `ai/city/build.js`, `ai/city/grow.js`; UI `ui/citypanel.js` | `city`, `buildrules` |
 | Anschlusspflicht ans Straßennetz, Straßennetz der Stadt-KI | `stadt` | `game/city/cells.js` | `game/city/roadnet.js`; KI `ai/city/roads.js` | `buildrules`, `citynet` |
 | Großbauten mit gerader Kante | `stadt` | `game/city/cells.js` | KI `ai/city/need.js`; Bild `render/bigbuild.js` | `city`, `bigbuild` |
 | Aussehen der Stadtgebäude, Baustellen, Ruinen | `stadt-aussehen` | `render/townhouses.js` | Bild `render/works.js`, `render/citysite.js` | `citysite` |

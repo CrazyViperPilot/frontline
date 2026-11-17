@@ -4,7 +4,8 @@ Einstieg `js/ai/cityai.js` (Re-Exporte). Werte `CITY.ai` in `js/data/city.js`. B
 
 - `common.js` – Buchhaltung, Gefahrenzonen, Zellenbefehl, Kandidaten des Ausbaus; importiert keine Schwesterdateien. `cityAiMemory`, `inDanger`, `aiCandidates`, `cellCmd`
 - `need.js` – Bedarf: welche Zone braucht die Stadt als Nächstes. `aiNeed`
-- `build.js` – Ausbau-Schritt, ruft alle anderen Module auf und weist die nächsten Zellen aus. `aiCity`
+- `build.js` – Ausbau-Schritt: Anker, Reihenfolge der Teilschritte, ruft alle anderen Module auf. `aiCity`
+- `grow.js` – Wachstum: nächste Zellen ausweisen (Straße mit Zufahrt, Wohnen, Großbau über Werksplatz), Kontext je Takt. `growCells`
 - `station.js` – Güterbahnhof: Einfuhr-Wächter und Anlage eines Industrieparks. `importWatch`, `aiStation`
 - `park.js` – Grundriss des Industrieparks (vier Drehungen), Platzsuche und Werksplätze am Bahnhof. `parkSite`, `parkSlots`, `parkSpot`
 - `roads.js` – Straße zum Kartenrand, Anschluss, Netz verlängern, Spuren überlasteter Straßen. `aiEdge`, `extendNet`, `aiConnect`, `aiLanes`

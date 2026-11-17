@@ -1,1 +1,0 @@
-**Stadt-KI aufteilen:** Wachstum des Ausbau-Schritts aus `js/ai/city/build.js` nach `js/ai/city/grow.js`; die eingebetteten Hilfen (free, freeFor, canLink, workSpot, place) sind benannte Funktionen über einen Kontext je Takt (reiner Umbau, Spielablauf gleich).

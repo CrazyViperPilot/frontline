@@ -11,6 +11,8 @@ import { AI } from '../js/ai/ai.js';
 import { hit } from '../js/game/combat.js';
 import { armorMul, rangeMul, sightMul, modOf, researchEffect, researchBlock, RESEARCH_KEYS } from '../js/game/research.js';
 import { Controller } from '../js/ui/controller.js';
+import { setLevel } from './cityhelp.js';
+import { trainer, noCrew } from './util.js';
 
 const R = RESEARCH;
 const DT = 1 / BALANCE.tickRate;
@@ -24,9 +26,16 @@ const mainOf = (g, t) => g.buildings.find((b) => b.main && b.team === t);
 
 /** Leere Karte ohne Starteinheiten (Hauptstädte bleiben). */
 function empty(opts = {}) {
-  const g = new Game({ city: false, map: createEmptyMap(), ...opts });
+  const g = new Game({ map: createEmptyMap(), ...opts });
   for (const u of g.units) u.alive = false;
   g.cleanup();
+  // mit Stadt forscht nur, wer eine Universität hat; ein Kraftwerk hält das Tempo bei 1, wenn das Startviertel wächst
+  if (opts.research) {
+    for (const t of [0, 1]) {
+      setLevel(g, 'uni', 1, t);
+      setLevel(g, 'power', 3, t);
+    }
+  }
   return g;
 }
 const research = (g, key, t = 0) => g.issue(t, { type: 'research', buildingId: mainOf(g, t).id, key });
@@ -52,11 +61,16 @@ test('Aus (Standard): keine Forschung, alle Faktoren 1; an: alle Einheiten von A
   for (const s of ['range', 'sight', 'armor', 'dmg', 'speed', 'fuel']) assert.equal(modOf(g, tank, s), 1);
   assert.equal(research(g, 'tank1').ok, false);
   const on = empty({ research: true, startMoney: 1e6 });
-  for (const u of ['sniper', 'ifv', 'tank', 'littlebird', 'transporter', 'gunship', 'flak', 'sam']) {
-    const r = on.issue(0, { type: 'train', buildingId: mainOf(on, 0).id, unit: u });
-    assert.ok(r.ok || r.reason === 'Warteschlange ist voll', `${u}: ${r.reason}`);
-    if (!r.ok) mainOf(on, 0).queue.length = 0;
-  }
+  on.city[0].metal = 1e5;
+  // Kaserne und Fabrikhalle des Startviertels; Hubschrauber (Heliport) prüft dieselbe Regel in cmdTrain
+  noCrew(() => {
+    for (const u of ['sniper', 'ifv', 'tank', 'flak', 'sam']) {
+      const b = trainer(on, u);
+      b.queue.length = 0;
+      const r = on.issue(0, { type: 'train', buildingId: b.id, unit: u });
+      assert.ok(r.ok, `${u}: ${r.reason}`);
+    }
+  });
 });
 
 test('Stufen: erst 3 Forschungen der Stufe davor; Vorgänger im Ast; Warteschlange bis 3, Geld beim Einreihen', () => {
@@ -152,10 +166,11 @@ test('Befehlskarte: Forschung (U) öffnet das Menü, keine gesperrten Einheiten'
   const c = new Controller(g, 0, null);
   let opened = 0;
   c.onResearch = () => opened++;
-  c.view.selection.add(mainOf(g, 0).id);
   const btn = (k) => c.commandCard().find((e) => e.hotkey === k);
-  assert.equal(btn('S').reason, '', 'Kampfpanzer frei');
-  assert.equal(btn('G').reason, '', 'AH-64 frei');
+  c.view.selection.add(trainer(g, 'tank').id);
+  assert.doesNotMatch(btn('S').reason, /Forschung|Stufe/, 'Kampfpanzer frei (Fabrikhalle)');
+  c.view.selection.clear();
+  c.view.selection.add(mainOf(g, 0).id);
   c.handleHotkey('U');
   assert.equal(opened, 1);
   assert.equal(btn('U').active, false);
@@ -164,7 +179,7 @@ test('Befehlskarte: Forschung (U) öffnet das Menü, keine gesperrten Einheiten'
 });
 
 test('KI: forscht ab ihrer Zeit Stufe für Stufe, höchstens eine wartend, nach den Regeln des Baums [langsam]', () => {
-  const g = new Game({ city: false, seed: 3, research: true, startMoney: 4000 });
+  const g = new Game({ seed: 3, research: true, startMoney: 4000 });
   const ai = new AI(g, 1, 'hard');
   const tech = g.teams[1].tech;
   run(g, BALANCE.difficulty.hard.research[0] - 5, [ai]);

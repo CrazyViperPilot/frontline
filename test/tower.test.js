@@ -11,8 +11,17 @@ const run = (g, s) => {
   for (let i = 0; i < Math.round(s / DT); i++) g.update(DT);
 };
 
+/** Fertige vordere FOB 30 Felder vor der Hauptstadt (Richtung Kartenmitte), weg vom Startviertel der Stadt; volles Lager. */
+function frontFob(g, fob) {
+  const dx = Math.sign(g.zone.x - fob.x);
+  const dy = Math.sign(g.zone.y - fob.y);
+  const f = g.spawnBuilding('fob', 0, fob.cx + 30 * dx, fob.cy + 30 * dy, { built: true });
+  f.store.bm = f.store.mun = f.store.fuel = 5000;
+  return f;
+}
+
 function setup() {
-  const g = new Game({ city: false, map: createEmptyMap('Festung') });
+  const g = new Game({ map: createEmptyMap('Festung') });
   for (const u of g.units) u.alive = false;
   g.cleanup();
   const fob = g.buildings.find((b) => b.main && b.team === 0);
@@ -72,7 +81,8 @@ test('Einsturz: Besatzung fällt verletzt heraus', () => {
 });
 
 test('Festungsbefehl: Ring mit Toren und Türmen um die FOB', () => {
-  const { g, fob } = setup();
+  const { g, fob: main } = setup();
+  const fob = frontFob(g, main);
   const r = g.issue(0, { type: 'fortify', buildingId: fob.id });
   assert.equal(r.ok, true, r.reason);
   const mine = g.buildings.filter((b) => b.team === 0);

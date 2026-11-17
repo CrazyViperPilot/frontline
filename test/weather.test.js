@@ -7,6 +7,10 @@ import { createEmptyMap } from '../js/game/mapdata.js';
 import { BALANCE } from '../js/data/balance.js';
 import { UNITS } from '../js/data/units.js';
 import { AI } from '../js/ai/ai.js';
+import { CITY } from '../js/data/city.js';
+import { snapshotGame, restoreGame } from '../js/game/savegame.js';
+import { cityTrainers } from '../js/game/city/query.js';
+import { paint, at, linkMain, run as cityRun } from './cityhelp.js';
 import { createWeather, updateWeather, setWeather, weatherSpeed, weatherEffect, SEASONS } from '../js/game/weather.js';
 
 const WX = BALANCE.weather;
@@ -21,17 +25,17 @@ function fake(seed, setting) {
 
 /** Leere Karte ohne Starteinheiten. */
 function empty(opts = {}) {
-  const g = new Game({ city: false, map: createEmptyMap(), ...opts });
+  const g = new Game({ map: createEmptyMap(), ...opts });
   for (const u of g.units) u.alive = false;
   g.cleanup();
   return g;
 }
 
 test('Aus (Standard): Sommer, klar, alle Faktoren 1, kein Wechsel; der Spielzufall bleibt unberührt', () => {
-  const off = new Game({ city: false, seed: 4 });
+  const off = new Game({ seed: 4 });
   assert.equal(off.weather.on, false);
   assert.deepEqual([off.weather.season, off.weather.kind, off.weather.sight, off.weather.vehicle], ['summer', 'clear', 1, 1]);
-  const on = new Game({ city: false, seed: 4, weather: 'winter' });
+  const on = new Game({ seed: 4, weather: 'winter' });
   assert.equal(on.weather.on, true);
   assert.equal(on.rng.next(), off.rng.next(), 'eigener Zufall: die übrige Partie läuft gleich');
   const msgs = [];
@@ -176,8 +180,15 @@ test('Formation im Schnee: das Tempo der gebremsten Fahrzeuge gilt, Panzer und S
 });
 
 test('KI: bei schlechter Sicht kommt der Späher früher, im Nebel geht die Welle mit 85 % los; Leicht nutzt das Wetter nicht', () => {
+  // Mit Stadt bildet nur ein Heliport den Späher aus: einmal bauen, je Fall aus dem Spielstand neu laden
+  const heli = new Game({ seed: 7 });
+  paint(heli, 'road', 0, 1, 3, 1, 1);
+  paint(heli, 'heliport', 0, 0, 0, 0, 1);
+  linkMain(heli, 1, at(heli, 0, 0));
+  cityRun(heli, CITY.growTime + 1);
+  const snap = snapshotGame(heli);
   const scoutAt = (kind, diff) => {
-    const g = new Game({ city: false, seed: 7 });
+    const { game: g } = restoreGame(snap);
     const ai = new AI(g, 1, diff);
     g.teams[1].res.money = 5000;
     // Plätze frei machen (die Startarmee füllt das Einheitenlimit); es bleiben mehr als genug Kampfeinheiten für einen Späher
@@ -187,14 +198,14 @@ test('KI: bei schlechter Sicht kommt der Späher früher, im Nebel geht die Well
     setWeather(g, kind);
     g.weather.next = Infinity;
     ai.think();
-    return g.buildings.some((b) => b.team === 1 && b.queue.some((q) => (q.unit ?? q.type ?? q) === 'littlebird'));
+    return cityTrainers(g, 1).some((b) => b.queue.some((q) => (q.unit ?? q.type ?? q) === 'littlebird'));
   };
   assert.equal(scoutAt('clear', 'normal'), false);
   assert.equal(scoutAt('fog', 'normal'), true);
   assert.equal(scoutAt('rain', 'hard'), true);
   assert.equal(scoutAt('fog', 'easy'), false);
 
-  const g = new Game({ city: false, seed: 7 });
+  const g = new Game({ seed: 7 });
   const ai = new AI(g, 1, 'normal');
   const easy = new AI(g, 0, 'easy');
   const clear = ai.waveNeed([]);

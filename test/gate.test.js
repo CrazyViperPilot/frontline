@@ -9,8 +9,17 @@ import { snapshotGame, restoreGame } from '../js/game/savegame.js';
 import { pack, unpack } from '../js/core/snapshot.js';
 import { findPath } from '../js/game/pathfinding.js';
 
+/** Fertige vordere FOB 30 Felder vor der Hauptstadt (Richtung Kartenmitte), weg vom Startviertel der Stadt; volles Lager. */
+function frontFob(g, fob) {
+  const dx = Math.sign(g.zone.x - fob.x);
+  const dy = Math.sign(g.zone.y - fob.y);
+  const f = g.spawnBuilding('fob', 0, fob.cx + 30 * dx, fob.cy + 30 * dy, { built: true });
+  f.store.bm = f.store.mun = f.store.fuel = 5000;
+  return f;
+}
+
 function setup() {
-  const g = new Game({ city: false, map: createEmptyMap('Tor') });
+  const g = new Game({ map: createEmptyMap('Tor') });
   for (const u of g.units) u.alive = false;
   g.cleanup();
   const fob = g.buildings.find((b) => b.main && b.team === 0);
@@ -85,7 +94,8 @@ test('Tor: eigene Einheiten fahren durch beide Hälften, fremde nicht', () => {
 });
 
 test('Festung: vier Tore je zwei Hälften, zweiter Aufruf ergänzt nichts', () => {
-  const { g, fob } = setup();
+  const { g, fob: main } = setup();
+  const fob = frontFob(g, main);
   const res = g.issue(0, { type: 'fortify', buildingId: fob.id });
   assert.equal(res.ok, true, res.reason);
   assert.equal(gates(g).length, 8);
@@ -101,7 +111,7 @@ test('Festung: vier Tore je zwei Hälften, zweiter Aufruf ergänzt nichts', () =
 });
 
 test('KI baut ein Tor aus zwei Hälften in der Mauer vor der Hauptstadt', () => {
-  const g = new Game({ city: false, seed: 5 });
+  const g = new Game({ seed: 5 });
   const ai = new AI(g, 1, 'hard');
   const dt = 1 / 20;
   for (let i = 0; i < 20 * 400; i++) {

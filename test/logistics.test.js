@@ -8,7 +8,7 @@ import { nearestPassable } from '../js/game/movement.js';
 
 BALANCE.slotCap = 1000; // diese Tests prüfen nicht das Einheitenlimit (siehe economy.test.js)
 const DT = 0.05;
-const mk = (opts) => classic(new Game({ city: false, ...opts }));
+const mk = (opts) => classic(new Game({ ...opts }));
 const TILE = BALANCE.map.tile;
 const cellOf = (v) => Math.floor(v / TILE);
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
@@ -55,26 +55,8 @@ function fobRing(game, team, x0, y0, rMin = 950, rMax = 1300) {
   return game.spawnBuilding('fob', team, p.cx, p.cy, { built: true });
 }
 
-test('Hauptstadt hat unendlich Vorrat: Laden entleert sie nicht, das Front-Lager zählt ohne sie', () => {
-  const g = new Game({ city: false, seed: 7 });
-  const f = fobOf(g, 0);
-  assert.equal(f.main, true);
-  assert.equal(f.infinite, true);
-  assert.equal(g.teams[0].res.bm, 0, 'Front-Lager ohne Hauptstadt');
-  silence(g, 0);
-  const truck = g.spawnUnit('truck', 0, f.x + 90, f.y + 90);
-  f.store.bm = 450; // fast leer: wird aufgefüllt
-  g.issue(0, { type: 'load', ids: [truck.id], fobId: f.id, preset: 'bm' });
-  run(g, 1);
-  assert.ok(truck.cargo.bm > 0 && truck.cargo.bm <= L.transferRate * 1.2, `Laderate begrenzt: ${truck.cargo.bm}`);
-  run(g, 6);
-  assert.equal(truck.cargo.bm, L.truckCapacity, 'LKW voll');
-  assert.equal(f.store.bm, L.capitalCap, 'Lager der Hauptstadt wird immer aufgefüllt');
-  assert.equal(g.teams[0].res.bm, 0);
-});
-
 test('Front-FOB: LKW bringt Baumaterial aus der Hauptstadt, das Front-Lager steigt', () => {
-  const g = new Game({ city: false, seed: 7 });
+  const g = new Game({ seed: 7 });
   const f = fobOf(g, 0);
   silence(g, 0);
   const front = fobRing(g, 0, f.x, f.y);
@@ -88,7 +70,7 @@ test('Front-FOB: LKW bringt Baumaterial aus der Hauptstadt, das Front-Lager stei
 });
 
 test('LKW versorgt Einheiten in kleinem Radius aus seiner Ladung (Munition, Treibstoff, Baumaterial für Soldaten)', () => {
-  const g = new Game({ city: false, seed: 7 });
+  const g = new Game({ seed: 7 });
   const f = fobOf(g, 0);
   silence(g, 0);
   const z = g.zone;
@@ -104,15 +86,15 @@ test('LKW versorgt Einheiten in kleinem Radius aus seiner Ladung (Munition, Trei
   assert.ok(rifle.cargo.bm > 0, 'und Baumaterial');
   assert.ok(truck.cargo.mun < 100, 'LKW-Ladung sinkt');
   assert.equal(far.ammo, 0, 'außerhalb von truckSupplyRange nichts');
-  assert.ok(f.infinite);
 });
 
 test('Bau zahlt aus dem Lager in Reichweite, nicht aus einem fernen Lager', () => {
   const g = mk({ seed: 7 });
-  const f = fobOf(g, 0);
   silence(g, 0);
+  // vordere FOB statt Hauptstadt: deren Lager füllen die Werke der Stadt
+  const f = fobRing(g, 0, fobOf(g, 0).x, fobOf(g, 0).y);
   const far = fobRing(g, 0, f.x, f.y);
-  g.setStock(0, { bm: 0, mun: 0, fuel: 0 }); // Hauptstadt leer
+  g.setStock(0, { bm: 0, mun: 0, fuel: 0 }); // vordere Lager leer
   far.store.bm = 2000; // fern, aber nicht im Radius des Bauorts
   // Halle in der Nähe der leeren FOB (innerhalb ihres Radius)
   const p = g.canPlace(0, 'mortar', f.x + 150, f.y + 150);
@@ -165,8 +147,9 @@ test('Nachfüllen am LKW: Einheit in 180 px eines LKW mit Ladung außerhalb des 
 
 test('Nachfüllen: Fahrzeug tankt im FOB-Radius nach, Treibstoff aus dem Lager', () => {
   const g = mk({ seed: 7 });
-  const f = fobOf(g, 0);
   silence(g, 0);
+  const f = fobRing(g, 0, fobOf(g, 0).x, fobOf(g, 0).y); // vordere FOB: das Lager der Hauptstadt füllen die Werke
+  f.store.fuel = 500;
   const tank = g.spawnUnit('tank', 0, f.x + 100, f.y);
   tank.fuel = 0;
   const fuel0 = f.store.fuel;
@@ -177,8 +160,8 @@ test('Nachfüllen: Fahrzeug tankt im FOB-Radius nach, Treibstoff aus dem Lager',
 
 test('LKW lädt bis zur Kapazität (400) und Preset „Baumaterial“ lädt nur Baumaterial', () => {
   const g = mk({ seed: 7 });
-  const f = fobOf(g, 0);
   silence(g, 0);
+  const f = fobRing(g, 0, fobOf(g, 0).x, fobOf(g, 0).y); // vordere FOB: das Lager der Hauptstadt füllen die Werke
   g.setStock(0, { bm: 1000, mun: 1000, fuel: 1000 });
   const truck = g.spawnUnit('truck', 0, f.x + 60, f.y);
   const r = g.issue(0, { type: 'load', ids: [truck.id], fobId: f.id, preset: 'bm' });
@@ -193,8 +176,8 @@ test('LKW lädt bis zur Kapazität (400) und Preset „Baumaterial“ lädt nur 
 
 test('LKW Preset „Gemischt“ teilt die Kapazität je Sorte, Rest füllt die vorhandene Sorte', () => {
   const g = mk({ seed: 7 });
-  const f = fobOf(g, 0);
   silence(g, 0);
+  const f = fobRing(g, 0, fobOf(g, 0).x, fobOf(g, 0).y); // vordere FOB: das Lager der Hauptstadt füllen die Werke
   g.setStock(0, { bm: 1000, mun: 1000, fuel: 0 });
   const truck = g.spawnUnit('truck', 0, f.x + 60, f.y);
   assert.equal(g.issue(0, { type: 'load', ids: [truck.id], fobId: f.id }).ok, true);
@@ -209,13 +192,13 @@ test('LKW entlädt in die Hauptstadt (bis capitalCap) und in eine FOB-Baustelle'
   const f = fobOf(g, 0);
   assert.equal(f.main, true);
   silence(g, 0);
-  g.setStock(0, { bm: L.capitalCap - 10, mun: 0, fuel: 0 });
+  f.store.bm = L.capitalCap - 10;
   const truck = g.spawnUnit('truck', 0, f.x + 60, f.y);
   truck.cargo.bm = 400;
   assert.equal(g.issue(0, { type: 'unload', ids: [truck.id], fobId: f.id }).ok, true);
   run(g, 8);
   assert.equal(f.store.bm, L.capitalCap, 'bis capitalCap, Rest bleibt');
-  assert.equal(truck.cargo.bm, 400 - 10);
+  assert.ok(truck.cargo.bm >= 400 - 10, `höchstens 10 entladen (die Werke füllen mit): ${truck.cargo.bm}`);
   assert.equal(truck.order.type, 'idle');
 
   // Baustelle: Material per LKW, danach Baufahrzeug-Fortschritt
@@ -228,11 +211,10 @@ test('LKW entlädt in die Hauptstadt (bis capitalCap) und in eine FOB-Baustelle'
   assert.equal(t2.cargo.bm, 0);
 });
 
-test('Vordere FOB: Entladen nur bis storeCap, die Hauptstadt fasst capitalCap', () => {
-  const g = new Game({ city: false, seed: 7 });
+test('Vordere FOB: Entladen nur bis storeCap (die Hauptstadt fasst capitalCap)', () => {
+  const g = new Game({ seed: 7 });
   const f = fobOf(g, 0);
   assert.ok(L.capitalCap > L.storeCap);
-  assert.equal(f.store.bm, L.capitalCap, 'Hauptstadt voll bis capitalCap');
   silence(g, 0);
   const front = fobRing(g, 0, f.x, f.y);
   front.store.bm = L.storeCap - 10;
@@ -340,7 +322,7 @@ test('build mit siteId schickt Bauer an eine bestehende Baustelle; Schütze nich
 });
 
 test('Transporthubschrauber pendelt wie ein LKW und bringt gemischte Ladung zur Front-FOB', () => {
-  const g = new Game({ city: false, seed: 7 });
+  const g = new Game({ seed: 7 });
   const f = fobOf(g, 0);
   silence(g, 0);
   const front = fobRing(g, 0, f.x, f.y);
@@ -355,7 +337,7 @@ test('Transporthubschrauber pendelt wie ein LKW und bringt gemischte Ladung zur 
 });
 
 test('Bodenfahrzeuge nehmen Soldaten mit: LKW 2, Baufahrzeug 1, Schützenpanzer 6; Baufahrzeuge steigen nur in Hubschrauber', () => {
-  const g = new Game({ city: false, seed: 7 });
+  const g = new Game({ seed: 7 });
   const f = fobOf(g, 0);
   silence(g, 0);
   const at = (type, i) => g.spawnUnit(type, 0, f.x + 100 + (i % 6) * 14, f.y + 100 + Math.floor(i / 6) * 14);

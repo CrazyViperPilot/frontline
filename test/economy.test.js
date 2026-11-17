@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { AI } from '../js/ai/ai.js';
 import { classic } from './classic.js';
+import { runCityMoney, trainer, noCrew } from './util.js';
 import { BALANCE } from '../js/data/balance.js';
 import { UNITS } from '../js/data/units.js';
 
 const DT = 0.05;
 const TILE = BALANCE.map.tile;
-const mk = (opts) => classic(new Game({ city: false, ...opts }));
+const mk = (opts) => classic(new Game({ ...opts }));
 
 /** Test ohne Einheitenlimit (Startarmee füllt die 52 Plätze schon). */
 const roomy = (fn) => () => {
@@ -26,6 +27,12 @@ function run(game, seconds) {
   for (let i = 0; i < n; i++) game.update(DT);
 }
 
+/** Geld je s, das die Stadt des Teams im letzten Schritt brachte (Steuern minus Einfuhr): in team.rate.money enthalten. */
+function cityRate(game, t) {
+  const s = game.city[t].stats;
+  return s.money - (s.importCost ?? 0);
+}
+
 function fobOf(game, t) {
   return game.buildings.find((b) => b.alive && b.team === t && b.type === 'fob' && b.built);
 }
@@ -39,10 +46,10 @@ test('Zonengeld: jede Einheit in der Zone bringt 0,4 Geld/s, ohne Führungsgeld'
   const z = g.zone;
   g.spawnUnit('rifleman', 0, z.x + 2000, z.y); // weit weg von der Hot Zone (Mitte)
   const m0 = g.teams[0].res.money;
-  run(g, 10);
+  const city = runCityMoney(g, 0, 10); // Steuern und Einfuhr der Stadt herausrechnen
   assert.equal(g.zone.owner, 0);
-  assert.ok(Math.abs(g.teams[0].res.money - m0 - 4) < 1e-6, `Geld ${g.teams[0].res.money - m0} statt 4`);
-  assert.ok(Math.abs(g.teams[0].rate.money - 0.4) < 1e-9, 'Rate 0,4/s');
+  assert.ok(Math.abs(g.teams[0].res.money - m0 - city - 4) < 1e-6, `Geld ${g.teams[0].res.money - m0 - city} statt 4`);
+  assert.ok(Math.abs(g.teams[0].rate.money - cityRate(g, 0) - 0.4) < 1e-9, 'Rate 0,4/s');
 });
 
 test('Hot Zone: Einheit darin bringt 0,8 Geld/s (das Doppelte, nicht 1,2)', () => {
@@ -52,14 +59,16 @@ test('Hot Zone: Einheit darin bringt 0,8 Geld/s (das Doppelte, nicht 1,2)', () =
   const u = g.spawnUnit('rifleman', 0, z.x, z.y);
   u.order = { type: 'idle', x: u.x, y: u.y, targetId: null };
   const m0 = g.teams[0].res.money;
+  let city = 0; // Steuern und Einfuhr der Stadt herausrechnen
   for (let i = 0; i < Math.round(10 / DT); i++) {
     hz.x = u.x; // Hot Zone bleibt über der Einheit
     hz.y = u.y;
     g.update(DT);
+    city += cityRate(g, 0) * DT;
   }
   assert.equal(g.hot.owner, 0);
-  assert.ok(Math.abs(g.teams[0].res.money - m0 - 8) < 1e-6, `Geld ${g.teams[0].res.money - m0} statt 8`);
-  assert.ok(Math.abs(g.teams[0].rate.money - 0.8) < 1e-9, 'Rate 0,8/s');
+  assert.ok(Math.abs(g.teams[0].res.money - m0 - city - 8) < 1e-6, `Geld ${g.teams[0].res.money - m0 - city} statt 8`);
+  assert.ok(Math.abs(g.teams[0].rate.money - cityRate(g, 0) - 0.8) < 1e-9, 'Rate 0,8/s');
 });
 
 test('Zonengeld: beide Teams verdienen gleichzeitig, auch umkämpft; kein Punkt', () => {
@@ -68,11 +77,15 @@ test('Zonengeld: beide Teams verdienen gleichzeitig, auch umkämpft; kein Punkt'
   g.spawnUnit('rifleman', 0, z.x - 1000, z.y);
   g.spawnUnit('rifleman', 1, z.x + 1000, z.y);
   const m0 = [g.teams[0].res.money, g.teams[1].res.money];
-  run(g, 10);
+  const city = [0, 0]; // Steuern und Einfuhr der Städte herausrechnen
+  for (let i = 0; i < Math.round(10 / DT); i++) {
+    g.update(DT);
+    for (const t of [0, 1]) city[t] += cityRate(g, t) * DT;
+  }
   assert.equal(g.zone.contested, true);
   assert.equal(g.zone.owner, -1);
-  assert.ok(Math.abs(g.teams[0].res.money - m0[0] - 4) < 1e-6, 'Team 0 verdient');
-  assert.ok(Math.abs(g.teams[1].res.money - m0[1] - 4) < 1e-6, 'Team 1 verdient');
+  assert.ok(Math.abs(g.teams[0].res.money - m0[0] - city[0] - 4) < 1e-6, 'Team 0 verdient');
+  assert.ok(Math.abs(g.teams[1].res.money - m0[1] - city[1] - 4) < 1e-6, 'Team 1 verdient');
   assert.equal(g.teams[0].points + g.teams[1].points, 0);
 });
 
@@ -83,7 +96,7 @@ test('Zonengeld: kein Deckel – 40 Einheiten in der Zone bringen 16 Geld/s', ()
     g.spawnUnit('rifleman', 0, z.x + 2000 + (i % 8) * 20, z.y + Math.floor(i / 8) * 20);
   }
   g.update(DT);
-  assert.ok(Math.abs(g.teams[0].rate.money - 16) < 1e-9, `Rate ${g.teams[0].rate.money}`);
+  assert.ok(Math.abs(g.teams[0].rate.money - cityRate(g, 0) - 16) < 1e-9, `Rate ${g.teams[0].rate.money - cityRate(g, 0)}`);
   assert.equal(g.zone.counts[0], 40);
 });
 
@@ -106,7 +119,8 @@ test('Start: 39 Einheiten je Team (3 LKW, Baufahrzeug, 2 MBT, 3 SPz, 22 Schütze
 
 test('Startaufstellung: keine Einheit auf unpassierbarer Zelle, keine Überlappung, vorn zur Zone', () => {
   for (const seed of [1, 7, 42]) {
-    const g = mk({ seed });
+    // noch ohne Stadt: mit Stadt schiebt das Startviertel (occupyCell, js/game/city/state.js) verdrängte Einheiten auf einen Punkt
+    const g = mk({ seed, city: false });
     for (let t = 0; t < 2; t++) {
       const us = unitsOf(g, t);
       for (const u of us) {
@@ -129,9 +143,9 @@ test('Startaufstellung: keine Einheit auf unpassierbarer Zelle, keine Überlappu
   }
 });
 
-test('Ausbildung: zwei Einträge werden gleichzeitig ausgebildet, je mit eigenem Fortschritt', roomy(() => {
+test('Ausbildung: zwei Einträge werden gleichzeitig ausgebildet, je mit eigenem Fortschritt', roomy(() => noCrew(() => {
   const g = mk({ seed: 7 });
-  const f = fobOf(g, 0);
+  const f = trainer(g, 'rifleman');
   const bt = UNITS.rifleman.buildTime;
   const before = unitsOf(g, 0, 'rifleman').length;
   const m0 = g.teams[0].res.money;
@@ -152,11 +166,11 @@ test('Ausbildung: zwei Einträge werden gleichzeitig ausgebildet, je mit eigenem
   assert.equal(unitsOf(g, 0, 'rifleman').length, before + 3);
   assert.equal(f.queue.length, 0);
   assert.equal(f.queueTimes.length, 0);
-}));
+})));
 
-test('Ausbildung: Abbrechen erstattet den letzten Auftrag, der laufende behält seinen Fortschritt', roomy(() => {
+test('Ausbildung: Abbrechen erstattet den letzten Auftrag, der laufende behält seinen Fortschritt', roomy(() => noCrew(() => {
   const g = mk({ seed: 7 });
-  const f = fobOf(g, 0);
+  const f = trainer(g, 'rifleman');
   g.issue(0, { type: 'train', buildingId: f.id, unit: 'rifleman' });
   g.issue(0, { type: 'train', buildingId: f.id, unit: 'at' });
   run(g, 2);
@@ -167,7 +181,7 @@ test('Ausbildung: Abbrechen erstattet den letzten Auftrag, der laufende behält 
   assert.equal(f.queue[0].unit, 'rifleman');
   assert.equal(f.queueTimes.length, 1);
   assert.ok(Math.abs(f.queueTimes[0] - 2) < 0.1, `Fortschritt ${f.queueTimes[0]}`);
-}));
+})));
 
 test('KI: setzt die Startarmee sofort ein, die Reserve bleibt an der Hauptstadt', () => {
   const g = mk({ seed: 7 });
@@ -192,11 +206,11 @@ test('Nachschub: nach 6 s bei unter 29 Soldaten, ein Schütze kostenlos an der H
   assert.equal(g.soldierCount(0), 24);
   const before = unitsOf(g, 0, 'rifleman').length;
   const m0 = g.teams[0].res.money;
-  run(g, 5.9);
+  let city = runCityMoney(g, 0, 5.9); // Steuern und Einfuhr der Stadt herausrechnen
   assert.equal(unitsOf(g, 0, 'rifleman').length, before, 'vor 6 s noch keiner');
-  run(g, 0.5);
+  city += runCityMoney(g, 0, 0.5);
   assert.equal(unitsOf(g, 0, 'rifleman').length, before + 1, 'ein Schütze nach 6 s');
-  assert.equal(g.teams[0].res.money, m0, 'kostenlos');
+  assert.ok(Math.abs(g.teams[0].res.money - city - m0) < 1e-6, 'kostenlos');
   assert.equal(g.soldierCount(0), 25);
 });
 
@@ -228,8 +242,11 @@ test('soldierCount: zählt Passagiere in Fahrzeugen und Infanterie in der Wartes
   man.alive = false;
   heli.passengers.push(man);
   assert.equal(g.soldierCount(0), 29, 'Passagier zählt');
-  assert.equal(g.issue(0, { type: 'train', buildingId: f.id, unit: 'rifleman' }).ok, true);
-  assert.equal(g.issue(0, { type: 'train', buildingId: f.id, unit: 'at' }).ok, true);
+  const kas = trainer(g, 'rifleman');
+  noCrew(() => {
+    assert.equal(g.issue(0, { type: 'train', buildingId: kas.id, unit: 'rifleman' }).ok, true);
+    assert.equal(g.issue(0, { type: 'train', buildingId: kas.id, unit: 'at' }).ok, true);
+  });
   assert.equal(g.soldierCount(0), 31, 'Warteschlange zählt (Schütze und Panzerabwehrsoldat)');
 }));
 
@@ -238,17 +255,20 @@ test('Einheitenlimit: 52 Plätze, MBT belegt 5, SPz 3; Ausbildung wird abgelehnt
   BALANCE.slotCap = 52; // der Test prüft ein volles Limit: Startarmee füllt 52 Plätze
   try {
     const g = mk({ seed: 7 });
-    const f = fobOf(g, 0);
+    const fab = trainer(g, 'tank');
     assert.equal(UNITS.tank.slots, 5);
     assert.equal(UNITS.ifv.slots, 3);
     g.teams[0].res.money = 5000;
-    let r = g.issue(0, { type: 'train', buildingId: f.id, unit: 'tank' });
-    assert.equal(r.ok, false);
-    assert.match(r.reason || r.error || JSON.stringify(r), /limit/i);
-    unitsOf(g, 0, 'tank')[0].alive = false; // 5 Plätze frei
-    assert.equal(g.issue(0, { type: 'train', buildingId: f.id, unit: 'tank' }).ok, true);
-    assert.equal(g.slotsUsed(0), 52);
-    assert.equal(g.issue(0, { type: 'train', buildingId: f.id, unit: 'rifleman' }).ok, false);
+    g.city[0].metal = 1000;
+    noCrew(() => {
+      const r = g.issue(0, { type: 'train', buildingId: fab.id, unit: 'tank' });
+      assert.equal(r.ok, false);
+      assert.match(r.reason || r.error || JSON.stringify(r), /limit/i);
+      unitsOf(g, 0, 'tank')[0].alive = false; // 5 Plätze frei
+      assert.equal(g.issue(0, { type: 'train', buildingId: fab.id, unit: 'tank' }).ok, true);
+      assert.equal(g.slotsUsed(0), 52);
+      assert.equal(g.issue(0, { type: 'train', buildingId: trainer(g, 'rifleman').id, unit: 'rifleman' }).ok, false);
+    });
   } finally {
     BALANCE.slotCap = cap;
   }

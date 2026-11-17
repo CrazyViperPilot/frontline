@@ -13,8 +13,15 @@ ohne Stadt aus Simulation, KI, UI und Tests. Ein Paket je Sitzung, nach jedem Pa
 | Paket | Inhalt | Stand |
 |---|---|---|
 | S2a | `new Game()` startet standardmäßig mit Stadt; Tests, die heute ohne Stadt laufen, bekommen ausdrücklich `city: false` (rein mechanisch, damit alles grün bleibt) | gebaut |
-| S2b | Tests umstellen: `city: false`-Tests auf Stadt umbauen oder löschen, wenn sie nur den alten Modus prüfen; `test/classic.js` auflösen | teilweise, pausiert (golden fertig; game-*.test.js: 18 Fälle über `mkOld` (test/gamehelp.js); 15 weitere Dateien mit `city: false`) |
+| S2b | Tests umstellen: `city: false`-Tests auf Stadt umbauen oder löschen, wenn sie nur den alten Modus prüfen; `test/classic.js` auflösen | teilweise: 20 von 21 Dateien auf Stadt (Hilfen `trainer`, `noCrew`, `runCityMoney` in `test/util.js`); offen: 18 Fälle über `mkOld` in `game-*.test.js` (Lager der Hauptstadt), Startaufstellung in `economy.test.js` (wartet auf den Fehler unten), dann `classic.js` |
 | S2c | Simulation: Zweige `if (!game.city…)` in `js/game` (Ausbildung in der Hauptstadt/`fob.produces`, Lager, Wirtschaft, Logistik, Luft) entfernen | offen |
 | S2d | KI: Pfade ohne Stadt in `js/ai` entfernen | offen |
 | S2e | UI und Darstellung: Zweige in `js/ui`, `js/render`, Editor auf Stadt | offen |
 | S2f | Option `city` ganz entfernen (Konstruktor, Speichern/Laden mit Ablehnung alter Stände), CLAUDE.md Regel 9, ARCHITEKTUR, Restdoku | offen |
+
+## Gefunden bei S2b
+
+- **Startaufstellung mit Stadt:** Die Start-Einheiten werden vor dem Startviertel aufgestellt; dessen Gebäude schieben alle verdrängten
+  Einheiten auf denselben nächsten freien Punkt (`occupyCell`, `js/game/city/state.js`). In jedem Seed stehen so bei Team 1 34 Paare übereinander.
+  Eigenes Paket (ändert den Ablauf und die Prüfsummen); bis dahin prüft `economy.test.js` die Startaufstellung ohne Stadt.
+- Meldung „Zu wenig Stahl (Stadt: Erzmine, Hütte …)“ in `js/game/cmd/train.js` nennt Gebäude, die es seit dem Paket „Import“ nicht mehr gibt.

@@ -57,10 +57,6 @@ test('Universität: ohne sie ruht die Forschung; Rechenzentren beschleunigen sie
   setLevel(g, 'dc', 2);
   setLevel(g, 'dc', 1);
   assert.ok(Math.abs(researchSpeed(g, 0) - (1 + 3 * CITY.research.dcSpeed) * (g.city[0].stats.powerRatio ?? 1)) < 1e-9, 'alle Rechenzentren zählen');
-  // ohne Stadt: keine Universität nötig
-  const n = new Game({ city: false, seed: 3, research: true });
-  assert.equal(researchBlock(n, 0, 'tank1'), '');
-  assert.equal(researchSpeed(n, 0), 1);
 });
 
 test('Straßenanschluss: Wohnen/Gewerbe/BM-Werk über genau eine Zelle gleicher Art', () => {

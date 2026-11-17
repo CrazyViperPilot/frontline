@@ -3,9 +3,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { classic } from './classic.js';
+import { trainer, noCrew } from './util.js';
 import { UNITS } from '../js/data/units.js';
 import { RESEARCH } from '../js/data/research.js';
-import { BUILDINGS } from '../js/data/buildings.js';
 import { CITY } from '../js/data/city.js';
 import { unitHitChance } from '../js/game/combat.js';
 import { modOf, researchEffect } from '../js/game/research.js';
@@ -15,22 +15,24 @@ function run(game, seconds) {
   for (let i = 0; i < Math.round(seconds / DT); i++) game.update(DT);
 }
 function scene(seed = 7, opts = {}) {
-  const g = classic(new Game({ city: false, seed, ...opts }));
+  const g = classic(new Game({ seed, ...opts }));
   for (const u of g.units) u.alive = false;
   const z = g.zone;
   return { g, x: z.x + 1500, y: z.y };
 }
 
-test('Gepard und Panzerhaubitze: in der Hauptstadt und (mit Stadt) in der Fabrikhalle ausbildbar', () => {
-  for (const k of ['gepard', 'pzh']) {
-    assert.ok(BUILDINGS.fob.produces.includes(k), `${k} in der Hauptstadt`);
-    assert.ok(CITY.produces.factory.includes(k), `${k} in der Fabrikhalle`);
-  }
-  const g = classic(new Game({ city: false, seed: 7 }));
-  const m = g.mainFob(0);
+test('Gepard und Panzerhaubitze: in der Fabrikhalle ausbildbar', () => {
+  for (const k of ['gepard', 'pzh']) assert.ok(CITY.produces.factory.includes(k), `${k} in der Fabrikhalle`);
+  const g = new Game({ seed: 7 });
+  const fab = trainer(g, 'gepard');
   g.teams[0].res.money = 5000;
-  assert.ok(g.issue(0, { type: 'train', buildingId: m.id, unit: 'gepard' }).ok);
-  assert.ok(g.issue(0, { type: 'train', buildingId: m.id, unit: 'pzh' }).ok);
+  g.city[0].metal = 1000; // Stahl für beide Fahrzeuge
+  noCrew(() => {
+    for (const unit of ['gepard', 'pzh']) {
+      const r = g.issue(0, { type: 'train', buildingId: fab.id, unit });
+      assert.ok(r.ok, `${unit}: ${r.reason}`);
+    }
+  });
   run(g, UNITS.pzh.buildTime + 2);
   assert.ok(g.units.some((u) => u.alive && u.type === 'gepard' && u.team === 0));
   assert.ok(g.units.some((u) => u.alive && u.type === 'pzh' && u.team === 0));

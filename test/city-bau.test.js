@@ -12,13 +12,6 @@ import { withValue } from './util.js';
 import { brakeTax } from '../js/game/city/economy.js';
 import { run, base, paint, at, clearStart, raw, linkMain, setLevel } from './cityhelp.js';
 
-test('ohne Stadt: unendliches Lager, Stadtbefehl abgelehnt', () => {
-  const g = new Game({ city: false, seed: 3 });
-  assert.equal(g.city, null);
-  assert.equal(g.mainFob(0).infinite, true);
-  assert.equal(paint(g, 'road', 0, 0, 1, 0).ok, false);
-});
-
 test('mit Stadt: endliches Startlager, Front-Summe ohne Hauptstadt', () => {
   const g = new Game({ seed: 3, city: true });
   const m = g.mainFob(0);

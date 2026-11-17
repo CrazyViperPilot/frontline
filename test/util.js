@@ -1,5 +1,7 @@
 // Testhilfen ohne eigene Tests (node --test lädt die Datei mit, findet aber nichts).
 import { Game } from '../js/game/game.js';
+import { CITY } from '../js/data/city.js';
+import { cityTrainers } from '../js/game/city/query.js';
 
 /**
  * Setzt `obj[key] = value` für die Dauer von `fn()` und stellt danach den alten Wert wieder her, auch wenn `fn` wirft
@@ -45,4 +47,25 @@ export function hq(game, team = 0) {
 export function once(fn) {
   let r;
   return () => (r ??= fn());
+}
+
+/** Ausbildungsgebäude der Stadt (Kaserne, Fabrikhalle, Heliport …), das `unit` ausbildet. */
+export function trainer(game, unit, team = 0) {
+  return cityTrainers(game, team).find((e) => e.produces.includes(unit));
+}
+
+/** Führt `fn` aus, während Einheiten keine Einwohner kosten (`CITY.crew`): für Tests, die Ausbildung ohne Wohnviertel prüfen. */
+export function noCrew(fn) {
+  return withValue(CITY, 'crew', { default: 0 }, fn);
+}
+
+/** Lässt das Spiel `seconds` laufen und liefert das Geld, das die Stadt des Teams dabei netto brachte (Steuern minus Einfuhr). */
+export function runCityMoney(game, team, seconds, dt = 0.05) {
+  let sum = 0;
+  for (let i = 0; i < Math.round(seconds / dt); i++) {
+    game.update(dt);
+    const s = game.city?.[team]?.stats;
+    if (s) sum += (s.money - (s.importCost ?? 0)) * dt;
+  }
+  return sum;
 }

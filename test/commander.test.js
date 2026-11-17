@@ -10,6 +10,7 @@ import { UNITS } from '../js/data/units.js';
 import { hasCommander } from '../js/game/commander.js';
 import { hit } from '../js/game/combat.js';
 import { Controller } from '../js/ui/controller.js';
+import { trainer, noCrew } from './util.js';
 
 const C = BALANCE.commander;
 const DT = 1 / BALANCE.tickRate;
@@ -24,14 +25,14 @@ const mainOf = (g, t) => g.buildings.find((b) => b.main && b.team === t);
 
 /** Leere Karte ohne Startarmee. */
 function empty() {
-  const g = new Game({ city: false, map: createEmptyMap() });
+  const g = new Game({ map: createEmptyMap() });
   for (const u of g.units) u.alive = false;
   g.cleanup();
   return g;
 }
 
 test('Start: je Team genau ein Kommandeur nahe der Hauptstadt; er belegt keinen Platz und zählt nicht als Soldat', () => {
-  const g = new Game({ city: false, seed: 7 });
+  const g = new Game({ seed: 7 });
   for (const t of [0, 1]) {
     const cs = g.units.filter((u) => u.team === t && u.def.hero);
     assert.equal(cs.length, 1);
@@ -44,9 +45,9 @@ test('Start: je Team genau ein Kommandeur nahe der Hauptstadt; er belegt keinen 
   }
 });
 
-test('Einmalig: ein zweiter wird abgelehnt (auch in der Warteschlange); nach seinem Tod bildet die Hauptstadt einen neuen aus (C)', () => {
-  const g = new Game({ city: false, seed: 7 });
-  const f = mainOf(g, 0);
+test('Einmalig: ein zweiter wird abgelehnt (auch in der Warteschlange); nach seinem Tod bildet die Kaserne einen neuen aus (C)', () => noCrew(() => {
+  const g = new Game({ seed: 7 });
+  const f = trainer(g, 'commander');
   g.teams[0].res.money = 5000;
   const r = g.issue(0, { type: 'train', buildingId: f.id, unit: 'commander' });
   assert.ok(!r.ok && /Kommandeur/.test(r.reason));
@@ -64,7 +65,7 @@ test('Einmalig: ein zweiter wird abgelehnt (auch in der Warteschlange); nach sei
   assert.ok(!ctl.commandCard().find((e) => e.hotkey === 'C').enabled);
   run(g, UNITS.commander.buildTime + 2);
   assert.ok(commanderOf(g, 0), 'neuer Kommandeur');
-});
+}));
 
 test('Aura: eigene Einheiten im Umkreis schießen um fireRate schneller, außerhalb nicht', () => {
   const g = empty();
@@ -107,7 +108,7 @@ test('Heilung: verletzte Infanterie im Umkreis heilt, aber erst healDelay s nach
 });
 
 test('Tod: der Gegner bekommt deathPoints Punkte (kann die Partie entscheiden), beide erfahren es', () => {
-  const g = new Game({ city: false, seed: 7, winPoints: 100 });
+  const g = new Game({ seed: 7, winPoints: 100 });
   const msgs = [];
   const orig = g.message.bind(g);
   g.message = (team, text, x, y) => {
@@ -140,7 +141,7 @@ test('Als Passagier: fällt das Fahrzeug, fällt der Kommandeur mit (Punkte für
 });
 
 test('KI: Kommandeur nie in der Angriffswelle, folgt der Armee; ein gefallener wird ersetzt', () => {
-  const g = new Game({ city: false, seed: 3 });
+  const g = new Game({ seed: 3 });
   const ais = [new AI(g, 0, 'normal'), new AI(g, 1, 'normal')];
   let attack = 0;
   let moved = 0;

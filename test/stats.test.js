@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { Game, newStats } from '../js/game/game.js';
 import { AI } from '../js/ai/ai.js';
 import { classic } from './classic.js';
+import { trainer, noCrew } from './util.js';
 import { snapshotGame, restoreGame } from '../js/game/savegame.js';
 import { pack, unpack } from '../js/core/snapshot.js';
 import { BALANCE } from '../js/data/balance.js';
@@ -12,7 +13,7 @@ import { UNITS } from '../js/data/units.js';
 
 BALANCE.slotCap = 1000; // dieser Test prüft nicht das Einheitenlimit (siehe economy.test.js)
 const DT = 0.05;
-const mk = (opts) => classic(new Game({ city: false, ...opts }));
+const mk = (opts) => classic(new Game({ ...opts }));
 const run = (g, seconds) => {
   for (let i = 0; i < Math.round(seconds / DT); i++) g.update(DT);
 };
@@ -29,11 +30,10 @@ test('Statistik: jedes Team startet mit null Zählern', () => {
 
 test('Statistik: Ausbildung zählt bei Team 0 hoch, Startarmee nicht', () => {
   const g = mk({ seed: 7 });
-  const fob = g.buildings.find((b) => b.team === 0 && b.main);
   g.teams[0].res.money = 1000;
   run(g, 0.1);
   assert.equal(g.teams[0].stats.trained, 0, 'Startarmee zählt nicht');
-  const r = g.issue(0, { type: 'train', buildingId: fob.id, unit: 'sniper' });
+  const r = noCrew(() => g.issue(0, { type: 'train', buildingId: trainer(g, 'sniper').id, unit: 'sniper' }));
   assert.ok(r.ok, r.reason);
   run(g, UNITS.sniper.buildTime + 2);
   assert.equal(g.teams[0].stats.trained, 1);

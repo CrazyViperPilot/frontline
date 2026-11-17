@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { unitHitChance } from '../js/game/combat.js';
 import { classic } from './classic.js';
+import { runCityMoney } from './util.js';
 import { BALANCE } from '../js/data/balance.js';
 import { UNITS } from '../js/data/units.js';
 
 const DT = 0.05;
-const mk = (opts) => classic(new Game({ city: false, ...opts }));
+const mk = (opts) => classic(new Game({ ...opts }));
 function run(game, seconds) {
   for (let i = 0; i < Math.round(seconds / DT); i++) game.update(DT);
 }
@@ -127,10 +128,11 @@ test('Phalanx: schießt Hubschrauber in Reichweite, kostet Munition und Geld, ve
   const rifle = g.spawnUnit('rifleman', 1, ph.x + 200, ph.y); // in Reichweite der Phalanx, außer Reichweite des FOB-MG
   rifle.hp = 1e6;
   const fobMun = fob.store.mun;
-  run(g, 2);
+  const city = runCityMoney(g, 0, 2); // Steuern und Einfuhr der Stadt herausrechnen
   const shots = (fobMun - fob.store.mun) / BUILDINGS.phalanx.weapon.ammoPerShot;
   assert.ok(shots >= 10, `Dauerfeuer, nicht ${shots} Stöße`);
-  assert.equal(g.teams[0].res.money, 1000 - shots * BUILDINGS.phalanx.weapon.moneyPerShot, 'je Stoß Geld aus der Kasse');
+  const spent = 1000 + city - g.teams[0].res.money;
+  assert.ok(Math.abs(spent - shots * BUILDINGS.phalanx.weapon.moneyPerShot) < 1e-6, `je Stoß Geld aus der Kasse: ${spent}`);
   assert.ok(heli.hp < 1e6, 'Hubschrauber getroffen');
   assert.equal(far.hp, 1e6, 'außerhalb der Reichweite nichts');
   assert.equal(rifle.hp, 1e6, 'Infanterie bleibt verschont');

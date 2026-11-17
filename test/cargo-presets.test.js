@@ -12,7 +12,7 @@ import { PRESETS, presetKinds, presetOf } from '../js/game/logistics.js';
 
 const DT = 0.05;
 const L = BALANCE.logistics;
-const mk = (opts) => classic(new Game({ city: false, ...opts }));
+const mk = (opts) => classic(new Game({ ...opts }));
 
 function run(game, seconds) {
   const n = Math.round(seconds / DT);
@@ -21,6 +21,14 @@ function run(game, seconds) {
 
 function fobOf(game, t) {
   return game.buildings.find((b) => b.alive && b.team === t && b.type === 'fob' && b.built);
+}
+
+/** Fertige vordere FOB 30 Felder vor der Hauptstadt (Richtung Kartenmitte), deren Lager nur der Test füllt. */
+function frontFob(game, team = 0) {
+  const m = fobOf(game, team);
+  const f = game.spawnBuilding('fob', team, m.cx + 30 * Math.sign(game.zone.x - m.x), m.cy + 30 * Math.sign(game.zone.y - m.y), { built: true });
+  f.store.bm = f.store.mun = f.store.fuel = 0;
+  return f;
 }
 
 /** Start-LKW und Baufahrzeug entfernen, übrige Start-Einheiten voll versorgt (kein Nachschub nötig). */
@@ -95,7 +103,7 @@ test('setPreset: Paare in fester Reihenfolge werden angenommen, andere Schreibwe
 
 test('LKW mit „mun+fuel“ an einer FOB mit allen drei Sorten lädt nur Munition und Treibstoff, etwa gleich viel', () => {
   const g = mk({ seed: 7 });
-  const f = fobOf(g, 0);
+  const f = frontFob(g); // vordere FOB: das Lager der Hauptstadt füllen und leeren die Werke der Stadt
   silence(g, 0);
   f.store.bm = 1000;
   f.store.mun = 1000;
@@ -114,7 +122,7 @@ test('LKW mit „mun+fuel“ an einer FOB mit allen drei Sorten lädt nur Muniti
 
 test('LKW mit „bm+fuel“ lädt nur, was die Sorte im Lager hergibt: Munition im Lager bleibt liegen', () => {
   const g = mk({ seed: 7 });
-  const f = fobOf(g, 0);
+  const f = frontFob(g); // vordere FOB: das Lager der Hauptstadt füllen und leeren die Werke der Stadt
   silence(g, 0);
   f.store.bm = 0;
   f.store.mun = 1000;

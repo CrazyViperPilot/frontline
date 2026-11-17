@@ -2,12 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { classic } from './classic.js';
+import { trainer, noCrew } from './util.js';
 import { BALANCE } from '../js/data/balance.js';
 import { UNITS } from '../js/data/units.js';
 
 BALANCE.slotCap = 1000; // diese Tests prüfen nicht das Einheitenlimit (siehe economy.test.js)
 const DT = 0.05;
-const mk = (opts) => classic(new Game({ city: false, ...opts }));
+const mk = (opts) => classic(new Game({ ...opts }));
 function run(game, seconds) {
   for (let i = 0; i < Math.round(seconds / DT); i++) game.update(DT);
 }
@@ -19,16 +20,16 @@ function scene(seed = 7) {
   return { g, x: z.x + 1500, y: z.y };
 }
 
-test('Scharfschütze: in der Hauptstadt ausbildbar (Taste T), kostet Geld, lange Nachladezeit', () => {
+test('Scharfschütze: in der Kaserne ausbildbar (Taste T), kostet Geld, lange Nachladezeit', () => {
   assert.ok(UNITS.sniper);
   assert.equal(UNITS.sniper.hotkey, 'T');
   assert.equal(UNITS.sniper.cost.money, 220);
   assert.equal(UNITS.sniper.weapons[0].cooldown, 8);
   const g = mk({ seed: 7 });
-  const fob = g.buildings.find((b) => b.team === 0 && b.main);
-  assert.ok(fob.produces.includes('sniper'));
+  const kas = trainer(g, 'sniper');
+  assert.ok(kas, 'Kaserne bildet Scharfschützen aus');
   g.teams[0].res.money = 1000;
-  const r = g.issue(0, { type: 'train', buildingId: fob.id, unit: 'sniper' });
+  const r = noCrew(() => g.issue(0, { type: 'train', buildingId: kas.id, unit: 'sniper' }));
   assert.ok(r.ok, r.reason);
   assert.equal(g.teams[0].res.money, 780);
   run(g, UNITS.sniper.buildTime + 2);

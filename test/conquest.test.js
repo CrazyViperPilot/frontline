@@ -11,6 +11,7 @@ import { hit, impact } from '../js/game/combat.js';
 import { aiRaid, cityAiMemory } from '../js/ai/cityai.js';
 import { CITY } from '../js/data/city.js';
 import { UNITS } from '../js/data/units.js';
+import { runCityMoney } from './util.js';
 
 const Q = BALANCE.conquest;
 const run = (g, secs, ais = []) => {
@@ -68,7 +69,7 @@ test('Eroberung: fremdes Viertel ist gesperrt (kein Marsch, kein Weg, kein Schad
 
 test('Eroberung: Mehrheit im Gebiet nimmt die Flagge ein (erst neutral, dann eigene Farbe), Flaggen bringen Geld', () => {
   // ohne Stadt: deren Steuern und Erträge würden das Flaggengeld verdecken (Geld-Prüfung unten)
-  const g = new Game({ seed: 3, conquest: true, players: 3, city: false });
+  const g = new Game({ seed: 3, conquest: true, players: 3 });
   const f = g.conquest.flags[5];
   for (let i = 0; i < 3; i++) put(g, 0, 'rifleman', f.x + i * 20, f.y + 40);
   assert.equal(flagAt(g, f.x, f.y), f);
@@ -90,8 +91,8 @@ test('Eroberung: Mehrheit im Gebiet nimmt die Flagge ein (erst neutral, dann eig
   });
   g.update(0.05); // Aufräumen
   const before = g.teams[1].res.money;
-  run(g, 10);
-  const gain = g.teams[1].res.money - before;
+  const city = runCityMoney(g, 1, 10); // Steuern und Einfuhr der Stadt herausrechnen
+  const gain = g.teams[1].res.money - before - city;
   const expected = g.conquest.held[1] * Q.flagIncome * 10 * g.teams[1].incomeMult;
   assert.ok(Math.abs(gain - expected) < 0.5, `Flaggengeld in 10 s: ${gain}, erwartet ${expected}`);
 });

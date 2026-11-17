@@ -38,7 +38,7 @@ export const isoItemMethods = {
       items.push({ k, t: 0, o: b }); // Stadt
     }
     // Bäume und Büsche: nicht auf gefällten (Räumen) oder ausgewiesenen Stadtzellen (seit v5.13)
-    const gone = (x, y) => g.city && treeGone(g, x, y);
+    const gone = (x, y) => treeGone(g, x, y);
     for (const t of town?.trees ?? []) if (inRect(t.x, t.y, PAD) && !gone(t.x, t.y)) items.push({ k: cam.depth(t.x, t.y), t: 1, o: t });
     for (const t of g.map.trees ?? []) if (inRect(t.x, t.y, PAD) && !gone(t.x, t.y)) items.push({ k: cam.depth(t.x, t.y), t: 1, o: t });
     for (const t of this.deco.trees) if (inRect(t.x, t.y, PAD) && !gone(t.x, t.y)) items.push({ k: cam.depth(t.x, t.y), t: 1, o: t });

@@ -2,6 +2,7 @@
 // RESEARCH), nicht von Hand. Kein DOM: test/helptext.test.js lädt die Liste in Node. Angezeigt von showHelp in js/ui/menu/help.js.
 import { BALANCE } from '../data/balance.js';
 import { CITY } from '../data/city.js';
+import { KIND_NAME } from '../data/citykinds.js';
 import { UNITS } from '../data/units.js';
 import { BUILDINGS } from '../data/buildings.js';
 import { RESEARCH } from '../data/research.js';
@@ -23,8 +24,9 @@ const RES_SHORT = { money: 'Geld', bm: 'BM', steel: 'Stahl' };
 const upCost = (lvl) => Object.entries(AIR.upgrade[lvl]).filter(([, v]) => v > 0).map(([k, v]) => `${v} ${RES_SHORT[k]}`).join(' + ');
 const BUILD_MENU = Object.keys(BUILDINGS).filter((k) => BUILDINGS[k].hotkey && BUILDINGS[k].buildable !== false);
 const keyList = (keys) => keys.map((k) => `${BUILDINGS[k].hotkey} ${BUILDINGS[k].name}`).join(', ');
-// Ausbildung in der Hauptstadt (Reihenfolge wie die Befehlskarte); der Kommandeur ist einmalig
-const TRAIN_LIST = BUILDINGS.fob.produces.map((k) => `${UNITS[k].hotkey} ${UNITS[k].name}${UNITS[k].hero ? ' (einmalig)' : ''}`).join(' · ');
+// Ausbildung je Stadtgebäude (Reihenfolge wie die Befehlskarte, CITY.produces); der Kommandeur ist einmalig
+const unitList = (keys) => keys.map((k) => `${UNITS[k].hotkey} ${UNITS[k].name}${UNITS[k].hero ? ' (einmalig)' : ''}`).join(' · ');
+const TRAIN_LIST = ['barracks', 'factory', 'heliport'].map((k) => `${KIND_NAME[k]}: ${unitList(CITY.produces[k])}`).join('; ');
 
 export const KEYS = [
   ['Linksklick / Tippen', 'Auswählen · Shift = hinzufügen · Doppelklick = alle dieses Typs im Bild · mit gewählten Einheiten: Boden = Gehen, Gegner = Angriff'],
@@ -73,7 +75,7 @@ export const KEYS = [
     `N SAM aufs Dach (feuert nur mit Besatzung, Munition aus dem FOB-Lager), O Besatzung raus`],
   ['Bauen', 'Gebäude brauchen einen Bauer daneben: Baufahrzeug oder Soldaten (nur Mauer/Tor, aus getragenem Baumaterial, im Bauradius einer FOB); ' +
     'ein Tor ist 2 Felder breit und kostet doppelt, seine Richtung folgt den Nachbarmauern'],
-  ['Hauptstadt', `Ausbildung in Kaserne, Fabrikhalle und Heliport der Stadt (nur gegen Geld, je Gebäude mehrere Einheiten gleichzeitig): ${TRAIN_LIST} · Nachschub: ` +
+  ['Hauptstadt', `Ausbildung in Kaserne, Fabrikhalle und Heliport der Stadt (Geld, Fahrzeuge auch Stahl, je Einheit Einwohner; je Gebäude mehrere Einheiten gleichzeitig): ${TRAIN_LIST} · Nachschub: ` +
     `klassisch stellt die Hauptstadt alle ${BALANCE.reinforce.interval} s kostenlos einen Schützen bereit, solange weniger als ${BALANCE.reinforce.soldierMin} Soldaten leben; ` +
     `in der Eroberung gibt es keinen kostenlosen Nachschub`],
   ['U', `Forschungsbaum (falls im Startmenü an), auch über den Knopf „🔬 Forschung“ rechts oben oder U bei gewählter Hauptstadt · Alle Einheiten sind von Anfang an frei, ` +
@@ -111,7 +113,7 @@ export const KEYS = [
     `gegnerische Gebäude per Rechtsklick langsam mit der Schaufel zerstören · ausgebildet in Fabrikhalle oder Hauptstadt (${UNITS.excavator.hotkey})`],
   ['Q / W / E / R', 'LKW gewählt: Q Gemischt (alle Sorten) · W/E/R schalten Baumaterial, Munition, Treibstoff einzeln an oder ab (z. B. Munition und Treibstoff zugleich)'],
   ['Entf', `Gebäude abreißen (${pct(BALANCE.demolishRefund)} % des Baumaterials zurück)`],
-  ['Lager', 'Die Hauptstadt hat unendlich Baumaterial (mit „Stadt“ im Startmenü: nur, was die Werke der Stadt liefern), Munition und Treibstoff. ' +
+  ['Lager', 'Das Lager der Hauptstadt (Baumaterial, Munition, Treibstoff) füllen die Werke der Stadt. ' +
     'Vordere FOBs haben ein eigenes Lager, das LKW füllen · Gebäude bezahlt die FOB in Reichweite · LKW versorgen Einheiten in der Nähe aus ihrer Ladung'],
   ['Munition', 'Jeder Schuss verbraucht Munition · ohne Vorrat feuern Einheiten nicht (FOB-MG kostet nichts)'],
   ['Treibstoff', `Fahrzeuge verbrauchen Treibstoff nur beim Fahren · ohne Vorrat nur ${pct(BALANCE.fuelSlowMul)} % Tempo`],

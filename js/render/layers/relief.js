@@ -154,7 +154,7 @@ export const reliefMethods = {
   drawNatureTop(ctx, inRect, z) {
     const g = this.game;
     const season = this.season;
-    const gone = (x, y) => g.city && treeGone(g, x, y);
+    const gone = (x, y) => treeGone(g, x, y);
     for (const f of g.map.town?.fields ?? []) {
       if (!inRect(f.x, f.y, Math.max(f.w, f.h) / 2 + 20)) continue;
       for (const b of fieldBales(f)) if ((!b.only || b.only === season) && inRect(b.x, b.y, 20) && !gone(b.x, b.y)) drawBaleTop(ctx, b, z, season); // Ballen (seit v5.44)

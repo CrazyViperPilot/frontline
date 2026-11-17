@@ -150,11 +150,7 @@ export const infoMethods = {
     }
     const crates = b.type === 'fob' ? storedCrates(g, b.team, b.id) : 0;
     if (crates) h += `<div class="muted small">${crates} Versorgungskiste${crates > 1 ? 'n' : ''} eingelagert: +${fmtDe(crates * BALANCE.crates.income)} Geld/s</div>`;
-    if (b.type === 'fob' && b.infinite) {
-      h += '<div class="muted small lagerhead">Unendlich Baumaterial, Munition und Treibstoff · bildet alle Einheiten aus (nur gegen Geld)</div>';
-      if (!g.conquest || BALANCE.conquest.reinforce) h += this.reinforceInfo(b);
-      if (g.research) h += this.researchInfo(b.team);
-    } else if (b.type === 'fob') {
+    if (b.type === 'fob') {
       const cap = b.main ? CAPITAL_CAP : STORE_CAP;
       h +=
         (b.main
@@ -163,6 +159,8 @@ export const infoMethods = {
         storeRow('BM', b.store.bm, cap, COLOR.bm) +
         storeRow('MUN', b.store.mun, cap, COLOR.mun) +
         storeRow('TS', b.store.fuel, cap, COLOR.fuel);
+      if (b.main && (!g.conquest || BALANCE.conquest.reinforce)) h += this.reinforceInfo(b);
+      if (b.main && g.research) h += this.researchInfo(b.team);
     }
     if (b.def.weapon && b.def.weapon.shell && b.built) {
       const w = b.def.weapon;

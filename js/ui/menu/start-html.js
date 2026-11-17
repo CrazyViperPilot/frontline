@@ -13,7 +13,7 @@ function howtoHtml() {
         <li>Du startest mit 2 Kampfpanzern, 3 Schützenpanzern, 29 Soldaten (22 Schützen, 7 Panzerabwehrsoldaten), 3 LKW, Baufahrzeug und deinem Kommandeur (goldener Stern: ` +
         `in seiner Nähe schießen deine Einheiten schneller und Verwundete heilen; fällt er, bekommt der Gegner 5 Punkte; in der Eroberung verliert dein Team 5 Tickets). ` +
         `Das Einheitenlimit beträgt klassisch ${BALANCE.slotCap} Plätze, in der Eroberung ${BALANCE.conquest.slotCap[2]} je Team: Soldat 1, Schützenpanzer 3, Kampfpanzer 5, ` +
-        `Flakpanzer und SAM-Startrampe 2. Die Hauptstadt bildet keine Einheiten aus: Das machen Kaserne, Fabrikhalle und Heliport der Stadt (nur gegen Geld). Sie heilen bzw. ` +
+        `Flakpanzer und SAM-Startrampe 2. Die Hauptstadt bildet keine Einheiten aus: Das machen Kaserne, Fabrikhalle und Heliport der Stadt (Geld, Fahrzeuge auch Stahl, je Einheit Einwohner). Sie heilen bzw. ` +
         `reparieren auch Einheiten in ihrer Nähe; ein Krankenhaus heilt Soldaten im Umkreis von 3 Feldern. Alle Einheiten sind von Anfang an frei. Ist oben Forschung an, ` +
         `verbessert der Forschungsbaum (U) sie in 10 Stufen: mehr Reichweite, Panzerung, Tempo, Treibstoff-Reichweite und mehr.</li>
         <li>LKW (E) bringen Nachschub aus der Hauptstadt zu den vorderen FOBs und versorgen Einheiten in ihrer Nähe.</li>

@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.210: **Oberfläche nur mit Stadt** (S2e, `docs/plan-stadt-kern.md`): Anzeige und Darstellung rechnen nicht mehr mit einer Partie ohne Stadt; die Hilfe listet die Ausbildung je Kaserne, Fabrikhalle und Heliport, und das Infofeld der Hauptstadt zeigt wieder Nachschub und Forschung. Cache v274.
 - v5.209: **KI nur mit Stadt** (S2d, `docs/plan-stadt-kern.md`, ohne Wirkung auf Partien): Die Armee-KI rechnet nicht mehr mit einer Partie ohne Stadt; sie bildet nur in Kaserne, Fabrikhalle und Heliport aus. Cache v273.
 - v5.208: **Simulation nur mit Stadt** (S2c, `docs/plan-stadt-kern.md`, ohne Wirkung auf Partien): Die Zweige für Partien ohne Stadt sind aus `js/game` entfernt (unendliches Lager und Ausbildung der Hauptstadt, Forschung ohne Universität, Jets und Hubschrauber ohne Fliegerhorst und Heliport). Cache v272.
 - v5.207: **Tests mit Stadt, Teil 2** (nur Tests und Doku, S2b fertig): Auch die Spiel-Tests (`game-*.test.js`) laufen mit Stadt, `test/classic.js` und `mkOld` sind entfernt; Lagertests nehmen eine vordere FOB (`frontFob`). PRD §2 sagt jetzt richtig, dass alle Einheiten von Anfang an frei sind. Cache v271.

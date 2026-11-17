@@ -52,7 +52,7 @@ export const topMethods = {
       const h = g.houseBySrc?.get(b);
       return !!h?.ruined && known(h.x, h.y);
     };
-    drawMapTown2D(ctx, g.map.town, inRect, z, this.season, (x, y) => g.city && treeGone(g, x, y), ruined);
+    drawMapTown2D(ctx, g.map.town, inRect, z, this.season, (x, y) => treeGone(g, x, y), ruined);
     setRoofSnow(false);
     // besetzte und ausgebaute Häuser (seit v5.48, stronghold.js): Sandsäcke, MG-Nest, Stacheldraht und Fahne in Teamfarbe
     for (const h of g.houses ?? []) {

@@ -29,7 +29,6 @@ const BIG_LIFT = [0, 76, 98, 106]; // Universität je Stufe: über der Kuppel
 
 /** Sichtbare Stadtzellen beider Teams: eigene immer, fremde nur, wo das Gelände erkundet ist. */
 function* cells(game, team, known) {
-  if (!game.city) return;
   for (const c of game.city) {
     for (const i of c.list) {
       const k = KINDS[c.kind[i] - 1];
@@ -147,14 +146,8 @@ function groundPoly(ren, ctx, pts) {
 /** Boden der Stadt: Straßen, Grundstücke (blass = nur ausgewiesen) und Pflaster unter Gebäuden. */
 export function drawCityGround(ren, ctx, team, known, inRect) {
   const g = ren.game;
-  if (!g.city && !g.roads) return;
   ctx.save();
   if (ren.draping()) ctx.setTransform(ren.dpr, 0, 0, ren.dpr, 0, 0);
-  if (!g.city) {
-    drawRoads(ren, ctx, team, known); // ohne Stadt: nur die Stadtstraßen der Karte (Zone)
-    ctx.restore();
-    return;
-  }
   drawClearings(ren, ctx, known);
   for (const { c, k, lv, r, i, ruin, big, ctr } of cells(g, team, known)) {
     if (!inRect(ctr.x, ctr.y, big ? (sizeOf(k) * c.cell) / 2 + 32 : 64)) continue;
@@ -1257,7 +1250,6 @@ function drawTerritory(ren, ctx, team) {
 /** 2D von oben, nach den Bodeneinheiten (seit v5.39): Dächer der ausgebauten Stellplätze halb durchsichtig über den Flugzeugen. */
 export function drawCityRoofs(ren, ctx, team, known, inRect) {
   const g = ren.game;
-  if (!g.city) return;
   for (const { c, k, lv, i, big, ctr } of cells(g, team, known)) {
     if (k !== 'stand' || lv < 2 || big !== 'anchor' || !inRect(ctr.x, ctr.y, c.cell + 32)) continue;
     const e = c.ents.get(i);
@@ -1269,7 +1261,6 @@ export function drawCityRoofs(ren, ctx, team, known, inRect) {
 /** 2D von oben: Gebäude als Dachflächen mit Schatten (1 × 1 seit v5.14 aus townhouses.js). */
 export function drawCityTop(ren, ctx, team, known, inRect) {
   const g = ren.game;
-  if (!g.city) return;
   for (const { c, k, lv, r, i, big, ctr, ruin } of cells(g, team, known)) {
     if (FLAT_KINDS.has(k) || big === 'part' || !inRect(ctr.x, ctr.y, big ? (sizeOf(k) * c.cell) / 2 + 32 : 64)) continue;
     if (!lv) {
@@ -1388,7 +1379,6 @@ function badgeImage(icon, color, small) {
  */
 export function drawCityBadges(ren, ctx, team, known, inRect, iso) {
   const g = ren.game;
-  if (!g.city) return;
   const cam = ren.camera;
   const z = cam.zoom;
   const big = Math.max(18, Math.min(34, 30 * z));

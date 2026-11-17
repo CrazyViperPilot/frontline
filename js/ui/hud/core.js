@@ -86,8 +86,8 @@ export class Hud {
     const g = this.game;
     const res = RES_KEYS.map(
       (k) =>
-        `<div class="res res-${k}" data-res="${k}"${k === 'money' && g.city ? ' data-act="market"' : ''}><i class="dot"></i><span class="lbl">${k === 'money' ? BALANCE.resNames[k] : `Front ${SHORT_RES[k]}`}</span>` +
-        `<b class="val">0</b><small class="rate">+0/s</small>${k === 'money' && g.city ? '<i class="mk-ico" aria-hidden="true">⚖</i>' : ''}</div>`,
+        `<div class="res res-${k}" data-res="${k}"${k === 'money' ? ' data-act="market"' : ''}><i class="dot"></i><span class="lbl">${k === 'money' ? BALANCE.resNames[k] : `Front ${SHORT_RES[k]}`}</span>` +
+        `<b class="val">0</b><small class="rate">+0/s</small>${k === 'money' ? '<i class="mk-ico" aria-hidden="true">⚖</i>' : ''}</div>`,
     ).join('');
     const pts = g.teams
       .map((_, t) => t)
@@ -100,9 +100,9 @@ export class Hud {
       .join('');
     return `
       <div class="fabs">
-        ${g.city ? '<button type="button" class="city-fab" data-act="city" title="Stadt verwalten (Y)">🏙 Stadt</button>' : ''}
+        <button type="button" class="city-fab" data-act="city" title="Stadt verwalten (Y)">🏙 Stadt</button>
         ${g.research ? '<button type="button" class="city-fab research-fab" data-act="research" title="Forschungsmenü: Stufen und Forschungsbaum (U bei gewählter Hauptstadt)">🔬 Forschung</button>' : ''}
-        ${g.city ? '<button type="button" class="city-fab flow-fab" data-act="flow" title="Ressourcen: Einfuhr, Werke, Lager und Engpässe">📊 Ressourcen</button>' : ''}
+        <button type="button" class="city-fab flow-fab" data-act="flow" title="Ressourcen: Einfuhr, Werke, Lager und Engpässe">📊 Ressourcen</button>
         <button type="button" class="city-fab builder-fab" data-act="builder" title="Nächstes Baufahrzeug (J)">🚧 Bauer</button>
       </div>
       <header class="top">
@@ -121,7 +121,7 @@ export class Hud {
           <button type="button" class="btn-sm" data-act="rotl" title="Isometrische Ansicht nach links drehen (,)">⟲</button>
           <button type="button" class="btn-sm" data-act="view" title="Ansicht umschalten: 2D / isometrisch (V)">2D</button>
           <button type="button" class="btn-sm" data-act="rotr" title="Isometrische Ansicht nach rechts drehen (.)">⟳</button>
-          ${g.city ? '<button type="button" class="btn-sm" data-act="city" title="Stadt verwalten (Y)">Stadt</button>' : ''}
+          <button type="button" class="btn-sm" data-act="city" title="Stadt verwalten (Y)">Stadt</button>
           <button type="button" class="btn-sm" data-act="sound" title="Ton an/aus (F2)" aria-label="Ton an/aus">🔊</button>
           <button type="button" class="btn-sm" data-act="help" title="Hilfe (F1)">Hilfe</button>
         </div>

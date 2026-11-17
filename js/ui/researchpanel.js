@@ -137,7 +137,7 @@ export class ResearchPanel {
     this.root.querySelector('[data-rs-money]').textContent = `Geld ${fmt(g.teams[this.team].res.money)}`;
     const sp = researchSpeed(g, this.team);
     this.root.querySelector('[data-rs-stat]').textContent =
-      `Stufe ${tech.tier} / ${R.tiers} · ${tech.done.length} erforscht${g.city ? ` · Tempo ${Math.round(sp * 100)} %` : ''}`;
+      `Stufe ${tech.tier} / ${R.tiers} · ${tech.done.length} erforscht · Tempo ${Math.round(sp * 100)} %`;
     for (const b of this.buttons) {
       const k = b.dataset.rs;
       const st = this.state(k);
@@ -167,7 +167,7 @@ export class ResearchPanel {
     const tech = g.teams[this.team].tech;
     if (!g.mainFob(this.team)) return '<b class="rs-warn">Keine Hauptstadt: Forschung ruht</b>';
     let h = `<b>Warteschlange</b>`;
-    if (g.city && cityLevel(g, this.team, 'uni') < 1) h += '<small class="rs-warn">Ohne Universität ruht die Forschung (Stadt: Universität bauen)</small>';
+    if (cityLevel(g, this.team, 'uni') < 1) h += '<small class="rs-warn">Ohne Universität ruht die Forschung (Stadt: Universität bauen)</small>';
     if (!tech.cur) return `${h}<span class="rs-muted">Keine Forschung läuft. Bis zu ${R.queueMax + 1} lassen sich einreihen.</span>`;
     const it = R.items[tech.cur.key];
     h += `<div class="rs-q cur"><span>${esc(it.name)}</span><button type="button" class="btn-sm" data-rs-cancel="${tech.cur.key}" title="Abbrechen: das Geld kommt ganz zurück">✕</button></div>` +
@@ -190,7 +190,7 @@ export class ResearchPanel {
     const left = sp > 0 ? Math.ceil((it.time - tech.cur.t) / sp) : Infinity;
     bar.style.width = `${Math.min(100, (tech.cur.t / it.time) * 100)}%`;
     this.root.querySelector('[data-rs-left]').textContent =
-      `${Number.isFinite(left) ? `noch ${left} s` : 'steht'}${g.city && Number.isFinite(left) ? ` · ${citySum(g, this.team, 'dc')} Rechenzentrum-Stufen` : ''}`;
+      `${Number.isFinite(left) ? `noch ${left} s` : 'steht'}${Number.isFinite(left) ? ` · ${citySum(g, this.team, 'dc')} Rechenzentrum-Stufen` : ''}`;
   }
 
   /** Grund (z. B. „Fehlt: 37 Geld“, ändert sich mit dem Geld) als Text und Knopf-Tooltip, ohne den Knopf neu zu bauen. */
@@ -210,7 +210,7 @@ export class ResearchPanel {
     const eff = researchEffect(k);
     const req = [`Stufe ${it.tier}`];
     if (it.req) req.push(`nach ${R.items[it.req].name}`);
-    if (this.game.city) req.push('Universität');
+    req.push('Universität');
     const tech = this.game.teams[this.team].tech;
     const busy = !!tech.cur;
     const btn =
@@ -218,7 +218,7 @@ export class ResearchPanel {
       : st.s === 'cur' ? '<span class="rs-ok">Wird erforscht …</span>'
       : st.s === 'queued' ? `<span class="rs-ok">Wartet (Platz ${st.n})</span>`
       : `<button type="button" class="btn-sm rs-go${st.s === 'ok' ? '' : ' off'}" data-rs-start>${busy ? 'Einreihen' : 'Erforschen'} · ${it.money} G</button>`;
-    const time = this.game.city ? `${it.time} s (ohne Rechenzentrum)` : `${it.time} s`;
+    const time = `${it.time} s (ohne Rechenzentrum)`;
     return `<b>${esc(it.name)}</b><small class="rs-muted">${R.lanes[it.lane].icon} ${esc(R.lanes[it.lane].name)} · Stufe ${it.tier}</small>` +
       `<p>${esc(eff)}</p><small class="rs-muted">${it.money} Geld · ${time} · ${esc(req.join(' · '))}</small>` +
       `${st.why ? '<small class="rs-warn" data-rs-why></small>' : ''}${btn}`;

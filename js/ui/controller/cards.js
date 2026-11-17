@@ -281,7 +281,7 @@ export const cardMethods = {
       );
     }
     const jets = units.filter((u) => u.def.jet);
-    const rotors = this.game.city ? units.filter((u) => u.def.air && !u.def.jet) : []; // Heliports gibt es nur mit Stadt
+    const rotors = units.filter((u) => u.def.air && !u.def.jet); // Hubschrauber: Heimflug zum Heliport
     if (jets.length || rotors.length) {
       const c = this.game.city?.[this.team];
       const pads = c ? [...c.ents.values()].some((e) => isHeliport(this.game, e)) : false;
@@ -557,14 +557,14 @@ export const cardMethods = {
       else if (!ready) reason = 'Warteschlange ist voll';
       else if (this.game.slotsUsed(ready.team) + (def.slots ?? 1) > this.game.slotCap) reason = 'Einheitenlimit erreicht';
       else if (def.hero && hasCommander(this.game, ready.team)) reason = 'Nur ein Kommandeur je Team';
-      else if (this.game.city && freePop(this.game, ready.team) < crewOf(u)) reason = 'Zu wenig freie Einwohner (Stadt: Wohnen ausbauen)';
-      else if (this.game.city && this.game.city[ready.team].metal < (CITY.metalCost[u] ?? 0)) reason = 'Zu wenig Stahl (Stadt: Stahlwerk mit Einfuhr oder Markt)';
+      else if (freePop(this.game, ready.team) < crewOf(u)) reason = 'Zu wenig freie Einwohner (Stadt: Wohnen ausbauen)';
+      else if (this.game.city[ready.team].metal < (CITY.metalCost[u] ?? 0)) reason = 'Zu wenig Stahl (Stadt: Stahlwerk mit Einfuhr oder Markt)';
       else reason = trainCheck(this.game, ready, u) ?? (def.air && !def.jet ? heliTrainCheck(this.game, ready) : null) ?? this.trainReason(def.cost); // Stellplatz bzw. Heliport: ein Luftfahrzeug je Platz
       card.push(
         entry(def.short || def.name, def.hotkey, {
           group: 'train',
           cost: costText(def.cost),
-          tip: `${def.name}: ${longCost(def.cost)}${this.game.city && CITY.metalCost[u] ? `, ${CITY.metalCost[u]} Stahl, ${crewOf(u)} Einwohner` : this.game.city ? `, ${crewOf(u)} Einwohner` : ''}${def.hero ? COMMANDER_TIP : ''}`,
+          tip: `${def.name}: ${longCost(def.cost)}${CITY.metalCost[u] ? `, ${CITY.metalCost[u]} Stahl` : ''}, ${crewOf(u)} Einwohner${def.hero ? COMMANDER_TIP : ''}`,
           enabled: !reason,
           reason,
           action: () => this.train(u),

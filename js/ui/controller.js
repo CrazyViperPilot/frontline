@@ -230,7 +230,6 @@ export class Controller {
   /** Eigenes fertiges Stadtgebäude unter dem Weltpunkt (seit v4.94 wählbar) oder null. Isometrisch zählt auch ein Klick aufs Dach. */
   pickCity(wx, wy) {
     const g = this.game;
-    if (!g.city) return null;
     const own = (e) => (e && e.team === this.team ? e : null);
     const hit = own(cityEntityAt(g, wx, wy));
     if (hit || !this.camera.iso) return hit;

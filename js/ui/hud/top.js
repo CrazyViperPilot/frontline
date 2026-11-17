@@ -34,9 +34,9 @@ export const topMethods = {
       el.rate.textContent = `${neg ? '−' : '+'}${fmtRate(Math.abs(v))}/s`;
       el.rate.style.color = neg ? NEG_COLOR : '';
       // Lagersorten: Summe aller fertigen FOB-Lager; Geld ist global
-      const lines = [k === 'money' ? `Geld (global): je Einheit in der Konfliktzone ${fmtDe(BALANCE.zone.unitIncome)}/s, in der Hot Zone ${fmtDe(BALANCE.hot.unitIncome)}/s, je eingelagerte Versorgungskiste ${fmtDe(BALANCE.crates.income)}/s; bleibt von Runde zu Runde` : 'Front-Lager: Summe der FOB-Lager ohne Hauptstadt (die hat unendlich)'];
+      const lines = [k === 'money' ? `Geld (global): je Einheit in der Konfliktzone ${fmtDe(BALANCE.zone.unitIncome)}/s, in der Hot Zone ${fmtDe(BALANCE.hot.unitIncome)}/s, je eingelagerte Versorgungskiste ${fmtDe(BALANCE.crates.income)}/s; bleibt von Runde zu Runde` : 'Front-Lager: Summe der FOB-Lager ohne Hauptstadt (deren Lager füllen die Werke der Stadt)'];
       if (t.used[k] !== undefined) lines.push(`verbraucht: ${Math.floor(t.used[k])}`);
-      if (k === 'money' && g.city) {
+      if (k === 'money') {
         // Einfuhr der Rohwaren (Paket „Import“): Geld je s für die Werke, siehe Ressourcenanzeige
         const ic = g.city[this.team]?.stats?.importCost ?? 0;
         if (ic > 0.005) lines.push(`Einfuhr der Rohwaren: −${fmtDe(fmtRate(ic))} Geld/s (Werke, siehe Ressourcen)`);
@@ -46,7 +46,7 @@ export const topMethods = {
       if (el.box.title !== tip) el.box.title = tip;
     }
     // Geldanzeige als Knopf zum Marktmenü hervorheben, sobald ein Markt steht
-    if (g.city) this.res.money.box.classList.toggle('mk-on', hasMarket(g, this.team));
+    this.res.money.box.classList.toggle('mk-on', hasMarket(g, this.team));
     // Forschungsknopf leuchtet, solange eine Forschung läuft
     this.researchBtn?.classList.toggle('on', !!t.tech?.cur);
   },

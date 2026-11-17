@@ -2,7 +2,7 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/ai/city/`. Pfade relativ zu `js/ai/city/`.
 
-## airbase.js (8.3 KB)
+## airbase.js (8.8 KB)
 - aiAirport(game, c, main, reserve, want, difficulty) – Fliegerhorst der KI (ersetzt den Flughafen): ab CITY.ai.airportFrom Arbeitsstät…
 
 ## build.js (3.0 KB)

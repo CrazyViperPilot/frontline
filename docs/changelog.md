@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.212: **Luftwaffe der KI** (§10 „Flugzeuge“): Die KI spart auf ihr erstes Kampfflugzeug (`CITY.ai.jetSave`, Bodentruppen warten, die Stadt baut weiter) und legt die Stellplätze auch auf die andere Seite der Bahn; vorher kaufte sie nie einen Jet, und die KI oben rechts baute oft keinen Fliegerhorst. Cache v276.
 - v5.211: **Stadt ist Kern abgeschlossen** (S2f, `docs/plan-stadt-kern.md`): Jede Partie hat eine Stadt, die Option `city` ist entfernt; Spielstände ohne Stadt lehnt das Spiel beim Laden mit Meldung ab. Die alte Ausbildungsliste der Hauptstadt (`BUILDINGS.fob.produces`) ist gestrichen, das Rezept „Neue Einheit“ trägt in `CITY.produces` ein. Cache v275.
 - v5.210: **Oberfläche nur mit Stadt** (S2e, `docs/plan-stadt-kern.md`): Anzeige und Darstellung rechnen nicht mehr mit einer Partie ohne Stadt; die Hilfe listet die Ausbildung je Kaserne, Fabrikhalle und Heliport, und das Infofeld der Hauptstadt zeigt wieder Nachschub und Forschung. Cache v274.
 - v5.209: **KI nur mit Stadt** (S2d, `docs/plan-stadt-kern.md`, ohne Wirkung auf Partien): Die Armee-KI rechnet nicht mehr mit einer Partie ohne Stadt; sie bildet nur in Kaserne, Fabrikhalle und Heliport aus. Cache v273.

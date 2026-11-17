@@ -59,8 +59,6 @@ export function cityAiMemory() {
     raidTimer: 0, // s seit dem letzten Überfall auf die gegnerische Stadt (aiRaid)
     importBad: 0, // s, in denen die Einfuhr knapp ist (importWatch; ohne Mangel zurück auf 0)
     importAt: null, // Spielzeit des letzten Einfuhr-Wächters (null = noch nie)
-    airHold: false, // Fliegerhorst fällig, Bahn fehlt noch: der Ausbau lässt CITY.ai.airportMoney übrig (airbase.js aiAirport)
-    hold: 0, // Geld, das der Stadtausbau zusätzlich zur Reserve übrig lässt, solange die Armee auf einen Jet spart (combat.js jets)
     steelWant: null, // offener Stahlbedarf { amount, cost, time, max? } einer gescheiterten Ausbildung (produce.js; aiMarket kauft dann)
     laneHot: {}, // überlastete Straßenzelle → Takte in Folge über der Last (aiLanes)
     parkKeep: {}, // Zelle → 1: Werksplätze am Güterbahnhof, nur Werke dürfen dorthin (Industriepark)

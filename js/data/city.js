@@ -336,7 +336,7 @@ export const CITY = {
     jets: { easy: 2, normal: 4, hard: 6 }, // so viele F-16 hält sie (seit v5.03; seit v5.35 je Stellplatz so viele wie CITY.air.standJets, die KI baut so viele Stellplätze)
     jetReserve: 400, // Geld, das nach dem Kauf einer F-16 übrig bleiben muss
     // Sparen auf Kampfflugzeuge (Paket „Luftwaffe der KI“): hat sie weniger als jetSave Jets und einen freien versorgten Stellplatz,
-    // spart sie auf den nächsten (Bodentruppen und Stadtausbau über der Reserve ruhen); weitere Jets nur aus Überschuss
+    // bildet sie keine Bodentruppen aus, bis der nächste bezahlt ist (die Stadt baut weiter); weitere Jets nur aus Überschuss
     jetSave: { easy: 0, normal: 1, hard: 2 },
     // F-22 (seit v5.83): Anteil der F-22 an ihren Kampfflugzeugen (Zahl nach CITY.ai.jets). Ist der Anteil darunter und das Geld für
     // eine F-22 mit jetReserve da, bestellt die KI eine F-22, sonst eine F-16. F-22 greifen nur Luftziele an (Hubschrauber, Flugzeuge, U-2).

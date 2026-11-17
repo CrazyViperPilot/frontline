@@ -27,7 +27,7 @@ function standsAllowed(game, c, q, r, w, h) {
  * und Munitionslager kommen daneben mit Straße zum Lager (Paket „Fliegerhorst-Anschluss“: die Bahn braucht keine Straße, Tank und Lager
  * schon). Danach je Takt ein weiterer Stellplatz an der Bahn, bis sie `want` hat.
  */
-export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal', mem = null) {
+export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal') {
   const A = CITY.ai;
   if (!main) return false;
   const RW = CITY.air.runwayWidth; // Breite der Bahn (Zellen)
@@ -98,8 +98,6 @@ export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal
     if (!retry()) return false;
   }
   if (work < A.airportFrom || stands.length) return false;
-  // Sparen auf die Bahn (Paket „Luftwaffe der KI“): sonst baut der Stadtausbau die freien Flächen zu, bevor das Geld reicht
-  if (mem && !hasRunway) mem.airHold = true;
   if (money < A.airportMoney + reserve || main.store.bm < A.airportBm) return false;
   const [fc, fr] = cellAt(c, main.x, main.y);
   const R = A.airportReach;

@@ -73,7 +73,6 @@ export const combatMethods = {
     const t = this.team;
     const ports = standsOf(g, t);
     this.saveForJet = false;
-    this.cityMem.hold = 0;
     if (!ports.length) return;
     const jets = s.units.filter((u) => u.def.jet);
     // Alarmrotte (Paket „Alarmrotte“): Bereitschaft der Jets mit Luft-Luft-Waffe nach BALANCE.difficulty[…].scramble (Standard an)
@@ -105,9 +104,8 @@ export const combatMethods = {
       if (money >= price) {
         if (b && steelFor(g, t, type)) g.issue(t, { type: 'train', buildingId: b.id, unit: type });
       } else if (b && total < (CITY.ai.jetSave[this.difficulty] ?? 0)) {
-        // Sparen (Paket „Luftwaffe der KI“): sonst gibt die Armee alles für Bodentruppen und die Stadt für den Ausbau aus
+        // Sparen (Paket „Luftwaffe der KI“): sonst gibt die Armee alles für Bodentruppen aus und kommt nie an den Preis
         this.saveForJet = true;
-        this.cityMem.hold = price;
       }
     }
     const ready = fighters.filter((u) => u.parked && u.jet?.ready && u.order.type === 'idle' && !u.jet.qra).sort((a, b) => a.id - b.id);

@@ -221,6 +221,25 @@ test('KI kauft F-16 und F-22 nach CITY.ai.f22Share, die U-2 erst ab reconFrom', 
   assert.ok(!g.units.some((u) => u.alive && u.def.highAlt), 'noch keine U-2 vor dem Stellplatz-Zeitpunkt');
 });
 
+test('KI spart auf den ersten Jet (CITY.ai.jetSave): erst sparen, dann bestellen; Leicht spart nicht', () => {
+  const g = new Game({ seed: 3 });
+  const { stands } = airbase(g);
+  const queued = () => stands.flatMap((s) => s.queue.map((e) => e.unit)).filter((u) => UNITS[u].jet);
+  const ai = new AI(g, 0, 'normal');
+  g.teams[0].res.money = 1000; // unter Preis + jetReserve
+  ai.jets(ai.snapshot());
+  assert.equal(ai.saveForJet, true, 'Normal spart auf den ersten Jet');
+  assert.deepEqual(queued(), [], 'noch keine Bestellung');
+  g.teams[0].res.money = UNITS.f16.cost.money + CITY.ai.jetReserve + 500;
+  ai.jets(ai.snapshot());
+  assert.equal(ai.saveForJet, false, 'bezahlt: Sparen endet');
+  assert.equal(queued().length, 1, 'erster Jet bestellt');
+  const easy = new AI(g, 0, 'easy');
+  g.teams[0].res.money = 1000;
+  easy.jets(easy.snapshot());
+  assert.equal(easy.saveForJet, false, `Leicht spart nicht (jetSave ${CITY.ai.jetSave.easy})`);
+});
+
 test('KI: U-2 zur Aufklärung ab reconFrom auf freiem Stellplatz, dann Flug (höchstens eine gleichzeitig)', () => {
   const g = new Game({ seed: 3 });
   const { stands } = airbase(g);

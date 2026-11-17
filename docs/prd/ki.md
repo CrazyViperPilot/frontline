@@ -189,7 +189,8 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   die Stadt-KI hält dafür einen Stellplatz frei.
   Startbereit fliegt sie im Wechsel über die Konfliktzone und die gegnerische Hauptstadt und kreist dort; höchstens alle `reconEvery` s ein Flug.
 - **Fliegerhorst mit Anschlusspflicht (Baugebiet):** Die Bahn braucht keinen Anschluss (Paket „Fliegerhorst-Anschluss“; der frühere Schalter `CITY.ai.runwayLink` ist entfallen).
-  Stellplätze und Tower legt die KI neben die Bahn, ohne Straße;
+  Stellplätze und Tower legt die KI neben die Bahn, ohne Straße; die Reihe liegt unter bzw. rechts der Bahn oder, wenn nur diese Seite
+  im eigenen Gebiet erlaubt ist, darüber bzw. links (Paket „Luftwaffe der KI“; vorher nur unten/rechts, die KI oben rechts fand oft keinen Platz).
   Kerosintank und Munitionslager legt sie neben die Bahn und zieht vorher eine Straße von ihnen zum Lager (`connectCells`, bezahlt;
   gelingt sie nicht, bleibt der Platz frei und ein späterer Takt versucht einen anderen).
   Die Bahn darf außerhalb des eigenen Gebiets liegen, die Stelle der ersten beiden Stellplätze daneben muss aber im Gebiet erlaubt sein (seit v5.116;
@@ -202,7 +203,13 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   Solange sie eine U-2 haben darf und keine hat, hält sie einen ganz freien Stellplatz für sie frei.
   Ist eine F-22 fällig, spart sie auf sie, statt eine F-16 zu kaufen.
   Gemessen (30 min KI gegen KI, Normal): in Seed 7 je Team F-16, F-22 und eine U-2 im Aufklärungsflug;
-  in Seed 3 und 11 kommt die KI mit Baugebiet nicht zu einem angeschlossenen Fliegerhorst, weil ihr Straßennetz von eigenen Gebäuden eingeschlossen ist (offen).
+  Gemessen im Paket „Luftwaffe der KI“ (30 min, alle Menü-Schalter, Seeds 3, 7, 11): vorher bestellte keine KI ein Flugzeug (die F-16 kostet 2600,
+  ihr Geld blieb unter 2000) und die KI oben rechts baute nie eine Bahn; jetzt haben 5 von 6 einen versorgten Fliegerhorst (ab 710 bis 1150 s),
+  3 bis 4 von 6 ihren ersten Jet (ab 1280 s). Offen: in Seed 3 findet die KI oben rechts keine freie Fläche für Bahn und Stellplätze.
+- **Sparen auf Kampfflugzeuge (Paket „Luftwaffe der KI“):** Hat die KI weniger als `CITY.ai.jetSave` Jets (Leicht 0, Normal 1, Schwer 2), einen
+  freien versorgten Stellplatz und zu wenig Geld für den Jet mit `jetReserve`, bildet sie keine Bodentruppen aus, bis er bezahlt ist (`saveForJet`,
+  wie beim Späher); die Stadt baut weiter. Weitere Jets nur aus Überschuss. Gemessen: Stadt nach 30 min gleich groß (−2 %),
+  rund 20 % weniger ausgebildete Bodeneinheiten (der Preis des Jets).
 - **Fliegerhorst und F-16:** Seit v5.35 baut die KI statt des Flughafens einen Fliegerhorst (Bahn 2 × 10, Stellplätze, Tower, Kerosintank, Munitionslager, §15 „Fliegerhorst“).
   Bis v5.34: Ab 14 Arbeitsstätten und freigeschalteter F-16 baut die KI einen Flughafen (`CITY.ai.airportFrom`; weil er selten zwischen ihre Straßenreihen passt,
   sucht sie das nächste freie 10 × 10-Quadrat bis 60 Zellen um die Hauptstadt, `airportReach`, und legt an der Seite zur Hauptstadt eine Straße an, ohne etwas zu überbauen),
@@ -267,7 +274,7 @@ je Zeile mit Kommentar; die Tabelle nennt nur die wichtigsten.
 | Versorgungskisten | Takt / Umkreis / Holer gleichzeitig Leicht–Normal–Schwer (`CRATE_EVERY`, `CRATE_RANGE`, `difficulty.cratePickers`) | 6 s / 5500 px / 1–2–3 |
 | F-22-Anteil an den Kampfflugzeugen (seit v5.83) | `CITY.ai.f22Share` | 0,4 |
 | U-2 zur Aufklärung (seit v5.83) | höchstens gleichzeitig (`reconMax`) · ab Spielzeit (`reconFrom`, Leicht nie) · Takt der Flüge (`reconEvery`) | 1 · 600 s (Schwer 480 s) · 300 s |
-| Flugzeuge (seit v5.03) | Fliegerhorst ab Arbeitsstätten (`CITY.ai.airportFrom`) · F-16 Leicht/Normal/Schwer (`CITY.ai.jets`) · Geld danach (`jetReserve`) · Gruppe / Takt / Warteschlange (`JET_GROUP`, `JET_EVERY`, `JET_QUEUE`) | 14 · 2/4/6 · 400 · 2 / 6 s / 2 |
+| Flugzeuge (seit v5.03) | Fliegerhorst ab Arbeitsstätten (`CITY.ai.airportFrom`) · F-16 Leicht/Normal/Schwer (`CITY.ai.jets`) · Geld danach (`jetReserve`) · Sparen auf so viele (`jetSave`) · Gruppe / Takt / Warteschlange (`JET_GROUP`, `JET_EVERY`, `JET_QUEUE`) | 14 · 2/4/6 · 400 · 2 / 6 s / 2 |
 | Stadt: Anschlusspflicht (Paket „Straßen“; Netz verlängern nur mit Baugebiet, offene Ausgänge auch ohne, Paket „Offenes Netz“) | Netz verlängern unter so vielen freien Anschlusszellen (`CITY.ai.linkSpare`) · Baumaterial-Polster (`linkBm`) | 6 / 200 BM |
 | Stadt: Anschlusspflicht (Paket „Straßen“; Netz verlängern nur mit Baugebiet, offene Ausgänge auch ohne, Paket „Offenes Netz“) | Versuche je Takt / Pause nach Fehlschlag (`linkTries`, `linkRetry`) · offene Ausgänge (`linkOutlets`) | 4, 120 s / 2 |
 | Stadt: Einfuhr (Paket „Import“) | Straße zum Kartenrand, wenn kein Einfuhrpunkt erreicht (`aiEdge`) · Länge (`CITY.transport.connectMax`) | 30 Zellen |

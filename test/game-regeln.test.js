@@ -2,11 +2,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
-import { classic } from './classic.js';
 import { BALANCE } from '../js/data/balance.js';
 import { UNITS } from '../js/data/units.js';
 import { BUILDINGS } from '../js/data/buildings.js';
-import { DT, mk, mkOld, run, fobOf, findSpot, fobAt } from './gamehelp.js';
+import { DT, mk, run, fobOf, findSpot, fobAt } from './gamehelp.js';
+import { runCityMoney } from './util.js';
 
 test('Kampf: Kampfpanzer tötet einen Schützen', () => {
   const g = mk({ seed: 7 });
@@ -21,16 +21,16 @@ test('Kampf: Kampfpanzer tötet einen Schützen', () => {
 });
 
 test('Zone: nur Team 0 in der Zone bringt nach 30,1 s einen Punkt und Geld', () => {
-  const g = mkOld({ seed: 7 });
+  const g = mk({ seed: 7 });
   const z = g.zone;
   g.spawnUnit('rifleman', 0, z.x + 1000, z.y); // außerhalb der Hot Zone
   const money0 = g.teams[0].res.money;
-  run(g, 30.1);
+  const city = runCityMoney(g, 0, 30.1); // Steuern und Einfuhr der Stadt herausrechnen
   assert.equal(g.zone.owner, 0);
   assert.equal(g.zone.contested, false);
   assert.equal(g.teams[0].points, 1);
   // genau das Zonengeld der einen Einheit (0,4/s), ohne Führungsgeld
-  assert.ok(Math.abs(g.teams[0].res.money - money0 - BALANCE.zone.unitIncome * 30.1) < 0.5);
+  assert.ok(Math.abs(g.teams[0].res.money - money0 - city - BALANCE.zone.unitIncome * 30.1) < 0.5);
   assert.ok(g.drainEvents().some((e) => e.text === 'Punkt für Blau'));
 });
 
@@ -98,7 +98,7 @@ test('Determinismus: gleicher Seed, gleiche Partie', () => {
 });
 
 test('Hot Zone wandert innerhalb der Konfliktzone; Einheiten darin bringen doppeltes Geld und Punkte', () => {
-  const g = mkOld({ seed: 7 });
+  const g = mk({ seed: 7 });
   const hz = g.hot;
   for (let i = 0; i < Math.round(120 / DT); i++) {
     g.update(DT);
@@ -109,15 +109,15 @@ test('Hot Zone wandert innerhalb der Konfliktzone; Einheiten darin bringen doppe
   u.order = { type: 'idle', x: u.x, y: u.y, targetId: null };
   const money0 = g.teams[0].res.money;
   const pts0 = g.teams[0].points;
-  g.update(DT);
+  let city = runCityMoney(g, 0, DT); // Steuern und Einfuhr der Stadt herausrechnen
   assert.equal(g.hot.owner, 0);
   for (let i = 0; i < Math.round(50 / DT); i++) {
     hz.x = u.x;
     hz.y = u.y;
-    g.update(DT);
+    city += runCityMoney(g, 0, DT);
   }
   // 50 s × 0,8 Geld/s (das Doppelte der Zone, nicht zusätzlich)
-  assert.ok(Math.abs(g.teams[0].res.money - money0 - BALANCE.hot.unitIncome * 50) < 0.5, 'Geld');
+  assert.ok(Math.abs(g.teams[0].res.money - money0 - city - BALANCE.hot.unitIncome * 50) < 0.5, 'Geld');
   assert.ok(g.teams[0].points >= pts0 + 1, 'Punkt');
 });
 
@@ -150,7 +150,7 @@ test('Zonenpunkt: Mehrheit statt Alleinbesitz, Hot Zone zählt doppelt, Balken f
 
 test('Abschussprämie: Fahrzeuge viel, Soldaten wenig, Mauern nichts; fertiger Bau bringt Geld', async () => {
   const { hit } = await import('../js/game/combat.js');
-  const g = classic(new Game({ seed: 7 }));
+  const g = new Game({ seed: 7 });
   const m0 = g.teams[0].res.money;
   const rifle = g.spawnUnit('rifleman', 1, 3000, 3000);
   hit(g, rifle, 9999);

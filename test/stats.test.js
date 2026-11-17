@@ -4,7 +4,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game, newStats } from '../js/game/game.js';
 import { AI } from '../js/ai/ai.js';
-import { classic } from './classic.js';
 import { trainer, noCrew } from './util.js';
 import { snapshotGame, restoreGame } from '../js/game/savegame.js';
 import { pack, unpack } from '../js/core/snapshot.js';
@@ -13,7 +12,7 @@ import { UNITS } from '../js/data/units.js';
 
 BALANCE.slotCap = 1000; // dieser Test prüft nicht das Einheitenlimit (siehe economy.test.js)
 const DT = 0.05;
-const mk = (opts) => classic(new Game({ ...opts }));
+const mk = (opts) => new Game({ ...opts });
 const run = (g, seconds) => {
   for (let i = 0; i < Math.round(seconds / DT); i++) g.update(DT);
 };

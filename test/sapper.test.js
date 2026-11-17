@@ -1,7 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
-import { classic } from './classic.js';
 import { BALANCE } from '../js/data/balance.js';
 import { BUILDINGS } from '../js/data/buildings.js';
 import { CITY } from '../js/data/city.js';
@@ -14,7 +13,7 @@ import { AI } from '../js/ai/ai.js';
 BALANCE.slotCap = 1000; // diese Tests prüfen nicht das Einheitenlimit
 const DT = 0.05;
 const S = BALANCE.sapper;
-const mk = () => classic(new Game({ seed: 7 }));
+const mk = () => new Game({ seed: 7 });
 /** Eigene Hauptstadt-FOB mit Munition im Lager; dort liegen die Minen. */
 function fobOf(g) {
   return g.buildings.find((b) => b.alive && b.built && b.team === 0 && b.type === 'fob');

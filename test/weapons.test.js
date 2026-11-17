@@ -2,7 +2,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
-import { classic } from './classic.js';
 import { shotDamage } from '../js/game/combat.js';
 import { UNITS } from '../js/data/units.js';
 
@@ -12,7 +11,7 @@ function run(game, seconds) {
 }
 /** Szene weit weg von den Basen: alle Startarmeen weg, Team 0 bei (x, y). */
 function scene(seed = 7) {
-  const g = classic(new Game({ seed }));
+  const g = new Game({ seed });
   for (const u of g.units) u.alive = false;
   const z = g.zone;
   return { g, x: z.x + 1500, y: z.y };

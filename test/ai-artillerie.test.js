@@ -4,7 +4,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { AI } from '../js/ai/ai.js';
-import { classic } from './classic.js';
 import { BALANCE } from '../js/data/balance.js';
 import { UNITS } from '../js/data/units.js';
 import { ARTY_MONEY, ARTY_ARMY, MORTAR_MAX, MLRS_MAX, ARTY_FIRE_EVERY, ARTY_GROUP } from '../js/data/ai.js';
@@ -18,7 +17,7 @@ function situation(army) {
 
 /** Szene: Artillerie (Team 1, die KI) bei (x, y) in einer leeren Karte, Gegner (Team 0) werden von Hand in `s` gereicht. */
 function scene(seed = 7) {
-  const g = classic(new Game({ seed }));
+  const g = new Game({ seed });
   for (const u of g.units) u.alive = false; // Startarmeen weg
   const z = g.zone;
   return { g, x: z.x + 1500, y: z.y };

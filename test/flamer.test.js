@@ -1,14 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
-import { classic } from './classic.js';
 import { BALANCE } from '../js/data/balance.js';
 import { CITY } from '../js/data/city.js';
 import { UNITS } from '../js/data/units.js';
 
 BALANCE.slotCap = 1000; // diese Tests prüfen nicht das Einheitenlimit
 const DT = 0.05;
-const mk = () => classic(new Game({ seed: 7 }));
+const mk = () => new Game({ seed: 7 });
 function run(game, seconds) {
   for (let i = 0; i < Math.round(seconds / DT); i++) game.update(DT);
 }

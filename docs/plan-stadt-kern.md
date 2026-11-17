@@ -13,7 +13,7 @@ ohne Stadt aus Simulation, KI, UI und Tests. Ein Paket je Sitzung, nach jedem Pa
 | Paket | Inhalt | Stand |
 |---|---|---|
 | S2a | `new Game()` startet standardmäßig mit Stadt; Tests, die heute ohne Stadt laufen, bekommen ausdrücklich `city: false` (rein mechanisch, damit alles grün bleibt) | gebaut |
-| S2b | Tests umstellen: `city: false`-Tests auf Stadt umbauen oder löschen, wenn sie nur den alten Modus prüfen; `test/classic.js` auflösen | teilweise: 20 von 21 Dateien auf Stadt (Hilfen `trainer`, `noCrew`, `runCityMoney` in `test/util.js`); offen: 18 Fälle über `mkOld` in `game-*.test.js` (Lager der Hauptstadt), dann `classic.js` |
+| S2b | Tests umstellen: `city: false`-Tests auf Stadt umbauen oder löschen, wenn sie nur den alten Modus prüfen; `test/classic.js` auflösen | gebaut (Hilfen `trainer`, `noCrew`, `runCityMoney` in `test/util.js`, `frontFob` in `test/gamehelp.js`; `classic.js` und `mkOld` entfernt) |
 | S2c | Simulation: Zweige `if (!game.city…)` in `js/game` (Ausbildung in der Hauptstadt/`fob.produces`, Lager, Wirtschaft, Logistik, Luft) entfernen | offen |
 | S2d | KI: Pfade ohne Stadt in `js/ai` entfernen | offen |
 | S2e | UI und Darstellung: Zweige in `js/ui`, `js/render`, Editor auf Stadt | offen |

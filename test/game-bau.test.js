@@ -1,10 +1,10 @@
 // Spiel-Tests: Platzierung, FOB, Baustellen, Mauer, FOB-Fahrzeug und Reparatur.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CLASSIC } from './classic.js';
 import { BALANCE } from '../js/data/balance.js';
 import { BUILDINGS } from '../js/data/buildings.js';
-import { mk, mkOld, run, cellOf, fobOf, unitsOf, findSpot, engineerBeside, silence } from './gamehelp.js';
+import { trainer } from './util.js';
+import { mk, run, cellOf, fobOf, unitsOf, findSpot, engineerBeside, silence } from './gamehelp.js';
 
 test('Platzierung: Bauradius und Hindernisse', () => {
   const g = mk({ seed: 7 });
@@ -53,15 +53,16 @@ test('FOB: Bauradien eigener FOBs dürfen sich nicht überlappen, höchstens 10 
 });
 
 test('Bau: Gebäude-Baustelle kostet Geld und Lager sofort; Fortschritt nur mit Bauer', () => {
-  const g = mkOld({ seed: 7 });
+  const g = mk({ seed: 7 });
   const f = fobOf(g, 0);
   const spot = findSpot(g, 0, 'mortar', f.x, f.y);
   const eng = unitsOf(g, 0, 'engineer')[0];
+  const bm = f.store.bm;
   const r = g.issue(0, { type: 'build', ids: [eng.id], building: 'mortar', x: spot.x, y: spot.y });
   assert.equal(r.ok, true, r.reason);
   const b = g.getEntity(r.id);
   assert.equal(b.built, false);
-  assert.equal(g.teams[0].res.bm, CLASSIC.bm - BUILDINGS.mortar.cost.bm);
+  assert.equal(f.store.bm, bm - BUILDINGS.mortar.cost.bm, 'Lager der Hauptstadt zahlt sofort');
   assert.equal(b.payerId, f.id);
 
   run(g, 40);
@@ -224,10 +225,10 @@ test('Soldaten tragen wenig Baumaterial: reicht es nicht, baut nichts; in der FO
   assert.equal(f.store.bm, bm0 - BUILDINGS.wall.cost.bm);
 });
 
-test('FOB-Fahrzeug: Hauptstadt bildet es aus, Aufbauen macht sofort eine fertige FOB mit 20 % Lager', () => {
-  const g = mkOld({ seed: 7 });
+test('FOB-Fahrzeug: Fabrikhalle bildet es aus, Aufbauen macht sofort eine fertige FOB mit 20 % Lager', () => {
+  const g = mk({ seed: 7 });
   const f = fobOf(g, 0);
-  assert.ok(f.produces.includes('fobTruck'), 'Hauptstadt bildet FOB-Fahrzeuge aus');
+  assert.ok(trainer(g, 'fobTruck'), 'Fabrikhalle bildet FOB-Fahrzeuge aus');
   const spot = findSpot(g, 0, 'fob', f.x, f.y, 950, 1300);
   assert.ok(spot, 'freie FOB-Stelle');
   const v = g.spawnUnit('fobTruck', 0, spot.x, spot.y);

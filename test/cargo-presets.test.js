@@ -4,7 +4,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
-import { classic } from './classic.js';
 import { Controller } from '../js/ui/controller.js';
 import { Camera } from '../js/render/camera.js';
 import { BALANCE } from '../js/data/balance.js';
@@ -12,7 +11,7 @@ import { PRESETS, presetKinds, presetOf } from '../js/game/logistics.js';
 
 const DT = 0.05;
 const L = BALANCE.logistics;
-const mk = (opts) => classic(new Game({ ...opts }));
+const mk = (opts) => new Game({ ...opts });
 
 function run(game, seconds) {
   const n = Math.round(seconds / DT);

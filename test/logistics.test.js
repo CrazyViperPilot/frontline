@@ -1,14 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
-import { classic, CLASSIC } from './classic.js';
 import { BALANCE } from '../js/data/balance.js';
 import { BUILDINGS } from '../js/data/buildings.js';
 import { nearestPassable } from '../js/game/movement.js';
 
 BALANCE.slotCap = 1000; // diese Tests prüfen nicht das Einheitenlimit (siehe economy.test.js)
 const DT = 0.05;
-const mk = (opts) => classic(new Game({ ...opts }));
+const mk = (opts) => new Game({ ...opts });
 const TILE = BALANCE.map.tile;
 const cellOf = (v) => Math.floor(v / TILE);
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);

@@ -1,10 +1,9 @@
 // Spiel-Tests: Munition, Treibstoff, Waffen, Tanken und Bohrer.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CLASSIC } from './classic.js';
 import { BALANCE } from '../js/data/balance.js';
 import { UNITS } from '../js/data/units.js';
-import { base, DT, mk, mkOld, run, cellOf, dist, fobOf, unitsOf, silence } from './gamehelp.js';
+import { DT, mk, run, cellOf, dist, fobOf, unitsOf, silence, frontFob } from './gamehelp.js';
 
 test('Verbrauch: ein Schuss zieht einen Schuss aus dem Einheitenvorrat, nicht aus dem Lager', () => {
   const g = mk({ seed: 7 });
@@ -54,12 +53,10 @@ test('Waffen: Kampfhubschrauber nimmt Raketen gegen Panzer und die Bordkanone ge
 });
 
 test('Verbrauch: leerer Schütze feuert nicht, Abklingzeit läuft nicht an, Mangelmeldung', () => {
-  const g = mkOld({ seed: 7 });
-  const sp = g.map.spawns[0];
-  const rifle = g.spawnUnit('rifleman', 0, sp.x + 300, sp.y - 300);
+  const g = mk({ seed: 7 });
+  const rifle = g.spawnUnit('rifleman', 0, g.zone.x + 1500, g.zone.y); // weit weg von jeder FOB: kein Nachfüllen
   const enemy = g.spawnUnit('rifleman', 1, rifle.x + 120, rifle.y);
   silence(g, 0);
-  g.setStock(0, { bm: CLASSIC.bm, mun: 0, fuel: CLASSIC.fuel }); // kein Nachfüllen aus der FOB
   rifle.ammo = 0;
   assert.equal(g.issue(0, { type: 'attack', ids: [rifle.id], targetId: enemy.id }).ok, true);
   run(g, 3);
@@ -119,10 +116,9 @@ test('Verbrauch: ohne Treibstoff fährt ein Panzer mit 25 % Tempo, Vorrat wird n
 });
 
 test('Verbrauch: FOB-MG feuert ohne Munition im Lager', () => {
-  const g = mkOld({ seed: 7 });
-  const f = fobOf(g, 0);
+  const g = mk({ seed: 7 });
+  const f = frontFob(g, 0); // leeres Lager
   silence(g, 0);
-  g.setStock(0, { bm: 0, mun: 0, fuel: 0 });
   const enemy = g.spawnUnit('rifleman', 1, f.x + 150, f.y);
   run(g, 3);
   assert.ok(enemy.hp < enemy.maxHp, 'FOB-MG trifft ohne Munition');
@@ -131,8 +127,8 @@ test('Verbrauch: FOB-MG feuert ohne Munition im Lager', () => {
 });
 
 test('Soldaten und Fahrzeuge tanken Munition und Treibstoff in der FOB nach', () => {
-  const g = mkOld({ seed: 7 });
-  const f = base(g);
+  const g = mk({ seed: 7 });
+  const f = frontFob(g, 0, 500);
   const r = g.spawnUnit('rifleman', 0, f.x + 100, f.y);
   const t = g.spawnUnit('tank', 0, f.x + 120, f.y + 40);
   r.ammo = 0;
@@ -147,8 +143,8 @@ test('Soldaten und Fahrzeuge tanken Munition und Treibstoff in der FOB nach', ()
 });
 
 test('Bohrer: 30 s Aufwärmen, 2 min aktiv mit Treibstoff aus der FOB, 5 min Pause; Hot Zone zieht zum Bohrer', () => {
-  const g = mkOld({ seed: 7 });
-  const f = base(g);
+  const g = mk({ seed: 7 });
+  const f = frontFob(g, 0, 1000);
   const d = g.spawnBuilding('drill', 0, cellOf(f.x + 200), cellOf(f.y - 200));
   g.update(DT);
   assert.equal(g.issue(0, { type: 'drill', ids: [d.id] }).ok, false, 'noch im Aufwärmen');
@@ -173,10 +169,9 @@ test('Bohrer: 30 s Aufwärmen, 2 min aktiv mit Treibstoff aus der FOB, 5 min Pau
 });
 
 test('Bohrer ohne Treibstoff in der FOB startet nicht', () => {
-  const g = mkOld({ seed: 7 });
-  const f = base(g);
+  const g = mk({ seed: 7 });
+  const f = frontFob(g, 0); // leeres Lager
   const d = g.spawnBuilding('drill', 0, cellOf(f.x + 200), cellOf(f.y - 200));
-  g.setStock(0, { bm: 100, mun: 0, fuel: 0 });
   run(g, 31);
   assert.equal(g.issue(0, { type: 'drill', ids: [d.id] }).ok, false);
 });

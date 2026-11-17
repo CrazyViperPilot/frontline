@@ -2,14 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { AI } from '../js/ai/ai.js';
-import { classic } from './classic.js';
 import { runCityMoney, trainer, noCrew } from './util.js';
 import { BALANCE } from '../js/data/balance.js';
 import { UNITS } from '../js/data/units.js';
 
 const DT = 0.05;
 const TILE = BALANCE.map.tile;
-const mk = (opts) => classic(new Game({ ...opts }));
+const mk = (opts) => new Game({ ...opts });
 
 /** Test ohne Einheitenlimit (Startarmee füllt die 52 Plätze schon). */
 const roomy = (fn) => () => {

@@ -1,13 +1,14 @@
 // Spiel-Tests: Startzustand, Ressourcen, Ausbildung, Hauptstadt und Erstattung.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { CLASSIC } from './classic.js';
+import { CITY } from '../js/data/city.js';
+import { trainer, noCrew } from './util.js';
 import { BALANCE } from '../js/data/balance.js';
 import { BUILDINGS } from '../js/data/buildings.js';
-import { mk, mkOld, run, cellOf, fobOf, unitsOf, findSpot, fobAt } from './gamehelp.js';
+import { mk, run, cellOf, fobOf, unitsOf, findSpot, fobAt } from './gamehelp.js';
 
-test('Startzustand: fertige Hauptstadt mit Lager, Startunits, Geld', () => {
-  const g = mkOld({ seed: 7 });
+test('Startzustand: fertige Hauptstadt mit Startlager der Stadt, Startunits, Geld', () => {
+  const g = mk({ seed: 7 });
   for (let t = 0; t < 2; t++) {
     const f = fobOf(g, t);
     assert.ok(f, `FOB für Team ${t}`);
@@ -18,50 +19,52 @@ test('Startzustand: fertige Hauptstadt mit Lager, Startunits, Geld', () => {
     assert.equal(unitsOf(g, t, 'engineer').length, 1);
     assert.equal(unitsOf(g, t, 'rifleman').length, 22);
     assert.equal(unitsOf(g, t, 'at').length, 7);
-    assert.deepEqual(f.store, { bm: CLASSIC.bm, mun: CLASSIC.mun, fuel: CLASSIC.fuel });
+    assert.deepEqual({ ...f.store }, CITY.startStock);
     assert.equal(g.teams[t].res.money, BALANCE.startRes.money);
-    assert.equal(g.teams[t].res.bm, CLASSIC.bm, 'Summe aller FOB-Lager');
+    assert.equal(g.teams[t].res.bm, 0, 'Summe der vorderen FOB-Lager (ohne Hauptstadt)');
   }
   assert.equal(g.winner, null);
   assert.equal(g.zone.owner, -1);
 });
 
 test('Team-Ressourcen sind Lesegetter: direktes Schreiben ist nicht möglich', () => {
-  const g = mkOld({ seed: 7 });
+  const g = mk({ seed: 7 });
   assert.throws(() => {
     'use strict';
     g.teams[0].res.bm = 5;
   }, TypeError);
+  fobAt(g, 0, fobOf(g, 0).x, fobOf(g, 0).y); // vordere FOB: setStock schreibt in die vorderen Lager
   g.setStock(0, { bm: 123, mun: 45, fuel: 6 });
   assert.equal(g.teams[0].res.bm, 123);
   assert.equal(g.teams[0].res.mun, 45);
   assert.equal(g.teams[0].res.fuel, 6);
-  assert.equal(g.teams[1].res.bm, CLASSIC.bm, 'Team 1 unberührt');
+  assert.equal(g.teams[1].res.bm, 0, 'Team 1 unberührt');
 });
 
-test('Training: Kosten werden aus dem FOB-Lager und Geld abgezogen, Einheit spawnt', () => {
-  const g = mkOld({ seed: 7 });
+test('Training in der Kaserne: Preis vom Geld, Zahler die Kaserne, Einheit spawnt', () => noCrew(() => {
+  const g = mk({ seed: 7 });
   const f = fobOf(g, 0);
+  const k = trainer(g, 'rifleman');
   const before = unitsOf(g, 0, 'rifleman').length;
   const { money } = g.teams[0].res;
-  const r = g.issue(0, { type: 'train', buildingId: f.id, unit: 'rifleman' });
+  const mun = f.store.mun;
+  const r = g.issue(0, { type: 'train', buildingId: k.id, unit: 'rifleman' });
   assert.equal(r.ok, true);
   assert.equal(g.teams[0].res.money, money - 60);
-  assert.equal(f.store.mun, CLASSIC.mun, 'Einheiten kosten nur Geld');
-  assert.equal(f.queue.length, 1);
-  assert.equal(f.queue[0].unit, 'rifleman');
-  assert.equal(f.queue[0].payerId, f.id);
+  assert.equal(f.store.mun, mun, 'Einheiten kosten nur Geld');
+  assert.equal(k.queue.length, 1);
+  assert.equal(k.queue[0].unit, 'rifleman');
+  assert.equal(k.queue[0].payerId, k.id, 'Zahler ist die Kaserne');
 
   run(g, 8.5);
   assert.equal(unitsOf(g, 0, 'rifleman').length, before + 1);
-  assert.equal(f.queue.length, 0);
-});
+  assert.equal(k.queue.length, 0);
+}));
 
-test('Training: Einheiten kosten nur Geld und starten voll munitioniert und betankt', () => {
-  const g = mkOld({ seed: 7 });
+test('Training: Einheiten kosten nur Geld und starten voll munitioniert und betankt', () => noCrew(() => {
+  const g = mk({ seed: 7 });
   const f = fobOf(g, 0);
-  g.setStock(0, { bm: 0, mun: 0, fuel: 0 });
-  assert.equal(g.issue(0, { type: 'train', buildingId: f.id, unit: 'rifleman' }).ok, true);
+  assert.equal(g.issue(0, { type: 'train', buildingId: trainer(g, 'rifleman').id, unit: 'rifleman' }).ok, true);
   run(g, 9);
   const r = unitsOf(g, 0, 'rifleman').at(-1);
   assert.equal(r.ammo, r.def.ammoMax);
@@ -69,34 +72,33 @@ test('Training: Einheiten kosten nur Geld und starten voll munitioniert und beta
   const t = g.spawnUnit('tank', 0, f.x, f.y + 80);
   assert.deepEqual(t.weapons.map((w) => w.rounds), [30, 300]);
   assert.equal(t.fuel, t.def.fuelMax);
-});
+}));
 
-test('Die Hauptstadt kann nicht abgerissen werden und bildet als einzige Einheiten aus', () => {
-  const g = mkOld({ seed: 7 });
+test('Die Hauptstadt kann nicht abgerissen werden; Hauptstadt und vordere FOB bilden nichts aus (das tut die Stadt)', () => {
+  const g = mk({ seed: 7 });
   const f = fobOf(g, 0);
   assert.equal(g.issue(0, { type: 'demolish', buildingId: f.id }).ok, false);
   const front = fobAt(g, 0, f.x, f.y);
   assert.deepEqual(front.produces, [], 'vordere FOB bildet nichts aus');
-  const r = g.issue(0, { type: 'train', buildingId: front.id, unit: 'rifleman' });
-  assert.equal(r.ok, false);
-  for (const u of ['rifleman', 'at', 'truck', 'engineer', 'ifv', 'tank', 'littlebird', 'transporter', 'gunship']) {
-    assert.ok(f.produces.includes(u), `Hauptstadt bildet ${u} aus`);
-  }
+  assert.deepEqual(f.produces, [], 'Hauptstadt bildet nichts aus');
+  for (const b of [f, front]) assert.equal(g.issue(0, { type: 'train', buildingId: b.id, unit: 'rifleman' }).ok, false);
 });
 
-test('Erstattung an den Zahler: Ausbildung abbrechen erstattet an die FOB, die bezahlt hat', () => {
-  const g = mkOld({ seed: 7 });
+test('Erstattung an den Zahler: Ausbildung abbrechen erstattet das Geld, Lager bleiben unberührt', () => noCrew(() => {
+  const g = mk({ seed: 7 });
   const f = fobOf(g, 0);
+  const k = trainer(g, 'rifleman');
   const far = fobAt(g, 0, f.x, f.y, 950, 1300);
   far.store.mun = 0;
+  const mun = f.store.mun;
   const money0 = g.teams[0].res.money;
-  const r = g.issue(0, { type: 'train', buildingId: f.id, unit: 'rifleman' });
+  const r = g.issue(0, { type: 'train', buildingId: k.id, unit: 'rifleman' });
   assert.equal(r.ok, true);
-  assert.equal(g.issue(0, { type: 'cancelTrain', buildingId: f.id }).ok, true);
-  assert.equal(f.store.mun, CLASSIC.mun, 'Lager unverändert');
+  assert.equal(g.issue(0, { type: 'cancelTrain', buildingId: k.id }).ok, true);
+  assert.equal(f.store.mun, mun, 'Lager unverändert');
   assert.equal(far.store.mun, 0, 'andere FOB unberührt');
   assert.equal(g.teams[0].res.money, money0, 'Geld zurück');
-});
+}));
 
 test('Abriss einer FOB: Lager geht an die nächste andere FOB, kein Material wird erstattet', () => {
   const g = mk({ seed: 7 });

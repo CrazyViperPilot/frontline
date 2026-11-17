@@ -2,7 +2,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
-import { classic } from './classic.js';
 import { trainer, noCrew } from './util.js';
 import { UNITS } from '../js/data/units.js';
 import { RESEARCH } from '../js/data/research.js';
@@ -15,7 +14,7 @@ function run(game, seconds) {
   for (let i = 0; i < Math.round(seconds / DT); i++) game.update(DT);
 }
 function scene(seed = 7, opts = {}) {
-  const g = classic(new Game({ seed, ...opts }));
+  const g = new Game({ seed, ...opts });
   for (const u of g.units) u.alive = false;
   const z = g.zone;
   return { g, x: z.x + 1500, y: z.y };

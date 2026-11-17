@@ -5,7 +5,6 @@ import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { AI } from '../js/ai/ai.js';
 import { needA10 } from '../js/ai/army/combat.js';
-import { classic } from './classic.js';
 import { BALANCE } from '../js/data/balance.js';
 import { UNITS } from '../js/data/units.js';
 import { CITY } from '../js/data/city.js';
@@ -15,7 +14,7 @@ BALANCE.slotCap = 1000; // diese Tests prüfen nicht das Einheitenlimit
 
 /** Szene: leere Karte, die KI (Team 1) mit einem Heliport als einzigem Ausbildungsgebäude; Befehle werden nur gesammelt. */
 function scene(army) {
-  const g = classic(new Game({ seed: 7 }));
+  const g = new Game({ seed: 7 });
   for (const u of g.units) u.alive = false; // Startarmeen weg
   g.teams[1].res.money = 1e6;
   const ai = new AI(g, 1, 'normal'); // legt selbst einen Befehl an (Schwierigkeit), daher erst danach die Sammlung

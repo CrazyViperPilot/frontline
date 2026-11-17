@@ -1,7 +1,8 @@
 // Spiel-Tests: Mörser, Flugabwehr und Hubschrauber.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { base, DT, mk, mkOld, run, cellOf, dist, unitsOf } from './gamehelp.js';
+import { base, DT, mk, run, cellOf, dist, unitsOf, frontFob } from './gamehelp.js';
+
 
 /** Mörser (Team 0) 400 px vor der Hauptstadt (x 600), Feind-Schütze daneben (x 1000); Lage relativ zum Startpunkt (seit v5.14 Karte 11072 px). */
 function mortarScene(withAA) {
@@ -80,8 +81,8 @@ test('Mörser: gewähltes Ziel, ein Schuss alle 20 s, nur in Reichweite', () => 
 });
 
 test('Mörser ohne Munition in der FOB feuert nicht auf das gewählte Ziel', () => {
-  const g = mkOld({ seed: 7 });
-  const f = base(g);
+  const g = mk({ seed: 7 });
+  const f = frontFob(g, 0);
   const m = g.spawnBuilding('mortar', 0, cellOf(f.x + 200), cellOf(f.y - 200));
   g.issue(0, { type: 'mortarTarget', ids: [m.id], x: m.x + 500, y: m.y });
   g.setStock(0, { bm: 100, mun: 0, fuel: 0 });
@@ -91,20 +92,19 @@ test('Mörser ohne Munition in der FOB feuert nicht auf das gewählte Ziel', () 
 });
 
 test('Flugabwehr schießt einen feindlichen Hubschrauber ab, wenn die FOB Munition hat', () => {
-  const g = mkOld({ seed: 7 });
+  const g = mk({ seed: 7 });
   const f = base(g, 1);
   const aa = g.spawnBuilding('aa', 1, cellOf(f.x + 150), cellOf(f.y - 150));
   const heli = g.spawnUnit('gunship', 0, aa.x + 250, aa.y);
   heli.order = { type: 'idle', x: heli.x, y: heli.y, targetId: null };
-  const mun0 = g.stockOf(1, 'mun');
   run(g, 30);
   assert.equal(heli.alive, false, 'abgeschossen');
-  assert.ok(g.stockOf(1, 'mun') < mun0, 'Munition aus der FOB verbraucht');
+  assert.ok(g.teams[1].used.mun > 0, 'Munition aus der FOB verbraucht'); // Lager der Hauptstadt füllen die Werke mit
 });
 
 test('Flugabwehr ohne Munition kann den Hubschrauber nicht abschießen', () => {
-  const g = mkOld({ seed: 7 });
-  const f = base(g, 1);
+  const g = mk({ seed: 7 });
+  const f = frontFob(g, 1);
   const aa = g.spawnBuilding('aa', 1, cellOf(f.x + 150), cellOf(f.y - 150));
   g.setStock(1, { bm: 100, mun: 0, fuel: 0 });
   const heli = g.spawnUnit('littlebird', 0, aa.x + 250, aa.y);

@@ -61,8 +61,8 @@ Nicht im Umfang: Netzwerk-Multiplayer, Kampagne. Speichern laufender Partien gib
    Panzer vorn, Schützen links, Panzerabwehr rechts, LKW und Baufahrzeug hinten, Kommandeur dicht hinter der FOB; `BALANCE.startLayout`;
    aufgestellt erst nach dem Startviertel der Stadt, auf freien Plätzen).
    Zusammen belegen sie 52 der 300 Plätze des Einheitenlimits (klassisch; in der Eroberung 500, siehe §6 und §7).
-3. Kaserne, Fabrikhalle und Heliport der Stadt bilden Einheiten aus (§15; nur gegen Geld; mit Forschung Schützenpanzer,
-   Scharfschützen und Hubschrauber erst ab Stufe 2, Kampfpanzer und AH-64 ab Stufe 3, §7).
+3. Kaserne, Fabrikhalle und Heliport der Stadt bilden Einheiten aus (§15; gegen Geld, Fahrzeuge auch Stahl, und Einwohner;
+   alle Einheiten sind von Anfang an frei, auch mit Forschung, §7).
    Man bringt Einheiten und Nachschub per LKW an die Front, gründet vordere FOBs (seit v5.09 mit dem FOB-Fahrzeug)
    (Verschanzen mit Mauern und Tore, Mörser, Flak, Nachladen und Tanken) und hält die Zone.
 4. In der Mitte liegt die **Konfliktzone** (eine Stadt).

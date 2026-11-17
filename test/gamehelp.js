@@ -1,15 +1,12 @@
 // Gemeinsame Hilfen der Spiel-Tests (game-*.test.js); keine eigenen Tests.
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
-import { classic } from './classic.js';
 import { BALANCE } from '../js/data/balance.js';
 import { nearestPassable } from '../js/game/movement.js';
 
 BALANCE.slotCap = 1000; // diese Tests prüfen nicht das Einheitenlimit (siehe economy.test.js)
 export const DT = 0.05;
-export const mk = (opts) => classic(new Game({ ...opts }));
-// Übergangsweise: Tests, die noch den Modus ohne Stadt prüfen (Umstellung folgt, siehe docs/plan-stadt-kern.md)
-export const mkOld = (opts) => classic(new Game({ city: false, ...opts }));
+export const mk = (opts) => new Game({ ...opts });
 export const TILE = BALANCE.map.tile;
 
 export function run(game, seconds) {
@@ -47,6 +44,14 @@ export function fobAt(game, team, x0, y0, rMin = 950, rMax = 1300) {
   assert.ok(s, 'freie FOB-Stelle');
   const p = game.canPlace(team, 'fob', s.x, s.y);
   return game.spawnBuilding('fob', team, p.cx, p.cy, { built: true });
+}
+
+/** Vordere FOB im Ring um die Hauptstadt mit festem Lager (je Sorte `stock`): das Lager der Hauptstadt füllen die Werke der Stadt. */
+export function frontFob(game, team = 0, stock = 0) {
+  const m = base(game, team);
+  const f = fobAt(game, team, m.x, m.y);
+  f.store.bm = f.store.mun = f.store.fuel = stock;
+  return f;
 }
 
 /** Ein Baufahrzeug direkt am Gebäuderand, damit es ohne Anfahrt mitbaut. */

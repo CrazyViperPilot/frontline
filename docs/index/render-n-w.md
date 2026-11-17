@@ -88,8 +88,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawTownIso(ctx, cam, b, season) – Isometrisch: Gebäude b als Bild aus dem Zwischenspeicher (für jede Drehung dass…
 - drawTownTop(ctx, b, zoom) – 2D von oben: Gebäude b als Bild aus dem Zwischenspeicher (Weltkoordinaten, Kame…
 
-## unitpaint.js (116 KB)
-- SHOWROOM – Team-Kennung der Ausstellungsstücke
+## unitpaint.js (20 KB)
 - drawUnitIso(ctx, cam, u, p, aim, lift, now) – Einheit in Iso an Bildpunkt p (Boden), lift = Höhe über dem Boden
 - drawUnitShadowIso(ctx, cam, u, p, dpr, now) – Schatten in Iso: Umriss des Modells von oben, flach auf den Boden gelegt (Boden…
 - drawUnitTop(ctx, u, zoom, aim, now) – Einheit von oben (2D), Weltkoordinaten (Transform des Renderers)
@@ -101,6 +100,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - PAINT – Malwerkzeug für andere gemalte Modelle (Tiere und Felsen in nature.js): Körper,…
 - paintOf
 - teamKey (= keyOf)
+- SHOWROOM
 
 ## university.js (20 KB)
 - OUTLINE

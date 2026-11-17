@@ -1,8 +1,10 @@
-# Rezept: Aussehen einer neuen Einheit (3D-Modell in `js/render/unitpaint.js`)
+# Rezept: Aussehen einer neuen Einheit (3D-Modell in `js/render/units/`, Einstieg `js/render/unitpaint.js`)
 
 Für Menschen und Modelle (auch Sonnet oder Haiku). Ziel: Einheiten im Stil der vorhandenen (F-16, F-22, U-2, Kampfpanzer,
 Panzerhaubitze) mit wenig Aufwand bauen. Der wichtigste Teil ist die **Vorschau-Schleife** (Schritt 4): Modell bauen, Bild ansehen,
 verbessern. Wie das Malen technisch funktioniert, steht in den Kommentaren am Kopf von `unitpaint.js` (Körper, Mini-Renderer, Bild-Cache).
+Die Modelle liegen nach Familien in `js/render/units/` (Verzeichnis in `js/render/units/CLAUDE.md` und im Kopf von `unitpaint.js`):
+zum Zeichnen reichen `units/shapes.js` (Bausteine) und die Datei einer ähnlichen Einheit.
 
 ## Kurzauftrag (zum Kopieren)
 
@@ -30,7 +32,7 @@ Ein Bild hilft sehr: am besten eine **Dreiseitenansicht** (Seite, oben, vorn, z.
 - Kleinste sinnvolle Teile: etwa 0,3 px dick (dünner verschwindet). Details unter ~1 px mit `fine(…)` markieren (fallen beim
   Herauszoomen weg).
 
-## 2. Bausteine (in `unitpaint.js`; die meisten auch als `PAINT` exportiert)
+## 2. Bausteine (in `js/render/units/shapes.js`, Flugzeugrumpf in `units/airparts.js`; die meisten auch als `PAINT` exportiert)
 
 | Baustein | Form | Typisch für |
 |---|---|---|
@@ -87,8 +89,10 @@ Dann verbessern und erneut ansehen; meist reichen 2–3 Runden.
 
 ## 5. Einbauen und prüfen
 
-1. Funktion in `unitpaint.js` bei ähnlichen Modellen einfügen, mit deutschem Kommentar darüber (was es darstellt, welche Zustände).
-2. In `MODELS` eintragen (Infanterie: `INFANTRY` und `soldier`); ggf. Größe in `SIZE`.
+1. Funktion in der passenden Familie unter `js/render/units/` bei ähnlichen Modellen einfügen, mit deutschem Kommentar darüber
+   (was es darstellt, welche Zustände), und am Dateiende exportieren. Neue Art: eigene Datei (höchstens 20 KB), in `sw.js` unter
+   `ASSETS` und in `js/render/units/CLAUDE.md` eintragen.
+2. In `unitpaint.js` importieren und in `MODELS` eintragen (Infanterie: `INFANTRY` und `soldier` in `units/soldier.js`); ggf. Größe in `SIZE`.
 3. `node --test test/unitpaint.test.js` (jede Einheit hat ein Modell, Bilder entstehen), dann im Spiel ansehen:
    `npm run smoke` oder `?debug=1` und die Einheit ausbilden (2D und Iso, Taste V).
 4. Die übrigen Schritte einer neuen Einheit (Werte, Ausbildung, KI, Doku) stehen in `docs/rezepte/neue-einheit.md`.

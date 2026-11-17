@@ -136,7 +136,7 @@ Iso: Wanne in 16 Richtungen, der Turm getrennt in 16 Richtungen (folgt dem Ziel)
 Rotoren und Nachbrenner laufen live, Wracks sind dasselbe Modell verkohlt.
 Jede Ansicht wird je Maßstab einmal gemalt und danach nur kopiert (`spritecache.js`), darum flüssig auf Handy und Tablet.
 Nur Bild, Spielregeln unverändert.
-Code: `js/render/unitpaint.js`.
+Code: `js/render/unitpaint.js` (Einstieg), Modelle nach Familien in `js/render/units/`.
 
 **Scharfschütze und Tarnung:** Der Scharfschütze ist getarnt:
 Gegner sehen ihn nur, wenn eine ihrer Einheiten oder ein fertiges Gebäude näher als **160 px** an ihm steht, oder **4 s lang nach jedem seiner Schüsse**.

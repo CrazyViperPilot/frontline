@@ -12,7 +12,8 @@ Teil der Rezepte für Erweiterungen (Einstieg: `CLAUDE.md` im Wurzelordner, Absc
    Mit Stadt: `CITY.crew` (Einwohner) und `CITY.metalCost` (Metall aus dem Stadtlager, fehlt = 0) in `js/data/city.js`.
 4. Aussehen: **eigenes Rezept `docs/rezept-einheiten.md`**.
    Es behandelt Maße, Bausteine, Stil, die Vorschau-Schleife mit `node tools/unitpreview.mjs <typ>` und welches KI-Modell dafür taugt.
-   Kurz: Modell in `js/render/unitpaint.js` (Funktion in `MODELS` bzw. `INFANTRY`, gilt für 2D und Iso).
+   Kurz: Modell in der passenden Familie unter `js/render/units/`, eingetragen in `MODELS` bzw. `INFANTRY` in
+   `js/render/unitpaint.js` (gilt für 2D und Iso).
    `test/unitpaint.test.js` prüft, dass jede Einheit eines hat.
    Ohne Modell zeichnen `js/render/sprites.js` (`drawUnit`) und der Renderer eine einfache Form.
 5. KI: Soll sie die Einheit bauen?

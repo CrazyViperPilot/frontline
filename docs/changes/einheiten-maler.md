@@ -1,0 +1,1 @@
+**Einheiten-Maler geteilt** (Umbau, nur Code): Die Einheiten-Modelle liegen nach Familien in `js/render/units/` (Panzer, Radfahrzeuge, Hubschrauber, Jets, Soldaten …), `js/render/unitpaint.js` bleibt Einstieg. Aussehen unverändert.

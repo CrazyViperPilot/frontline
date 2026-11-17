@@ -34,12 +34,11 @@ test('Werte: 60 HP, Sicht 250, schnell, 0 Passagiere, Treibstoff 40, Schadenswer
 test('Ausbildung nur am Heliport (mit Stadt), nicht in der Hauptstadt', () => {
   assert.ok(CITY.produces.heliport.includes('fpv'));
   for (const [k, list] of Object.entries(CITY.produces)) if (k !== 'heliport') assert.ok(!list.includes('fpv'), k);
-  assert.ok(!BUILDINGS.fob.produces.includes('fpv'), 'Hauptstadt-Menü unverändert');
   assert.equal(CITY.metalCost.fpv, 50);
 });
 
 test('Angriffsbefehl: Drohne fliegt ins Ziel, trifft den Panzer und ist danach weg', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const tank = g.spawnUnit('tank', 1, 4000, 4000);
   const f = g.spawnUnit('fpv', 0, 4000 + 300, 4000);
   const hp0 = tank.hp;
@@ -52,7 +51,7 @@ test('Angriffsbefehl: Drohne fliegt ins Ziel, trifft den Panzer und ist danach w
 });
 
 test('ohne Angriffsbefehl oder fern vom Ziel: keine Explosion', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const tank = g.spawnUnit('tank', 1, 4000, 4000);
   const idle = g.spawnUnit('fpv', 0, 4000 + 300, 4000);
   const hp0 = tank.hp;

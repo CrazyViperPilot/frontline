@@ -15,8 +15,7 @@ export const BUILDINGS = {
     cost: { bm: 400 },
     buildTime: 30,
     hotkey: null,
-    // bildet nur die Hauptstadt aus (entities.js: b.produces); alle anderen FOBs bilden nichts aus
-    produces: ['rifleman', 'medic', 'at', 'manpads', 'sniper', 'truck', 'engineer', 'fobTruck', 'ifv', 'tank', 'flak', 'sam', 'gepard', 'pzh', 'excavator', 'littlebird', 'transporter', 'gunship', 'commander'],
+    produces: [], // FOBs und Hauptstadt bilden nichts aus: das tun Kaserne, Fabrikhalle, Heliport und Stellplatz (CITY.produces)
     weapon: {
       range: 220,
       minRange: 0,

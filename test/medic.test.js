@@ -4,6 +4,7 @@ import { Game } from '../js/game/game.js';
 import { BALANCE } from '../js/data/balance.js';
 import { BUILDINGS } from '../js/data/buildings.js';
 import { UNITS } from '../js/data/units.js';
+import { CITY } from '../js/data/city.js';
 
 BALANCE.slotCap = 1000; // diese Tests prüfen nicht das Einheitenlimit
 const DT = 0.05;
@@ -12,12 +13,11 @@ function run(game, seconds) {
   for (let i = 0; i < Math.round(seconds / DT); i++) game.update(DT);
 }
 
-test('Sanitäter: unbewaffnet, Infanterie, in Hauptstadt und Kaserne ausbildbar', () => {
+test('Sanitäter: unbewaffnet, Infanterie, in der Kaserne ausbildbar', () => {
   assert.equal(UNITS.medic.weapons.length, 0);
   assert.equal(UNITS.medic.armor, 'inf');
   assert.equal(UNITS.medic.cost.money, UNITS.rifleman.cost.money * 1.5);
-  assert.ok(BUILDINGS.fob.produces.includes('medic'));
-  assert.equal(new Set(BUILDINGS.fob.produces.map((t) => UNITS[t].hotkey)).size, BUILDINGS.fob.produces.length);
+  assert.ok(CITY.produces.barracks.includes('medic')); // Tasten je Gebäude eindeutig: config.test.js
 });
 
 test('Sanitäter heilt verletzten Schützen im Umkreis, nicht außerhalb, nicht sich selbst', () => {

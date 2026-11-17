@@ -73,6 +73,7 @@ export function snapshotGame(game, ai) {
 
 export function restoreGame(data) {
   const { game, ai } = decode(data, STATICS, CLASSES);
+  if (!game.city) throw new Error('Spielstand ohne Stadt wird nicht mehr unterstützt'); // Plan „Stadt ist Kern“ (S2f)
   for (const a of [ai].flat()) a?.restoreMemory?.(); // Stände vor dem KI-Gedächtnis (cooldown.js): fehlende Felder ergänzen
   game.sapperMines ??= []; // Stände vor Paket E8 haben keine Pionier-Minen
   const rd = game.relief;

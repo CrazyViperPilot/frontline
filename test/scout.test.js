@@ -28,7 +28,6 @@ test('Aufklärungsfahrzeug: Fabrikhalle (Taste K), nicht in der Hauptstadt, Wert
   assert.ok(CITY.produces.factory.includes('scout'));
   const g = mk({ seed: 7 });
   const fob = g.buildings.find((b) => b.team === 0 && b.main);
-  assert.ok(!fob.produces.includes('scout'), 'Hauptstadt bildet es nicht aus (Regel 4)');
 });
 
 test('Aufklärungsfahrzeug: fährt schneller als der LKW und hat eine MG', () => {

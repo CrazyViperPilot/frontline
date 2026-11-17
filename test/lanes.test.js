@@ -48,7 +48,7 @@ test('laneGrid: drei nebeneinander = drei Spuren, höchstens maxLanes', () => {
 });
 
 test('Transport: Kapazität einer Straße × Spuren je Richtung', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const m = g.mainFob(0);
   g.teams[0].res.money = 1e6;

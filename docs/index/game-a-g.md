@@ -87,7 +87,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - updateEconomy(game, dt) – Produktion und Einkommen eines Schritts
 - smoothIncome(game, dt) – Glättet das angezeigte Einkommen (team.income) gegen die momentane Rate
 
-## entities.js (7.3 KB)
+## entities.js (7.2 KB)
 - createUnit(id, type, team, x, y) – Einheit
 - defineAmmo(u, def) – `ammo` als Eigenschaft anlegen (auch nach dem Laden eines Spielstands, core/sna…
 - addAmmo(u, amount) – Füllt die Waffen der Reihe nach mit `amount` Munition (Lagereinheiten) auf; lie…

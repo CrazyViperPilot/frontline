@@ -63,7 +63,7 @@ function needyFob(g, team = 0) {
 }
 
 test('Befehl route mit fromWork: der LKW fährt zum Werk, holt dessen Ware und bringt sie zur FOB', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const a = workOf(g, 'fuel');
   const { to } = needyFob(g);
   const u = truckAt(g, a);
@@ -78,7 +78,7 @@ test('Befehl route mit fromWork: der LKW fährt zum Werk, holt dessen Ware und b
 });
 
 test('Oberfläche: T, dann Werk anklicken, dann Ziel-FOB, schickt route mit fromWork', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const a = workOf(g, 'fuel');
   const { main, to } = needyFob(g);
   const u = truckAt(g, a);
@@ -98,7 +98,7 @@ test('Oberfläche: T, dann Werk anklicken, dann Ziel-FOB, schickt route mit from
 });
 
 test('Oberfläche: Start FOB wie bisher, Start = Ziel wird abgelehnt', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { main, to } = needyFob(g);
   const u = truckAt(g, workOf(g, 'fuel'));
   const ctl = new Controller(g, 0, FLAT);
@@ -114,7 +114,7 @@ test('Oberfläche: Start FOB wie bisher, Start = Ziel wird abgelehnt', () => {
 });
 
 test('KI plant Pendler ab einem Werk, wenn keine FOB Überschuss hat', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ai = new AI(g, 0, 'normal');
   const a = workOf(g, 'fuel');
   const { to } = needyFob(g);
@@ -140,7 +140,7 @@ test('KI: ohne Stadt gibt es keinen Werks-Plan', () => {
 });
 
 test('KI: eine FOB mit Überschuss bleibt Quelle, wenn das Werk nicht klar näher liegt', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ai = new AI(g, 0, 'normal');
   const main = g.mainFob(0);
   const w = g.city[0].ents.get(workOf(g, 'fuel'));
@@ -169,7 +169,7 @@ test('KI: eine FOB mit Überschuss bleibt Quelle, wenn das Werk nicht klar nähe
 });
 
 test('KI: die Hauptstadt wird nie mit einem Werk versorgt (auch wenn sie allein bedürftig ist)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ai = new AI(g, 0, 'normal');
   const main = g.mainFob(0);
   for (const k of ['bm', 'mun', 'fuel']) main.store[k] = 0;
@@ -178,7 +178,7 @@ test('KI: die Hauptstadt wird nie mit einem Werk versorgt (auch wenn sie allein 
 });
 
 test('KI: höchstens WORK_SOURCE_TRUCKS LKW je Werk, der zweite LKW bekommt keinen Plan ab diesem Werk', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ai = new AI(g, 0, 'normal');
   const a = workOf(g, 'fuel');
   needyFob(g);
@@ -195,7 +195,7 @@ test('KI: höchstens WORK_SOURCE_TRUCKS LKW je Werk, der zweite LKW bekommt kein
 });
 
 test('KI: Route ab Werk wird gesetzt und bleibt gültig, solange die FOB Bedarf hat', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ai = new AI(g, 0, 'normal');
   const a = workOf(g, 'fuel');
   const { to } = needyFob(g);
@@ -215,7 +215,7 @@ test('KI: Route ab Werk wird gesetzt und bleibt gültig, solange die FOB Bedarf 
 });
 
 test('KI: Route ab Werk endet, wenn das Werk abgerissen ist (kein Absturz im Denkschritt)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ai = new AI(g, 0, 'normal');
   const a = workOf(g, 'fuel');
   needyFob(g);
@@ -233,7 +233,7 @@ test('KI: Route ab Werk endet, wenn das Werk abgerissen ist (kein Absturz im Den
 });
 
 test('Ressourcenanzeige: am Lagerknoten steht „davon an Werken“ (Summe der Ausgangslager je Ware)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const a = workOf(g, 'fuel');
   c.out[a] = 20;
@@ -246,7 +246,7 @@ test('Ressourcenanzeige: am Lagerknoten steht „davon an Werken“ (Summe der A
 
 
 test('KI: ein Werk ohne Ausstoß und mit leerem Ausgangslager wird als Quelle nicht gewählt', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ai = new AI(g, 0, 'normal');
   const a = workOf(g, 'fuel');
   needyFob(g);
@@ -259,7 +259,7 @@ test('KI: ein Werk ohne Ausstoß und mit leerem Ausgangslager wird als Quelle ni
 });
 
 test('KI: eine Route ab Werk wird nach ROUTE_HOLD aufgegeben, wenn das Werk aufhört zu liefern', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ai = new AI(g, 0, 'normal');
   const a = workOf(g, 'fuel');
   needyFob(g);

@@ -72,7 +72,7 @@ test('Baustellen zeichnen in jeder Größe, jedem Abschnitt, jeder Variante und 
 });
 
 test('Stadt: wachsende Zellen sind Baustellen, zerstörte Schutt, Straßen nie; Großbau nur einmal über die Mitte', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   g.teams[0].money = 1e7;
   const c = g.city[0];
   const m = g.mainFob(0);

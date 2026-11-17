@@ -125,7 +125,7 @@ test('Bereitschaft: Standard an für Jets mit Luft-Luft-Waffe, A-10, C-130 und U
 });
 
 test('Alarmstart: Hubschrauber im Radius, Jet startet ohne Befehl, rollt, startet, greift an, landet wieder', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ab = base(g, 1);
   const [u] = ab.jets;
   const h = intruder(g, ab);
@@ -148,7 +148,7 @@ test('Alarmstart: Hubschrauber im Radius, Jet startet ohne Befehl, rollt, starte
 });
 
 test('Bereitschaft aus: kein Start; Befehl scramble schaltet um', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ab = base(g, 1);
   const [u] = ab.jets;
   const r = g.issue(0, { type: 'scramble', ids: [u.id], on: false });
@@ -162,7 +162,7 @@ test('Bereitschaft aus: kein Start; Befehl scramble schaltet um', () => {
 });
 
 test('Kein Start: Jet ohne Luft-Luft-Waffe (A-10), leer geschossen oder unbetankt', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ab = base(g, 1, 'a10');
   const [a] = ab.jets;
   assert.equal(g.issue(0, { type: 'scramble', ids: [a.id], on: true }).ok, false, 'A-10 nicht wählbar');
@@ -183,7 +183,7 @@ test('Kein Start: Jet ohne Luft-Luft-Waffe (A-10), leer geschossen oder unbetank
 
 test('Zwei Ziele, drei Jets, maxJets 2: genau zwei starten; Sperrzeit verhindert einen zweiten Alarmstart', () => {
   withValue(S, 'maxJets', 2, () => {
-    const g = new Game({ seed: 3, city: true });
+    const g = new Game({ seed: 3 });
     const ab = base(g, 3);
     intruder(g, ab, 250, -250);
     intruder(g, ab, 350, -100);
@@ -195,7 +195,7 @@ test('Zwei Ziele, drei Jets, maxJets 2: genau zwei starten; Sperrzeit verhindert
   });
   // Sperrzeit: derselbe Jet startet nach der Landung erst nach Ablauf wieder von selbst
   withValue(S, 'cooldown', 100000, () => {
-    const g = new Game({ seed: 3, city: true });
+    const g = new Game({ seed: 3 });
     const ab = base(g, 1);
     const [u] = ab.jets;
     const h = intruder(g, ab);
@@ -215,7 +215,7 @@ test('Zwei Ziele, drei Jets, maxJets 2: genau zwei starten; Sperrzeit verhindert
 });
 
 test('Befehl des Spielers während des Alarmflugs hat Vorrang', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ab = base(g, 1);
   const [u] = ab.jets;
   intruder(g, ab);
@@ -232,7 +232,7 @@ test('Befehl des Spielers während des Alarmflugs hat Vorrang', () => {
 
 test('Eroberung mit vier Spielern: kein Alarm gegen ein Ziel im gesperrten Viertel, Alarmjet kehrt um', () => {
   withValue(S, 'radius', 20000, () => {
-    const g = new Game({ seed: 3, city: true, conquest: true, players: 4 });
+    const g = new Game({ seed: 3, conquest: true, players: 4 });
     const ab = base(g, 1);
     const [u] = ab.jets;
     const s1 = g.map.spawns[1];
@@ -258,7 +258,7 @@ test('Eroberung mit vier Spielern: kein Alarm gegen ein Ziel im gesperrten Viert
 });
 
 test('Speichern und Laden erhält Bereitschaft und laufenden Alarm', async () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ab = base(g, 2);
   const [a, b] = ab.jets;
   g.issue(0, { type: 'scramble', ids: [b.id], on: false });

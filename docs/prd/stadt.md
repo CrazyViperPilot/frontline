@@ -73,7 +73,7 @@ LKW und Transporthubschrauber fahren es wie bisher zu den vorderen FOBs; ist es 
   Die KI baut Kraftwerke bei knappem Strom (15 % Reserve), eine Uni ab 6 Arbeitsstätten (Zellen, auch Gewerbe), ein Rechenzentrum ab 16 und nur mit Uni;
   Zonen setzt sie nur auf Zellen, auf denen wirklich gebaut werden kann.
 - **Baugebiet (seit v5.78, Ausbau-Paket A7; Daniels Entscheidung, Schalter „Baugebiet“ im Startmenü, Standard **an**, gemerkt;
-  `Game({ buildRules })`, ohne Angabe **aus**, wirkt nur mit Stadt):** Stadtgebäude, Fabriken und Markt lassen sich nur noch dort bauen, wo **alle** der folgenden Bedingungen gelten (Werte:
+  `Game({ buildRules })`, ohne Angabe **aus**):** Stadtgebäude, Fabriken und Markt lassen sich nur noch dort bauen, wo **alle** der folgenden Bedingungen gelten (Werte:
   `CITY.build` in `js/data/city.js`; Prüfung `buildWhy` / `buildAllowed` in `js/game/city/cells.js`):
   1. **Eigenes Gebiet:** Die Zelle liegt im Gebiet des Teams: um die Hauptstadt (10 Zellen),
      um jede fertige FOB (`CITY.build.fobClaim` = 6 Zellen, ohne Schalter 4) und um jedes fertige Stadtgebäude (`CITY.build.buildingClaim` = 3 Zellen ab dem Gebäuderand, gemessen von der echten Mitte;

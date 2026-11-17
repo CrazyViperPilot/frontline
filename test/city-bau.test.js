@@ -13,14 +13,14 @@ import { brakeTax } from '../js/game/city/economy.js';
 import { run, base, paint, at, clearStart, raw, linkMain, setLevel } from './cityhelp.js';
 
 test('mit Stadt: endliches Startlager, Front-Summe ohne Hauptstadt', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const m = g.mainFob(0);
   assert.deepEqual({ ...m.store }, CITY.startStock);
   assert.equal(g.teams[0].res.bm, 0);
 });
 
 test('Bauen kostet Geld (Straßen Baumaterial), zu wenig stoppt, Abriss ist kostenlos', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 100 });
+  const g = new Game({ seed: 3, startMoney: 100 });
   const m = g.mainFob(0);
   const bm0 = m.store.bm;
   const r = paint(g, 'road', 0, 0, 9, 0); // 10 x 10 BM
@@ -38,7 +38,7 @@ test('Bauen kostet Geld (Straßen Baumaterial), zu wenig stoppt, Abriss ist kost
 });
 
 test('Zone ohne Straße wächst nicht, mit Straße wird sie Gebäude', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 2000 });
+  const g = new Game({ seed: 3, startMoney: 2000 });
   paint(g, 'res', 5, 2, 5, 2);
   run(g, CITY.growTime + 2);
   assert.equal(g.city[0].level[at(g, 5, 2)], 0);
@@ -48,7 +48,7 @@ test('Zone ohne Straße wächst nicht, mit Straße wird sie Gebäude', () => {
 });
 
 test('Wohnen + Werk + Straße: Einwohner arbeiten, Lager und Geld wachsen', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 3000 });
+  const g = new Game({ seed: 3, startMoney: 3000 });
   clearStart(g);
   paint(g, 'road', 0, 2, 5, 2);
   paint(g, 'res', 0, 1, 5, 1);
@@ -73,7 +73,7 @@ test('Wohnen + Werk + Straße: Einwohner arbeiten, Lager und Geld wachsen', () =
 });
 
 test('Nichts überbauen: belegte Zellen bleiben, erst räumen, dann neu ausweisen', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 3000 });
+  const g = new Game({ seed: 3, startMoney: 3000 });
   clearStart(g);
   const c = g.city[0];
   assert.ok(paint(g, 'road', 0, 2, 3, 2).ok);
@@ -102,7 +102,7 @@ test('Nichts überbauen: belegte Zellen bleiben, erst räumen, dann neu ausweise
 });
 
 test('Ausbau nur bei Bedarf: Wohnen ohne Arbeit bleibt Stufe 1', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 3000 });
+  const g = new Game({ seed: 3, startMoney: 3000 });
   clearStart(g);
   paint(g, 'road', 0, 2, 3, 2);
   paint(g, 'res', 0, 1, 3, 1);
@@ -111,7 +111,7 @@ test('Ausbau nur bei Bedarf: Wohnen ohne Arbeit bleibt Stufe 1', () => {
 });
 
 test('Stadtraster deckt die Karte: unter der FOB gesperrt, Gebäude sperren den Weg, Abriss gibt ihn frei', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 3000 });
+  const g = new Game({ seed: 3, startMoney: 3000 });
   const c = g.city[0];
   const m = g.mainFob(0);
   assert.equal(c.cols * c.cell, g.grid.cols * g.grid.tile, 'ganze Kartenbreite');
@@ -137,7 +137,7 @@ test('Stadtraster deckt die Karte: unter der FOB gesperrt, Gebäude sperren den 
 });
 
 test('Überall bauen (seit v4.87): auch fern der Hauptstadt, aber nicht auf gegnerischen Zellen', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   const c = g.city[0];
   const z = g.zone;
   // eine freie Zelle nahe der Kartenmitte (weit weg von der eigenen Hauptstadt)
@@ -156,7 +156,7 @@ test('Überall bauen (seit v4.87): auch fern der Hauptstadt, aber nicht auf gegn
 });
 
 test('Strom: zu wenig Kraftwerke bremsen die Werke, ein Kraftwerk hilft', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   for (let k = 0; k < 6; k++) setLevel(g, 'steel', 3);
   run(g, 2);
   const s = g.city[0].stats;
@@ -169,7 +169,7 @@ test('Strom: zu wenig Kraftwerke bremsen die Werke, ein Kraftwerk hilft', () => 
 });
 
 test('Zufriedenheit sinkt bei Beschuss der Stadt', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   run(g, 2);
   const calm = g.city[0].stats.happy;
   const m = g.mainFob(0);
@@ -179,7 +179,7 @@ test('Zufriedenheit sinkt bei Beschuss der Stadt', () => {
 });
 
 test('Räumen fällt Bäume: Zelle wird bebaubar, Fels und Hauptstadt bleiben gesperrt (seit v5.13)', () => {
-  const g = new Game({ seed: 7, city: true });
+  const g = new Game({ seed: 7 });
   const c = g.city[0];
   const gr = g.grid;
   const k = c.cell / gr.tile;

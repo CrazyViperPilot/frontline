@@ -12,7 +12,7 @@ import { cityAiMemory, aiCity, aiDefend, aiRaid } from '../js/ai/cityai.js';
 import { run } from './cityhelp.js';
 
 test('KI baut nach Bauplan und liefert Material [langsam]', () => {
-  const g = new Game({ seed: 5, city: true, startMoney: 2000 });
+  const g = new Game({ seed: 5, startMoney: 2000 });
   const ai = new AI(g, 1, 'normal');
   const n0 = g.city[1].kind.filter(Boolean).length;
   for (let t = 0; t < 20 * 240; t++) { ai.update(0.05); g.update(0.05); }
@@ -21,7 +21,7 @@ test('KI baut nach Bauplan und liefert Material [langsam]', () => {
 });
 
 test('Freie Planung: knapper Treibstoff mit Öl im Überfluss → KI weist Raffinerien aus', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 20000 });
+  const g = new Game({ seed: 3, startMoney: 20000 });
   const c = g.city[1];
   run(g, 20);
   const fuel0 = c.list.filter((i) => c.kind[i] === KIND_ID.fuel).length;
@@ -38,7 +38,7 @@ test('Freie Planung: knapper Treibstoff mit Öl im Überfluss → KI weist Raffi
 });
 
 test('Freie Planung: KI baut nicht neben frisch beschossenen Zellen', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 20000 });
+  const g = new Game({ seed: 3, startMoney: 20000 });
   const c = g.city[1];
   const m = g.mainFob(1);
   c.hitLog = [{ x: m.x, y: m.y, t: g.time }]; // Treffer an der Hauptstadt: die ganze Umgebung meiden
@@ -55,7 +55,7 @@ test('Freie Planung: KI baut nicht neben frisch beschossenen Zellen', () => {
 });
 
 test('KI verteidigt beschossene Stadtgebäude und greift gegnerische Werke zuerst an', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   run(g, 20);
   const c = g.city[1];
   const e = [...c.ents.values()].find((x) => c.kind[x.cityCell] === KIND_ID.fuel);
@@ -81,7 +81,7 @@ test('KI verteidigt beschossene Stadtgebäude und greift gegnerische Werke zuers
 });
 
 test('KI mit Stadt bildet in Kaserne und Fabrikhalle aus und baut einen Heliport [langsam]', () => {
-  const g = new Game({ seed: 5, city: true, startMoney: 4000 });
+  const g = new Game({ seed: 5, startMoney: 4000 });
   const ai = new AI(g, 1, 'normal');
   const own = () => g.units.filter((u) => u.alive && u.team === 1 && u.crew).length;
   for (let t = 0; t < 20 * 420; t++) { ai.update(0.05); g.update(0.05); }
@@ -92,7 +92,7 @@ test('KI mit Stadt bildet in Kaserne und Fabrikhalle aus und baut einen Heliport
 });
 
 test('KI baut die Universität als 3 × 3-Großbau', () => {
-  const g = new Game({ seed: 5, city: true });
+  const g = new Game({ seed: 5 });
   const ai = new AI(g, 1, 'normal');
   g.teams[1].res.money = 50000;
   let a = -1;
@@ -110,7 +110,7 @@ test('KI baut die Universität als 3 × 3-Großbau', () => {
 });
 
 test('KI baut Werke als 2 × 2-Großbauten', () => {
-  const g = new Game({ seed: 5, city: true });
+  const g = new Game({ seed: 5 });
   g.teams[1].res.money = 50000;
   const c = g.city[1];
   const isWork = (j) => ['bm', 'mun', 'steel'].includes(KINDS[c.kind[j] - 1]);

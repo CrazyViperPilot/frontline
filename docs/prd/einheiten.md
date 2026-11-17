@@ -24,26 +24,26 @@
 | LKW | Hauptstadt | Unbewaffnet, schnell, **2 Soldaten** Platz. **Logistik:** lädt Ressourcen an einer FOB (400), bringt sie zu einer anderen FOB, pendelt auf Routen, versorgt Truppen im Feld |
 | Aufklärungsfahrzeug | Fabrikhalle | Leichtes, schnelles Fahrzeug mit leichtem MG und **2 Soldaten** Platz; **getarnt nach 3 s Stillstand** (Regel wie beim Scharfschützen: Gegner sehen es nur nahe an eigenen Einheiten/Gebäuden oder 4 s nach einem Schuss); fahrend immer sichtbar |
 | Baufahrzeug | Hauptstadt | Unbewaffnet, **1 Soldat** Platz. Baut alle Gebäude außer FOBs (seit v5.09), repariert |
-| Bagger (seit v5.35, Daniels Wunsch) | Hauptstadt (mit Stadt: Fabrikhalle) | Leicht gepanzert, langsam. (weiter unten) |
-| FOB-Fahrzeug (seit v5.09) | Hauptstadt (mit Stadt: Fabrikhalle) | Unbewaffnet, langsam. **Aufbauen (D):** wird an seiner Stelle sofort zur fertigen FOB mit 20 % Lager je Sorte (§4) |
+| Bagger (seit v5.35, Daniels Wunsch) | Fabrikhalle | Leicht gepanzert, langsam. (weiter unten) |
+| FOB-Fahrzeug (seit v5.09) | Fabrikhalle | Unbewaffnet, langsam. **Aufbauen (D):** wird an seiner Stelle sofort zur fertigen FOB mit 20 % Lager je Sorte (§4) |
 | Schützenpanzer | Hauptstadt | **6 Soldaten** Platz. Schnell, gut gegen Infanterie und leichte Fahrzeuge |
 | Kampfpanzer | Hauptstadt | Teuer, schwer gepanzert, stark gegen alles (Hauptkanone trifft keine Hubschrauber, das MG schwach) |
 | Little Bird | Hauptstadt | Unbewaffnet, schnell, **5 Passagiere** (Infanterie, Baufahrzeug) |
-| Aufklärungsdrohne (Paket E10) | Heliport (nur mit Stadt) | Unbewaffnet, **keine Passagiere**, deckt Nebel auf (Sicht siehe Tabelle „Werte“), tankt auf dem Heliport |
-| Kamikazedrohne (Paket E11) | Heliport (nur mit Stadt) | Einweg, **keine Passagiere**; Angriffsbefehl auf Fahrzeug/Gebäude: fliegt hin, explodiert bei Kontakt (700 schwer, 500 leicht, 300 Gebäude, Splash 30) und ist danach weg |
+| Aufklärungsdrohne (Paket E10) | Heliport | Unbewaffnet, **keine Passagiere**, deckt Nebel auf (Sicht siehe Tabelle „Werte“), tankt auf dem Heliport |
+| Kamikazedrohne (Paket E11) | Heliport | Einweg, **keine Passagiere**; Angriffsbefehl auf Fahrzeug/Gebäude: fliegt hin, explodiert bei Kontakt (700 schwer, 500 leicht, 300 Gebäude, Splash 30) und ist danach weg |
 | Transporthubschrauber | Hauptstadt | Unbewaffnet, **9 Passagiere** und **400 Ressourcen** (laden/entladen/pendeln wie ein LKW) |
 | AH-64 (Kampfhubschrauber) | Hauptstadt | Bordkanone und Raketen (Tabelle „Waffen und Schaden“), Nachtanken/-laden in einer FOB |
 | Flakpanzer (seit v4.54) | Hauptstadt | Schnellfeuer-Flak gegen Hubschrauber, schießt nur auf Luftziele. (weiter unten) |
 | SAM-Startrampe (seit v4.54) | Hauptstadt | **Vier wärmesuchende Raketen** gegen Hubschrauber (nur Luftziele), Schuss, Munition und Nachladezeit in der Waffen-Tabelle. Little Bird 1 Treffer, Transporthubschrauber und AH-64 2 Treffer. (weiter unten) |
-| Flakpanzer Gepard (seit v5.19) | Hauptstadt (mit Stadt: Fabrikhalle) | Such- und Feuerleitradar. (weiter unten) |
-| Panzerhaubitze (seit v5.19, nach der Panzerhaubitze 2000) | Hauptstadt (mit Stadt: Fabrikhalle) | **Haubitze 155 mm** (Werte in der Waffen-Tabelle): (weiter unten) |
-| Raketenwerfer (Paket E6) | Fabrikhalle (mit Stadt) | Wie die Panzerhaubitze. **Raketensalve**: 12 Raketen im Abstand 0,25 s (`salvo`), danach Nachladen (Tabelle „Waffen und Schaden“); nicht näher als 400 px, Streuung 120 px, Splash 60 px. (weiter unten) |
-| F-16 (Kampfflugzeug, seit v5.03) | Stellplatz des Fliegerhorsts (nur mit Stadt, seit v5.35; vorher Flughafen; zwei je Stellplatz) | **Vier Raketen (seit v5.41):** (weiter unten) |
-| F-22 (Luftüberlegenheitsjet, seit v5.82) | Stellplatz des Fliegerhorsts (nur mit Stadt; F-16, F-22, Su-27 und A-10 teilen sich die zwei Plätze je Stellplatz) | **Luft-Luft-Lenkraketen** (Schuss, Munition und Trefferchance in der Waffen-Tabelle), (weiter unten) |
-| A-10 (Erdkampfflugzeug, Paket E12) | Stellplatz des Fliegerhorsts (nur mit Stadt; die Plätze teilen sich F-16, F-22, Su-27 und A-10) | **Eine Bordkanone** nur gegen Bodenziele (Infanterie, Fahrzeuge, Gebäude; Werte in der Waffen-Tabelle); keine Luftziele. (weiter unten) |
-| C-130 (Transportflugzeug, Paket E13) | Stellplatz des Fliegerhorsts (nur mit Stadt; die Plätze teilen sich mit den Kampfjets) | Unbewaffnet, **zehn Passagiere** (nur Infanterie), Einsteigen am geparkten Jet; (weiter unten) |
-| Su-27 (Kampfflugzeug, Paket „Su-27“) | Stellplatz des Fliegerhorsts (nur mit Stadt; die zwei Plätze je Stellplatz teilen sich F-16, F-22 und Su-27) | Wie die F-16 (gleiche Raketenarten, Werte in der Waffen-Tabelle): (weiter unten) |
-| U-2 (Höhenaufklärer, seit v5.83) | Stellplatz des Fliegerhorsts (nur mit Stadt); belegt den **ganzen Stellplatz allein** (`standSlots: 2`, kein anderes Flugzeug darauf) | **Unbewaffnet**, Treibstoff in der Tabelle „Werte“. (weiter unten) |
+| Flakpanzer Gepard (seit v5.19) | Fabrikhalle | Such- und Feuerleitradar. (weiter unten) |
+| Panzerhaubitze (seit v5.19, nach der Panzerhaubitze 2000) | Fabrikhalle | **Haubitze 155 mm** (Werte in der Waffen-Tabelle): (weiter unten) |
+| Raketenwerfer (Paket E6) | Fabrikhalle | Wie die Panzerhaubitze. **Raketensalve**: 12 Raketen im Abstand 0,25 s (`salvo`), danach Nachladen (Tabelle „Waffen und Schaden“); nicht näher als 400 px, Streuung 120 px, Splash 60 px. (weiter unten) |
+| F-16 (Kampfflugzeug, seit v5.03) | Stellplatz des Fliegerhorsts (seit v5.35; vorher Flughafen; zwei je Stellplatz) | **Vier Raketen (seit v5.41):** (weiter unten) |
+| F-22 (Luftüberlegenheitsjet, seit v5.82) | Stellplatz des Fliegerhorsts (F-16, F-22, Su-27 und A-10 teilen sich die zwei Plätze je Stellplatz) | **Luft-Luft-Lenkraketen** (Schuss, Munition und Trefferchance in der Waffen-Tabelle), (weiter unten) |
+| A-10 (Erdkampfflugzeug, Paket E12) | Stellplatz des Fliegerhorsts (die Plätze teilen sich F-16, F-22, Su-27 und A-10) | **Eine Bordkanone** nur gegen Bodenziele (Infanterie, Fahrzeuge, Gebäude; Werte in der Waffen-Tabelle); keine Luftziele. (weiter unten) |
+| C-130 (Transportflugzeug, Paket E13) | Stellplatz des Fliegerhorsts (die Plätze teilen sich mit den Kampfjets) | Unbewaffnet, **zehn Passagiere** (nur Infanterie), Einsteigen am geparkten Jet; (weiter unten) |
+| Su-27 (Kampfflugzeug, Paket „Su-27“) | Stellplatz des Fliegerhorsts (die zwei Plätze je Stellplatz teilen sich F-16, F-22 und Su-27) | Wie die F-16 (gleiche Raketenarten, Werte in der Waffen-Tabelle): (weiter unten) |
+| U-2 (Höhenaufklärer, seit v5.83) | Stellplatz des Fliegerhorsts; belegt den **ganzen Stellplatz allein** (`standSlots: 2`, kein anderes Flugzeug darauf) | **Unbewaffnet**, Treibstoff in der Tabelle „Werte“. (weiter unten) |
 | Kommandeur (Held, seit v4.49) | Hauptstadt | **Einmalig je Team**, belegt **keinen Platz**, jedes Team startet mit ihm (hinten an der Hauptstadt). Maschinenpistole (schwach). (weiter unten) |
 
 - **Bagger (seit v5.35, Daniels Wunsch):** Befehl **Baggern (G)**: danach eine Zelle anklicken (Shift: weitere anhängen); der Bagger fährt hin (bis 54 px), arbeitet an der Zelle (Arbeitszeit
@@ -76,7 +76,7 @@
   rad/s).
   **Treibstoff** (Tabelle „Werte“) gilt für Flug und Kreisen gleichermaßen (seit v5.14).
   Fliegt selbst zu ihrem Stellplatz zurück, wenn keine Rakete mehr da ist oder der Treibstoff für den Heimweg × 1,3 + 8 s nicht mehr reicht; dort tankt und lädt sie nach den Raten des
-  Fliegerhorsts (`CITY.air`: Kerosintank 3/s und Munitionslager 6/s in Stufe 1; mit Stadt Kerosin aus dem Stadtlager, seit v5.20, sonst aus dem Lager der Hauptstadt) und wird repariert (4 %
+  Fliegerhorsts (`CITY.air`: Kerosintank 3/s und Munitionslager 6/s in Stufe 1; Kerosin aus dem Stadtlager, seit v5.20) und wird repariert (4 %
   HP/s).
   Abgestellt steht sie auf ihrem Stellplatz und ist angreifbar (Schutz je Stufe des Stellplatzes, `CITY.air.shelter`); fällt der Stellplatz, ist sie verloren.
   Hat sie in der Luft keinen Treibstoff mehr, stürzt sie ab.
@@ -113,7 +113,7 @@
   nicht getroffen wurde (Fahrzeuge nicht).
   **Fällt er, bekommt der Gegner 5 Punkte** (klassisch; in der Eroberung verliert sein Team 5 Tickets, [eroberung.md](eroberung.md); kann die Partie entscheiden; auch als Passagier eines
   zerstörten Fahrzeugs).
-  Danach bildet die Hauptstadt (mit Stadt die Kaserne) einen neuen aus (Ausbildung wie in der Tabelle); ein zweiter, auch in der Warteschlange, wird abgelehnt.
+  Danach bildet die Kaserne einen neuen aus (Ausbildung wie in der Tabelle); ein zweiter, auch in der Warteschlange, wird abgelehnt.
   Goldener Stern über der Figur (für beide Seiten sichtbar, soweit in Sicht), gewählt zeigt er den Aura-Kreis.
   Zählt nicht als Soldat für den Nachschub.
   `BALANCE.commander`, `js/game/commander.js`

@@ -42,7 +42,7 @@ function fakeCtx() {
   return { ctx, calls };
 }
 
-const game = new Game({ seed: 3, city: true });
+const game = new Game({ seed: 3 });
 const capitals = game.buildings.filter((b) => b.main);
 
 test('Viertel = genau die Stadtzellen, die um die Hauptstadt gesperrt sind (nearMain), und es umschließt den Rand ±112', () => {
@@ -101,7 +101,7 @@ test('Drehung der Teile passt zur Kamera (Bild = Drehung · Weltabstand) und ver
 });
 
 test('fremdes Gebäude im Viertel: nur seine Gruppe entfällt; ohne Raster zeichnet alles', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const b = g.buildings.find((x) => x.main && x.team === 0);
   const all = quarterItems(g.grid, b);
   assert.equal(all.length, 8);

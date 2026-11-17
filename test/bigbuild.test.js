@@ -60,7 +60,7 @@ function buildBig(g, kind, t = 0) {
 }
 
 test('Zonenstraßen und Brücken sind Stadtstraßen für beide Teams', () => {
-  const g = new Game({ seed: 3, city: true, river: true });
+  const g = new Game({ seed: 3, river: true });
   const c = g.city[0];
   const R = g.roads;
   let town = 0;
@@ -103,7 +103,7 @@ test('Zonenstraßen und Brücken sind Stadtstraßen für beide Teams', () => {
 
 test('Großbauten mit gerader Kante: Kraftwerk 2 × 2, Kaserne 4 × 4, Fabrikhalle 5 × 5 (seit v5.33); Startviertel', () => {
   assert.deepEqual([sizeOf('power'), sizeOf('barracks'), sizeOf('factory')], [2, 4, 5]);
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   for (const c of g.city) {
     const big = [...c.ents.values()].filter((e) => ['barracks', 'factory'].includes(Object.keys(KIND_ID).find((k) => KIND_ID[k] === c.kind[e.cityCell])));
     assert.equal(big.length, 2, 'Kaserne und Fabrikhalle im Startviertel');

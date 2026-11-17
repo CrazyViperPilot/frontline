@@ -30,8 +30,7 @@ export function draftedCount(game, team) {
 
 /** Freie Einwohner für die Ausbildung: Einwohner minus Truppen minus Warteschlangen. */
 export function freePop(game, team) {
-  const c = game.city?.[team];
-  if (!c) return Infinity;
+  const c = game.city[team];
   let queued = 0;
   for (const b of game.buildings) {
     if (!b.alive || b.team !== team) continue;
@@ -48,40 +47,37 @@ export function trainersOf(c) {
 
 /** Ausbildungsgebäude der Stadt (Kaserne, Fabrikhalle, Heliport) eines Teams oder beider Teams (team weggelassen). */
 export function cityTrainers(game, team) {
-  if (!game.city) return [];
   const out = [];
   for (const c of game.city) if (team === undefined || c.team === team) for (const e of trainersOf(c)) if (e.alive) out.push(e);
   return out;
 }
 
-/** Höchste fertige Stufe einer Zellenart in der Stadt des Teams (0 = keine; ohne Stadt 0). */
+/** Höchste fertige Stufe einer Zellenart in der Stadt des Teams (0 = keine). */
 export function cityLevel(game, team, kind) {
-  const c = game.city?.[team];
-  if (!c) return 0;
+  const c = game.city[team];
   const id = KIND_ID[kind];
   let lv = 0;
   for (const i of c.list) if (c.kind[i] === id && c.level[i] > lv) lv = c.level[i];
   return lv;
 }
 
-/** Summe der Stufen aller fertigen Gebäude dieser Art (Großbau einmal); ohne Stadt 0. */
+/** Summe der Stufen aller fertigen Gebäude dieser Art (Großbau einmal). */
 export function citySum(game, team, kind) {
-  const c = game.city?.[team];
-  if (!c) return 0;
+  const c = game.city[team];
   const id = KIND_ID[kind];
   let n = 0;
   for (const i of c.list) if (c.kind[i] === id && !isPart(c, i)) n += c.level[i];
   return n;
 }
 
-/** Stromverhältnis der Stadt (1 = genug Strom); ohne Stadt 1. */
+/** Stromverhältnis der Stadt (1 = genug Strom; vor dem ersten Schritt 1). */
 export function powerRatio(game, team) {
-  return game.city?.[team]?.stats.powerRatio ?? 1;
+  return game.city[team].stats.powerRatio ?? 1;
 }
 
 /** Stadtgebäude (Ziel-Entity) eines Teams in der Zelle unter (x, y), oder null. */
 export function cityEntityAt(game, x, y) {
-  for (const c of game.city ?? []) {
+  for (const c of game.city) {
     const [q, r] = cellAt(c, x, y);
     if (q < 0 || r < 0 || q >= c.cols || r >= c.rows) continue;
     const e = c.ents.get(anchorOf(c, r * c.cols + q));
@@ -92,7 +88,6 @@ export function cityEntityAt(game, x, y) {
 
 /** Fremde Stadtgebäude (aus Sicht von `team`) im Quadrat um (x, y) mit Radius `radius` an fn übergeben. */
 export function forEnemyCity(game, team, x, y, radius, fn) {
-  if (!game.city) return;
   for (const c of game.city) {
     if (c.team === team || !c.ents.size) continue;
     const S = c.cell;

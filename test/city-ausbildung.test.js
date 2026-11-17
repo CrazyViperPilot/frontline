@@ -8,7 +8,7 @@ import { freePop } from '../js/game/city/query.js';
 import { run, paint, at, clearStart, trainerFor } from './cityhelp.js';
 
 test('Soldaten kosten Einwohner: ohne freie Einwohner keine Ausbildung, Gefallene fehlen der Stadt', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   const m = g.mainFob(0);
   assert.equal(freePop(g, 0), 0, 'Startarmee kostet nichts, Stadt leer');
   const r = g.issue(0, { type: 'train', buildingId: trainerFor(g, 'rifleman').id, unit: 'rifleman' });
@@ -33,7 +33,7 @@ test('Soldaten kosten Einwohner: ohne freie Einwohner keine Ausbildung, Gefallen
 });
 
 test('Ausbildung mit Stadt (v4.96): Hauptstadt nicht, Kaserne Soldaten, Fabrikhalle Fahrzeuge, Heliport Hubschrauber', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 20000 });
+  const g = new Game({ seed: 3, startMoney: 20000 });
   const m = g.mainFob(0);
   assert.deepEqual(m.produces, [], 'Hauptstadt bildet mit Stadt nichts aus');
   assert.match(g.issue(0, { type: 'train', buildingId: m.id, unit: 'rifleman' }).reason, /Kaserne/);
@@ -67,7 +67,7 @@ test('Ausbildung mit Stadt (v4.96): Hauptstadt nicht, Kaserne Soldaten, Fabrikha
 });
 
 test('Ausbildung an einem Stadtgebäude ohne Ausbildung (z. B. Wohnen): sauber abgelehnt statt TypeError', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 20000 });
+  const g = new Game({ seed: 3, startMoney: 20000 });
   const e = [...g.entities.values()].find((x) => x.type === 'city' && x.team === 0 && !x.produces);
   assert.ok(e, 'Startviertel hat ein Stadtgebäude ohne Ausbildung');
   const r = g.issue(0, { type: 'train', buildingId: e.id, unit: 'rifleman' });
@@ -77,7 +77,7 @@ test('Ausbildung an einem Stadtgebäude ohne Ausbildung (z. B. Wohnen): sauber a
 });
 
 test('Ausbildungsgebäude abreißen erstattet die Warteschlange, zerstört verfällt sie', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   const c = g.city[0];
   c.popF = 40; // Einwohner für die Ausbildung
   const fab = trainerFor(g, 'tank');
@@ -98,7 +98,7 @@ test('Heilen und Reparieren (v5.01): Kaserne heilt Soldaten, Fabrikhalle reparie
   const heal0 = BALANCE.commander.heal;
   BALANCE.commander.heal = 0; // Kommandeur-Aura heilt sonst mit
   try {
-    const g = new Game({ seed: 3, city: true });
+    const g = new Game({ seed: 3 });
     const bar = trainerFor(g, 'rifleman');
     const fac = trainerFor(g, 'tank');
     const inf = g.units.filter((u) => u.alive && u.team === 0 && u.type === 'rifleman');
@@ -133,7 +133,7 @@ test('Krankenhaus (v5.01): heilt Soldaten im Umkreis von 3 Feldern schneller', (
   const heal0 = BALANCE.commander.heal;
   BALANCE.commander.heal = 0;
   try {
-    const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+    const g = new Game({ seed: 3, startMoney: 5000 });
     clearStart(g); // ohne Kaserne in der Nähe
     assert.equal(paint(g, 'road', 0, 1, 2, 1).ok, true);
     assert.equal(paint(g, 'hospital', 1, 0, 1, 0).ok, true);

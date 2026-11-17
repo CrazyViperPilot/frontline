@@ -76,7 +76,7 @@ test('Nicht mehr baubare Arten (CITY.retired) sind nur Platzhalter: keine Daten,
     assert.deepEqual(Object.keys(KIND[k]).sort(), ['id', 'key', 'name', 'retired'], `${k}: Platzhalter nur mit Nummer und Name`);
     assert.ok(!TOOL_GROUPS.some(([, ks]) => ks.includes(k)), `${k} im Baumenü`);
   }
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const r = g.issue(0, { type: 'city', kind: 'airport', c0: 0, r0: 0, c1: 0, r1: 0 });
   assert.equal(r.ok, false, 'Flughafen lässt sich nicht bauen');
   assert.match(r.reason, /nicht mehr baubar/);
@@ -138,7 +138,7 @@ test('Warenregister: jede Ware vollständig; Listen, Markt, Ertrag und Kette aus
 });
 
 test('Warenregister: die Stadt hat für jede Ware Lager und Zahlen (Stadtlager-Feld, cap/inp/gross)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   for (let t = 0; t < 40; t++) g.update(0.05);
   const c = g.city[0];
   for (const w of CITY_STORE_GOODS) assert.ok(num(c[w]), `Stadtlager c.${w} fehlt (createCity)`);

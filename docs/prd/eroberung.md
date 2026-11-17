@@ -72,7 +72,7 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
 
 ### Einheiten an Flaggen erscheinen lassen
 
-- Ausbildungsgebäude für Bodeneinheiten (Kaserne, Fabrikhalle; ohne Stadt die Hauptstadt) haben im Infofeld die Auswahlliste
+- Ausbildungsgebäude für Bodeneinheiten (Kaserne, Fabrikhalle) haben im Infofeld die Auswahlliste
   **„Neue Einheiten erscheinen“**: **am Gebäude** (Standard) oder an einer **Flagge, die einem gerade gehört** (Befehl `spawnAt`).
 - Neue Einheiten erscheinen dann zufällig zwischen 40 % und 100 % von `spawnRing` (90 px) um den Mast (`spawnMin` 0,4). Steht beim Abschluss der Ausbildung ein **Gegner im Gebiet**
   („umkämpft“) oder ist die Flagge verloren, erscheint die Einheit am Gebäude und läuft zum Sammelpunkt; die Wahl bleibt bestehen.

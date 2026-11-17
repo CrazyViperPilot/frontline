@@ -15,7 +15,6 @@ test('Störsender: Werte in units.js, Fabrikhalle ausbildbar, nicht in der Haupt
   assert.equal(UNITS.jammer.jam, 0.35);
   assert.equal(UNITS.jammer.jamRange, 300);
   assert.ok(CITY.produces.factory.includes('jammer'));
-  assert.ok(!BUILDINGS.fob.produces.includes('jammer'), 'Hauptstadt-Menü bleibt voll (Regel 4)');
   const keys = CITY.produces.factory.map((t) => UNITS[t].hotkey);
   assert.equal(new Set(keys).size, keys.length, 'Fabrikmenü: keine doppelte Taste');
 });

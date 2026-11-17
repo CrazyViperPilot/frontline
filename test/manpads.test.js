@@ -31,11 +31,10 @@ test('MANPADS: Infanterie, nur Luftziele, Werte wie SAM mit Reichweite 300, Scha
   assert.equal(w.cooldown, 12);
 });
 
-test('MANPADS: in Hauptstadt, Kaserne ausbildbar, Taste frei', () => {
-  assert.ok(BUILDINGS.fob.produces.includes('manpads'));
+test('MANPADS: in der Kaserne ausbildbar, Taste frei', () => {
   assert.ok(CITY.produces.barracks.includes('manpads'));
-  const keys = BUILDINGS.fob.produces.map((t) => UNITS[t].hotkey);
-  assert.equal(new Set(keys).size, keys.length, 'keine doppelte Taste in der Hauptstadt');
+  const keys = CITY.produces.barracks.map((t) => UNITS[t].hotkey);
+  assert.equal(new Set(keys).size, keys.length, 'keine doppelte Taste in der Kaserne');
 });
 
 test('MANPADS: schießt auf Hubschrauber, nicht auf Panzer', () => {

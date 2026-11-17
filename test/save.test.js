@@ -18,7 +18,7 @@ const run = (g, ai, n) => {
 };
 
 test('Laden und Weiterspielen ist identisch zum durchgehenden Spiel [langsam]', async () => {
-  const opts = { seed: 11, radio: true, weather: 'random', research: true, river: true, city: true };
+  const opts = { seed: 11, radio: true, weather: 'random', research: true, river: true };
   const g1 = new Game(opts);
   const a1 = new AI(g1, 1, 'normal');
   run(g1, a1, 1500);
@@ -60,7 +60,7 @@ function sameDerived(g2, g1) {
 
 test('Karte aus dem Editor (Gelände aus map.relief): Stand ohne Gelände, Raster mit gerodeten Häusern, Weiterspielen identisch', async () => {
   const map = JSON.parse(JSON.stringify(generateMap(5, { river: true }))); // wie eine gespeicherte Karte: Gelände nur als Text
-  const g1 = new Game({ seed: 5, map, city: true, river: true, startMoney: 5000 });
+  const g1 = new Game({ seed: 5, map, river: true, startMoney: 5000 });
   const a1 = new AI(g1, 1, 'normal');
   run(g1, a1, 600);
   assert.equal(gameOf(snapshotGame(g1, a1)).relief, null, 'Gelände entspricht map.relief: nicht gespeichert');
@@ -78,7 +78,7 @@ test('Karte aus dem Editor (Gelände aus map.relief): Stand ohne Gelände, Raste
 });
 
 test('Stadt mit Stau (v5.20): Stau-Faktor c.congestion wird gespeichert, Laden und Weiterspielen bleibt identisch [langsam]', async () => {
-  const g1 = new Game({ seed: 11, city: true, startMoney: 3000 });
+  const g1 = new Game({ seed: 11, startMoney: 3000 });
   const a1 = new AI(g1, 1, 'normal');
   let k = 0;
   while (!g1.city[1].congestion.some((f) => f < 1) && k < 6000) {
@@ -118,4 +118,13 @@ test('Typed Arrays: gleichförmige als Füllwert plus Stellen (seit v5.62), bitg
     assert.equal(back[k].constructor, root[k].constructor, k);
     assert.equal(Buffer.compare(Buffer.from(back[k].buffer), Buffer.from(root[k].buffer)), 0, k);
   }
+});
+
+test('Spielstand ohne Stadt (vor dem Plan „Stadt ist Kern“) wird mit Meldung abgelehnt, nicht abgestürzt', () => {
+  const g = new Game({ seed: 3 });
+  g.city = null; // so sahen Stände ohne Stadt aus
+  const snap = snapshotGame(g, new AI(g, 1, 'normal'));
+  assert.throws(() => restoreGame(snap), /Spielstand ohne Stadt wird nicht mehr unterstützt/);
+  const ok = new Game({ seed: 3 });
+  assert.ok(restoreGame(snapshotGame(ok, new AI(ok, 1, 'normal'))).game.city, 'Stand mit Stadt lädt');
 });

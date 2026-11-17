@@ -91,7 +91,7 @@ test('A-10: Daten – eine Bordkanone, nur Bodenziele, langsamer als die F-16, m
 });
 
 test('A-10: Stellplatz bildet sie aus; greift Bodenziele an, keine Luftziele', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const [s] = stands;
   assert.ok(s, 'Stellplatz gebaut');

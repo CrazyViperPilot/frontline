@@ -15,7 +15,7 @@ const ST = KIND_ID.station;
 
 /** Stadt von Team 0 mit leerem Raster; Gleise und Güterbahnhof werden direkt gesetzt (nur Zellarten, wie der Spielstand sie hält). */
 function city() {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const cell = (q, r) => r * c.cols + q;
   const put = (q, r, kind) => (c.kind[cell(q, r)] = kind);

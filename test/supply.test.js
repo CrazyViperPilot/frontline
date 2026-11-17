@@ -38,7 +38,7 @@ test('Formel: bis 15 Zellen 100 %, bei 40 85 %, bei 80 61 %, ab 132 die Untergre
 
 test('Startviertel: Kaserne und Fabrikhalle haben auf allen Seeds 1 bis 12 einen Straßenweg zum Lager', () => {
   for (let seed = 1; seed <= 12; seed++) {
-    const g = new Game({ seed, city: true, river: true });
+    const g = new Game({ seed, river: true });
     for (const c of g.city) {
       const list = [...trainersOf(c)];
       assert.ok(list.length >= 2, `Seed ${seed}: Startviertel mit Ausbildung`);
@@ -52,7 +52,7 @@ test('Startviertel: Kaserne und Fabrikhalle haben auf allen Seeds 1 bis 12 einen
 });
 
 test('mit Weg: Ausbildung im Tempo Versorgung × Stau; die Kaserne legt keine Last (Soldaten kosten keinen Stahl), die Fabrikhalle schon', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   rich(g);
   const c = g.city[0];
   const kas = trainerFor(g, 'rifleman');
@@ -74,7 +74,7 @@ test('mit Weg: Ausbildung im Tempo Versorgung × Stau; die Kaserne legt keine La
 });
 
 test('ohne Weg: Ausbildung steht (Tempo 0), nach dem Anschluss geht sie weiter', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   rich(g);
   const c = g.city[0];
   const kas = trainerFor(g, 'rifleman');
@@ -100,7 +100,7 @@ test('ohne Weg: Ausbildung steht (Tempo 0), nach dem Anschluss geht sie weiter',
 });
 
 test('Weglänge: längerer Weg, langsamere Ausbildung (über die Untergrenze nie unter 30 %)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const kas = trainerFor(g, 'rifleman');
   const s = supplyOf(g, c, kas.cityCell);
@@ -120,7 +120,7 @@ test('Weglänge: längerer Weg, langsamere Ausbildung (über die Untergrenze nie
 });
 
 test('nah: Kaserne des Startviertels (Weg bis 15 Zellen, ohne Stau) bildet mit 100 % aus', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const kas = trainerFor(g, 'rifleman');
   const s = supplyOf(g, g.city[0], kas.cityCell);
   assert.ok(s.path && s.dist <= CITY.supply.free, `Weg ${s.dist} Zellen`);
@@ -129,14 +129,9 @@ test('nah: Kaserne des Startviertels (Weg bis 15 Zellen, ohne Stau) bildet mit 1
   assert.equal(trainRate(g, kas), 1);
 });
 
-test('ohne Stadt: Hauptstadt und FOBs bilden unverändert mit vollem Tempo aus', () => {
-  const g = new Game({ seed: 3 });
-  for (const b of g.buildings.filter((e) => e.produces?.length)) assert.equal(trainRate(g, b), 1);
-});
-
 test('Stau verlangsamt: Stau-Faktor auf dem Weg senkt das Tempo (Versorgung × Stau) und den Fortschritt', () => {
   const make = () => {
-    const g = new Game({ seed: 3, city: true });
+    const g = new Game({ seed: 3 });
     rich(g);
     return g;
   };
@@ -160,7 +155,7 @@ test('Stau verlangsamt: Stau-Faktor auf dem Weg senkt das Tempo (Versorgung × S
 });
 
 test('Spielstand: Ausbildung mit Versorgung (Weg, Last, Stau) speichern, laden und weiterspielen bleibt bitgleich', async () => {
-  const g1 = new Game({ seed: 3, city: true });
+  const g1 = new Game({ seed: 3 });
   rich(g1);
   const c = g1.city[0];
   const fab = trainerFor(g1, 'tank');

@@ -80,7 +80,7 @@ function heliBase(g, opts = {}) {
 }
 
 test('Heliport bildet einen Hubschrauber aus, der gelandet auf ihm steht; ein zweiter wird abgelehnt', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { pads } = heliBase(g);
   const [p] = pads;
   assert.ok(g.issue(0, { type: 'train', buildingId: p.id, unit: 'gunship' }).ok);
@@ -97,7 +97,7 @@ test('Heliport bildet einen Hubschrauber aus, der gelandet auf ihm steht; ein zw
 });
 
 test('Start senkrecht auf Befehl, Landung auf dem Heliport, dort tanken und nachladen aus Tank und Lager', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { pads, ktank, mdepot } = heliBase(g);
   const [p] = pads;
   assert.ok(g.issue(0, { type: 'train', buildingId: p.id, unit: 'gunship' }).ok);
@@ -136,7 +136,7 @@ test('Start senkrecht auf Befehl, Landung auf dem Heliport, dort tanken und nach
 });
 
 test('Ohne Kerosintank: kein Tanken, Mangelmeldung; Heliport zerstört → gelandeter Hubschrauber verloren', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { pads } = heliBase(g, { ktank: false });
   const [p] = pads;
   assert.ok(g.issue(0, { type: 'train', buildingId: p.id, unit: 'littlebird' }).ok);
@@ -156,7 +156,7 @@ test('Ohne Kerosintank: kein Tanken, Mangelmeldung; Heliport zerstört → gelan
 
 test('Luftraum: Start und Landung sperren Heliports im Umkreis, mit Tower kürzer', () => {
   for (const tower of [false, true]) {
-    const g = new Game({ seed: 3, city: true });
+    const g = new Game({ seed: 3 });
     const { pads } = heliBase(g, { tower });
     for (const p of pads) assert.ok(g.issue(0, { type: 'train', buildingId: p.id, unit: 'littlebird' }).ok);
     // Das Metall (CITY.metalCost) läuft über die Straße ins Werk: seit dem Paket „Balance-Preise“ braucht ein Heli 120 statt 60,
@@ -177,7 +177,7 @@ test('Luftraum: Start und Landung sperren Heliports im Umkreis, mit Tower kürze
 });
 
 test('Heimflug bei knappem Treibstoff', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { pads } = heliBase(g);
   const [p] = pads;
   assert.ok(g.issue(0, { type: 'train', buildingId: p.id, unit: 'littlebird' }).ok);

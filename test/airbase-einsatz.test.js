@@ -14,7 +14,7 @@ import { supplyOf } from '../js/game/transport.js';
 import { DT, run, rich, kindAt, airbase } from './airbasehelp.js';
 
 test('Stellplatz bildet zwei F-16 aus (zwei je Stellplatz), Schutz je Stufe, Kerosintank und Munitionslager füllen sich über die Straße', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { c, stands, ktank, mdepot, rw } = airbase(g);
   assert.ok(rw, 'gültige Bahn');
   assert.equal(stands.length, 2);
@@ -58,7 +58,7 @@ test('Stellplatz bildet zwei F-16 aus (zwei je Stellplatz), Schutz je Stufe, Ker
 });
 
 test('Ohne Kerosintank: kein Tanken, Mangelmeldung; Stellplatz zerstört → Jet verloren', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g, 0, { ktank: false });
   const [s] = stands;
   const u = g.spawnUnit('f16', 0, s.x, s.y);
@@ -77,7 +77,7 @@ test('Ohne Kerosintank: kein Tanken, Mangelmeldung; Stellplatz zerstört → Jet
 });
 
 test('Einsatz: rollt zur Bahn, Startlauf auf der Bahn, Raketen, Rückkehr, Landung, Rollen zum Stellplatz, nachtanken', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { c, stands, ktank, mdepot, rw } = airbase(g);
   ktank.stock = CITY.air.tank.cap[c.level[ktank.cityCell]];
   mdepot.stock = CITY.air.depot.cap[c.level[mdepot.cityCell]];
@@ -124,7 +124,7 @@ test('Einsatz: rollt zur Bahn, Startlauf auf der Bahn, Raketen, Rückkehr, Landu
 
 test('KI baut einen Fliegerhorst mit gültiger Bahn, Stellplätzen, Tower, Kerosintank und Munitionslager', async () => {
   const { aiAirport } = await import('../js/ai/cityai.js');
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { c, m } = rich(g, 1);
   const from = CITY.ai.airportFrom;
   CITY.ai.airportFrom = 0; // sonst erst ab genug Arbeitsstätten
@@ -145,7 +145,7 @@ test('KI baut einen Fliegerhorst mit gültiger Bahn, Stellplätzen, Tower, Keros
 
 test('KI mit Baugebiet: Bahn außerhalb des Gebiets (kein Stellplatz möglich) → zweiter Fliegerhorst mit Stellplätzen im Gebiet', async () => {
   const { aiAirport } = await import('../js/ai/cityai.js');
-  const g = new Game({ seed: 3, city: true, buildRules: true });
+  const g = new Game({ seed: 3, buildRules: true });
   const { c, m } = rich(g, 1);
   g.fog[1].revealAll?.();
   // Bahn weit draußen (Bahnen dürfen außerhalb des Gebiets liegen, Stellplätze nicht): so sah es in Daniels Partie aus
@@ -171,7 +171,7 @@ test('KI mit Baugebiet: Bahn außerhalb des Gebiets (kein Stellplatz möglich) �
 });
 
 test('Stellplatz: Ausbau nur per Befehl, Stufe 2 Geld + BM, Stufe 3 auch Stahl; wächst nicht von selbst', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { c, m, stands } = airbase(g);
   const [s] = stands;
   const i = s.cityCell;
@@ -201,7 +201,7 @@ test('Stellplatz: Ausbau nur per Befehl, Stufe 2 Geld + BM, Stufe 3 auch Stahl; 
 });
 
 test('F-16: zwei Luft-Luft-Raketen nur gegen Luftziele, zwei Luft-Boden-Raketen gegen Panzer, beide zugleich', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const [aim, agm] = UNITS.f16.weapons;
   assert.deepEqual([aim.id, aim.rounds, agm.id, agm.rounds], ['aim', 2, 'agm', 2]);
   assert.ok(!aim.damage.heavy && !aim.damage.light && aim.damage.air > 0, 'Luft-Luft nur gegen Luftziele');

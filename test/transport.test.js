@@ -62,7 +62,7 @@ function finish(g, col, row) {
 
 // Stahlwerk bei (8,1), Straße durch Zeile 0 von Spalte 0 bis 9, von Spalte 0 eine Straße bis zum Kartenrand (Einfuhrpunkt, Paket „Import“)
 function edgeWorks() {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   clearStart(g);
   put(g, 'road', 0, 0, 9, 0);
   put(g, 'steel', 8, 1, 9, 2);
@@ -111,7 +111,7 @@ test('Überlast → Stau-Faktor < 1 nach settleLoads, nach Entlastung wieder 1',
 });
 
 test('Lager-Anschluss: Straße bis an die Hauptstadt macht mainAccess nicht leer, Werk liefert ins Lager', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   const c = g.city[0];
   // Seit v5.20 (AP4) hat das Startviertel schon einen Anschluss ans Lager; die Straße hier ergänzt ihn. Seit v5.33 sucht der Test
   // die Zellen selbst: eine freie Zelle p im Anschlussbereich der Hauptstadt (eine Straße dort zählt zu mainAccess) und daneben ein
@@ -154,7 +154,7 @@ test('Lager-Anschluss: Straße bis an die Hauptstadt macht mainAccess nicht leer
 });
 
 test('Cache: nach Bau wird neu berechnet, ohne Änderung bleibt der Stand (auch nach Zeit), Rückkehr Geflohener rechnet neu', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   clearStart(g);
   put(g, 'road', 0, 0, 1, 0); // Straße nur bis Spalte 1
   put(g, 'steel', 8, 1, 9, 2); // ohne Anschluss
@@ -281,7 +281,7 @@ function netEdge(g) {
 }
 
 test('Munitionswerk: Eisen und Sprengstoff über die Straße, Munition nur mit Weg ins Lager', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   const c = netEdge(g);
   const m = g.mainFob(0);
   put(g, 'mun', 5, 1, 6, 2);
@@ -295,7 +295,7 @@ test('Munitionswerk: Eisen und Sprengstoff über die Straße, Munition nur mit W
 });
 
 test('Munitionswerk ohne Straße: keine Munition, keine Einfuhr, keine Kosten', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   const c = netEdge(g);
   const m = g.mainFob(0);
   put(g, 'mun', 5, 3, 6, 4); // nicht an der Straße
@@ -308,7 +308,7 @@ test('Munitionswerk ohne Straße: keine Munition, keine Einfuhr, keine Kosten', 
 });
 
 test('Arbeitsstätte ohne Weg zu Wohnen produziert nichts; mit Anschluss der Wohnungen läuft sie', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   clearStart(g);
   put(g, 'road', 0, 0, 9, 0);
   connectMain(g);
@@ -336,7 +336,7 @@ test('Arbeitsstätte ohne Weg zu Wohnen produziert nichts; mit Anschluss der Woh
 });
 
 test('Überlast auf dem Lieferweg senkt die Lieferung (Stau-Faktor wirkt im Schritt)', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   const c = netEdge(g);
   put(g, 'bm', 5, 1, 6, 2);
   run(g, CITY.growTime + 10);
@@ -350,7 +350,7 @@ test('Überlast auf dem Lieferweg senkt die Lieferung (Stau-Faktor wirkt im Schr
 });
 
 test('Keine Ware aus dem Nichts: Lager-Zuwachs je Schritt ≤ angekommene Rohwaren über die Kette (auch Gewerbe-BM)', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   const c = netEdge(g);
   const m = g.mainFob(0);
   const N = CITY.chain;
@@ -377,7 +377,7 @@ test('Keine Ware aus dem Nichts: Lager-Zuwachs je Schritt ≤ angekommene Rohwar
 });
 
 test('Ohne Hauptstadt (zerstört): Werke fordern nichts an, liefern nichts, Gewerbe unversorgt, keine ungültigen Zahlen', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   const c = netEdge(g);
   put(g, 'steel', 7, 1, 8, 2);
   put(g, 'com', 9, 1, 9, 1);

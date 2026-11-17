@@ -7,7 +7,7 @@ import { AI } from '../js/ai/ai.js';
 
 for (const seed of [3, 11]) {
   test(`KI-Stadt produziert (AP4): KI gegen KI, Seed ${seed}, 12 min: Einfuhr, Baumaterial nicht dauerhaft 0, Munition und Stahl in beiden Städten [langsam]`, () => {
-    const g = new Game({ seed, city: true });
+    const g = new Game({ seed });
     const ais = [new AI(g, 0, 'normal'), new AI(g, 1, 'normal')];
     const raw = [0, 0];
     const bmZero = [0, 0];

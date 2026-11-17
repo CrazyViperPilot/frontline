@@ -13,7 +13,7 @@ import { researchBlock, researchSpeed } from '../js/game/research.js';
 import { run, spot, raw, nbOf, setLevel } from './cityhelp.js';
 
 test('Großbauten der Stadt (Fabrikhalle, Kaserne) lichten den Nebel über ihrer ganzen Fläche (seit v5.25)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   for (const u of g.units) u.alive = false; // nur die Stadtgebäude sehen
   for (const b of g.buildings) b.def = { ...b.def, sight: 0 };
   for (let i = 0; i < 10; i++) g.update(0.05);
@@ -35,7 +35,7 @@ test('Großbauten der Stadt (Fabrikhalle, Kaserne) lichten den Nebel über ihrer
 });
 
 test('Startviertel: Raffinerie und Wohnen stehen fertig, Öl kommt über die Straße zum Kartenrand, Treibstoff fließt', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   for (const team of [0, 1]) {
     const c = g.city[team];
     const kinds = c.list.filter((i) => c.level[i]).map((i) => c.kind[i]);
@@ -48,7 +48,7 @@ test('Startviertel: Raffinerie und Wohnen stehen fertig, Öl kommt über die Str
 });
 
 test('Universität: ohne sie ruht die Forschung; Rechenzentren beschleunigen sie (seit v5.04)', () => {
-  const g = new Game({ seed: 3, city: true, research: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, research: true, startMoney: 5000 });
   assert.equal(researchBlock(g, 0, 'tank1'), 'Benötigt eine Universität in der Stadt');
   assert.equal(researchSpeed(g, 0), 0);
   setLevel(g, 'uni', 1);
@@ -81,7 +81,7 @@ test('Straßenanschluss: Wohnen/Gewerbe/BM-Werk über genau eine Zelle gleicher 
 
 // v5.00: Universität als 3 × 3-Großbau (ein Gebäude, ein Ziel, alte Spielstände werden umgebaut)
 test('Universität: 3 × 3 Zellen, ein Gebäude, wächst mit Straße, Räumen entfernt alles', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   g.teams[0].res.money = 5000;
   const c = g.city[0];
   const b0 = spot(g, 5, 6); // Quadrat plus eine Zeile darunter für die Straße, ringsum eine freie Zelle (keine Straße daneben)
@@ -126,7 +126,7 @@ test('Universität: 3 × 3 Zellen, ein Gebäude, wächst mit Straße, Räumen en
 });
 
 test('Universität: zerstört wird das ganze Quadrat Ruine und wächst neu', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   g.teams[0].res.money = 5000;
   const c = g.city[0];
   const b = spot(g, 3, 4);
@@ -147,7 +147,7 @@ test('Universität: zerstört wird das ganze Quadrat Ruine und wächst neu', () 
 
 // v5.08: Werke (BM-Werk, Munitionswerk, Raffinerie, Stahlwerk) als 2 × 2-Großbauten
 test('Werke 2 × 2 (v5.08): ein Gebäude wie bisher eine Werkzelle, Mitte zwischen den Zellen, Räumen entfernt alles', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   g.teams[0].res.money = 5000;
   const c = g.city[0];
   const b0 = spot(g, 4, 5);
@@ -188,7 +188,7 @@ test('Werke 2 × 2 (v5.08): ein Gebäude wie bisher eine Werkzelle, Mitte zwisch
 });
 
 test('2 × 2-BM-Werk: Straßenanschluss auch über ein benachbartes BM-Werk an der Straße (v5.05 für Großbauten)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   g.teams[0].res.money = 5000;
   const c = g.city[0];
   const b0 = spot(g, 6, 5);
@@ -207,7 +207,7 @@ test('2 × 2-BM-Werk: Straßenanschluss auch über ein benachbartes BM-Werk an d
 
 test('Startviertel (AP4, Paket „Import“): Raffinerie hat einen Weg ins Lager und einen zum Kartenrand', () => {
   for (const team of [0, 1]) {
-    const g = new Game({ seed: 3, city: true });
+    const g = new Game({ seed: 3 });
     const c = g.city[team];
     const fuel = c.list.find((i) => !isPart(c, i) && c.level[i] && c.kind[i] === KIND_ID.fuel);
     assert.ok(fuel !== undefined, `Team ${team}: Raffinerie fertig`);
@@ -217,7 +217,7 @@ test('Startviertel (AP4, Paket „Import“): Raffinerie hat einen Weg ins Lager
 });
 
 test('connectRoad (AP4): Werk an das Lager anschließen, Baumaterial je Zelle, 0 wenn verbunden, −1 ohne erlaubte Länge', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   const c = g.city[0];
   const m = g.mainFob(0);
   // freies 2 × 2-Quadrat im Gebiet ohne Straße daneben, nicht direkt an der Hauptstadt

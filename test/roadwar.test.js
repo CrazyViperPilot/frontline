@@ -21,7 +21,7 @@ const kas = (g, t = 0) => cityTrainers(g, t).find((e) => e.produces.includes('ri
 
 /** Spiel mit Stadt; eine eigene Straßenzelle auf dem Versorgungsweg der Kaserne von Team 0. */
 function setup() {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const path = supplyOf(g, c, kas(g).cityCell).path;
   const i = [...path].find((j) => c.kind[j] === KIND_ID.road);
@@ -30,7 +30,7 @@ function setup() {
 }
 
 test('Waffen: Panzer, Schützenpanzer, Panzerabwehr und Kampfhubschrauber können Straßen beschießen, Schützen und Jets nicht', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const has = (type) => !!roadWeapon(g.spawnUnit(type, 0, 500, 500));
   for (const t of ['tank', 'ifv', 'at', 'gunship', 'pzh']) assert.ok(has(t), t);
   for (const t of ['rifleman', 'truck', 'f16']) assert.equal(has(t), false, t);
@@ -81,7 +81,7 @@ test('Befehl shellRoad: keine Straße, Brücke oder ohne passende Waffe abgelehn
 });
 
 test('Stadtstraße der Karte: Schutt für beide Teams, Bagger räumt ihn (Straße wieder da)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const R = g.roads;
   const i = R.kind.findIndex((v) => v === MAP_ROAD);
   assert.ok(i >= 0);
@@ -99,7 +99,7 @@ test('Stadtstraße der Karte: Schutt für beide Teams, Bagger räumt ihn (Straß
 });
 
 test('Bagger reißt eine gegnerische Straße ab (ohne Schutt), gegnerische Gebäude nicht', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const o = g.city[1];
   const i = o.list.find((j) => o.kind[j] === KIND_ID.road);
   const { x, y } = cellCenter(g, i);
@@ -115,7 +115,7 @@ test('Bagger reißt eine gegnerische Straße ab (ohne Schutt), gegnerische Gebä
 });
 
 test('KI räumt Schutt ihrer Straßen mit einem freien Baufahrzeug; Spielstand behält Schutt und Schaden', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[1];
   const i = c.list.find((j) => c.kind[j] === KIND_ID.road);
   for (let k = 0; k < 5; k++) damageRoad(g, i, 100);

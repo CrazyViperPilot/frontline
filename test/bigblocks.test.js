@@ -17,7 +17,7 @@ function rich(g, t = 0) {
 }
 
 test('Zonenstadt hat mehrere große Blöcke, punktsymmetrisch, ohne Stadtstraßen innen (mind. 11 × 11 Zellen)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const big = townBigBlocks();
   assert.ok(big.length >= 6, 'mehrere große Blöcke');
@@ -38,7 +38,7 @@ test('Zonenstadt hat mehrere große Blöcke, punktsymmetrisch, ohne Stadtstraße
 
 test('Räumen reißt Häuser eines großen Blocks ab, danach passt eine Start-/Landebahn', () => {
   for (const seed of [3, 7]) {
-    const g = new Game({ seed, city: true });
+    const g = new Game({ seed });
     const c = g.city[0];
     rich(g);
     const b = townBigBlocks().find((o) => !o.empty);
@@ -70,7 +70,7 @@ test('Räumen reißt Häuser eines großen Blocks ab, danach passt eine Start-/L
 });
 
 test('Räumen lässt besetzte Häuser stehen', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const h = g.houses.find((o) => o.type === 'house' && Math.hypot(o.x - g.map.zone.x, o.y - g.map.zone.y) < 2500);
   h.occupants.push({ id: 999, alive: true, team: 1 });

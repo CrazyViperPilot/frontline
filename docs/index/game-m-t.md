@@ -140,7 +140,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - cmdClearRubble(game, team, cmd) – Befehl `{ type: 'clearRubble', ids, c0, r0, c1?, r1? }`: gewählte Baufahrzeuge…
 - updateRoadWar(game, dt) – Ein Schritt: Einheiten beim Beschuss von Straßen und Baufahrzeuge beim Räumen (…
 
-## savegame.js (4.7 KB)
+## savegame.js (4.8 KB)
 - SAVE_FORMAT – 2 seit v5.14: größere Karte (11072 px)
 - snapshotGame(game, ai) – Spielstand als JSON-Abbild
 - restoreGame(data)

@@ -39,7 +39,7 @@ function truck(g, a, at, team = 0) {
 }
 
 test('ohne zugeteilten LKW füllt sich das Ausgangslager nicht; der ganze Ausstoß geht zur Hauptstadt', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const a = workOf(g, 'fuel');
   const main0 = g.mainFob(0).store.fuel;
@@ -55,7 +55,7 @@ test('ohne zugeteilten LKW füllt sich das Ausgangslager nicht; der ganze Aussto
 });
 
 test('mit zugeteiltem LKW zweigt das Werk share des Ausstoßes ab, bis cap', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const a = workOf(g, 'fuel');
   const u = truck(g, a, 'far');
@@ -72,7 +72,7 @@ test('mit zugeteiltem LKW zweigt das Werk share des Ausstoßes ab, bis cap', () 
 });
 
 test('Ausgangslager bleibt bei cap stehen; der Rest geht weiter zur Hauptstadt', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const a = workOf(g, 'fuel');
   const u = truck(g, a, 'far');
@@ -90,7 +90,7 @@ test('Ausgangslager bleibt bei cap stehen; der Rest geht weiter zur Hauptstadt',
 });
 
 test('LKW am Werk lädt nur die Ware dieses Werks, auch mit anderer Ladungsart', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const a = workOf(g, 'fuel');
   const u = truck(g, a, 'work');
@@ -102,7 +102,7 @@ test('LKW am Werk lädt nur die Ware dieses Werks, auch mit anderer Ladungsart',
 });
 
 test('Einzelauftrag am Werk: lädt bis voll, dann Ende', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const a = workOf(g, 'fuel');
   const u = truck(g, a, 'work');
@@ -115,7 +115,7 @@ test('Einzelauftrag am Werk: lädt bis voll, dann Ende', () => {
 });
 
 test('Einzelauftrag am leeren Werk endet sofort, ohne zu warten', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const a = workOf(g, 'fuel');
   const u = truck(g, a, 'work');
   assert.ok(g.issue(0, { type: 'load', ids: [u.id], work: a }).ok);
@@ -125,7 +125,7 @@ test('Einzelauftrag am leeren Werk endet sofort, ohne zu warten', () => {
 });
 
 test('Einzelauftrag leert das Werk und endet dann mit Ladung', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const a = workOf(g, 'fuel');
   const u = truck(g, a, 'work');
@@ -138,7 +138,7 @@ test('Einzelauftrag leert das Werk und endet dann mit Ladung', () => {
 });
 
 test('Route Werk → FOB: LKW lädt am Werk, fährt zur Hauptstadt und entlädt dort', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const a = workOf(g, 'fuel');
   const main = g.mainFob(0);
   const u = truck(g, a, 'work');
@@ -160,7 +160,7 @@ test('Route Werk → FOB: LKW lädt am Werk, fährt zur Hauptstadt und entlädt 
 });
 
 test('Abriss des Werks beendet den LKW-Auftrag mit Meldung und leert das Ausgangslager', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const a = workOf(g, 'fuel');
   const u = truck(g, a, 'work');
@@ -177,7 +177,7 @@ test('Abriss des Werks beendet den LKW-Auftrag mit Meldung und leert das Ausgang
 });
 
 test('Befehl load/route mit work nur an eigenen fertigen Werken, nicht an leeren Zellen', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const u = truck(g, workOf(g, 'fuel'), 'work');
   const empty = c.kind.findIndex((k) => k === 0);
@@ -187,7 +187,7 @@ test('Befehl load/route mit work nur an eigenen fertigen Werken, nicht an leeren
 });
 
 test('Ressourcenanzeige zählt das Ausgangslager zum Bestand der Ware', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const a = workOf(g, 'fuel');
   c.out[a] = 20;
@@ -196,7 +196,7 @@ test('Ressourcenanzeige zählt das Ausgangslager zum Bestand der Ware', () => {
 });
 
 test('Spielstand ohne c.out und c.pickClaim (älter als v5.69) lädt und spielt weiter', async () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const ai = new AI(g, 1, 'normal');
   run(g, 5);
   for (const c of g.city) {
@@ -217,7 +217,7 @@ test('Spielstand ohne c.out und c.pickClaim (älter als v5.69) lädt und spielt 
 });
 
 test('Route Werk → FOB: mit Teilladung wartet der LKW am leeren Werk CITY.pickup.wait s, dann fährt er ab', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const a = workOf(g, 'fuel');
   const u = truck(g, a, 'work');
   u.cargo.fuel = 20; // Teilladung, Werkslager leer

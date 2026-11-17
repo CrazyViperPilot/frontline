@@ -13,7 +13,7 @@ const AIR_MSG = 'Stellplatz braucht eine Verbindung zur Startbahn (direkt oder √
 
 /** Spiel mit Stadt; mit Baugebiet (buildRules) und erkundetem Gel√§nde, wenn rules. Reiche Kasse und Baumaterial. */
 function game(rules) {
-  const g = new Game({ seed: 3, city: true, buildRules: rules });
+  const g = new Game({ seed: 3, buildRules: rules });
   if (rules) {
     g.fog[0].explored.fill(1);
     g.update(0.05); // Gebiet (c.claim) rechnet die Simulation im ersten Schritt aus

@@ -23,7 +23,6 @@ test('Pionier: Infanterie, Kaserne (nicht Hauptstadt), Taste F im Kasernenmenü 
   assert.equal(UNITS.sapper.armor, 'inf');
   assert.equal(UNITS.sapper.hotkey, 'F');
   assert.ok(CITY.produces.barracks.includes('sapper'));
-  assert.ok(!BUILDINGS.fob.produces.includes('sapper'), 'Hauptstadt-Menü bleibt voll (Regel 4)');
   const keys = CITY.produces.barracks.map((t) => UNITS[t].hotkey);
   assert.equal(new Set(keys).size, keys.length, 'Kasernenmenü: keine doppelte Taste');
 });

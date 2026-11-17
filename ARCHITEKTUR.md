@@ -25,7 +25,7 @@ Spielregeln: [PRD.md](PRD.md) (Einstieg) und die Themen-Dateien in [docs/prd/](d
 ## 2. Ablauf einer Partie
 
 1. `index.html` lädt `js/main.js`. Das Startmenü (`js/ui/menu/start.js` → `showStartMenu`, Einstieg `js/ui/menu.js`) liefert Modus, Schwierigkeit je Gegner, Siegpunkte bzw. Tickets, Karte und Schalter.
-2. `main.js` → `startGame` erzeugt `new Game({ seed, winPoints, startMoney, map, radio, weather, research, river, city, conquest, players, tickets, buildRules })`,
+2. `main.js` → `startGame` erzeugt `new Game({ seed, winPoints, startMoney, map, radio, weather, research, river, conquest, players, tickets, buildRules })` (jede Partie mit Stadt),
    dazu je Computergegner eine `AI` (Team 1, in der Eroberung bis Team 3, jede mit eigener Schwierigkeit), `Camera`, `Renderer`, `Controller`, `Hud`,
    `Input` und `Minimap`. Ohne Angabe ist `new Game()` klassisch (`conquest: false`, zwei Teams, Tests verlassen sich darauf).
 3. `createLoop` (`js/core/loop.js`) ruft mit fester Schrittweite (`BALANCE.tickRate`) `ai.update(dt)` und `game.update(dt)`,
@@ -44,7 +44,7 @@ Die Reihenfolge ist Absicht; ein neues System kommt an die Stelle, deren Ergebni
 | 2 | `updateResearch` | `research.js` | Forschungsfortschritt |
 | 2b | `updateAbilities` | `abilities.js` | Rauch, Minen, Feldwerkstatt |
 | 3 | `updateEconomy` | `economy.js` | `team.rate` zurücksetzen, Ausbildung, Soldaten-Nachschub |
-| 3a | `updateCity` | `city/economy.js` | nur mit Stadt: Einwohner, Wachstum, Steuern, Gewerbe-Absatz, Einfuhr, Werke, Pendler (Einzelheiten: `docs/architektur/stadt.md`) |
+| 3a | `updateCity` | `city/economy.js` | Einwohner, Wachstum, Steuern, Gewerbe-Absatz, Einfuhr, Werke, Pendler (Einzelheiten: `docs/architektur/stadt.md`) |
 | 4 | `updateGarrison`, `updateTowers` | `garrison.js`, `tower.js` | Ein- und Aussteigen in Stadthäuser und Gefechtstürme; Dachaufbauten werden fertig |
 | 5 | `updateFormations` | `formation.js` | Tempo geschlossener Gruppen |
 | 6 | `updateMovement` | `movement.js` | zurückgestellte Wege planen (`planPending`, `pathplan.js`), Wege fahren, Verfolgen (ohne Jets); Rücksetzen von `pathWork`, `pathShare` am Ende von `update` |
@@ -147,7 +147,7 @@ Neue Befehle: Rezept `docs/rezepte/neuer-befehl.md`.
 | `fortify` | `buildingId, towers?, tx?, ty?, ids?` | `tower.js` `cmdFortify` | FOB zur Festung ausbauen (Mauerring, Tore, Türme) |
 | `pickup`, `deliver`, `dropCrate` | `ids, crateId` / `ids, fobId` / `ids` | `crates.js` | Kiste aufheben / abliefern / fallen lassen |
 | `drill` | `ids` | `hotzone.js` `cmdDrill` | Bohrer starten |
-| `train`, `cancelTrain` | `buildingId, unit` / `buildingId` | `game.js` | Ausbildung in der Hauptstadt (mit Stadt: Kaserne, Fabrikhalle, Heliport = Stadt-Entities mit `produces`, `queue`) / letzten Eintrag abbrechen |
+| `train`, `cancelTrain` | `buildingId, unit` / `buildingId` | `game.js` | Ausbildung in Kaserne, Fabrikhalle, Heliport und Stellplatz (Stadt-Entities mit `produces`, `queue`) / letzten Eintrag abbrechen |
 | `research`, `cancelResearch` | `buildingId, key` / `key?` | `research.js` | Forschung starten oder einreihen (bis 3 wartend, bezahlt beim Einreihen) / abbrechen (ohne `key` die laufende; Abhängige fallen mit heraus, alles erstattet) |
 | `smoke`, `mine` | `ids` | `abilities.js` | Nebelwand (Fahrzeuge) / Mine (Baufahrzeug) |
 | `rally` | `buildingId, x, y` | `cmd/units.js` `cmdRally` | Sammelpunkt |

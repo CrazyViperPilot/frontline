@@ -30,7 +30,7 @@ const SEEDS = [2, 3, 7];
 const DT = 0.05;
 const EVERY_S = 30; // Abstand der Prüfsummen im Lauf
 const PLAY_S = 120; // Länge des Laufs mit allen Schaltern (vorher sind beide Seiten noch symmetrisch)
-const FULL = { radio: true, weather: 'random', research: true, river: true, city: true }; // wie BALANCE.menuDefaults
+const FULL = { radio: true, weather: 'random', research: true, river: true }; // wie BALANCE.menuDefaults
 
 // prettier-ignore
 // Läufe (play) neu gesetzt mit v5.61 (Review-Paket P8: Wegsuche mit Budget je Schritt, unerreichbare Ziele, lange Suchen); Paket K1: KI bildet Unterstützer aus; Paket K2: KI bildet Artillerie aus und lässt sie feuern; Start und Läufe: Paket „Startaufstellung mit Stadt“ (Einheiten nach dem Startviertel aufgestellt)

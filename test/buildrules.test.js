@@ -15,8 +15,8 @@ import { updateClaim } from '../js/game/city/state.js';
 import { snapshotGame, restoreGame } from '../js/game/savegame.js';
 import { withValue } from './util.js';
 
-const rules = (seed = 3) => new Game({ seed, city: true, buildRules: true });
-const plain = (seed = 3) => new Game({ seed, city: true });
+const rules = (seed = 3) => new Game({ seed, buildRules: true });
+const plain = (seed = 3) => new Game({ seed });
 const cellXY = (c, i) => {
   const col = i % c.cols;
   return [c.x0 + (col + 0.5) * c.cell, c.y0 + ((i - col) / c.cols + 0.5) * c.cell];
@@ -269,7 +269,7 @@ test('Anschlusspflicht: Großbau braucht nur eine Randzelle an der Straße zum L
 
 test('mit Schalter: FOB-Gebiet reicht 6 Zellen, ohne Schalter 4 (Startviertel bleibt gleich)', () => {
   const setup = (buildRules) => {
-    const g = new Game({ seed: 3, city: true, buildRules });
+    const g = new Game({ seed: 3, buildRules });
     const m = g.mainFob(0);
     const dir = m.x < BALANCE.map.width / 2 ? 1 : -1;
     const b = g.spawnBuilding('fob', 0, g.grid.toCell(m.x + dir * 15 * CITY.cell), g.grid.toCell(m.y), { built: true });

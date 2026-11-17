@@ -1,6 +1,6 @@
 // Stadt (PRD §15), Erzeugung: Raster je Team über die ganze Karte, gesperrte Zellen, Konfliktzone, Startviertel (seit Paket „Import“
 // mit Straße zum Kartenrand; Rohstoffvorkommen gibt es nicht mehr).
-// Nur aktiv, wenn das Spiel mit `city: true` startet. Kein DOM, deterministisch.
+// Jede Partie hat eine Stadt (Plan „Stadt ist Kern“). Kein DOM, deterministisch.
 import { quarterAt } from '../conquest.js';
 import { inZone } from '../zonegeo.js';
 import { CITY } from '../../data/city.js';
@@ -100,10 +100,8 @@ function createTeamCity(game, team, shared) {
   };
 }
 
-/** Stadt je Team anlegen; ohne `enabled` bleibt `game.city` null und alles andere wie gehabt. */
-export function createCity(game, enabled) {
-  game.city = null;
-  if (!enabled) return;
+/** Stadt je Team anlegen (jede Partie hat eine Stadt). */
+export function createCity(game) {
   const cols = Math.floor((game.grid.cols * game.grid.tile) / CITY.cell);
   const rows = Math.floor((game.grid.rows * game.grid.tile) / CITY.cell);
   const blocked = blockedCells(game, cols, rows);

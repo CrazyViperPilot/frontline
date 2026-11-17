@@ -17,8 +17,8 @@
   Auch die Bäume außerhalb der Stadt blockieren; Hubschrauber fliegen darüber.
   Die Startpunkte liegen 700 px von den Kartenrändern (`MAPGEN.general.spawnEdge`); der Abstand vom Start zum Zonenrand beträgt gut 3500 px (bis v5.11 gut 2000 px).
 - **Stadtstraßen der Zone:** Die Straßen der Zonenstadt liegen auf dem Stadtraster (Blöcke 384 px,
-  jede Straße genau eine Zellreihe) und sind **Stadtstraßen** wie die eigenen Straßen der Stadt (Asphalt, Gehweg, Mittellinie, Kreuzungen mit Zebrastreifen; auch ohne Stadt so gezeichnet).
-  Sie gehören niemandem: mit Stadt zählen sie für **alle** Teams als Straßenanschluss (Wohnen,
+  jede Straße genau eine Zellreihe) und sind **Stadtstraßen** wie die eigenen Straßen der Stadt (Asphalt, Gehweg, Mittellinie, Kreuzungen mit Zebrastreifen).
+  Sie gehören niemandem: sie zählen für **alle** Teams als Straßenanschluss (Wohnen,
   Gewerbe und alle anderen Stadtgebäude, die man an sie baut, wachsen), lassen sich aber weder überbauen noch abreißen;
   eigene Straßen schließen an sie an.
   Zellen mit einem Haus, Baum oder Wachturm bleiben frei.

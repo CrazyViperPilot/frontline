@@ -35,7 +35,6 @@ test('Werte: billig, 0 Passagiere, unbewaffnet, Luftklasse, Treibstoff 40, Sicht
 test('Ausbildung nur am Heliport (mit Stadt), Stadt-Kosten, nicht in der Hauptstadt', () => {
   assert.ok(CITY.produces.heliport.includes('drone'));
   for (const [k, list] of Object.entries(CITY.produces)) if (k !== 'heliport') assert.ok(!list.includes('drone'), k);
-  assert.ok(!BUILDINGS.fob.produces.includes('drone'), 'Hauptstadt-Menü unverändert');
   assert.equal(CITY.metalCost.drone, 50);
   assert.ok(CITY.metalCost.drone < CITY.metalCost.littlebird);
 });
@@ -63,7 +62,7 @@ function freeArea(g, c, m, W, Hh) {
 }
 
 test('Heliport mit Stadt bildet die Drohne aus, Metall aus dem Lager, sie fliegt und deckt Nebel auf', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const m = g.mainFob(0);
   g.teams[0].res.money = 1e6;

@@ -221,7 +221,7 @@ export const UNITS = {
   },
   // Aufklärungsfahrzeug (Paket E5): leichtes, schnelles Fahrzeug mit großer Sicht und MG. Getarnt, sobald es `stillCamo` s steht
   // (Regel wie beim Scharfschützen: Gegner sehen es nur nahe an eigenen Einheiten/Gebäuden oder kurz nach einem Schuss).
-  // Nur Fabrikhalle (nicht in fob.produces, Plan Regel 4).
+  // Nur Fabrikhalle (CITY.produces.factory).
   scout: {
     name: 'Aufklärungsfahrzeug',
     short: 'Aufkl.', // Kurzname in der Befehlskarte
@@ -768,7 +768,7 @@ export const UNITS = {
   },
   // Raketenwerfer (Paket E6): Fahrzeug wie die Panzerhaubitze, Feuer auf Punkt (mortarTarget). Eine Salve aus 12 Raketen
   // (salvo: 0,25 s Abstand), danach 30 s Nachladen (salvo.reload). Reichweite 1600, min. 400, Streuung 120, Splash 60.
-  // Nur Fabrikhalle (Regel 4 im Plan: nicht fob.produces). Werte vorläufig, Modell: Platzhalter Panzerhaubitze.
+  // Nur Fabrikhalle (CITY.produces.factory). Werte vorläufig, Modell: Platzhalter Panzerhaubitze.
   mlrs: {
     name: 'Raketenwerfer',
     short: 'MLRS', // Kurzname in der Befehlskarte

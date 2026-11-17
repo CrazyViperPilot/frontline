@@ -21,7 +21,7 @@ function twoParked(g, s, c, ktank, mdepot) {
 }
 
 test('Zwei F-16 je Stellplatz: beide stehen auf verschiedenen Plätzen (nebeneinander, Nase nach Norden)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { c, stands, ktank, mdepot } = airbase(g);
   const [s] = stands;
   assert.equal(freeSpace(g, s), CITY.air.standJets);
@@ -35,7 +35,7 @@ test('Zwei F-16 je Stellplatz: beide stehen auf verschiedenen Plätzen (nebenein
 });
 
 test('Zwei F-16 je Stellplatz: Start und Landung beider, Platz wird beim Einrollen neu vergeben', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { c, stands, ktank, mdepot, rw } = airbase(g);
   const [s] = stands;
   const jets = twoParked(g, s, c, ktank, mdepot);
@@ -56,7 +56,7 @@ test('Zwei F-16 je Stellplatz: Start und Landung beider, Platz wird beim Einroll
 });
 
 test('Zwei F-16 je Stellplatz überstehen Speichern und Laden (Plätze und Standort bleiben)', async () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { c, stands, ktank, mdepot } = airbase(g);
   const [s] = stands;
   const jets = twoParked(g, s, c, ktank, mdepot);
@@ -70,7 +70,7 @@ test('Zwei F-16 je Stellplatz überstehen Speichern und Laden (Plätze und Stand
 });
 
 test('Stand ohne Platznummer (alter Spielstand): der Jet bekommt beim Abstellen einen Platz', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { c, stands } = airbase(g);
   const [s] = stands;
   const u = g.spawnUnit('f16', 0, s.x, s.y);
@@ -90,7 +90,7 @@ test('F-22: Stellplatz bildet sie aus; eine Waffe mit sechs Luft-Luft-Raketen, s
   assert.deepEqual(aim.targets, ['air'], 'nur Luftziele');
   assert.ok(!aim.damage.heavy && !aim.damage.light && !aim.damage.struct && !aim.damage.inf, 'kein Schaden an Boden und Gebäuden');
   assert.equal(UNITS.f22.jet, true);
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const [s] = stands;
   assert.ok(g.issue(0, { type: 'train', buildingId: s.id, unit: 'f22' }).ok, 'F-22 ausbildbar am Stellplatz');
@@ -119,7 +119,7 @@ test('F-22: Stellplatz bildet sie aus; eine Waffe mit sechs Luft-Luft-Raketen, s
 });
 
 test('F-16 und F-22 teilen sich die Plätze eines Stellplatzes: zusammen höchstens CITY.air.standJets', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const [s] = stands;
   assert.equal(CITY.air.standJets, 2, 'Annahme dieses Tests: zwei Plätze je Stellplatz');
@@ -150,7 +150,7 @@ test('Su-27: Werte wie die F-16 (gleiche Waffen, parallel), aber schneller und m
 });
 
 test('Su-27 am Stellplatz: ausbildbar, steht auf dem Platz, hebt ab und fliegt los', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const [s] = stands;
   assert.ok(g.issue(0, { type: 'train', buildingId: s.id, unit: 'su27' }).ok, 'Su-27 ausbildbar');
@@ -169,7 +169,7 @@ test('Su-27 am Stellplatz: ausbildbar, steht auf dem Platz, hebt ab und fliegt l
 });
 
 test('Su-27 und F-16 teilen sich die zwei Plätze eines Stellplatzes', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const [s] = stands;
   assert.ok(g.issue(0, { type: 'train', buildingId: s.id, unit: 'su27' }).ok, 'erste Su-27');

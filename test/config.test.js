@@ -67,8 +67,6 @@ test('Gebäude: Werte und Kosten', () => {
 });
 
 test('Tasten doppeln sich nicht', () => {
-  const unitKeys = BUILDINGS.fob.produces.map((t) => UNITS[t].hotkey);
-  assert.equal(new Set(unitKeys).size, unitKeys.length, `Ausbildungstasten der Hauptstadt doppelt: ${unitKeys.join(' ')}`);
   const bldKeys = Object.values(BUILDINGS).map((b) => b.hotkey).filter(Boolean);
   assert.equal(new Set(bldKeys).size, bldKeys.length, `Baumenü-Tasten doppelt: ${bldKeys.join(' ')}`);
   // Stadt-Ausbilder (Kaserne, Fabrikhalle, Heliport, Stellplatz): je Befehlskarte jede Taste einmal

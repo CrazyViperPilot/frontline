@@ -14,16 +14,16 @@ Der Weg ab dem Lager der Hauptstadt (LKW, vordere FOBs, Nachfüllen) ist in beid
 
 | Ressource | Quelle | Lagerort | Verwendung |
 |---|---|---|---|
-| **Geld** | Einheiten in der Konfliktzone (je Einheit, Hot Zone doppelt; Eroberung: im Quadrat, dazu Flaggengeld, [eroberung.md](eroberung.md)), (weiter unten) | global, **bleibt von Runde zu Runde** | Einheiten (Ausbildung), Forschung, Sendemast; mit Stadt auch Stadtzellen und Marktkauf |
-| **Baumaterial** | BM-Werk aus eingeführtem Rohmaterial | FOB-Lager, LKW, Soldaten (wenig) | Gebäude, Mauern, Tore, Reparatur; mit Stadt auch Gewerbe und Markt (über die Straße) |
+| **Geld** | Einheiten in der Konfliktzone (je Einheit, Hot Zone doppelt; Eroberung: im Quadrat, dazu Flaggengeld, [eroberung.md](eroberung.md)), (weiter unten) | global, **bleibt von Runde zu Runde** | Einheiten (Ausbildung), Forschung, Sendemast, Stadtzellen und Marktkauf |
+| **Baumaterial** | BM-Werk aus eingeführtem Rohmaterial | FOB-Lager, LKW, Soldaten (wenig) | Gebäude, Mauern, Tore, Reparatur; auch Gewerbe und Markt (über die Straße) |
 | **Munition** | Munitionswerk aus eingeführtem Eisen und Sprengstoff | FOB-Lager, Einheiten, LKW | Mörser/Flak und **Nachladen der Einheiten** |
 | **Treibstoff** | Raffinerie aus eingeführtem Öl | FOB-Lager, Fahrzeuge, LKW | **Verbrauch beim Fahren/Fliegen** und Bohrer |
-| **Stahl** (nur mit Stadt) | Stahlwerk aus eingeführtem Eisen | Stadtlager (nicht im Gebäude Hauptstadt), LKW fahren es nicht | Ausbildung von Fahrzeugen und Hubschraubern, Reparatur, Markt |
-| **Kerosin** (nur mit Stadt, seit v5.20) | Kerosin-Raffinerie aus eingeführtem Öl | Stadtlager, LKW fahren es nicht | F-16 am Kerosintank des Fliegerhorsts (seit v5.35), Hubschrauber gelandet am Heliport aus dem Kerosintank (seit v5.51; vorher im Umkreis des Heliports aus dem Stadtlager) |
+| **Stahl** | Stahlwerk aus eingeführtem Eisen | Stadtlager (nicht im Gebäude Hauptstadt), LKW fahren es nicht | Ausbildung von Fahrzeugen und Hubschraubern, Reparatur, Markt |
+| **Kerosin** (seit v5.20) | Kerosin-Raffinerie aus eingeführtem Öl | Stadtlager, LKW fahren es nicht | F-16 am Kerosintank des Fliegerhorsts (seit v5.35), Hubschrauber gelandet am Heliport aus dem Kerosintank (seit v5.51; vorher im Umkreis des Heliports aus dem Stadtlager) |
 
 - **Geld, Quelle:** **eingelagerte Versorgungskisten** (§7), **Abschüsse und fertige Bauten** (Eroberung mit
   mehr als zwei Teams: Prämie an das Team des letzten Treffers, [eroberung.md](eroberung.md));
-  mit Stadt auch **Steuern** und **Marktverkauf**
+  auch **Steuern** und **Marktverkauf**
 
 - **Rohwaren** (Rohmaterial, Eisen, Öl, Sprengstoff) kommen nur über die Einfuhr der Stadt an die Werke (§15 „Import“); sie werden nicht gelagert und nicht gehandelt.
   **Kein Grundeinkommen je FOB.** Geld gibt es in der Konfliktzone und der Hot Zone (Abschnitt 7; Eroberung: dazu Flaggengeld, [eroberung.md](eroberung.md)),
@@ -39,7 +39,7 @@ Der Weg ab dem Lager der Hauptstadt (LKW, vordere FOBs, Nachfüllen) ist in beid
   (Schütze 5 s, PAK 8 s, Scharfschütze 10 s, LKW 6 s, Baufahrzeug 9 s, SPz 12 s, KPz 20 s, Little Bird 15 s, Transporter 20 s, AH-64 28 s; Warteschlange 5).
 - **Vordere FOBs:** eigenes endliches Lager (max. 3000 je Sorte), das nur **LKW oder Transporthubschrauber** füllen. Oben zeigt „Front BM/MUN/TS“ die Summe dieser Lager.
 - **Bezahlen:** Gebäude zahlen aus einer FOB, deren Bauradius den Bauort enthält (Baufahrzeug).
-  Einheiten kosten **Geld**, mit Stadt zusätzlich Stahl und freie Einwohner (§15).
+  Einheiten kosten **Geld**, Fahrzeuge zusätzlich Stahl, und freie Einwohner (§15).
   Abbruch erstattet an dieses Lager.
 - **Soldaten tragen Baumaterial:** Schütze und PAK tragen **50 Baumaterial** (starten voll, laden im FOB-Bauradius oder nahe einem LKW nach) und bauen daraus **Mauern und Tore,
   nur im Bauradius einer FOB**.
@@ -80,7 +80,7 @@ Der Weg ab dem Lager der Hauptstadt (LKW, vordere FOBs, Nachfüllen) ist in beid
   bildet **keine** Einheiten aus (Kaserne, Fabrikhalle, Heliport der Stadt, §15), leichtes MG.
   Nicht abreißbar; ihr Verlust beendet die Runde.
 - Gebäude nur im Bauradius einer eigenen **fertigen** FOB. Ein Klick auf eine FOB zeigt Radius und Lager.
-- **Weitere FOBs:** Man bildet in der Hauptstadt (mit Stadt: in der Fabrikhalle) ein **FOB-Fahrzeug** aus (Taste **B**, 500 Geld, 30 s, 2 Plätze; mit Stadt 80 Stahl, 2 Einwohner),
+- **Weitere FOBs:** Man bildet in der Fabrikhalle ein **FOB-Fahrzeug** aus (Taste **B**, 500 Geld, 30 s, 2 Plätze, 80 Stahl, 2 Einwohner),
   fährt es irgendwohin und drückt **Aufbauen** (Taste **D**, Befehl `deploy`): es wird an seiner Stelle **sofort zur fertigen FOB**, ohne Baustelle und Bauzeit; das Fahrzeug verschwindet.
   Die neue FOB hat gleich **20 % ihres Lagers je Sorte** (600 Baumaterial, 600 Munition, 600 Treibstoff bei 3000 Lager; `QUICK.fobStartStock`).
   Es gelten dieselben Regeln wie früher für Baustellen: **höchstens 10 FOBs**, Bauradien dürfen sich **nicht überlappen** (Abstand ≥ 900 px), 700 px zu Gegnern, freie Fläche 3 × 3 ohne Gegner darauf.
@@ -106,7 +106,7 @@ Der Weg ab dem Lager der Hauptstadt (LKW, vordere FOBs, Nachfüllen) ist in beid
 | Tor | Wie Mauer, aber eigene Einheiten fahren hindurch. (weiter unten) |
 | Mörser | Indirektes Feuer, Reichweite 800 px (Mindestreichweite 200), Flächenschaden. (weiter unten) |
 | Flugabwehr | Schießt **Hubschrauber** ab (Reichweite 320, 35 Schaden je Schuss), fängt gegnerische Mörsergranaten ab und beschießt Bodenziele schwach. Munition aus der FOB |
-| Phalanx (seit v4.99) | Nahbereichsschutz nach dem CIWS-Geschütz: nur Baufahrzeug (Taste C), im Bauradius einer FOB (Militärgebäude, auch mit Stadt), 2×2, 800 Geld, 300 Baumaterial, 200 Munition, **120 s Bauzeit**. (weiter unten) |
+| Phalanx (seit v4.99) | Nahbereichsschutz nach dem CIWS-Geschütz: nur Baufahrzeug (Taste C), im Bauradius einer FOB (Militärgebäude), 2×2, 800 Geld, 300 Baumaterial, 200 Munition, **120 s Bauzeit**. (weiter unten) |
 | Gefechtsturm (seit v4.73) | 2×2, 220 Baumaterial, nur Baufahrzeug; 3 Soldaten besetzen ihn, Dach trägt einen Aufbau (§5a) |
 | Bohrer | Zieht die Hot Zone an (Abschnitt 7); 2×2, 150 Baumaterial, braucht beim Betrieb Treibstoff aus der FOB |
 | Sendemast (seit v4.50) | Zweite Siegbedingung (§7), nur wenn im Startmenü eingeschaltet; nur Baufahrzeug, einer je Team, 2×2 |

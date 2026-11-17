@@ -19,7 +19,7 @@ Diese Datei ist der Kern: Regeln, Befehle, Wegweiser. Alles Weitere gezielt übe
    ohne Versionsnummer; `docs/changelog.md` nicht bearbeiten). Hilfe (`js/ui/helptext.js`, `js/ui/menu/start-html.js`) mitpflegen.
 8. Ideen, die Daniel nur festhalten will: `docs/prd/ideen.md` (PRD §13), nicht bauen.
 9. Startmenü-Schalter (Eroberung, Sendemast, Wetter, Forschung, Fluss) sind im Menü an, in `new Game()` ohne Angabe aus;
-   Tests verlassen sich darauf. `new Game()` startet mit Stadt.
+   Tests verlassen sich darauf. Jede Partie hat eine Stadt.
 10. Texte im Spiel, Kommentare und Doku deutsch, Bezeichner englisch. Nach Änderungen in `js/data/`: `npm run docs` und
     `npm run test:quick`. Vor dem Push `npm test` (alle grün).
 11. Stadt-Ressourcen (Zellenarten, Waren, Rohwaren, Kette) nur über die Register `js/data/citykinds.js`, `js/data/goods.js`

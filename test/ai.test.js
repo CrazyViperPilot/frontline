@@ -214,7 +214,7 @@ test('KI-Schwierigkeit über Verhalten: leicht ohne Späher/Konter/Überfall/Rü
 });
 
 test('KI meldet ihr Team über game.issue an (setDifficulty) und führt die Stadt-Buchhaltung selbst (seit v5.58)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   assert.equal(g.teams[1].isAI, false);
   const ai = new AI(g, 1, 'easy');
   assert.equal(g.teams[1].isAI, true);

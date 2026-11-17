@@ -85,7 +85,7 @@ test('C-130: Daten – unbewaffnet, zehn Passagiere, Stellplatz, Modell-Platzhal
 });
 
 test('C-130: Stellplatz bildet sie aus, sie steht geparkt', () => {
-  const g = new Game({ seed: 5, city: true });
+  const g = new Game({ seed: 5 });
   const [s] = airbase(g).stands;
   assert.ok(s, 'Stellplatz gebaut');
   assert.ok(g.issue(0, { type: 'train', buildingId: s.id, unit: 'c130' }).ok, 'C-130 ausbildbar am Stellplatz');
@@ -97,7 +97,7 @@ test('C-130: Stellplatz bildet sie aus, sie steht geparkt', () => {
 });
 
 test('C-130: Soldat steigt am Stellplatz ein (Infanterie, kein Panzer)', () => {
-  const g = new Game({ seed: 5, city: true });
+  const g = new Game({ seed: 5 });
   const [s] = airbase(g).stands;
   assert.ok(g.issue(0, { type: 'train', buildingId: s.id, unit: 'c130' }).ok);
   for (let k = 0; k < 900 && !g.units.some((x) => x.def === UNITS.c130); k++) run(g, 1);

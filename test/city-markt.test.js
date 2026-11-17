@@ -20,7 +20,7 @@ function lotSpent(n, base, heat = 0) {
 }
 
 test('Flucht: Schüsse in der Konfliktzone leeren Wohnzellen, nach Ruhe kehren sie zurück', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   clearStart(g);
   const c = g.city[0];
   const z = g.zone;
@@ -52,7 +52,7 @@ test('Flucht: Schüsse in der Konfliktzone leeren Wohnzellen, nach Ruhe kehren s
 });
 
 test('Stahl: Stahlwerk mit Einfuhr liefert, Fahrzeuge kosten Stahl, Abbruch erstattet', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 9000 });
+  const g = new Game({ seed: 3, startMoney: 9000 });
   const c = g.city[0];
   paint(g, 'road', 0, 0, 9, 0);
   paint(g, 'res', 0, 1, 9, 1);
@@ -74,7 +74,7 @@ test('Stahl: Stahlwerk mit Einfuhr liefert, Fahrzeuge kosten Stahl, Abbruch erst
 });
 
 test('Markt: ohne Markt kein Handel, verkaufen und kaufen in Losen', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   const m = g.mainFob(0);
   assert.match(g.issue(0, { type: 'trade', good: 'bm', dir: 'sell' }).reason, /Markt/);
   paint(g, 'road', 0, 0, 3, 0);
@@ -125,7 +125,7 @@ test('Markt: ohne Markt kein Handel, verkaufen und kaufen in Losen', () => {
 });
 
 test('Markt: Kaufpreis steigt je Los, klingt über Zeit ab, Verkauf und anderes Team bleiben unberührt', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   paint(g, 'road', 0, 0, 3, 0);
   paint(g, 'market', 0, 1, 0, 1);
   run(g, CITY.growTime + 1);
@@ -152,7 +152,7 @@ test('Markt: Kaufpreis steigt je Los, klingt über Zeit ab, Verkauf und anderes 
 });
 
 test('Markt: mehrere Lose kosten je Los den jeweils aktuellen Preis', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   paint(g, 'road', 0, 0, 3, 0);
   paint(g, 'market', 0, 1, 0, 1);
   run(g, CITY.growTime + 1);
@@ -166,7 +166,7 @@ test('Markt: mehrere Lose kosten je Los den jeweils aktuellen Preis', () => {
 });
 
 test('Angriff: Stadtgebäude nehmen Schaden, werden Ruine (Prämie), wachsen danach neu', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 5000 });
+  const g = new Game({ seed: 3, startMoney: 5000 });
   const c = g.city[0];
   paint(g, 'road', 0, 0, 3, 0);
   paint(g, 'res', 0, 1, 0, 1);

@@ -18,7 +18,7 @@ export function withValue(obj, key, value, fn) {
 }
 
 // Aufbau für neue Tests (bestehende Tests bleiben, wie sie sind). Zählung im Paket „Schlanke Tests“:
-// 365 `new Game(`, davon 305 mit `seed`, die häufigsten Formen `{ seed: N, city: true }` (113) und `{ seed: N }` (63);
+// 365 `new Game(`, davon 305 mit `seed`, die häufigsten Formen `{ seed: N }` (113) und `{ seed: N }` (63);
 // 173 × `update(DT)` mit `DT = 0.05` (37 Dateien), 39 lokale `run(g, s)`-Schleifen, teils mit KI davor.
 
 /** Neues Spiel mit Seed 1 und den Standards von `new Game` (mit Stadt, alle Menü-Schalter aus); `opts` überschreibt. */

@@ -19,7 +19,7 @@ const run = (g, s) => {
 
 /** Stadt mit Geld, Baumaterial, Kerosin und erkundetem Gelände; mit Baugebiet (rules). */
 function game(rules) {
-  const g = new Game({ seed: 3, city: true, buildRules: rules });
+  const g = new Game({ seed: 3, buildRules: rules });
   g.fog[0].explored.fill(1);
   g.update(DT); // Gebiet (c.claim) rechnet die Simulation im ersten Schritt aus
   g.teams[0].res.money = 1e6;

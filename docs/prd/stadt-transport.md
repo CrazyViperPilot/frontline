@@ -64,7 +64,7 @@ Wege und Lasten liegen in einer WeakMap je Stadt und werden nicht gespeichert, d
   So wird das Lager zur Senke für Überschüsse.
   **Eigene Nachfrage:** Gewerbe wächst (neue Stufe) nur, solange seine Arbeitsplätze höchstens so viele sind wie arbeitsfähige Einwohner × `shop.per` (0,25); Stufe 1 entsteht immer.
   **Nenner:** Die Läden in der Zufriedenheit teilen wie die Steuer durch die arbeitsfähigen Einwohner (`pool`), nicht durch alle Einwohner.
-- **Versorgung der Ausbildung (Paket „Straßen“, Teil 2; mit Stadt immer):** Kaserne, Fabrikhalle, Heliport und Stellplatz bekommen ihr Material über die Straße aus dem Lager der Hauptstadt.
+- **Versorgung der Ausbildung (Paket „Straßen“, Teil 2):** Kaserne, Fabrikhalle, Heliport und Stellplatz bekommen ihr Material über die Straße aus dem Lager der Hauptstadt.
   Ihr Weg ist der kürzeste Straßenweg zum Lager (wie bei Werken).
   Bahn und Rollfeld sind keine Straße: Ein Stellplatz hängt nur an der Bahn und braucht darum keinen Straßenweg;
   er und der Heliport werden versorgt, wenn ein Kerosintank oder Munitionslager mit Straßenweg im Umkreis steht (Weg 0, Versorgung 100 %, Paket „Fliegerhorst-Anschluss“).
@@ -76,7 +76,6 @@ Wege und Lasten liegen in einer WeakMap je Stadt und werden nicht gespeichert, d
   Sonst nennt sie „Versorgung x % · Weg zum Lager d Felder (Entfernung v, Stau s)“.
   **Last:** Jeder laufende Platz legt Stahl je s (Stahlkosten der Einheit ÷ Ausbildungszeit × Tempo, `CITY.metalCost`) als Last auf den Weg; Soldaten kosten keinen Stahl und legen keine Last.
   Das Startviertel bekommt beim Spielstart einen Weg (ohne Kosten).
-  Hauptstädte und FOBs ohne Stadt bilden unverändert aus.
   **KI:** Sie schließt Ausbildungsgebäude ohne Weg mit `connectRoad` an (wie Werke).
   Gemessen (Seeds 3/7/11, 15 min, Normal): alle Ausbildungsgebäude der KI haben einen Weg von 1 bis 12 Zellen (Entfernung 100 %);
   der Stau an den Straßen direkt am Lager, über die auch alle Waren fahren, drückt das Tempo dort auf 36 bis 100 %.
@@ -103,7 +102,7 @@ Wege und Lasten liegen in einer WeakMap je Stadt und werden nicht gespeichert, d
   **KI:** Alle 10 s schickt sie ein freies Baufahrzeug zum Schutt ihrer Straßen, der am nächsten an ihrer Hauptstadt liegt,
   wenn dort keine sichtbaren gegnerischen Kampfeinheiten näher als 400 px stehen (`ROAD_REPAIR_EVERY`, `ROAD_REPAIR_SAFE` in `js/data/ai.js`).
   Sie greift gegnerische Straßen nicht an.
-- **Kerosin:** Die F-16 tankt am Kerosintank des Fliegerhorsts (der sich aus `c.kero` füllt; ohne Stadt Treibstoff aus dem Lager der Hauptstadt).
+- **Kerosin:** Die F-16 tankt am Kerosintank des Fliegerhorsts (der sich aus `c.kero` füllt).
   Hubschrauber im Umkreis eines Heliports (2 Felder) tanken dort Kerosin aus dem Stadtlager: `CITY.care.refuel` = 0,05 des Tanks je s, mal Strom, 1 Kerosin je Treibstoffeinheit.
   Das Tanken an FOBs mit Treibstoff bleibt wie bisher.
   Ist das Stadtlager leer, tankt niemand Kerosin, und das Spiel meldet „Luftfahrzeuge ohne Kerosin“ (am Heliport auch bei schon leerem Lager).
@@ -159,5 +158,5 @@ Wege und Lasten liegen in einer WeakMap je Stadt und werden nicht gespeichert, d
   `test/transport.test.js` (Wege über Straßen, kein Weg, nächstes Ziel, Stau, Lager-Anschluss, keine Ware aus dem Nichts, ohne Hauptstadt, Kerosin),
   `test/import.test.js` (Einfuhr über Straßen und Güterbahnhof, Kosten, Geld, Durchsatz, Preisregel), `test/shop.test.js` (Gewerbe-Absatz, Steuer, Nachfrage, Wirkung ohne Weg),
   `test/cityprod.test.js` (KI gegen KI, Seeds 3 und 11, 12 min: beide Städte erzeugen Stahl und Munition), `test/save.test.js` (Spielstand mit Stau),
-  `test/supply.test.js` (Versorgung der Ausbildung: Formel, Startviertel angeschlossen, nah 100 %, Tempo, Last, ohne Weg steht sie, Stau verlangsamt, ohne Stadt unverändert, Spielstand bitgleich),
+  `test/supply.test.js` (Versorgung der Ausbildung: Formel, Startviertel angeschlossen, nah 100 %, Tempo, Last, ohne Weg steht sie, Stau verlangsamt, Spielstand bitgleich),
   `test/roadwar.test.js` (Straßen beschießen nur auf Befehl, Schutt unterbricht die Versorgung, Baufahrzeug und Bagger räumen, Bagger reißt gegnerische Straßen ab, KI räumt, Spielstand).

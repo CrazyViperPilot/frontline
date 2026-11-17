@@ -22,7 +22,6 @@ test('Bergepanzer: unbewaffnetes Fahrzeug, keine Luftfahrzeuge, in der Fabrikhal
   assert.equal(UNITS.recovery.armor, 'light');
   assert.ok(!UNITS.recovery.air);
   assert.ok(CITY.produces.factory.includes('recovery'));
-  assert.ok(!BUILDINGS.fob.produces.includes('recovery'), 'Hauptstadt-Menü bleibt voll (Regel 4)');
   const keys = CITY.produces.factory.map((t) => UNITS[t].hotkey);
   assert.equal(new Set(keys).size, keys.length, 'Fabrikmenü: keine doppelte Taste');
 });

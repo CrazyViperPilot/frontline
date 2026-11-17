@@ -29,7 +29,7 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
 ## Regeln für Tests
 
 - Regel 9 der `CLAUDE.md`: Schalter sind in `new Game()` ohne Angabe aus; `conquest: true, players: 2…4` schaltet die Eroberung ein
-  (ohne sie gibt es genau zwei Teams). Alle Tests laufen mit Stadt (`city: false` nutzt kein Test mehr).
+  (ohne sie gibt es genau zwei Teams). Jede Partie hat eine Stadt (die Option `city` gibt es nicht mehr).
 - Tests, die länger als etwa 5 s laufen, tragen „[langsam]“ im Namen (`test:fast` lässt sie aus).
 - Neue lange Tests ebenso markieren.
 - **Gemeinsamer Lauf je Datei:** Brauchen mehrere Tests einer Datei dieselbe Partie (gleicher Seed, gleiche Optionen, gleiche

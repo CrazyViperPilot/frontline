@@ -114,7 +114,7 @@ test('U-2: Werte, Höhenschutz und Stellplatz-Belegung in den Daten', () => {
 });
 
 test('U-2 belegt einen Stellplatz allein: kein anderer Jet darauf, sie selbst nur auf freiem Stellplatz', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const [s1, s2] = stands;
   assert.ok(g.issue(0, { type: 'train', buildingId: s1.id, unit: 'f16' }).ok, 'F-16 auf Stellplatz 1');
@@ -130,7 +130,7 @@ test('U-2 belegt einen Stellplatz allein: kein anderer Jet darauf, sie selbst nu
 });
 
 test('U-2 in der Luft: F-16, Flak, SAM und Gebäude greifen sie nicht an; die F-22 schon', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const u = buildU2(g, stands[0]);
   const z = g.zone;
@@ -161,7 +161,7 @@ test('U-2 in der Luft: F-16, Flak, SAM und Gebäude greifen sie nicht an; die F-
 });
 
 test('U-2 am Boden ist verwundbar wie ein Jet; in der Luft zählt die F-22 nicht als Bodenziel', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const u = buildU2(g, stands[0]);
   assert.equal(jetGrounded(u), true);
@@ -174,7 +174,7 @@ test('U-2 am Boden ist verwundbar wie ein Jet; in der Luft zählt die F-22 nicht
 });
 
 test('U-2: Sicht in der Luft 1800, am Boden 300', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const u = buildU2(g, stands[0]);
   assert.equal(sightOf(u), 300, 'am Boden normale Sicht');
@@ -186,7 +186,7 @@ test('U-2: Sicht in der Luft 1800, am Boden 300', () => {
 });
 
 test('U-2: kreist am Ziel und fliegt erst bei Treibstoffmangel heim, nicht sofort (keine Waffen = nicht leer)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const u = buildU2(g, stands[0]);
   const z = g.zone;
@@ -201,7 +201,7 @@ test('U-2: kreist am Ziel und fliegt erst bei Treibstoffmangel heim, nicht sofor
 });
 
 test('KI kauft F-16 und F-22 nach CITY.ai.f22Share, die U-2 erst ab reconFrom', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const ai = new AI(g, 0, 'normal');
   const tick = () => {
@@ -222,7 +222,7 @@ test('KI kauft F-16 und F-22 nach CITY.ai.f22Share, die U-2 erst ab reconFrom', 
 });
 
 test('KI: U-2 zur Aufklärung ab reconFrom auf freiem Stellplatz, dann Flug (höchstens eine gleichzeitig)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const ai = new AI(g, 0, 'normal');
   const tick = () => {
@@ -256,7 +256,7 @@ test('KI: U-2 zur Aufklärung ab reconFrom auf freiem Stellplatz, dann Flug (hö
 });
 
 test('Angriffsbefehl auf eine fliegende U-2: nur die F-22 nimmt ihn an, sonst Ablehnung mit Meldung', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const z = g.zone;
   // Die U-2 gehört zu Team 1 (Gegner), damit Team 0 sie angreifen kann
@@ -286,7 +286,7 @@ test('Angriffsbefehl auf eine fliegende U-2: nur die F-22 nimmt ihn an, sonst Ab
 });
 
 test('Angriff löst sich, wenn das Ziel erst nach dem Befehl in die Höhe geht (kein Hängenbleiben)', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const z = g.zone;
   const u = g.spawnUnit('u2', 1, z.x, z.y);
   u.parked = false;

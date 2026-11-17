@@ -30,7 +30,7 @@ function clearStart(g) {
  * (Spalten 2 … 7), Zeile r Straße (ab Spalte `from`), Werke darunter. Liefert { g, c, r, at(q, row) }.
  */
 function site({ seed = 3, money = 100000 } = {}) {
-  const g = new Game({ seed, city: true, startMoney: money });
+  const g = new Game({ seed, startMoney: money });
   g.teams[0].res.money = money;
   clearStart(g);
   const c = g.city[0];
@@ -249,7 +249,7 @@ test('eine verstopfte Straße liefert weniger als ein Güterbahnhof bei gleichem
 test('[langsam] Startviertel: Raffinerie führt ab Sekunde 0 Öl ein (mehrere Seeds, auch Eroberung)', () => {
   for (const opt of [{}, { river: true }, { conquest: true, players: 4 }]) {
     for (const seed of [1, 2, 5, 9, 17]) {
-      const g = new Game({ seed, city: true, ...opt });
+      const g = new Game({ seed, ...opt });
       g.update(0.05);
       for (const c of g.city) {
         assert.ok(c.stats.raw.oil > 0 && c.stats.gross.fuel > 0, `Seed ${seed} ${JSON.stringify(opt)} Team ${c.team}: Öl ${c.stats.raw.oil}`);

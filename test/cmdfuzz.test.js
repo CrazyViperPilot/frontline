@@ -86,7 +86,7 @@ const TEMPLATES = {
 
 /** Spiel mit allen Schaltern, je einer Einheit jeder Sorte für Blau, etwas Vorlauf und einer fliegenden Granate. */
 function world() {
-  const g = new Game({ seed: 5, radio: true, weather: 'random', research: true, river: true, city: true, buildRules: true });
+  const g = new Game({ seed: 5, radio: true, weather: 'random', research: true, river: true, buildRules: true });
   g.teams[0].res.money = 1e6;
   g.city[0].metal = 1e5;
   g.city[0].popF = 2000;
@@ -230,7 +230,7 @@ function houseGame() {
 
 /** Spiel mit Stadt ohne Baugebiet, Blau reich. */
 function cityGame(opts = {}) {
-  const g = new Game({ seed: 3, city: true, river: true, research: true, ...opts });
+  const g = new Game({ seed: 3, river: true, research: true, ...opts });
   g.teams[0].res.money = 1e6;
   g.city[0].metal = 1e5;
   g.city[0].popF = 2000;

@@ -4,12 +4,11 @@ Teil der Rezepte für Erweiterungen (Einstieg: `CLAUDE.md` im Wurzelordner, Absc
 
 1. `js/data/units.js`: ähnliche Einheit kopieren, neuen Schlüssel vergeben.
    `name`, `short`, Werte, `weapons`, `cost`, `buildTime`, `slots`, `hotkey` anpassen.
-   Die Taste darf in der Hauptstadt noch nicht belegt sein.
-2. `js/data/buildings.js`: Schlüssel in `fob.produces` eintragen.
-   Für Partien mit Stadt auch in `CITY.produces` (`js/data/city.js`: Kaserne, Fabrikhalle oder Heliport).
+   Die Taste darf im Ausbildungsgebäude noch nicht belegt sein (`test/config.test.js` prüft das).
+2. `js/data/city.js`: Schlüssel in `CITY.produces` eintragen (Kaserne, Fabrikhalle, Heliport oder Stellplatz),
+   dazu `CITY.crew` (Einwohner, fehlt = 1) und `CITY.metalCost` (Stahl aus dem Stadtlager, fehlt = 0).
 3. `js/data/research.js`: Gruppe in `RESEARCH.groups` eintragen.
    Fehlt sie, wirken nur `all`, `veh` und `air`; Einheiten sind ohne Forschung frei.
-   Mit Stadt: `CITY.crew` (Einwohner) und `CITY.metalCost` (Metall aus dem Stadtlager, fehlt = 0) in `js/data/city.js`.
 4. Aussehen: **eigenes Rezept `docs/rezept-einheiten.md`**.
    Es behandelt Maße, Bausteine, Stil, die Vorschau-Schleife mit `node tools/unitpreview.mjs <typ>` und welches KI-Modell dafür taugt.
    Kurz: Modell in der passenden Familie unter `js/render/units/`, eingetragen in `MODELS` bzw. `INFANTRY` in

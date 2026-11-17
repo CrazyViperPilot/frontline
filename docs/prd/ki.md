@@ -203,7 +203,7 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   Ist eine F-22 fällig, spart sie auf sie, statt eine F-16 zu kaufen.
   Gemessen (30 min KI gegen KI, Normal): in Seed 7 je Team F-16, F-22 und eine U-2 im Aufklärungsflug;
   in Seed 3 und 11 kommt die KI mit Baugebiet nicht zu einem angeschlossenen Fliegerhorst, weil ihr Straßennetz von eigenen Gebäuden eingeschlossen ist (offen).
-- **Fliegerhorst und F-16 (nur mit Stadt):** Seit v5.35 baut die KI statt des Flughafens einen Fliegerhorst (Bahn 2 × 10, Stellplätze, Tower, Kerosintank, Munitionslager, §15 „Fliegerhorst“).
+- **Fliegerhorst und F-16:** Seit v5.35 baut die KI statt des Flughafens einen Fliegerhorst (Bahn 2 × 10, Stellplätze, Tower, Kerosintank, Munitionslager, §15 „Fliegerhorst“).
   Bis v5.34: Ab 14 Arbeitsstätten und freigeschalteter F-16 baut die KI einen Flughafen (`CITY.ai.airportFrom`; weil er selten zwischen ihre Straßenreihen passt,
   sucht sie das nächste freie 10 × 10-Quadrat bis 60 Zellen um die Hauptstadt, `airportReach`, und legt an der Seite zur Hauptstadt eine Straße an, ohne etwas zu überbauen),
   dann hält sie 2 / 4 / 6 F-16 (Leicht / Normal / Schwer, `CITY.ai.jets`), wenn danach 400 Geld übrig bleiben (`jetReserve`).

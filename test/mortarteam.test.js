@@ -27,7 +27,6 @@ test('Mörsertrupp: nur in der Kaserne ausbildbar (Taste E), nicht in der Haupts
   assert.equal(u.cost.money, 90);
   assert.equal(u.indirect, true, 'Zielsuche über die Reichweite wie die Panzerhaubitze');
   assert.ok(CITY.produces.barracks.includes('mortarteam'));
-  assert.ok(!BUILDINGS.fob.produces.includes('mortarteam'), 'nicht in der Hauptstadt');
 });
 
 test('Mörsertrupp: Reichweite 700, Mindestreichweite 150, Kadenz 5 s, Granate mit Splash', () => {

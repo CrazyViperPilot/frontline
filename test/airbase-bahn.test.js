@@ -12,7 +12,7 @@ import { MAP_ROAD, BRIDGE_ROAD } from '../js/game/roads.js';
 import { DT, run, rich, freeArea, airbase } from './airbasehelp.js';
 
 test('Bahn: gültig nur als volles Rechteck 2 Zellen breit und mindestens CITY.air.runwayMin lang; alter Flughafen nicht mehr baubar', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { c, m } = rich(g);
   const a = freeArea(g, c, m, 12, 6);
   const { q, r } = a;
@@ -32,7 +32,7 @@ test('Bahn: gültig nur als volles Rechteck 2 Zellen breit und mindestens CITY.a
 });
 
 test('Zwei F-16 nie zugleich im Startlauf; der Tower verkürzt die Sperrzeit der Bahn', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { stands, rw } = airbase(g);
   assert.ok(rw.atc, 'Tower in Reichweite');
   const jets = stands.map((s) => {
@@ -55,7 +55,7 @@ test('Zwei F-16 nie zugleich im Startlauf; der Tower verkürzt die Sperrzeit der
 });
 
 test('Bagger: räumt eine Zonenstraße (nicht die Brücke), reißt ein eigenes Gebäude ab; Gegner langsam per Schaufel', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { c, m } = rich(g);
   const R = g.roads;
   // Zonenstraße nächst der Hauptstadt
@@ -103,7 +103,7 @@ test('Bagger: räumt eine Zonenstraße (nicht die Brücke), reißt ein eigenes G
 });
 
 test('Breite Bahnfläche: längster Streifen 2 breit ist die Bahn, der Rest Rollfeld; Stellplatz über Rollfeld-Kette angebunden', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { c, m } = rich(g);
   const a = freeArea(g, c, m, 12, 10);
   const { q, r } = a;
@@ -126,7 +126,7 @@ test('Breite Bahnfläche: längster Streifen 2 breit ist die Bahn, der Rest Roll
 
 // Review-Paket P4 (Daniels Entscheidung 2, D-03): der Tower sieht als Radar CITY.air.atcSight weit statt CITY.sight.
 test('Tower: weite Sicht (CITY.air.atcSight) statt der Sicht der übrigen Stadtgebäude', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { atc } = airbase(g);
   assert.ok(atc, 'Tower steht');
   assert.ok(CITY.air.atcSight > CITY.sight);
@@ -147,7 +147,7 @@ test('Tower: weite Sicht (CITY.air.atcSight) statt der Sicht der übrigen Stadtg
 });
 
 test('Rechtsverkehr am Boden: nach der Landung rollt der Jet um keepRight rechts neben der Mitte, Stellplatz genau', () => {
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const { c, stands, ktank, mdepot } = airbase(g);
   ktank.stock = CITY.air.tank.cap[c.level[ktank.cityCell]];
   mdepot.stock = CITY.air.depot.cap[c.level[mdepot.cityCell]];

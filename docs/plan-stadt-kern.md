@@ -17,7 +17,7 @@ ohne Stadt aus Simulation, KI, UI und Tests. Ein Paket je Sitzung, nach jedem Pa
 | S2c | Simulation: Zweige `if (!game.city…)` in `js/game` (Ausbildung in der Hauptstadt/`fob.produces`, Lager, Wirtschaft, Logistik, Luft) entfernen | gebaut (Prüfsummen unverändert); bleibt für S2e/S2f: Liste `BUILDINGS.fob.produces` (Hilfetext, Tests), Null-Absicherungen in `city/query.js`, Anzeige „unendlich“ in `js/ui/hud/info.js` (liest `b.infinite`, das es nicht mehr gibt) |
 | S2d | KI: Pfade ohne Stadt in `js/ai` entfernen | gebaut (Prüfsummen und KI-Kennzahlen unverändert; Null-Absicherungen `game.city?.[team]` bleiben für Tests mit Ersatzobjekten) |
 | S2e | UI und Darstellung: Zweige in `js/ui`, `js/render`, Editor auf Stadt | gebaut (Smoke-Rundgang ok); Hilfe listet die Ausbildung je Stadtgebäude aus `CITY.produces`, Infofeld der Hauptstadt zeigt Nachschub und Forschung |
-| S2f | Option `city` ganz entfernen (Konstruktor, Speichern/Laden mit Ablehnung alter Stände), CLAUDE.md Regel 9, ARCHITEKTUR, Restdoku | offen |
+| S2f | Option `city` ganz entfernen (Konstruktor, Speichern/Laden mit Ablehnung alter Stände), CLAUDE.md Regel 9, ARCHITEKTUR, Restdoku | gebaut: Plan abgeschlossen |
 
 ## Gefunden bei S2b
 

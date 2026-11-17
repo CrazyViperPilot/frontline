@@ -34,7 +34,7 @@ test('Kette seit Paket „Import“: Öl → Raffinerie und Kerosin-Raffinerie; 
 });
 
 test('Graph passt zu den Zahlen der Simulation', () => {
-  const g = new Game({ seed: 7, city: true });
+  const g = new Game({ seed: 7 });
   run(g, 90);
   const s = g.city[0].stats;
   for (const L of Object.values(CITY.chain)) {
@@ -61,7 +61,7 @@ test('Graph passt zu den Zahlen der Simulation', () => {
 });
 
 test('Engpass: Werk wartet auf Rohwaren, ohne Einfuhrpunkt, ohne Geld, ohne Arbeiter', () => {
-  const g = new Game({ seed: 7, city: true });
+  const g = new Game({ seed: 7 });
   run(g, 2);
   const c = g.city[0];
   const base = { ...c.stats, fill: 1, powerRatio: 1, happy: 1, mood: 1, jobs: 10 };
@@ -88,7 +88,7 @@ test('Engpass: Werk wartet auf Rohwaren, ohne Einfuhrpunkt, ohne Geld, ohne Arbe
 });
 
 test('Verbrauch wird gemessen (Erzeugung + Handel − Zunahme)', () => {
-  const g = new Game({ seed: 7, city: true });
+  const g = new Game({ seed: 7 });
   const m = new FlowMeter(60, 1);
   const main = g.mainFob(0);
   run(g, 3, () => m.sample(g, 0));

@@ -122,10 +122,9 @@ export class Game {
   /** radio: Sendemast als zweite Siegbedingung (Startmenü; ohne Angabe aus). */
   /** weather: 'off' | 'random' | 'summer' | 'autumn' | 'winter' (Wetter und Jahreszeit, weather.js; ohne Angabe aus). */
   /** research: Forschungsstufen (research.js; ohne Angabe aus: alle Einheiten frei, keine Verbesserungen). */
-  /** city: Zonenstadt hinter der Hauptstadt (js/game/city/; Standard seit S2a an; ohne Stadt nur noch in alten Tests mit `city: false`: Hauptstadt hat dann unendlich Material). */
-  /** buildRules: Baugebiet der Stadt (seit v5.78): Gebäude nur im eigenen Gebiet, auf erkundetem Gelände, nicht nahe dem Feind und nicht in der Konfliktzone (js/game/city/cells.js `buildWhy`). Wirkt nur mit city; ohne Angabe aus. */
+  /** buildRules: Baugebiet der Stadt (seit v5.78): Gebäude nur im eigenen Gebiet, auf erkundetem Gelände, nicht nahe dem Feind und nicht in der Konfliktzone (js/game/city/cells.js `buildWhy`). Ohne Angabe aus. */
   /** river: Zufallskarte mit Flüssen, Brücken und Furten (river.js; ohne Angabe aus). Fertige Karten bringen ihre eigenen mit. */
-  constructor({ seed = 1, winPoints = BALANCE.winPoints, startMoney = BALANCE.startRes.money, map = null, radio = false, weather = 'off', research = false, river = false, city = true, buildRules = false, debug = false, conquest = false, players = 2, tickets = null } = {}) {
+  constructor({ seed = 1, winPoints = BALANCE.winPoints, startMoney = BALANCE.startRes.money, map = null, radio = false, weather = 'off', research = false, river = false, buildRules = false, debug = false, conquest = false, players = 2, tickets = null } = {}) {
     this.seed = seed;
     this.debug = !!debug; // ?debug=1: erlaubt den Befehl `debug` (Geld, festes Wetter), seit v5.58
     this.rng = makeRng(seed);
@@ -203,7 +202,7 @@ export class Game {
       this.spawnBuilding('fob', t, this.grid.toCell(sp.x) - 1, this.grid.toCell(sp.y) - 1, { built: true, main: true });
     }
     createHouses(this); // Stadthäuser zum Besetzen (Häuserkampf)
-    createCity(this, city); // Zonenstadt je Team, Hauptstadt mit endlichem Lager (nur wenn eingeschaltet)
+    createCity(this); // Zonenstadt je Team (seit Plan „Stadt ist Kern“ immer), Hauptstadt mit Startlager
     // Startunits erst nach dem Startviertel aufstellen: sonst schöbe es verdrängte Einheiten auf einen Punkt (occupyCell)
     for (let t = 0; t < teamCount; t++) {
       const sp = this.map.spawns[t];
@@ -245,7 +244,7 @@ export class Game {
     if (!this.ruins) this.ruins = (this.houses || []).filter((h) => h.ruined);
     // Nachrüstungen für ältere Stände (Straßen, Forschungsbaum, Stadt, FOB-Baustellen) gibt es seit v5.56 nicht mehr: Stände eines
     // anderen SAVE_FORMAT laden nicht (savegame.js). Ausnahme: das Ausgangslager der Werke (seit v5.69) fehlt in Ständen davor, leer ergänzen.
-    for (const c of this.city ?? []) {
+    for (const c of this.city) {
       c.out ??= new Float32Array(c.kind.length);
       c.workOut ??= new Float32Array(c.kind.length); // seit v5.70: Ausstoß je s am Anker (leer in älteren Ständen)
       c.pickClaim ??= new Uint8Array(c.kind.length);

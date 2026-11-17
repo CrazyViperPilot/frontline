@@ -126,7 +126,7 @@ export function createBuilding(id, type, team, cx, cy, tile) {
     aaCooldown: 0,
     scanTimer: (id % BALANCE.scanStagger.slots) * BALANCE.scanStagger.step,
     main: false,
-    produces: type === 'fob' ? [] : (def.produces ?? []), // ohne Eintrag: bildet nichts aus (KI und Befehlskarte lesen .length)
+    produces: def.produces ?? [], // ohne Eintrag: bildet nichts aus (KI und Befehlskarte lesen .length)
     lastHitTime: -1e9,
     demolished: false,
     store: { bm: 0, mun: 0, fuel: 0 },

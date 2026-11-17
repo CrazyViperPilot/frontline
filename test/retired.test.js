@@ -20,7 +20,7 @@ test('Flughafen ist nicht baubar: CITY.retired, nicht im Baumenü, Baubefehl abg
   assert.ok(CITY.retired.includes('airport'));
   const keys = BUILD_MENU.flatMap(([, list]) => list);
   assert.ok(!keys.includes('airport'), 'nicht im Baumenü');
-  const g = new Game({ seed: 3, city: true });
+  const g = new Game({ seed: 3 });
   const c = g.city[0];
   const i = freeCell(c, g);
   assert.ok(i >= 0, 'freie Zelle');
@@ -33,7 +33,7 @@ test('Flughafen ist nicht baubar: CITY.retired, nicht im Baumenü, Baubefehl abg
 });
 
 test('Spielstand mit einer Flughafen-Zelle lädt und spielt weiter', async () => {
-  const g1 = new Game({ seed: 3, city: true });
+  const g1 = new Game({ seed: 3 });
   const a1 = new AI(g1, 1, 'normal');
   const c1 = g1.city[0];
   const i = freeCell(c1, g1);

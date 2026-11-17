@@ -100,7 +100,7 @@ function linkMain(g, team, a) {
 const comWorkers = (s) => s.jobsCom * s.fill;
 
 test('Gewerbe ohne Straßenweg zum Lager: Versorgung 0, Steuer und Zufriedenheit nur mit dem Grundanteil', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 3000 });
+  const g = new Game({ seed: 3, startMoney: 3000 });
   clearStart(g);
   put(g, 'road', 0, 2, 1, 2);
   put(g, 'res', 0, 1, 1, 1);
@@ -124,7 +124,7 @@ test('Gewerbe ohne Straßenweg zum Lager: Versorgung 0, Steuer und Zufriedenheit
 });
 
 test('Gewerbe mit Weg zum Lager und Baumaterial im Lager: voll versorgt, Baumaterial sinkt', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 3000 });
+  const g = new Game({ seed: 3, startMoney: 3000 });
   clearStart(g);
   put(g, 'road', 0, 2, 1, 2);
   put(g, 'res', 0, 1, 1, 1);
@@ -153,7 +153,7 @@ test('Gewerbe mit Weg zum Lager und Baumaterial im Lager: voll versorgt, Baumate
 });
 
 test('Gewerbe wächst nur, solange seine Arbeitsplätze höchstens Einwohner × per sind', () => {
-  const g = new Game({ seed: 3, city: true, startMoney: 3000 });
+  const g = new Game({ seed: 3, startMoney: 3000 });
   clearStart(g);
   put(g, 'road', 0, 2, 1, 2);
   put(g, 'res', 0, 1, 1, 1);

@@ -59,7 +59,6 @@ test('Front-FOB: LKW bringt Baumaterial aus der Hauptstadt, das Front-Lager stei
   const f = fobOf(g, 0);
   silence(g, 0);
   const front = fobRing(g, 0, f.x, f.y);
-  assert.equal(front.infinite, false);
   assert.deepEqual(front.store, { bm: 0, mun: 0, fuel: 0 });
   const truck = g.spawnUnit('truck', 0, f.x + 90, f.y + 90);
   g.issue(0, { type: 'route', ids: [truck.id], fromId: f.id, toId: front.id, preset: 'bm' });

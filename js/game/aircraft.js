@@ -719,13 +719,6 @@ export function updateAircraft(game, dt) {
     if (!u.alive || !u.def.jet || u.paradrop) continue; // Absetzen: paradrop.js fliegt die C-130 im Anflug (Paket E13 b)
     u.jet ??= { home: 0, ready: true, warned: false };
     u.jet.phase ??= u.parked ? 'park' : 'air';
-    if (!game.city) {
-      // ohne Stadt gibt es keinen Fliegerhorst: fliegen, bis der Treibstoff leer ist
-      if (u.parked || GROUND.has(u.jet.phase)) {
-        u.parked = false;
-        u.jet.phase = 'air';
-      }
-    }
     if (u.parked) stepParked(game, u, dt);
     else if (u.jet.phase === 'taxiOut') stepTaxiOut(game, u, dt);
     else if (u.jet.phase === 'roll') stepRoll(game, u, dt);

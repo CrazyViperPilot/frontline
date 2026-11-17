@@ -15,7 +15,6 @@ import { run, base, paint, at, clearStart, raw, linkMain, setLevel } from './cit
 test('mit Stadt: endliches Startlager, Front-Summe ohne Hauptstadt', () => {
   const g = new Game({ seed: 3, city: true });
   const m = g.mainFob(0);
-  assert.equal(m.infinite, false);
   assert.deepEqual({ ...m.store }, CITY.startStock);
   assert.equal(g.teams[0].res.bm, 0);
 });

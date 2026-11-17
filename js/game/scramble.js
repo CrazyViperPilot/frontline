@@ -91,7 +91,6 @@ function follow(game, u) {
 
 /** Ein Simulationsschritt der Alarmrotte (vor updateAircraft). */
 export function updateScramble(game) {
-  if (!game.city) return;
   for (const team of game.teams) {
     if (team.out) continue;
     const t = team.id;

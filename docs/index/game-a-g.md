@@ -83,7 +83,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - cmdDropCrate(game, team, cmd) – { type: 'dropCrate', ids }: Träger legen ihre Kiste ab (sie bleibt liegen, bis…
 - updateCrates(game, dt) – Ein Schritt (nach der Bewegung): Kisten folgen ihren Trägern oder fallen zu Bod…
 
-## economy.js (6.4 KB)
+## economy.js (6.0 KB)
 - updateEconomy(game, dt) – Produktion und Einkommen eines Schritts
 - smoothIncome(game, dt) – Glättet das angezeigte Einkommen (team.income) gegen die momentane Rate
 

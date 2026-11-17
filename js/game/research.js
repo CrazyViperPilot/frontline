@@ -104,14 +104,13 @@ export function researchBlock(game, team, key) {
   const have = planned(tech);
   if (it.req && !have.has(it.req)) return `Benötigt ${R.items[it.req].name}`;
   if (openTier(have) < it.tier) return `Stufe ${it.tier}: erst ${R.perTier} Forschungen der Stufe ${it.tier - 1}`;
-  if (game.city && cityLevel(game, team, 'uni') < 1) return 'Benötigt eine Universität in der Stadt';
+  if (cityLevel(game, team, 'uni') < 1) return 'Benötigt eine Universität in der Stadt';
   if (tech.cur && tech.queue.length >= R.queueMax) return `Warteschlange voll (${R.queueMax} wartende)`;
   return '';
 }
 
-/** Forschungstempo des Teams: mit Stadt × (1 + Rechenzentren) × Strom, ohne Universität 0; ohne Stadt 1. */
+/** Forschungstempo des Teams: (1 + Rechenzentren) × Strom, ohne Universität 0. */
 export function researchSpeed(game, team) {
-  if (!game.city) return 1;
   if (cityLevel(game, team, 'uni') < 1) return 0;
   const C = CITY.research;
   return Math.min(C.maxSpeed, 1 + C.dcSpeed * citySum(game, team, 'dc')) * powerRatio(game, team);

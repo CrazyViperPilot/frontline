@@ -314,7 +314,7 @@ export class Game {
   /** `snd`: Hinweis für den Ton (ui/Sound): Waffen-ID, Rüstungsklasse eines Gefallenen oder 'building'; die Simulation wertet ihn nicht aus. */
   addEffect(type, x, y, team = -1, x2 = x, y2 = y, snd = null) {
     this.effects.push({ type, x, y, x2, y2, team, snd, t: 0, life: EFFECT_LIFE[type] ?? BALANCE.effects.lifeDefault });
-    if (this.city && NOISY.has(type)) {
+    if (NOISY.has(type)) {
       cityNoise(this, x, y); // Stadt: Bewohner der Konfliktzone fliehen vor Schüssen und Einschlägen
       if (x2 !== x || y2 !== y) cityNoise(this, x2, y2);
     }
@@ -385,7 +385,7 @@ export class Game {
   stockOf(team, k) {
     let sum = 0;
     for (const b of this.buildings) {
-      if (b.alive && b.built && b.team === team && b.type === 'fob' && !b.infinite && !(b.main && this.city)) sum += b.store[k];
+      if (b.alive && b.built && b.team === team && b.type === 'fob' && !b.main) sum += b.store[k];
     }
     return sum;
   }
@@ -397,10 +397,10 @@ export class Game {
 
   /**
    * Testhilfe: setzt das Lager der ersten fertigen FOB ohne Hauptstadt auf {bm, mun, fuel} (fehlende Sorten = 0)
-   * und leert die übrigen Front-Lager. Die Hauptstadt bleibt unverändert (unendlich).
+   * und leert die übrigen Front-Lager. Die Hauptstadt bleibt unverändert (ihr Lager füllen die Werke der Stadt).
    */
   setStock(team, vals) {
-    const fobs = this.buildings.filter((b) => b.alive && b.built && b.team === team && b.type === 'fob' && !b.infinite && !(b.main && this.city));
+    const fobs = this.buildings.filter((b) => b.alive && b.built && b.team === team && b.type === 'fob' && !b.main);
     fobs.forEach((f, i) => {
       for (const k of STOCK_KEYS) f.store[k] = i === 0 ? vals[k] || 0 : 0;
     });
@@ -533,12 +533,7 @@ export class Game {
       b.leaf = leaf; // Tor (2 Felder): 0 = Hälfte bei kleinerem x bzw. y, 1 = die andere
       b.axis = axis; // 'x' oder 'y': Richtung des Paars (ältere Tore ohne leaf sind Einzelfelder)
     }
-    if (main) {
-      b.main = true;
-      b.infinite = true;
-      b.produces = b.def.produces;
-      for (const k of STOCK_KEYS) b.store[k] = BALANCE.logistics.capitalCap;
-    }
+    if (main) b.main = true; // Hauptstadt: Lager und Ausbildung setzt createCity (Startlager, Truppen bildet die Stadt aus)
     b.payerId = payerId;
     if (built) {
       b.built = true;
@@ -639,10 +634,9 @@ export class Game {
     return n;
   }
 
-  /** Lebende Gebäude eines Teams mit Warteschlange: eigene Gebäude und (mit Stadt, seit v4.96) Kaserne, Fabrikhalle, Heliport. */
+  /** Lebende Gebäude eines Teams mit Warteschlange: eigene Gebäude und (seit v4.96) Kaserne, Fabrikhalle, Heliport der Stadt. */
   trainers(team) {
-    const out = this.buildings.filter((b) => b.alive && b.team === team);
-    return this.city ? out.concat(cityTrainers(this, team)) : out;
+    return this.buildings.filter((b) => b.alive && b.team === team).concat(cityTrainers(this, team));
   }
 
 

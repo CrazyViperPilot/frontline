@@ -66,7 +66,6 @@ function calmMarket(c, dt) {
  * (Gewerbe, Zufriedenheit, Einfuhr und Werke, Lager, Fliegerhorst, Stau, Steuern), Pflege.
  */
 export function updateCity(game, dt) {
-  if (!game.city) return;
   game.teams.forEach((team, id) => {
     const c = game.city[id];
     if (team.out) return; // ausgeschieden (Eroberung): die Stadt steht still

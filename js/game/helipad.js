@@ -4,7 +4,7 @@
 // Heliports im Umkreis kurz (mit Tower kürzer). Heimflug bei knappem Treibstoff oder leeren Waffen. Kein DOM, deterministisch.
 //
 // Zustand am Hubschrauber: u.heli = { home: Id des Heliports, phase: 'landed' | 'takeoff' | 'air' | 'landing', t, alt (0 Boden … 1) }.
-// Ohne u.heli (ohne Stadt, Hubschrauber aus der Hauptstadt) fliegt er wie bisher.
+// Ohne u.heli (z. B. ein Hubschrauber, der nicht am Heliport ausgebildet wurde) fliegt er ohne Landeplatz.
 import { CITY } from '../data/city.js';
 import { KINDS, KIND_ID } from '../data/citykinds.js';
 import { supplier } from './aircraft.js';
@@ -125,7 +125,6 @@ function sendHome(u, e) {
 
 /** Alle Hubschrauber mit Landeplatz einen Schritt (nach updateMovement). */
 export function updateHelis(game, dt) {
-  if (!game.city) return;
   for (const u of game.units) {
     if (!u.alive || !u.heli || u.def.jet) continue;
     const h = u.heli;

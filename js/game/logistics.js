@@ -418,7 +418,7 @@ function feed(game, u, k, passDt) {
   if (k === 'mun') addAmmo(u, amt);
   else if (k === 'bm') u.cargo.bm += amt;
   else u.fuel += amt;
-  if (!src.infinite) game.teams[u.team].flow[k] += amt; // aus der unendlichen Hauptstadt zählt nicht als Verbrauch
+  game.teams[u.team].flow[k] += amt;
 }
 
 /** Nachfüllen aller Einheiten mit Bedarf; Verbrauch aus den Lagern wird als Rate je Team gemerkt. */

@@ -111,7 +111,6 @@ export function createCity(game, enabled) {
   game.city = game.teams.map((t) => createTeamCity(game, t.id, shared));
   for (const b of game.buildings) {
     if (!b.main) continue;
-    b.infinite = false; // endliches Lager: die Werke füllen es
     b.store = { ...CITY.startStock };
     b.produces = []; // seit v4.96: Truppen bilden Kaserne, Fabrikhalle und Heliport der Stadt aus
   }

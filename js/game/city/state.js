@@ -104,7 +104,6 @@ export function rebuildList(c) {
 
 /** Schuss oder Einschlag bei (x, y): Bewohner der Wohnzellen in der Konfliktzone ringsum fliehen (CITY.flee). */
 export function cityNoise(game, x, y) {
-  if (!game.city) return;
   const R = CITY.flee.reach;
   for (const c of game.city) {
     const [cc, cr] = cellAt(c, x, y);

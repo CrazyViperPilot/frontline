@@ -89,7 +89,7 @@ export function lacksAmmo(u) {
 /**
  * Gebäude als Baustelle (built = false, hp = 10 %) oder fertig – je nach Aufrufer.
  * x, y = Mittelpunkt des Fußabdrucks; Sammelpunkt 2 Zellen unterhalb.
- * Zusätzliche Felder: main (Hauptstadt: bildet alle Einheiten aus, Verlust = Niederlage), infinite (unendliches Lager; bei der Hauptstadt),
+ * Zusätzliche Felder: main (Hauptstadt: Lager der Stadt, Verlust = Niederlage),
  * produces (ausbildbare Einheiten; nur die Hauptstadt),
  * store (FOB-Lager, Baustellen nutzen es ebenfalls),
  * payerId (Lager, aus dem bezahlt wurde – für Erstattung),
@@ -126,7 +126,6 @@ export function createBuilding(id, type, team, cx, cy, tile) {
     aaCooldown: 0,
     scanTimer: (id % BALANCE.scanStagger.slots) * BALANCE.scanStagger.step,
     main: false,
-    infinite: false,
     produces: type === 'fob' ? [] : (def.produces ?? []), // ohne Eintrag: bildet nichts aus (KI und Befehlskarte lesen .length)
     lastHitTime: -1e9,
     demolished: false,

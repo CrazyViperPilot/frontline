@@ -63,7 +63,7 @@ export function teamStock(game, team) {
   const c = game.city?.[team];
   const st = { bm: 0, mun: 0, fuel: 0, metal: c?.metal ?? 0, kero: c?.kero ?? 0 };
   for (const b of game.buildings) {
-    if (b.team !== team || !b.alive || !b.store || b.infinite) continue;
+    if (b.team !== team || !b.alive || !b.store) continue;
     for (const k of ['bm', 'mun', 'fuel']) st[k] += b.store[k] ?? 0;
   }
   for (const u of game.units) {

@@ -52,12 +52,12 @@ export function updateEconomy(game, dt) {
 
   // Produktion (nur fertige Gebäude): die ersten trainSlots Einträge der Warteschlange bilden gleichzeitig aus,
   // jeder mit eigenem Fortschritt (b.queueTimes[i], parallel zu b.queue)
-  // Mit Stadt (seit v4.96) bilden Kaserne, Fabrikhalle und Heliport aus (cityTrainers), Ausbildungsplätze je Stufe (b.trainSlots)
-  for (const b of game.city ? [...game.buildings, ...cityTrainers(game)] : game.buildings) {
+  // Seit v4.96 bilden Kaserne, Fabrikhalle und Heliport der Stadt aus (cityTrainers), Ausbildungsplätze je Stufe (b.trainSlots)
+  for (const b of [...game.buildings, ...cityTrainers(game)]) {
     if (!b.alive || !b.built || b.queue.length === 0) continue;
     const slots = Math.min(b.trainSlots ?? BALANCE.trainSlots, b.queue.length);
     // Stadtgebäude (Paket „Straßen“): Tempo nach dem Straßenweg zum Lager (Versorgungsgrad × Stau, ohne Weg 0)
-    const rate = game.city ? trainRate(game, b) : 1;
+    const rate = trainRate(game, b);
     for (let i = 0; i < slots; i++) b.queueTimes[i] += dt * rate;
     for (let i = 0; i < slots && i < b.queue.length; ) {
       const type = b.queue[i].unit;
@@ -77,7 +77,7 @@ export function updateEconomy(game, dt) {
       const at = ut.air ? null : game.mode.spawnSpot(game, b);
       const u = game.spawnUnit(type, b.team, (at ?? spot).x, (at ?? spot).y);
       game.teams[b.team].stats.trained++; // Statistik: ausgebildet (Startarmee und Nachschub zählen nicht)
-      if (game.city) u.crew = crewOf(type); // Stadt: die Einheit belegt Einwohner, solange sie lebt
+      u.crew = crewOf(type); // die Einheit belegt Einwohner der Stadt, solange sie lebt
       if (u.def.jet) {
         parkNew(game, u, b); // Flugzeug: steht auf seinem Stellplatz (aircraft.js)
         game.message(b.team, `${ut.name} bereit`, u.x, u.y);
@@ -103,11 +103,6 @@ export function updateEconomy(game, dt) {
   // Soldaten-Nachschub (§12): kostenlos, unabhängig von Warteschlange und Ausbildungsplätzen
   for (const team of game.teams) updateReinforce(game, team, dt);
 
-  // Hauptstadt: unendlicher Vorrat (das Lager wird immer wieder aufgefüllt; Laden und Nachfüllen haben ihre Raten)
-  for (const b of game.buildings) {
-    if (!b.alive || !b.infinite) continue;
-    for (const k of STOCK_KEYS) b.store[k] = BALANCE.logistics.capitalCap;
-  }
   for (const team of game.teams) team.res.money += team.rate.money * dt;
 }
 

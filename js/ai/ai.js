@@ -68,11 +68,9 @@ export class AI {
   think() {
     prune(this.memo, this.game.time);
     this.cityTimer = (this.cityTimer ?? 0) + this.cfg.think;
-    if (this.game.city) {
-      aiRaid(this.game, this.team, this.difficulty, this.cfg.think, this.cityMem); // Angriffe auf die gegnerische Stadt (Werke zuerst)
-      aiDefend(this.game, this.team, this.cityMem); // eigene Stadt verteidigen
-    }
-    if (this.game.city && this.cityTimer >= CITY.ai.interval[this.difficulty]) {
+    aiRaid(this.game, this.team, this.difficulty, this.cfg.think, this.cityMem); // Angriffe auf die gegnerische Stadt (Werke zuerst)
+    aiDefend(this.game, this.team, this.cityMem); // eigene Stadt verteidigen
+    if (this.cityTimer >= CITY.ai.interval[this.difficulty]) {
       this.cityTimer = 0;
       aiCity(this.game, this.team, this.difficulty, this.cityMem); // Stadt ausbauen: Ringe, Viertel, Einfuhr, Markt (cityai.js)
     }
@@ -132,8 +130,8 @@ export class AI {
     this.corridor = home ? { x: home.x, y: home.y, dx: dir.x, dy: dir.y } : null;
 
     const combat = units.filter((u) => u.def.range > 0 && !u.crate && !u.def.hero && !u.def.jet && !u.def.indirect); // Kistenträger kämpfen nicht, der Kommandeur bleibt hinten, Jets führt jets(), Artillerie artillery()
-    // Ausbildende Gebäude: Hauptstadt, mit Stadt (seit v4.96) Kaserne, Fabrikhalle und Heliport
-    const producers = own.filter((b) => b.produces.length).concat(cityTrainers(g, t));
+    // Ausbildende Gebäude (seit v4.96): Kaserne, Fabrikhalle und Heliport der Stadt; FOBs bilden nichts aus
+    const producers = cityTrainers(g, t);
     const queuedCombat = producers.reduce((n, b) => n + b.queue.filter((e) => UNITS[e.unit ?? e].range > 0).length, 0);
     const zoneFob = fobs.find((f) => dist(f.x, f.y, zone.x, zone.y) <= ZONE_FOB_R + ZONE_FOB_SLACK) ?? null;
     const alarm =

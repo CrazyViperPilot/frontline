@@ -7,7 +7,7 @@ Die Stadt-KI liegt in `js/ai/city/` (eigene Datei dort).
 - `cityai.js` – Einstieg der Stadt-KI, nur Re-Exporte aus `city/`. `cityAiMemory`, `aiCity`, `aiAirport`, `aiRaid`, `aiDefend`
 - `cooldown.js` – Sperrzeiten-Helfer (Tabelle Schlüssel → Spielzeit), keine Imports. `block`, `ready`, `take`, `prune`
 - `army/build.js` – Stellungen, FOB-Fahrzeuge, Verteidigung, Mauer, Festung, Heliport, Brücken, Baufahrzeuge, Funkmast. `buildMethods`
-- `army/produce.js` – Ausbildung in Hauptstadt und FOBs, Gegenmischung, Forschung, Kommandeur. `produceMethods`
+- `army/produce.js` – Ausbildung in Kaserne, Fabrikhalle, Heliport der Stadt, Gegenmischung, Forschung, Kommandeur. `produceMethods`
 - `army/logistics.js` – LKW-Rollen, Lieferant, Pendler, Versorger, Kisten einsammeln. `logisticsMethods`
 - `army/combat.js` – Armee `army()` (klassisch), Angriffswellen, Rückzug, Artillerie, Späher, Flankenangriff, Häuserkampf, Jets. `combatMethods`, `needA10`
 - `army/conquest.js` – Eroberung: `conquestArmy` statt `army()`, Flaggenziele, Erscheinungsort per `spawnAt`. `conquestMethods`

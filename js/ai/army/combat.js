@@ -37,7 +37,7 @@ function nearestRoad(game, x, y) {
 }
 
 /** Bestellt wird nur an Stellplätzen mit Versorgungsweg zum Lager (Paket „Straßen“: ohne Weg stünde die Ausbildung still). */
-const supplied = (g, p) => !g.city || supplyOf(g, g.city[p.team], p.cityCell).rate > 0;
+const supplied = (g, p) => supplyOf(g, g.city[p.team], p.cityCell).rate > 0;
 
 /**
  * Fehlt Stahl für ein Flugzeug, kauft die KI ihn direkt vor der Bestellung am Markt zu (je Los CITY.market.lot), solange danach Preis

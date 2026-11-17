@@ -23,7 +23,7 @@ function workTrucks(s, a, except) {
 const cargoTotal = (u) => u.cargo.bm + u.cargo.mun + u.cargo.fuel;
 
 export const logisticsMethods = {
-  /** Eigene fertige Werke mit Ausgangslager (CITY.pickup, seit v5.70), nach Id sortiert; ohne Stadt leer. */
+  /** Eigene fertige Werke mit Ausgangslager (CITY.pickup, seit v5.70), nach Id sortiert. */
   pickupWorks() {
     const g = this.game;
     const c = g.city?.[this.team];

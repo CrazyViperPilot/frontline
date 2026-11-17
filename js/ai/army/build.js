@@ -429,7 +429,7 @@ export const buildMethods = {
     const g = this.game;
     if (!g.rubble || !s.engineers.length || !this.once('roads', ROAD_REPAIR_EVERY)) return;
     if (s.engineers.some((u) => u.order.type === 'clearRubble')) return; // einer räumt schon
-    const cols = g.city?.[0]?.cols ?? g.roads?.cols ?? 0;
+    const cols = g.city[0].cols;
     const S = CITY.cell;
     let best = null;
     for (const k in g.rubble) {

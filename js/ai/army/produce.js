@@ -1,4 +1,4 @@
-// KI-Gegner, Produktion und Forschung: Ausbildung in der Hauptstadt und den FOBs, Gegenmischung, Forschung, Kommandeur.
+// KI-Gegner, Produktion und Forschung: Ausbildung in Kaserne, Fabrikhalle und Heliport der Stadt, Gegenmischung, Forschung, Kommandeur.
 // Methoden der Klasse AI (js/ai/ai.js), eingehängt über Object.assign. Befehle nur über game.issue. Kein DOM.
 
 import { heliTrainCheck } from '../../game/helipad.js';
@@ -44,7 +44,7 @@ export const produceMethods = {
     return r;
   },
 
-  /** Ausbildende Einrichtung für `type` (Hauptstadt bzw. Kaserne, Fabrikhalle, Heliport): kürzeste Warteschlange. */
+  /** Ausbildende Einrichtung für `type` (Kaserne, Fabrikhalle, Heliport, Stellplatz): kürzeste Warteschlange. */
   pickProducer(s, type, qmax, towardZone) {
     let best = null;
     let bestKey = Infinity;
@@ -62,7 +62,7 @@ export const produceMethods = {
 
   /**
    * Baufahrzeuge (Ersatz zuerst – sie bauen Verteidigung), LKW, dann Kampfeinheiten nach Zielmischung (FOB-Fahrzeuge: expand).
-   * Einheiten kosten Geld; ausgebildet wird in der Hauptstadt bzw. (mit Stadt) in Kaserne, Fabrikhalle und Heliport.
+   * Einheiten kosten Geld (Fahrzeuge auch Stahl); ausgebildet wird in Kaserne, Fabrikhalle und Heliport der Stadt.
    */
   produce(s) {
     const g = this.game;
@@ -299,12 +299,12 @@ export const produceMethods = {
     if (key && g.teams[t].res.money >= items[key].money + reserve) g.issue(t, { type: 'research', buildingId: s.home.id, key });
   },
 
-  /** Gefallenen Kommandeur ersetzen (Hauptstadt), sobald genug Geld für ihn und eine Reserve da ist. */
+  /** Gefallenen Kommandeur ersetzen (Kaserne), sobald genug Geld für ihn und eine Reserve da ist. */
   replaceCommander(s) {
     const g = this.game;
     if (!s.home || !s.home.built || g.time < CMD_FROM || hasCommander(g, this.team)) return;
     if (g.teams[this.team].res.money < UNITS.commander.cost.money + CMD_RESERVE) return;
-    const b = this.pickProducer(s, 'commander', BALANCE.queueMax, false); // Hauptstadt bzw. Kaserne
+    const b = this.pickProducer(s, 'commander', BALANCE.queueMax, false); // Kaserne
     if (b) g.issue(this.team, { type: 'train', buildingId: b.id, unit: 'commander' });
   },
 };

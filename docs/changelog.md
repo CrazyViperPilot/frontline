@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.209: **KI nur mit Stadt** (S2d, `docs/plan-stadt-kern.md`, ohne Wirkung auf Partien): Die Armee-KI rechnet nicht mehr mit einer Partie ohne Stadt; sie bildet nur in Kaserne, Fabrikhalle und Heliport aus. Cache v273.
 - v5.208: **Simulation nur mit Stadt** (S2c, `docs/plan-stadt-kern.md`, ohne Wirkung auf Partien): Die Zweige für Partien ohne Stadt sind aus `js/game` entfernt (unendliches Lager und Ausbildung der Hauptstadt, Forschung ohne Universität, Jets und Hubschrauber ohne Fliegerhorst und Heliport). Cache v272.
 - v5.207: **Tests mit Stadt, Teil 2** (nur Tests und Doku, S2b fertig): Auch die Spiel-Tests (`game-*.test.js`) laufen mit Stadt, `test/classic.js` und `mkOld` sind entfernt; Lagertests nehmen eine vordere FOB (`frontFob`). PRD §2 sagt jetzt richtig, dass alle Einheiten von Anfang an frei sind. Cache v271.
 - v5.206: **Startaufstellung mit Stadt** (§2): Die Start-Einheiten werden erst nach dem Startviertel der Stadt aufgestellt; vorher schob es bei Team 1 alle verdrängten Schützen auf einen Punkt. Dazu nennt die Meldung „Zu wenig Stahl“ das Stahlwerk mit Eiseneinfuhr statt Erzmine und Hütte. Cache v270.

@@ -6,7 +6,6 @@ import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { CITY } from '../js/data/city.js';
 import { KIND_ID, KINDS, WORKS } from '../js/data/citykinds.js';
-import { AI } from '../js/ai/ai.js';
 import { aiCity, cityAiMemory } from '../js/ai/cityai.js';
 import { cellsOf, isPart, nbrsOf, roadAt, stationLinked } from '../js/game/city/cells.js';
 import { mainRoadReach } from '../js/game/city/roadnet.js';
@@ -113,18 +112,4 @@ test('Straßenkapazität: eine Spur trägt CITY.transport.cap, der Güterbahnhof
   assert.ok(CITY.transport.mapCap >= CITY.transport.cap, 'Stadtstraßen der Karte nicht unter einer Spur');
 });
 
-test('[langsam] Industriepark: KI gegen KI, Seeds 3 und 11, 8 Spielminuten: je Seed hat eine Stadt einen angeschlossenen Güterbahnhof', () => {
-  // Gemessen (normal, Straßen 24 je Spur, Seeds 3 und 11): Team 1 baut den Park bei 377 s (Seed 3) und 465 s (Seed 11), Team 0 nie
-  // (sein Geld bleibt unter Reserve + stationMoney + Bahnhof ≈ 700). Die Erwartung gilt je Seed für mindestens eine der beiden Städte.
-  for (const seed of [3, 11]) {
-    const g = new Game({ seed, river: true, research: true });
-    const ais = [0, 1].map((t) => new AI(g, t, 'normal'));
-    const linked = () => g.city.some((c) => stationsOf(c).some((i) => stationLinked(c, i)));
-    const steps = Math.round((8 * 60) / 0.05);
-    for (let k = 0; k < steps && !linked(); k++) {
-      g.update(0.05);
-      ais.forEach((a) => a.update(0.05));
-    }
-    assert.ok(linked(), `Seed ${seed}: bis ${g.time.toFixed(0)} s ein angeschlossener Güterbahnhof`);
-  }
-});
+// Der lange Lauf KI gegen KI (Seeds 3 und 11, 8 min) steht seit dem Paket „Schnellere Tests“ in citynet.test.js (gemeinsame Partie).

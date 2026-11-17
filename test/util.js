@@ -37,3 +37,12 @@ export function run(game, seconds, dt = 0.05, ais = []) {
 export function hq(game, team = 0) {
   return game.buildings.find((b) => b.main && b.team === team);
 }
+
+/**
+ * Gemeinsamer Lauf: rechnet `fn` erst beim ersten Aufruf und gibt danach dasselbe Ergebnis zurück. Für mehrere Tests einer Datei, die
+ * dieselbe Partie nur lesen (docs/testen.md „Gemeinsamer Lauf je Datei“). Kein before(): der liefe auch in test:fast.
+ */
+export function once(fn) {
+  let r;
+  return () => (r ??= fn());
+}

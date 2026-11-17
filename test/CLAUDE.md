@@ -35,7 +35,7 @@ test('Wert kurz verstellen: withValue stellt ihn danach zurück', () => {
 - Zufall nur über den Seed. `new Game()` ohne Angaben: alle Menü-Schalter aus.
 - Test über etwa 5 s: „[langsam]“ in den Namen (`npm run test:fast` lässt ihn aus).
 - Einzeln: `node --test --test-reporter=dot test/<datei>.test.js`; vor dem Push `npm test`.
-- Jede Datei ist ein eigener Prozess; kein Test baut auf Zustand eines früheren.
+- Tests sind unabhängig; eine Partie für mehrere Tests: `once` (`docs/testen.md`).
 
 ## Wohin mit einem neuen Test
 - Meist nach Modul (`radio.test.js` …, `ls test/`). Stadt, Spielkern, Fliegerhorst sind nach Thema geteilt:

@@ -4,6 +4,7 @@ import { Game } from '../js/game/game.js';
 import { AI } from '../js/ai/ai.js';
 import { BALANCE } from '../js/data/balance.js';
 import { UNITS } from '../js/data/units.js';
+import { once } from './util.js';
 
 BALANCE.slotCap = 1000; // diese Tests prüfen nicht das Einheitenlimit (siehe economy.test.js)
 const DT = 0.05;
@@ -11,8 +12,12 @@ const START_UNITS = BALANCE.startUnits.length;
 const mine = (game, team, type, built = true) =>
   game.buildings.filter((b) => b.alive && b.team === team && b.type === type && (!built || b.built));
 
-/** KI gegen KI über `minutes` Spielminuten; liefert Kennzahlen je Team (Ausbildung, Zonenbesitz, Gebäude). */
-function playAiVsAi(seed, minutes) {
+/**
+ * KI gegen KI über `minutes` Spielminuten; liefert Kennzahlen je Team (Ausbildung, Zonenbesitz, Gebäude).
+ * `marks`: Spielminuten, zu denen die gesehenen Einheitentypen festgehalten werden (`typesAt[m]`): so prüft ein Test eine
+ * kürzere Partie am selben Lauf (die ersten m Minuten sind dieselben Schritte).
+ */
+function playAiVsAi(seed, minutes, marks = []) {
   const game = new Game({ seed });
   const ais = [new AI(game, 0, 'normal'), new AI(game, 1, 'normal')];
   const seen = [new Set(), new Set()]; // alle je gesehenen Einheiten-IDs je Team
@@ -20,6 +25,8 @@ function playAiVsAi(seed, minutes) {
   let zoneHeld = false;
   let maxFobs = [0, 0];
   const steps = Math.round((minutes * 60) / DT);
+  const typesAt = {};
+  const markAt = new Map(marks.map((m) => [Math.round((m * 60) / DT), m]));
   for (let i = 0; i < steps && game.winner === null; i++) {
     ais[0].update(DT);
     ais[1].update(DT);
@@ -32,8 +39,14 @@ function playAiVsAi(seed, minutes) {
       if (game.zone.owner >= 0) zoneHeld = true;
       for (let t = 0; t < 2; t++) maxFobs[t] = Math.max(maxFobs[t], mine(game, t, 'fob').length);
     }
+    // nach Schritt i sind i + 1 Schritte gerechnet: Stand einer Partie über m Minuten
+    const m = markAt.get(i + 1);
+    if (m !== undefined) typesAt[m] = types.map((s) => new Set(s));
   }
+  // Partie vorher entschieden: die kürzere Partie wäre an derselben Stelle stehen geblieben
+  for (const m of marks) typesAt[m] ??= types.map((s) => new Set(s));
   return {
+    typesAt,
     game,
     time: game.time,
     winner: game.winner,
@@ -44,32 +57,55 @@ function playAiVsAi(seed, minutes) {
   };
 }
 
-test('KI allein (Seed 7): nach 10 min ≥ 3 FOBs, eine FOB in der Zone, Front-Lager gefüllt, Hauptstadt bildet aus [langsam]', () => {
+/**
+ * Gemeinsamer Lauf: KI (normal) allein auf Seed 7, 12 Spielminuten. Der Stand nach 10 min wird unterwegs festgehalten
+ * (Test „KI allein“), der Endstand dient dem Mörser-Test. Beide Tests liefen vorher je eine eigene, gleiche Partie.
+ */
+const soloSeed7 = once(() => {
   const game = new Game({ seed: 7 });
   const ai = new AI(game, 1, 'normal');
-  const steps = Math.round((10 * 60) / DT);
-  for (let i = 0; i < steps; i++) {
+  const at10 = Math.round((10 * 60) / DT);
+  let ten = null;
+  for (let i = 0; i < (12 * 60) / DT; i++) {
     ai.update(DT);
     game.update(DT);
+    if (i + 1 !== at10) continue;
+    const fobs = mine(game, 1, 'fob');
+    const z = game.zone;
+    ten = {
+      time: game.time,
+      fobs: fobs.length,
+      zoneR: z.r,
+      nearest: Math.min(...fobs.map((f) => Math.hypot(f.x - z.x, f.y - z.y))),
+      engineer: game.units.some((u) => u.alive && u.team === 1 && u.type === 'engineer'),
+      main: !!game.mainFob(1),
+      frontBm: fobs.filter((f) => !f.main).some((f) => f.store.bm > 100),
+      units: game.units.filter((u) => u.alive && u.team === 1).length,
+      onlyMainTrains: game.buildings.every((b) => b.main || b.produces.length === 0),
+    };
   }
-  assert.ok(game.time >= 10 * 60 - 1, `Spielzeit ${game.time.toFixed(1)} s`);
-  const fobs = mine(game, 1, 'fob');
-  const z = game.zone;
-  const nearest = Math.min(...fobs.map((f) => Math.hypot(f.x - z.x, f.y - z.y)));
-  assert.ok(fobs.length >= 3, `fertige FOBs: ${fobs.length}`);
-  assert.ok(nearest <= z.r, `nächste FOB ${nearest.toFixed(0)} px von der Zonenmitte`);
-  assert.ok(game.units.some((u) => u.alive && u.team === 1 && u.type === 'engineer'), 'Baufahrzeug lebt');
-  assert.ok(game.mainFob(1), 'Hauptstadt lebt');
-  const front = fobs.filter((f) => !f.main);
-  assert.ok(front.some((f) => f.store.bm > 100), 'LKW haben Baumaterial an die Front gebracht');
-  assert.ok(game.units.filter((u) => u.alive && u.team === 1).length > START_UNITS, 'Einheiten ausgebildet');
-  // kein Förderanlagen-Gebäude und nur die Hauptstadt bildet aus
-  assert.ok(game.buildings.every((b) => b.main || b.produces.length === 0));
+  return { game, ai, ten };
 });
+
+test('KI allein (Seed 7): nach 10 min ≥ 3 FOBs, eine FOB in der Zone, Front-Lager gefüllt, Hauptstadt bildet aus [langsam]', () => {
+  const s = soloSeed7().ten;
+  assert.ok(s.time >= 10 * 60 - 1, `Spielzeit ${s.time.toFixed(1)} s`);
+  assert.ok(s.fobs >= 3, `fertige FOBs: ${s.fobs}`);
+  assert.ok(s.nearest <= s.zoneR, `nächste FOB ${s.nearest.toFixed(0)} px von der Zonenmitte`);
+  assert.ok(s.engineer, 'Baufahrzeug lebt');
+  assert.ok(s.main, 'Hauptstadt lebt');
+  assert.ok(s.frontBm, 'LKW haben Baumaterial an die Front gebracht');
+  assert.ok(s.units > START_UNITS, 'Einheiten ausgebildet');
+  // kein Förderanlagen-Gebäude und nur die Hauptstadt bildet aus
+  assert.ok(s.onlyMainTrains);
+});
+
+// Seed 2 über 20 min dient auch dem Späher-Test (Stand nach 8 min); Seed 3 nur dem Test hier
+const vsAi = { 2: once(() => playAiVsAi(2, 20, [8])), 3: once(() => playAiVsAi(3, 20)) };
 
 for (const seed of [2, 3]) {
   test(`KI gegen KI (Seed ${seed}): 20 min ohne Exception, beide gründen FOBs und bilden aus, Zone wird gehalten`, () => {
-    const r = playAiVsAi(seed, 20);
+    const r = vsAi[seed]();
     assert.ok(r.time >= 20 * 60 - 1 || r.winner !== null, `Spielzeit ${r.time.toFixed(1)} s`);
     for (let t = 0; t < 2; t++) {
       assert.ok(r.maxFobs[t] >= 3, `Team ${t}: höchstens ${r.maxFobs[t]} FOBs`);
@@ -107,8 +143,8 @@ test('KI ersetzt ein verlorenes Baufahrzeug', () => {
 
 test('KI: bildet ab 3 min mit Armee einen Späher (Little Bird) aus [langsam]', () => {
   // Späher fliegen an den gegnerischen Zonenrand und fallen dort oft; gezählt wird, ob einer ausgebildet wurde
-  const r = playAiVsAi(2, 8);
-  const scouts = [0, 1].map((t) => r.types[t].has('littlebird'));
+  const types = vsAi[2]().typesAt[8]; // gemeinsamer Lauf Seed 2: Stand nach 8 min
+  const scouts = [0, 1].map((t) => types[t].has('littlebird'));
   assert.ok(scouts[0] || scouts[1], `Späher: ${scouts}`);
 });
 
@@ -162,12 +198,7 @@ test('KI: Gruppen-Rückzug bei klarer Unterlegenheit (schwer, Seed 1, 20 min) un
 });
 
 test('KI: Zonen-FOB bekommt zwei Mörser (Seed 7, 12 min) [langsam]', () => {
-  const game = new Game({ seed: 7 });
-  const ai = new AI(game, 1, 'normal');
-  for (let i = 0; i < (12 * 60) / DT; i++) {
-    ai.update(DT);
-    game.update(DT);
-  }
+  const { game, ai } = soloSeed7(); // gemeinsamer Lauf Seed 7, Endstand nach 12 min
   const zf = ai.snapshot().zoneFob;
   assert.ok(zf, 'keine Zonen-FOB');
   const near = game.buildings.filter((b) => b.alive && b.team === 1 && b.type === 'mortar' && Math.hypot(b.x - zf.x, b.y - zf.y) < BALANCE.fob.buildRadius);

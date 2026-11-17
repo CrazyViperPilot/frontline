@@ -9,8 +9,9 @@ import { CITY } from '../js/data/city.js';
 import { KINDS, KIND_ID, WORKS } from '../js/data/citykinds.js';
 import { transportOf } from '../js/game/transport.js';
 import { mainRoadReach } from '../js/game/city/roadnet.js';
-import { isPart, nbrsOf, cellAt, canZone, cellFree } from '../js/game/city/cells.js';
+import { isPart, nbrsOf, cellAt, canZone, cellFree, buildAllowed, roadLinked, stationLinked } from '../js/game/city/cells.js';
 import { placeBuilt, rebuildList } from '../js/game/city/state.js';
+import { once } from './util.js';
 
 test('Straßennetz: eine Straße, die nur über die Bahn des Fliegerhorsts am Lager hängt, gilt nicht als angeschlossen (mainRoadReach)', () => {
   const g = new Game({ seed: 3 });
@@ -42,17 +43,37 @@ test('Straßennetz: eine Straße, die nur über die Bahn des Fliegerhorsts am La
   assert.ok(transportOf(g, c).fields.main.dist[run[3]] < 0, 'transport.js sieht dort auch keinen Weg zum Lager');
 });
 
+/** Güterbahnhöfe (Anker) einer Stadt; angeschlossen heißt: Gleis zum Kartenrand (Industriepark). */
+const stationsOf = (c) => c.list.filter((i) => c.kind[i] === KIND_ID.station && !isPart(c, i));
+const parkLinked = (g) => g.city.some((c) => stationsOf(c).some((i) => stationLinked(c, i)));
+const PARK_STEPS = Math.round((8 * 60) / 0.05);
+
+/**
+ * Gemeinsamer Lauf je Seed: KI gegen KI (normal) mit Fluss und Forschung, 20 Spielminuten in Schritten von 0,05 s. Daran hängen die
+ * Tests „Straßennetz der KI“ (Seeds 3, 7), „Offenes Netz“ (Seed 11) und „Industriepark“ (Seeds 3, 11: die ersten 8 Minuten derselben
+ * Partie). Die Abfragen unterwegs (Spuren am Start, Güterbahnhof je Schritt) lesen nur: Spielstand nach 8 min mit und ohne sie bitgleich
+ * (gemessen beim Paket „Schnellere Tests“).
+ */
+function roadRun(seed) {
+  const g = new Game({ seed, river: true, research: true });
+  const ais = [new AI(g, 0, 'normal'), new AI(g, 1, 'normal')];
+  const lanes0 = [0, 1].map((t) => lanesOf(g, g.city[t]));
+  // Industriepark: bis 8 min (wie der frühere eigene Lauf: Abfrage vor jedem Schritt und nach dem letzten)
+  let park = null;
+  const steps = Math.round((20 * 60) / 0.05);
+  for (let k = 0; k < steps; k++) {
+    if (park === null && k <= PARK_STEPS && parkLinked(g)) park = g.time;
+    g.update(0.05);
+    ais[0].update(0.05);
+    ais[1].update(0.05);
+  }
+  return { g, lanes0, park };
+}
+const roadRuns = Object.fromEntries([3, 7, 11].map((seed) => [seed, once(() => roadRun(seed))]));
+
 for (const seed of [3, 7]) {
   test(`Straßennetz der KI: KI gegen KI, Seed ${seed}, 20 min: keine Werke ohne Weg zum Lager, keine Straßen-Inseln an der Hauptstadt, Spuren gebaut [langsam]`, () => {
-    const g = new Game({ seed, river: true, research: true });
-    const ais = [new AI(g, 0, 'normal'), new AI(g, 1, 'normal')];
-    const lanes0 = [0, 1].map((t) => lanesOf(g, g.city[t]));
-    const steps = Math.round((20 * 60) / 0.05);
-    for (let k = 0; k < steps; k++) {
-      g.update(0.05);
-      ais[0].update(0.05);
-      ais[1].update(0.05);
-    }
+    const { g, lanes0 } = roadRuns[seed]();
     for (let t = 0; t < 2; t++) {
       const c = g.city[t];
       const main = g.mainFob(t);
@@ -87,6 +108,39 @@ for (const seed of [3, 7]) {
     }
   });
 }
+
+// Offenes Netz (Paket „Offenes Netz“, PRD §10 „Stadt mit Anschlusspflicht“; bis zum Paket „Schnellere Tests“ in opennet.test.js): die
+// Stadt-KI lässt auch ohne Baugebiet Ausgänge an ihrem Straßennetz offen (keepsOutlets in js/ai/cityai.js). Sonst ist das Netz am Lager
+// nach 8 bis 15 Spielminuten rundum bebaut: kein Platz mehr für einen Industriepark, neue Werke ohne Weg zum Lager.
+
+/** Freie Anschlusszellen am Netz des Lagers: bebaubare Straßenzellen am Netz, mit freiem Nachbarn außerhalb (Ausgänge). */
+function outlets(g, c) {
+  const mask = roadLinked(g, c);
+  const free = (j) => !c.kind[j] && buildAllowed(g, c, j, 'road') && cellFree(g, c, j % c.cols, Math.floor(j / c.cols));
+  let n = 0;
+  for (let j = 0; j < mask.length; j++) {
+    if (!mask[j] || !free(j)) continue;
+    if (nbrsOf(c, j).some((x) => !mask[x] && free(x))) n++;
+  }
+  return n;
+}
+
+test('Offenes Netz [langsam]: Seed 11 ohne Baugebiet, nach 20 min hat das Netz von Team 0 noch Ausgänge', () => {
+  // Vorher (ohne die Regel) war das Netz hier nach rund 20 min rundum bebaut (keine freie Anschlusszelle mehr)
+  const { g } = roadRuns[11]();
+  assert.equal(g.buildRules, false, 'Baugebiet aus: die Regel gilt ohne Schalter');
+  assert.ok(outlets(g, g.city[0]) > 0, 'Netz des Lagers hat noch Ausgänge');
+});
+
+// Industriepark (bis zum Paket „Schnellere Tests“ ein eigener Lauf in industriepark.test.js): die ersten 8 Minuten der gemeinsamen Läufe.
+test('[langsam] Industriepark: KI gegen KI, Seeds 3 und 11, 8 Spielminuten: je Seed hat eine Stadt einen angeschlossenen Güterbahnhof', () => {
+  // Gemessen (normal, Straßen 24 je Spur, Seeds 3 und 11): Team 1 baut den Park bei 377 s (Seed 3) und 465 s (Seed 11), Team 0 nie
+  // (sein Geld bleibt unter Reserve + stationMoney + Bahnhof ≈ 700). Die Erwartung gilt je Seed für mindestens eine der beiden Städte.
+  for (const seed of [3, 11]) {
+    const { park } = roadRuns[seed]();
+    assert.ok(park !== null, `Seed ${seed}: in 8 min kein angeschlossener Güterbahnhof`);
+  }
+});
 
 /** Eigene Straßenzellen mit mindestens zwei Spuren. */
 function lanesOf(g, c) {

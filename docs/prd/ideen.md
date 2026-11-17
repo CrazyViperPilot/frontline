@@ -68,14 +68,15 @@ Ideen von Daniel, die festgehalten, aber **noch nicht umgesetzt** werden. Gebaut
     **F-16** (Luft-Boden-Rakete), **Kampfhubschrauber AH-64** (Raketen),
     **Kampfpanzer**, **Schützenpanzer** (Granatwerfer) und **Panzerabwehrsoldat** (RPG).
     **Baufahrzeuge** können Straßen wegräumen.
-    Stand heute: Straßen sind für Waffen keine Ziele, eigene Straßen kann nur der Besitzer abreißen, gegnerische sind unangreifbar.
+    Vor dem Paket „Straßen“ waren Straßen für Waffen keine Ziele und gegnerische unangreifbar; heute regelt das `js/game/roadwar.js`.
     Der **Bagger** räumt schon seit v5.35 Straßen der Karte (6 s je Zelle, für beide Teams, nicht Brückenfahrbahnen) und eigene Stadtzellen, aber keine gegnerischen.
     Mit dieser Idee würde ein Treffer die Versorgungslinie kappen (Weg weg, Ausbildung steht, siehe oben).
     - **Offene Auslegung:** „wegräumen“ als Reparatur (zerstörte Zelle = Schutt oder Krater, Baufahrzeug und Bagger räumen ihn,
       die Straße ist wieder frei) oder als Abriss intakter Straßen (auch gegnerischer)?
       Entschieden (Daniel, 2026-11-06): beides.
-      Baufahrzeuge räumen Schutt (Reparatur), und der **Bagger reißt auch intakte gegnerische Straßen ab** (Befehl Baggern G, heute lehnt `diggable` in `js/game/excavator.js` gegnerische Zellen ab).
-    - **Zu klären:** Straßenzelle mit Trefferpunkten oder ein fester Schaden je Treffer; Beschuss nur auf ausdrücklichen Befehl auf eine Zelle (Einheiten schießen nie von selbst auf Straßen);
+      Baufahrzeuge räumen Schutt (Reparatur), und der **Bagger reißt auch intakte gegnerische Straßen ab** (Befehl Baggern G, gebaut: `diggable` in `js/game/excavator.js`).
+    - **Entschieden (Kopfzeile oben), nur F-16 offen:** Straßenzelle mit Trefferpunkten oder ein fester Schaden je Treffer;
+      Beschuss nur auf ausdrücklichen Befehl auf eine Zelle (Einheiten schießen nie von selbst auf Straßen);
       ob Kartenstraßen und Brücken auch zerstörbar sind (trifft beide Teams, Brücken wären echte Kampfziele); ob Haubitze (Panzerhaubitze) und Mörser dazugehören;
       wie die KI Straßen angreift, schützt und repariert; Anzeige gesperrter Zellen.
       Die Wege rechnen sich bei jeder Änderung neu (`c.ver`, wie beim Bagger).

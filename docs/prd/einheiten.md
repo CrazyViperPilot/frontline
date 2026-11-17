@@ -94,9 +94,9 @@
   Ihre Rolle ist das Luftüberlegenheitsjet; sie fliegt wie die F-16 (`jet`, eine Waffe), Treibstoff wie in der Tabelle.
   Leer geschossen fliegt sie heim und lädt am Munitionslager nach wie die F-16.
   Ausbildung am Stellplatz mit Stahl und Einwohnern (Tabelle „Werte“; `UNITS.f22`, `js/game/aircraft.js`).
-  Die KI baut keine F-22 (Abschnitt „Flugzeuge“ in PRD §10).
+  Die KI baut F-22 als Anteil `CITY.ai.f22Share` ihrer Kampfflugzeuge (Abschnitt „Flugzeuge“ in PRD §10).
 - **A-10 (Erdkampfflugzeug, Paket E12):** Langsamer als F-16, F-22 und Su-27, Kreisen und Heimflug über die vorhandene Jet-Logik.
-  Die KI baut sie nicht.
+  Die KI baut sie, sobald sie genug gegnerische schwere Fahrzeuge gesehen hat (`CITY.ai.a10Heavy`, Abschnitt „Flugzeuge“ in PRD §10).
 - **C-130 (Transportflugzeug, Paket E13):** Absetzen mit dem Fallschirm (Befehl `paradrop`, `js/game/paradrop.js`, Werte `dropReach`, `dropRadius`, `chuteTime` in `UNITS.c130`)
 - **Su-27 (Kampfflugzeug, Paket „Su-27“):** Luft-Luft-Lenkraketen an den Flügelspitzen, nur gegen Hubschrauber und Flugzeuge, und Luft-Boden-Raketen unter den Flügeln (Panzer, Fahrzeuge,
   Gebäude), parallel feuernd.
@@ -143,7 +143,7 @@ Gegner sehen ihn nur, wenn eine ihrer Einheiten oder ein fertiges Gebäude nähe
 Unentdeckt wird er nicht angegriffen und ist weder auf der Karte noch auf der Minimap zu sehen (eigene Einheiten sehen ihn immer).
 Er sieht weiter als Infanterie und sein Gewehr reicht bis zu seiner Reichweite (Tabelle), und Einheiten ohne Befehl schießen bis zu dieser Reichweite (nicht nur bis zur Leine von 300 px).
 Ein Schuss verbraucht Munition (Waffen-Tabelle); mit seiner Reichweite und der Tarnung ist er gegen Infanterie stark, gegen Fahrzeuge, Gebäude und Hubschrauber nutzlos.
-Die KI baut ihn nicht, sieht ihn aber nach denselben Tarnregeln.
+Die KI baut ihn auf Normal und Schwer (`SNIPER_SHARE`, PRD §10 „Scharfschützen“) und sieht ihn nach denselben Tarnregeln.
 Er zählt zu den Soldaten für den Nachschub (Abschnitt 3).
 
 **Hubschrauber** fliegen geradeaus über Gelände und Gebäude, brauchen Treibstoff beim Fliegen (ohne: 25 % Tempo) und sind Panzerklasse „Luft“ (Spalte Luft in der Waffen-Tabelle):

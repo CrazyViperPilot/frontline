@@ -178,7 +178,7 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   Tests: `test/citynet.test.js`.
 - **Straßen:** Schutt ihrer eigenen Straßen räumt die KI mit einem freien Baufahrzeug (alle 10 s, der Schutt nächst der Hauptstadt zuerst, nicht in der Nähe sichtbarer Gegner).
   Sie beschießt selbst keine Straßen und reißt keine gegnerischen ab.
-- **Keine Su-27:** Die KI baut die Su-27 (Paket „Su-27“, §6) nicht, auch nicht, wenn Geld übrig ist; sie kauft weiterhin nur F-16 und F-22.
+- **Keine Su-27:** Die KI baut die Su-27 (Paket „Su-27“, §6) nicht, auch nicht, wenn Geld übrig ist; sie kauft weiterhin nur F-16, F-22 und A-10.
 - **Überfälle auf Städte (Stadt-KI, `aiRaid`):** Ziel ist die Stadt des lebenden Gegners,
   dessen Hauptstadt der eigenen am nächsten liegt (bei Gleichstand das Team mit der kleineren Nummer; mit zwei Teams gibt es nur einen); in der Eroberung nur Städte mit offenem Viertel.
   Gegner bestimmt `enemiesOf` (`js/game/teams.js`), ausgeschiedene Teams zählen nicht.

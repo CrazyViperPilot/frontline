@@ -15,7 +15,7 @@ npm run test:quick                # Config-Prüfung, PRD-Tabellen und Symbol-Ind
 npm run docs                      # Wertetabellen in docs/prd/ (§6, Forschung) aus js/data/ neu erzeugen
 npm run index                     # Symbol-Index docs/index/ (Exporte je Ordner) neu erzeugen; nach Änderungen an Exporten unter js/
 npm run test:fast                 # alle Tests ohne die langsamen „[langsam]“ (KI-gegen-KI-Läufe): zum Iterieren
-npm test                          # alle Tests (tools/test.mjs: node --test, ein Prozess je Kern, Node 22), gut 5 min: vor dem Push und in der CI
+npm test                          # alle Tests (tools/runtests.mjs: node --test, ein Prozess je Kern, Node 22), gut 5 min: vor dem Push und in der CI
 node --test test/radio.test.js    # nur eine Datei
 npm run smoke                     # Browser-Rundgang (Playwright): Start, 2D, Iso, Hilfe, Pause, Baumodus, Ressourcen, Ausbildung, Bildrate; Fotos in .smoke/<gerät>/
 npm run smoke -- --device all     # dasselbe als desktop, tablet (iPad quer, Tippen) und phone (Android quer); einzeln: --device phone
@@ -40,7 +40,7 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
   vergleichen (`snapshotGame`). Kein `before()` für lange Läufe (er liefe auch in `test:fast`), kein Zwischenspeicher auf der Platte.
 - **Parallelität:** `node --test` startet je Datei einen Prozess, mehrere zugleich. Die Gesamtdauer folgt der Summe aller Dateien
   geteilt durch die Prozesse, nicht der längsten Datei; eine Partie zu sparen hilft also immer, eine Datei zu teilen kaum.
-  `npm test` und `npm run test:fast` starten über `tools/test.mjs` einen Prozess je Kern (Node allein nimmt einen weniger).
+  `npm test` und `npm run test:fast` starten über `tools/runtests.mjs` einen Prozess je Kern (Node allein nimmt einen weniger).
 - **KI-Kennzahlen:** Bei Paketen, die KI, Stadt-Wirtschaft oder Kampf ändern, `npm run metrics` laufen lassen.
 - Warnt es und ist die Änderung gewollt, Referenzwerte neu setzen: `npm run metrics -- --update` (wie die Prüfsummen in `test/golden.test.js`).
 - Tests erzeugen ein `new Game({ seed, … })`, geben Befehle über `game.issue` und rufen `game.update(dt)` in einer Schleife.

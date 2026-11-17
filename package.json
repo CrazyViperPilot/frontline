@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node tools/test.mjs",
+    "test": "node tools/runtests.mjs",
     "test:quick": "node --test test/config.test.js test/doctables.test.js test/index.test.js test/literals.test.js",
-    "test:fast": "node tools/test.mjs --test-skip-pattern=\"\\[langsam\\]\"",
+    "test:fast": "node tools/runtests.mjs --test-skip-pattern=\"\\[langsam\\]\"",
     "smoke": "node tools/smoke.mjs",
     "release": "node tools/release.mjs",
     "metrics": "node tools/metrics.mjs",

@@ -1,1 +1,0 @@
-**Renderer-Durchläufe** (nur Code, Bild unverändert): Die Durchläufe der 2D- und der Iso-Ansicht stehen als Listen in `js/render/layers/passes.js`; die Messanzeige misst jeden Durchlauf an einer Stelle.

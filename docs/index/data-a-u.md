@@ -3,6 +3,12 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/data/`. Pfade relativ zu `js/data/`.
 
 ## ai.js (Fortsetzung)
+- ARTY_GROUP_R – px Umkreis, in dem Gegner als eine Gruppe zählen
+- DRONE_ARMY – Luft (Paket K3, nicht auf Leicht): Aufklärungsdrohne am Heliport, Kamikazedrohn…
+- DRONE_FROM – s Spielzeit, ab der die Aufklärungsdrohne kommt (nach dem Späher)
+- DRONE_MONEY – Geld, das nach dem Kauf einer Aufklärungsdrohne übrig bleiben muss (Festung und…
+- FPV_ARMY – eigene Kampfeinheiten, ab denen die KI Kamikazedrohnen ausbildet
+- FPV_MAX – höchstens so viele Kamikazedrohnen gleichzeitig (Heliport)
 - FPV_MONEY – Geld, das nach dem Kauf einer Kamikazedrohne übrig bleiben muss
 - FPV_NEAR – px: gegnerische Panzer höchstens so weit hinter dem Zonenradius sind Ziel der K…
 - FPV_EVERY – s zwischen zwei Zielbefehlen an die Kamikazedrohnen (wer bereit ist, bekommt ei…
@@ -54,6 +60,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - CMD_FIELD_MIN – Kampfeinheiten draußen, ab denen der Kommandeur dem Schwerpunkt folgt (sonst wa…
 - CMD_DANGER – sichtbare Gegner so nah: der Kommandeur weicht zur Hauptstadt aus
 - CMD_MOVE – neuer Marschbefehl erst, wenn der Wunschplatz so weit vom alten Ziel liegt
+- CMD_ARRIVED – Anteil von CMD_MOVE: steht der Kommandeur so nah am Wunschplatz, bekommt er kei…
 - CMD_RESERVE – Geld, das nach der Ausbildung eines neuen Kommandeurs übrig bleiben soll
 - CMD_FROM – s Spielzeit, ab der ein gefallener Kommandeur ersetzt wird
 - RADIO_SITE – Abstand des Masts von der Hauptstadt, zur Rückseite (weg von der Zone)
@@ -86,6 +93,8 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - HELI_MIN_MONEY – seit v5.26: so viel über seinem Preis spart die KI auf den Transporthubschraube…
 - JET_GROUP – so viele startbereite F-16 fliegen zusammen los (seit v5.03; Zahl der Jets und…
 - JET_EVERY – s zwischen zwei Startbefehlen an die Jets
+- JET_STEEL_LOTS – fehlt Stahl für ein Flugzeug, kauft sie davor höchstens so viele Lose am Markt…
+- JET_ARMOR_RANGE – Vielfaches von DEF_RANGE um die Hauptstadt: gepanzerte Gegner darin (oder in de…
 - JET_QUEUE – so viele F-16 höchstens in der Warteschlange eines Fliegerhorsts
 - CQ_HOLD – Eroberung (js/ai/army/conquest.js, PRD §7 „Eroberung“): Flaggen als Angriffszie…
 - CQ_EVERY – s zwischen zwei Marschbefehlen an dieselbe Flaggengruppe
@@ -104,7 +113,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## buildings.js (6.8 KB)
 - BUILDINGS
 
-## city.js (36 KB)
+## city.js (37 KB)
 - CITY
 
 ## citykinds.js (15 KB)
@@ -138,5 +147,5 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## research.js (12 KB)
 - RESEARCH
 
-## units.js (34 KB)
+## units.js (35 KB)
 - UNITS

@@ -111,7 +111,13 @@ export const CITY = {
   // nächsten Kartenrand, damit die Raffinerie ab Sekunde 0 Öl einführt (keine Ölquelle mehr)
   // Seit v5.03: über der Straße die Großbauten Kaserne (4 × 4) und Fabrikhalle (seit v5.33 5 × 5, vorher 8 × 8) nebeneinander, big = [Art, Spalte ab Straßenanfang]
   // Ein Großbau in row (seit v5.08 die 2 × 2-Raffinerie) beginnt an seiner Spalte und reicht nach rechts und unten (dort null).
-  startQuarter: { road: 12, row: ['res', 'fuel', null, 'res'], big: [['barracks', 0], ['factory', 4]] }, // Straßenlänge, die Zellen darunter, die Großbauten darüber
+  // Straßenlänge, die Zellen darunter, die Großbauten darüber; search: Zellen um die Hauptstadt, in denen das ganze Viertel Platz sucht
+  // (dazu die Höhe der Großbauten); looseSearch: Zellen um die Hauptstadt für die Großbauten einzeln, wenn das Viertel nirgends passt
+  startQuarter: { road: 12, row: ['res', 'fuel', null, 'res'], big: [['barracks', 0], ['factory', 4]], search: 8, looseSearch: 36 },
+  // Grundriss des Industrieparks der Stadt-KI (Paket „Industriepark“, js/ai/city/park.js), 9 × 5 Zellen, Gleis nach unten, gedreht in vier
+  // Richtungen: r = Straße, S = Güterbahnhof (Kantenlänge size.station), W = Werksplatz (2 × 2, grenzt an den Bahnhof und an eine Straße),
+  // g = erste Gleiszelle (von dort zum Kartenrand), . = frei
+  parkPlan: ['rrrrrrrrr', 'rWWSSSWWr', 'rWWSSSWWr', 'rWWSSSWWr', 'rWW.g.WWr'],
   startMetal: 400, // Stahl im Hauptlager zu Beginn (Stahl bleibt dort, LKW fahren es nicht; Schlüssel metal)
   startKero: 300, // Kerosin im Stadtlager zu Beginn (seit v5.20; F-16 und Hubschrauber tanken es)
   // Metall je ausgebildeter Einheit (zusätzlich zum Geld); fehlt die Sorte, kostet sie kein Metall
@@ -244,6 +250,9 @@ export const CITY = {
     interval: { easy: 12, normal: 8, hard: 5 }, // Takt (s)
     reserve: { easy: 500, normal: 300, hard: 200 }, // Geld, das sie für die Armee übrig lässt
     perStep: 4, // so viele Zellen je Takt
+    growRing: 4, // Ausbau-Umkreis an der Hauptstadt: territory.main + growRing × territory.building Zellen
+    ringWeight: 100, // Reihenfolge der Ausbauzellen: Ring (Abstand in Zellen) × ringWeight + Summe der Abstände; muss größer sein als jede Summe, damit der Ring zuerst zählt
+    bigTries: 8, // Großbau ohne Platz: so viele Arten probiert sie je Zelle nacheinander (aiNeed ohne die schon gescheiterten)
     roadEvery: 3, // jede so vielte Zeile (vom Anker aus) wird Straße, dazu eine Straßenspalte durch den Anker
     quarter: 3, // Radius (Zellen) der kleinen Viertel an vorderen FOBs
     quarterEvery: 3, // jeder so vielte Takt baut an einer vorderen FOB statt an der Hauptstadt
@@ -295,6 +304,7 @@ export const CITY = {
     airportBm: 800, // … und Baumaterial im Lager der Hauptstadt
     airportMax: 2, // höchstens so viele Bahnen: einen zweiten Fliegerhorst nur, wenn am ersten nie ein Stellplatz entstehen kann (Notausgang, aiAirport)
     runwayLen: 10, // Länge (Zellen) der Bahn, die sie anlegt
+    airportRow: ['stand', 'stand', 'atc'], // Bauten in der Reihe neben der neuen Bahn, von ihrem Anfang an (je size.stand Zellen breit)
     standBuffer: 100, // Baumaterial, das nach einem weiteren Stellplatz im Lager der Hauptstadt bleiben muss
     upgradeBuffer: { bm: 200, steel: 200 }, // Baumaterial und Stahl, die nach dem Ausbau eines Stellplatzes bleiben müssen (Geld: CITY.air.upgradeAiReserve)
     jets: { easy: 2, normal: 4, hard: 6 }, // so viele F-16 hält sie (seit v5.03; seit v5.35 je Stellplatz so viele wie CITY.air.standJets, die KI baut so viele Stellplätze)

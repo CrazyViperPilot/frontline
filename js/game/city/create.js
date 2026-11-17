@@ -186,7 +186,7 @@ function quarterSpot(game, c, fc, fr, ok) {
     return true;
   };
   let best = null;
-  const R = 8 + up;
+  const R = Q.search + up;
   for (let r = Math.max(up, fr - R); r <= Math.min(c.rows - 2, fr + R); r++) {
     for (let q = Math.max(0, fc - R); q <= Math.min(c.cols - n, fc + R); q++) {
       const d = Math.abs(q + n / 2 - fc) + Math.abs(r - up / 2 - fr);
@@ -208,8 +208,8 @@ function looseQuarter(game, c, m, fc, fr, ok) {
     const sz = sizeOf(kind);
     // Kandidaten nach Abstand ihrer Mitte zur Hauptstadt (beide Teams gleich behandelt: die Karte ist punktsymmetrisch)
     const cand = [];
-    for (let r = Math.max(0, fr - 36); r <= Math.min(c.rows - 1, fr + 36); r++) {
-      for (let q = Math.max(0, fc - 36); q <= Math.min(c.cols - 1, fc + 36); q++) {
+    for (let r = Math.max(0, fr - Q.looseSearch); r <= Math.min(c.rows - 1, fr + Q.looseSearch); r++) {
+      for (let q = Math.max(0, fc - Q.looseSearch); q <= Math.min(c.cols - 1, fc + Q.looseSearch); q++) {
         const p = bigCenter(c, r * c.cols + q, sz);
         cand.push({ a: r * c.cols + q, d: Math.hypot(p.x - m.x, p.y - m.y) });
       }

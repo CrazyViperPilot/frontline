@@ -40,8 +40,8 @@ export function aiCandidates(game, c, x, y, rad, reach) {
       const i = idx(c, col, row);
       if (c.kind[i] || !buildAllowed(game, c, i) || inDanger(c, col, row, game.time) || !cellFree(game, c, col, row)) continue; // Fels, Wasser oder Gebäude: dort wüchse nie etwas
       // seit v5.20 (AP4): Zellen neben einer Straße zum Lager zählen einen Ring näher (Werke und Großbauten zuerst dort)
-      const far = reach && !touchesRoad(c, i, reach) ? CITY.ai.connectRing * 100 : 0;
-      const d = Math.max(Math.abs(col - ac), Math.abs(row - ar)) * 100 + Math.abs(col - ac) + Math.abs(row - ar) + far;
+      const far = reach && !touchesRoad(c, i, reach) ? CITY.ai.connectRing * CITY.ai.ringWeight : 0;
+      const d = Math.max(Math.abs(col - ac), Math.abs(row - ar)) * CITY.ai.ringWeight + Math.abs(col - ac) + Math.abs(row - ar) + far;
       out.push({ i, col, row, d, road: aiRoad(col, row, ac, ar) });
     }
   }

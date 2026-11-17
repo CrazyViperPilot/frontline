@@ -2,7 +2,7 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/ai/city/`. Pfade relativ zu `js/ai/city/`.
 
-## airbase.js (8.1 KB)
+## airbase.js (8.3 KB)
 - aiAirport(game, c, main, reserve, want, difficulty) – Fliegerhorst der KI (ersetzt den Flughafen): ab CITY.ai.airportFrom Arbeitsstät…
 
 ## build.js (3.0 KB)
@@ -27,7 +27,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## need.js (4.9 KB)
 - aiNeed(game, c, add, skip) – Welche Zone braucht die Stadt als Nächstes? (freie Planung) Wohnen, wenn Wohnra…
 
-## park.js (8.9 KB)
+## park.js (9.1 KB)
 - parkSite(game, c, reach) – Platz für den Industriepark (Paket „Industriepark“): Grundriss PARK in einer de…
 - parkSlots(game, c, center, reach, kind, free, mem) – Werksplätze am Güterbahnhof (Paket „Industriepark“): Anker (links oben) der fre…
 - parkSpot(game, c, reach, kind, free, mem) – Freier Werksplatz an einem Güterbahnhof der Stadt, dessen Gleis bis zum Kartenr…

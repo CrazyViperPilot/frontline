@@ -11,7 +11,7 @@ import { UNITS } from '../../data/units.js';
 import { canGarrison } from '../../game/garrison.js';
 import { radioEta } from '../../game/radio.js';
 import { weatherSight } from '../../game/weather.js';
-import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, RADIO_NEAR, RADIO_EVERY, RADIO_GATHER, RADIO_GATHER_R, RADIO_GATHER_SHARE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, RADIO_MARCH_R, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R } from '../../data/ai.js';
+import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, RADIO_NEAR, RADIO_EVERY, RADIO_GATHER, RADIO_GATHER_R, RADIO_GATHER_SHARE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, RADIO_MARCH_R, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, JET_ARMOR_RANGE, FIELD_MUL, CMD_ARRIVED, ART_COLS } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
 import { inZone as inZoneOf } from '../../game/zonegeo.js';
 import { nearestOf } from '../../game/teams.js';
@@ -47,7 +47,7 @@ function steelFor(g, t, type) {
   const c = g.city?.[t];
   if (!c) return true;
   const need = CITY.metalCost[type] ?? 0;
-  for (let k = 0; k < 10 && c.metal < need; k++) {
+  for (let k = 0; k < JET_STEEL_LOTS && c.metal < need; k++) {
     if (g.teams[t].res.money < UNITS[type].cost.money + CITY.ai.jetReserve + marketBuyPrice(g, t, 'metal')) return false;
     if (!g.issue(t, { type: 'trade', good: 'metal', dir: 'buy' }).ok) return false;
   }
@@ -106,7 +106,7 @@ export const combatMethods = {
     const ready = fighters.filter((u) => u.parked && u.jet?.ready && u.order.type === 'idle' && !u.jet.qra).sort((a, b) => a.id - b.id);
     if (!ready.length || !this.once('jets', JET_EVERY)) return;
     const air = s.enemies.filter((e) => e.def.air && !e.parked);
-    const armor = s.enemies.filter((e) => (e.def.armor === 'heavy' || e.def.armor === 'light') && (inZoneOf(s.zone, e.x, e.y) || dist(e.x, e.y, s.ax, s.ay) <= DEF_RANGE * 2));
+    const armor = s.enemies.filter((e) => (e.def.armor === 'heavy' || e.def.armor === 'light') && (inZoneOf(s.zone, e.x, e.y) || dist(e.x, e.y, s.ax, s.ay) <= DEF_RANGE * JET_ARMOR_RANGE));
     const near = (list) => list.slice().sort((a, b) => dist(a.x, a.y, s.ax, s.ay) - dist(b.x, b.y, s.ax, s.ay) || a.id - b.id);
     // Nur Waffen mit Bodenziel (F-16, Luft-Boden) greifen gepanzerte Fahrzeuge an; hochfliegende Ziele nur mit antiHighAlt (F-22)
     const groundArms = (u) => u.def.weapons.some((w) => (w.targets ?? []).some((k) => k !== 'air'));
@@ -281,7 +281,7 @@ export const combatMethods = {
     }
     s.artillery.forEach((u, k) => {
       if (u.order.type === 'attack' || u.fireTarget) return;
-      const q = this.freeNear(p.x + (k % 3) * ART_SPACING - ART_SPACING, p.y + Math.floor(k / 3) * ART_SPACING);
+      const q = this.freeNear(p.x + (k % ART_COLS) * ART_SPACING - ((ART_COLS - 1) / 2) * ART_SPACING, p.y + Math.floor(k / ART_COLS) * ART_SPACING);
       if (dist(u.x, u.y, q.x, q.y) <= ART_NEAR || !this.once(`art${u.id}`, ART_EVERY)) return;
       this.game.issue(this.team, { type: 'move', ids: [u.id], x: q.x, y: q.y });
     });
@@ -648,7 +648,7 @@ export const combatMethods = {
     const army = s.combat.filter((u) => !u.house && !this.dryKind(u));
     // Erst sammeln (am Schwerpunkt der Armee draußen, höchstens RADIO_GATHER s), dann geschlossen zuschlagen
     if (!this.strike || this.strike.mast !== mast.id) {
-      const field = army.filter((u) => !u.def.air && dist(u.x, u.y, s.ax, s.ay) > GATHER_DIST * 2);
+      const field = army.filter((u) => !u.def.air && dist(u.x, u.y, s.ax, s.ay) > GATHER_DIST * FIELD_MUL);
       const pts = field.length ? field : army;
       const cx = pts.reduce((a, u) => a + u.x, 0) / Math.max(1, pts.length);
       const cy = pts.reduce((a, u) => a + u.y, 0) / Math.max(1, pts.length);
@@ -692,7 +692,7 @@ export const combatMethods = {
     if (s.enemies.some((e) => !e.def.air && e.def.range > 0 && dist(e.x, e.y, c.x, c.y) < CMD_DANGER)) {
       goal = this.freeNear(s.ax + s.dir.x * CMD_FRONT, s.ay + s.dir.y * CMD_FRONT);
     } else {
-      const field = s.combat.filter((u) => !u.def.air && !u.house && dist(u.x, u.y, s.ax, s.ay) > GATHER_DIST * 2);
+      const field = s.combat.filter((u) => !u.def.air && !u.house && dist(u.x, u.y, s.ax, s.ay) > GATHER_DIST * FIELD_MUL);
       if (field.length >= CMD_FIELD_MIN) {
         const cx = field.reduce((a, u) => a + u.x, 0) / field.length;
         const cy = field.reduce((a, u) => a + u.y, 0) / field.length;
@@ -702,7 +702,7 @@ export const combatMethods = {
         goal = this.gatherPoint(s);
       }
     }
-    if (dist(c.x, c.y, goal.x, goal.y) < CMD_MOVE / 2) return;
+    if (dist(c.x, c.y, goal.x, goal.y) < CMD_MOVE * CMD_ARRIVED) return;
     if (c.order.type === 'move' && dist(c.order.x, c.order.y, goal.x, goal.y) < CMD_MOVE) return;
     g.issue(this.team, { type: 'move', ids: [c.id], x: goal.x, y: goal.y });
   },
@@ -789,7 +789,7 @@ export const combatMethods = {
     if (left.length < garrison.length) return;
 
     const clumped = idle.filter((u) => !u.house && dist(u.x, u.y, z.x, z.y) < CLUMP_DIST);
-    if (clumped.length >= 2) {
+    if (clumped.length >= CLUMP_MIN) {
       const groups = CLUMP_GROUPS;
       const base = this.rng.next() * TWO_PI;
       for (let i = 0; i < groups; i++) {

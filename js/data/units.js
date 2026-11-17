@@ -283,6 +283,7 @@ export const UNITS = {
     canRide: false,
     repairRate: 15, // HP je Sekunde für jedes eigene Fahrzeug im Umkreis
     repairRange: 60, // Umkreis in px (Mitte zu Mitte)
+    repairApproach: 0.7, // Anteil von repairRange: so nah fährt er an das Fahrzeug heran, das er reparieren will
     pickupRange: 200, // untätig: fährt zum nächsten beschädigten eigenen Fahrzeug in diesem Umkreis
     repairCostShare: 0.5, // Baumaterial = cost.money × geheilt/maxHp × 0.5 (wie die Reparatur des Baufahrzeugs, BALANCE.construction)
     hotkey: 'W', // Fabrikhalle: Taste im Fabrikmenü frei (E K R X B A S Z N L O T belegt)
@@ -480,7 +481,7 @@ export const UNITS = {
     cooldown: 0,
     damage: null,
     // Einschlag beim Kontakt (≤ 20 px vom Ziel): Flächenschaden mit Abfall über splash, wie eine Granate (combat.js impact)
-    blast: { damage: { light: 500, heavy: 700, struct: 300 }, splash: 30 },
+    blast: { damage: { light: 500, heavy: 700, struct: 300 }, splash: 30, trigger: 20 }, // trigger: px vom Rand des Ziels, ab dem sie explodiert
     cost: { money: 300 }, // seit Paket Balance-Preise (vorher 200)
     buildTime: 12,
     ammoPerShot: 0,

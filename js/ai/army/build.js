@@ -6,7 +6,7 @@ import { UNITS } from '../../data/units.js';
 import { BUILDINGS } from '../../data/buildings.js';
 import { block } from '../cooldown.js';
 import { CITY } from '../../data/city.js';
-import { ZONE_REACH, WALL_RETRY, RELAY_STEP, FLANK_R, FOBV_MAX, DEPLOY_REACH, FOBV_RETRY, BAD_TIME, WALL_OFFSET, WALL_HALF, ENG_NEAR, RADIO_SITE, BRIDGE_EVERY, ROAD_REPAIR_EVERY, ROAD_REPAIR_SAFE, BRIDGE_RESERVE, FORT_EVERY, FORT_BM_MIN, FORT_CREW_RANGE, FORT_ROOFS, FORT_CLEAR, ZONE_CAND_STEP, ZONE_CAND_MARGIN, ZONE_CAND_RING_N, ZONE_HELD_MIN, RELAY_STOP, FRONT_SITE_R, FRONT_SITE_ANGLES, FLANK_ANGLES, SITE_ANGLES_DEG, SITE_RING_STEP, FREE_SEARCH_CELLS, BAD_SITE_R, CORRIDOR_FROM, CORRIDOR_TO, CORRIDOR_HALF, HIGH_CENTER_BONUS, DEF_FULL_FOBS, DEF_BUSY_MAX, DEF_PER_FOB, DEF_ZONE_MORTARS, DEF_RING_MIN, DEF_RING_MAX, WALL_EVERY, WALL_BUILDERS_R, WALL_BUILDERS, ENG_EVERY, ENG_GAP, ENG_TAKEN_PEN } from '../../data/ai.js';
+import { ZONE_REACH, WALL_RETRY, RELAY_STEP, FLANK_R, FOBV_MAX, DEPLOY_REACH, FOBV_RETRY, BAD_TIME, WALL_OFFSET, WALL_HALF, ENG_NEAR, RADIO_SITE, BRIDGE_EVERY, ROAD_REPAIR_EVERY, ROAD_REPAIR_SAFE, BRIDGE_RESERVE, FORT_EVERY, FORT_BM_MIN, FORT_CREW_RANGE, FORT_ROOFS, FORT_CLEAR, ZONE_CAND_STEP, ZONE_CAND_MARGIN, ZONE_CAND_RING_N, ZONE_HELD_MIN, RELAY_STOP, FRONT_SITE_R, FRONT_SITE_ANGLES, FLANK_ANGLES, SITE_ANGLES_DEG, SITE_RING_STEP, FREE_SEARCH_CELLS, BAD_SITE_R, CORRIDOR_FROM, CORRIDOR_TO, CORRIDOR_HALF, HIGH_CENTER_BONUS, HIGH_SAMPLES, DEF_FULL_FOBS, DEF_BUSY_MAX, DEF_PER_FOB, DEF_ZONE_MORTARS, DEF_RING_MIN, DEF_RING_MAX, WALL_EVERY, WALL_BUILDERS_R, WALL_BUILDERS, ENG_EVERY, ENG_GAP, ENG_TAKEN_PEN } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
 
 const DEG = Math.PI / 180;
@@ -80,13 +80,13 @@ export const buildMethods = {
     if (!g.relief) return { x, y };
     let best = { x, y };
     let bestH = -Infinity;
-    for (let k = 0; k <= 8; k++) {
-      const a = (k / 8) * TWO_PI;
-      const d = k === 8 ? 0 : r;
+    for (let k = 0; k <= HIGH_SAMPLES; k++) {
+      const a = (k / HIGH_SAMPLES) * TWO_PI;
+      const d = k === HIGH_SAMPLES ? 0 : r;
       const px = x + Math.cos(a) * d;
       const py = y + Math.sin(a) * d;
       if (!g.grid.passable(g.grid.toCell(px), g.grid.toCell(py), this.team)) continue;
-      const h = g.relief.heightAt(px, py) + (k === 8 ? HIGH_CENTER_BONUS : 0); // bei Gleichstand die Mitte
+      const h = g.relief.heightAt(px, py) + (k === HIGH_SAMPLES ? HIGH_CENTER_BONUS : 0); // bei Gleichstand die Mitte
       if (h > bestH) {
         bestH = h;
         best = { x: px, y: py };

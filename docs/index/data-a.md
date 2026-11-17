@@ -2,13 +2,14 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/data/`. Pfade relativ zu `js/data/`.
 
-## ai.js (27 KB)
+## ai.js (28 KB)
 - MAX_PLACE – canPlace-Aufrufe je Denkschritt (Budget für die Platzsuche)
 - THREAT_RANGE – Kampfeinheiten in dieser Nähe zur Bedrohung reagieren
 - THREAT_DANGER – Gegner in dieser Nähe machen ein FOB-Ziel unattraktiver
 - DEFEND_NEAR – px: ein Angriffsbefehl auf Gegner im FOB-Umkreis wird nicht neu gegeben, wenn d…
 - LONE_CONTACT – px: Einheit in der Zone ohne sichtbaren Gegner in diesem Umkreis rückt auf die…
 - GATHER_DIST – Sammelpunkt Richtung Zone, vom Zentrum der Hauptstadt
+- FIELD_MUL – Vielfaches von GATHER_DIST: Einheiten weiter von der Hauptstadt gelten als drau…
 - ZONE_GATHER_DIST – Sammelpunkt an der Zonen-FOB, Richtung eigener Basis
 - GATHER_HIGH_R – px: Suchradius für eine Kuppe am Sammelpunkt an der Zonen-FOB (Höhenvorteil)
 - RALLY_MOVE – Sammelpunkt-Befehl nur neu setzen, wenn sich der Punkt so weit verschiebt
@@ -19,6 +20,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - CLUMP_DIST – px: stehende Einheiten näher als so weit an der Zonenmitte verteilen sich auf K…
 - CLUMP_GROUPS – Gruppen, auf die sich die stehenden Einheiten an der Zone verteilen (je Gruppe…
 - CLUMP_RING – px: Radius des Kreises um die Zonenmitte, auf dem die Gruppen Stellung beziehen
+- CLUMP_MIN – stehende Einheiten an der Zonenmitte, ab denen sie sich auf die Kreispunkte ver…
 - CLUMP_HIGH_R – px: Suchradius um den Kreispunkt nach einer Kuppe (Höhenvorteil)
 - FOBV_MAX – FOB-Fahrzeuge gleichzeitig (unterwegs und in der Warteschlange)
 - DEPLOY_REACH – px: so nah am Ziel baut das FOB-Fahrzeug auf
@@ -26,6 +28,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - BAD_TIME – s, Sperre eines fehlgeschlagenen FOB-Ziels
 - ZONE_BAN – s ohne neue Zonen-FOB nach dem Verlust der alten (gegen Nachschub in den Tod)
 - ZONE_REACH – px über den Zonenradius hinaus: so weit von der Zone sucht sie Plätze für die Z…
+- ZONE_FOB_SLACK – px über ZONE_FOB_R hinaus: eine eigene FOB so nah an der Zonenmitte gilt noch a…
 - ZONE_FOB_SHARE – Zonen-FOB: Anteil des Zonenradius, den ihr Mittelpunkt höchstens von der Zonenm…
 - ZONE_CAND_STEP – Suche nach Bauplätzen (js/ai/army/build.js)
 - ZONE_CAND_MARGIN – px: die Suche nach der Zonen-FOB endet so viel vor ZONE_FOB_R
@@ -43,6 +46,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - CORRIDOR_TO – px: ..
 - CORRIDOR_HALF – px: halbe Breite der Gasse
 - HIGH_CENTER_BONUS – Höhenpunkte: Bonus für die Mitte bei der Suche nach dem höchsten Punkt (bei Gle…
+- HIGH_SAMPLES – Punkte auf dem Kreis, die die Suche nach dem höchsten Punkt prüft (gleichmäßig…
 - ALARM_TIME – s, Treffer an der Basis gelten als Angriff auf die Basis
 - DRY – Einheiten mit weniger Munition/Treibstoff (Anteil) ziehen sich zurück
 - RETREAT_MIN – Einheiten: so viel Vorrat braucht eine FOB oder ein LKW, damit er als Nachfüllq…
@@ -130,7 +134,8 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - ART_FROM – eigene Kampfeinheiten, ab denen sie Panzerhaubitzen ausbildet
 - ART_BEHIND – px hinter dem Schwerpunkt der Armee (Richtung nächste eigene FOB)
 - ART_EVERY – s zwischen zwei Stellungswechseln einer Haubitze
-- ART_SPACING – px: Abstand der Stellplätze der Panzerhaubitzen (Raster, je Reihe drei)
+- ART_SPACING – px: Abstand der Stellplätze der Panzerhaubitzen (Raster, je Reihe ART_COLS)
+- ART_COLS – Stellplätze der Panzerhaubitzen je Reihe (Raster quer zur Armee, mittig um den…
 - ART_NEAR – px: eine Haubitze, die so nah an ihrem Stellplatz steht, bleibt dort (kein neue…
 - ARTY_ARMY – Mörsertrupp und Raketenwerfer (Paket K2, nicht auf Leicht): ab ARTY_ARMY Kampfe…
 - MORTAR_MAX – höchstens so viele Mörsertrupps (Infanterie, Kaserne)
@@ -139,9 +144,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - ARTY_FIRE_TYPES – Einheiten, die die KI auf Ziele schießen lässt (Befehl mortarTarget)
 - ARTY_FIRE_EVERY – s zwischen zwei Zielwahlen je Artillerie-Einheit (sie wählt neu oder schweigt)
 - ARTY_GROUP – sichtbare gegnerische Einheiten innerhalb ARTY_GROUP_R, ab denen die Gruppe ein…
-- ARTY_GROUP_R – px Umkreis, in dem Gegner als eine Gruppe zählen
-- DRONE_ARMY – Luft (Paket K3, nicht auf Leicht): Aufklärungsdrohne am Heliport, Kamikazedrohn…
-- DRONE_FROM – s Spielzeit, ab der die Aufklärungsdrohne kommt (nach dem Späher)
-- DRONE_MONEY – Geld, das nach dem Kauf einer Aufklärungsdrohne übrig bleiben muss (Festung und…
-- FPV_ARMY – eigene Kampfeinheiten, ab denen die KI Kamikazedrohnen ausbildet
-- FPV_MAX – höchstens so viele Kamikazedrohnen gleichzeitig (Heliport)

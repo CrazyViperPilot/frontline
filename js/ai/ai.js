@@ -9,7 +9,7 @@ import { cityTrainers } from '../game/city/query.js';
 import { BALANCE } from '../data/balance.js';
 import { UNITS } from '../data/units.js';
 import { makeRng } from '../core/rng.js';
-import { ZONE_BAN, MAX_PLACE, ALARM_TIME } from '../data/ai.js';
+import { ZONE_BAN, MAX_PLACE, ALARM_TIME, ZONE_FOB_SLACK } from '../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, dist, unitVec } from './army/util.js';
 import { buildMethods } from './army/build.js';
 import { produceMethods } from './army/produce.js';
@@ -135,7 +135,7 @@ export class AI {
     // Ausbildende Gebäude: Hauptstadt, mit Stadt (seit v4.96) Kaserne, Fabrikhalle und Heliport
     const producers = own.filter((b) => b.produces.length).concat(cityTrainers(g, t));
     const queuedCombat = producers.reduce((n, b) => n + b.queue.filter((e) => UNITS[e.unit ?? e].range > 0).length, 0);
-    const zoneFob = fobs.find((f) => dist(f.x, f.y, zone.x, zone.y) <= ZONE_FOB_R + 16) ?? null;
+    const zoneFob = fobs.find((f) => dist(f.x, f.y, zone.x, zone.y) <= ZONE_FOB_R + ZONE_FOB_SLACK) ?? null;
     const alarm =
       !!home &&
       (own.some((b) => dist(b.x, b.y, ax, ay) <= DEF_RANGE && b.lastHitTime > g.time - ALARM_TIME) ||

@@ -30,6 +30,11 @@ function standsAllowed(game, c, q, r, w, h) {
 export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal') {
   const A = CITY.ai;
   if (!main) return false;
+  const RW = CITY.air.runwayWidth; // Breite der Bahn (Zellen)
+  const B = CITY.size.stand; // Kantenlänge der Bauten neben der Bahn (Stellplatz, Tower, Kerosintank, Munitionslager)
+  // Anker der Bauten B × B, die an eine Bahnzelle (q, r) grenzen: oben, unten, links, rechts, dazu versetzt oben und unten
+  const beside = (q, r) => [[q, r - B], [q, r + 1], [q - B, r], [q + 1, r], [q - 1, r - B], [q - 1, r + 1]];
+  const square = (x, y) => Array.from({ length: B * B }, (_, k) => [x + (k % B), y + Math.floor(k / B)]);
   const money = game.teams[c.team].res.money;
   let work = 0;
   const stands = [];
@@ -50,8 +55,8 @@ export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal
       if (c.kind[i] !== KIND_ID.runway) continue;
       const q = i % c.cols;
       const r = (i - q) / c.cols;
-      for (const [x, y] of [[q, r - 2], [q, r + 1], [q - 2, r], [q + 1, r], [q - 1, r - 2], [q - 1, r + 1]]) {
-        const cells = [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]];
+      for (const [x, y] of beside(q, r)) {
+        const cells = square(x, y);
         if (cells.some(([u, v]) => u < 0 || v < 0 || u >= c.cols || v >= c.rows || !free(v * c.cols + u) || !buildAllowed(game, c, v * c.cols + u, kind))) continue;
         if (connectCells(game, c, cells.map(([u, v]) => v * c.cols + u), true) < 0) continue;
         if (put(kind, x, y)) return true;
@@ -62,7 +67,7 @@ export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal
   const runwayCells = hasRunway ? c.list.filter((i) => c.kind[i] === KIND_ID.runway).length : 0;
   // Notausgang: steht eine Bahn, an der nie ein Stellplatz entstehen kann (außerhalb des Gebiets, Straße nicht anschließbar), baut die KI
   // einen zweiten Fliegerhorst an anderer Stelle (höchstens CITY.ai.airportMax Bahnen), statt ewig zu warten
-  const retry = () => !stands.length && runwayCells < A.airportMax * 2 * A.runwayLen;
+  const retry = () => !stands.length && runwayCells < A.airportMax * RW * A.runwayLen;
   if (hasRunway) {
     // Stellplätze ausbauen (seit v5.39 nur per Befehl): den ersten fertigen unter Stufe 3, wenn genug übrig bleibt
     const up = stands.length >= Math.ceil(want / CITY.air.standJets) ? stands.find((i) => c.level[i] && c.level[i] < CITY.maxLevel) : null; // erst genug Stellplätze
@@ -84,8 +89,8 @@ export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal
     for (const i of rw) {
       const q = i % c.cols;
       const r = (i - q) / c.cols;
-      for (const [x, y] of [[q, r - 2], [q, r + 1], [q - 2, r], [q + 1, r], [q - 1, r - 2], [q - 1, r + 1]]) {
-        const cells = [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]];
+      for (const [x, y] of beside(q, r)) {
+        const cells = square(x, y);
         if (cells.some(([u, v]) => u < 0 || v < 0 || u >= c.cols || v >= c.rows || !free(v * c.cols + u))) continue;
         if (put('stand', x, y)) return true; // 2 × 2: Anker links oben der Mitte
       }
@@ -108,20 +113,16 @@ export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal
   cand.sort((p, o) => p.d - o.d || p.r - o.r || p.q - o.q);
   for (const { q, r } of cand) {
     for (const vertical of [false, true]) {
-      // Bahn L × 2 (bzw. 2 × L) mit einer Reihe 2 × 2-Bauten daneben: Fläche L × 4
-      if (!fits(q, r, vertical ? 4 : L, vertical ? L : 4)) continue;
+      // Bahn L × RW (bzw. RW × L) mit einer Reihe B × B-Bauten daneben: Fläche L × (RW + B)
+      if (!fits(q, r, vertical ? RW + B : L, vertical ? L : RW + B)) continue;
       // Die ersten beiden Stellplätze müssen im eigenen Gebiet erlaubt sein (die Bahn selbst darf hinaus; sonst entstand eine Bahn
       // außerhalb, an der nie ein Stellplatz gebaut werden konnte)
-      if (!standsAllowed(game, c, vertical ? q + 2 : q, vertical ? r : r + 2, vertical ? 2 : 4, vertical ? 4 : 2)) continue;
+      if (!standsAllowed(game, c, vertical ? q + RW : q, vertical ? r : r + RW, vertical ? B : 2 * B, vertical ? 2 * B : B)) continue;
       // Bahn bauen; scheitert der Befehl hier, die nächste Stelle versuchen (vorher Abbruch: die KI blieb an derselben Stelle hängen)
-      const rwCmd = vertical ? { type: 'city', kind: 'runway', c0: q, r0: r, c1: q + 1, r1: r + L - 1 } : { type: 'city', kind: 'runway', c0: q, r0: r, c1: q + L - 1, r1: r + 1 };
+      const rwCmd = vertical ? { type: 'city', kind: 'runway', c0: q, r0: r, c1: q + RW - 1, r1: r + L - 1 } : { type: 'city', kind: 'runway', c0: q, r0: r, c1: q + L - 1, r1: r + RW - 1 };
       if (!game.issue(c.team, rwCmd).ok) continue;
       // Stellplätze und Tower neben der Bahn (sie brauchen keine Straße), dann Kerosintank und Munitionslager mit Straße zum Lager
-      const spots = [0, 2, 4, 6, 8].map((k) => (vertical ? [q + 2, r + k] : [q + k, r + 2]));
-      ['stand', 'stand', 'atc'].forEach((kind, k) => {
-        const [x, y] = spots[k];
-        put(kind, x, y);
-      });
+      A.airportRow.forEach((kind, k) => (vertical ? put(kind, q + RW, r + k * B) : put(kind, q + k * B, r + RW)));
       putDepot('ktank');
       putDepot('mdepot');
       return true;

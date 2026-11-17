@@ -27,7 +27,7 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
   const main = game.mainFob(team);
   const fobs = game.buildings.filter((b) => b.alive && b.built && b.team === team && b.type === 'fob' && !b.main);
   let anchor = main;
-  let rad = CITY.territory.main + CITY.territory.building * 4;
+  let rad = CITY.territory.main + CITY.territory.building * CITY.ai.growRing;
   if (fobs.length && (mem.turn % CITY.ai.quarterEvery === 0 || !main)) {
     anchor = fobs[Math.floor(mem.turn / CITY.ai.quarterEvery) % fobs.length];
     rad = CITY.ai.quarter;
@@ -39,7 +39,7 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
   if (linkNeeded(game) && money() >= CITY.cost.road + reserve && extendNet(game, city, anchor, rad, mem)) n++;
   if (anchor !== main && linkNeeded(game) && !linkSpare(game, city, anchor, rad)) {
     anchor = main;
-    rad = CITY.territory.main + CITY.territory.building * 4;
+    rad = CITY.territory.main + CITY.territory.building * CITY.ai.growRing;
     if (!anchor) return;
   }
   if (aiAirport(game, city, main, reserve, CITY.ai.jets[difficulty] ?? CITY.ai.jets.normal, difficulty)) n++;

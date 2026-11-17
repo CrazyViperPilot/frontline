@@ -110,10 +110,10 @@ function chooseKind(ctx, cand) {
   // Wachstum vom Netz: die Straße daneben muss zum Lager führen (Wohnen und Gewerbe auch über ein Nachbarhaus gleicher Art)
   if (ctx.grow && sizeOf(kind) === 1 && !atNet(city, cand.i, kind, ctx.reach)) return null;
   // Großbau (Werke 2 × 2, Kraftwerk, Universität, Kaserne, Fabrikhalle, Krankenhaus …, seit v5.20 AP4): Platz über workSpot, zuerst
-  // an einer Straße zum Lager; ohne Platz gilt die Art für diesen Takt als ohne Platz und es kommt die nächste (bis zu 8 Versuche).
+  // an einer Straße zum Lager; ohne Platz gilt die Art für diesen Takt als ohne Platz und es kommt die nächste (bis zu CITY.ai.bigTries Versuche).
   // Vorher blieb ein Großbau ohne Platz an dieser Zelle stehen, und jede weitere Zelle des Takts wählte ihn erneut.
   let spot = -1;
-  for (let tries = 0; sizeOf(kind) > 1 && tries < 8; tries++) {
+  for (let tries = 0; sizeOf(kind) > 1 && tries < CITY.ai.bigTries; tries++) {
     spot = workSpot(ctx, kind);
     if (spot >= 0) break;
     skip.add(kind);

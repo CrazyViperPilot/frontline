@@ -46,6 +46,6 @@ export function updateRecovery(game, dt) {
         best = u;
       }
     }
-    if (best) driveTo(game, r, best.x, best.y, REC.repairRange * 0.7, dt);
+    if (best) driveTo(game, r, best.x, best.y, REC.repairRange * REC.repairApproach, dt);
   }
 }

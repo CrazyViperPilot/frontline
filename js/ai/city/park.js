@@ -8,16 +8,9 @@ import { gridBfs } from '../../game/city/gridbfs.js';
 import { ready } from '../cooldown.js';
 import { inDanger, touchesRoad } from './common.js';
 
-// Grundriss des Industrieparks (Paket „Industriepark“), 9 × 5 Zellen, Gleis nach unten: r = Straße, S = Güterbahnhof (3 × 3),
-// W = Werksplatz (2 × 2, grenzt an den Bahnhof und an eine Straße), g = erste Gleiszelle (von dort zum Kartenrand), . = frei.
-// Gedreht in vier Richtungen.
-const PARK = [
-  'rrrrrrrrr',
-  'rWWSSSWWr',
-  'rWWSSSWWr',
-  'rWWSSSWWr',
-  'rWW.g.WWr',
-];
+// Grundriss des Industrieparks: CITY.parkPlan (js/data/city.js, Zeichen dort erklärt), gedreht in vier Richtungen.
+const PARK = CITY.parkPlan;
+const STATION_HALF = (CITY.size.station - 1) / 2; // Zellen von der Mitte des Güterbahnhofs bis zu seinem Rand
 
 /** Zellen des Grundrisses je Drehung (0–3): { w, h, road: [[x, y]], work: [[x, y]], station: [x, y] (Mitte), rail: [x, y] }. */
 const PARK_TURNS = (() => {
@@ -25,15 +18,19 @@ const PARK_TURNS = (() => {
   const H = PARK.length;
   const turn = [(x, y) => [x, y], (x, y) => [H - 1 - y, x], (x, y) => [W - 1 - x, H - 1 - y], (x, y) => [y, W - 1 - x]];
   return turn.map((f, t) => {
-    const out = { w: t % 2 ? H : W, h: t % 2 ? W : H, road: [], work: [], station: f(4, 2), rail: null };
+    const out = { w: t % 2 ? H : W, h: t % 2 ? W : H, road: [], work: [], station: null, rail: null };
+    const st = [];
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
         const ch = PARK[y][x];
         if (ch === 'r') out.road.push(f(x, y));
         else if (ch === 'W') out.work.push(f(x, y));
         else if (ch === 'g') out.rail = f(x, y);
+        else if (ch === 'S') st.push([x, y]);
       }
     }
+    // Mitte des Bahnhofs: Mittelwert seiner Zellen im Grundriss
+    out.station = f(st.reduce((a, p) => a + p[0], 0) / st.length, st.reduce((a, p) => a + p[1], 0) / st.length);
     return out;
   });
 })();
@@ -84,7 +81,7 @@ export function parkSite(game, c, reach) {
     if (r > r1) r1 = r;
   }
   let best = null;
-  for (let t = 0; t < 4; t++) {
+  for (let t = 0; t < PARK_TURNS.length; t++) {
     const P = PARK_TURNS[t];
     for (let oy = Math.max(0, r0 - P.h); oy <= Math.min(c.rows - P.h, r1); oy++) {
       for (let ox = Math.max(0, q0 - P.w); ox <= Math.min(cols - P.w, q1); ox++) {
@@ -108,7 +105,7 @@ export function parkSite(game, c, reach) {
         }
         if (!ok || lj < 0) continue;
         const [sx, sy] = P.station;
-        for (let y = sy - 1; y <= sy + 1 && ok; y++) for (let x = sx - 1; x <= sx + 1 && ok; x++) ok = houseOk(at([x, y]), 'station');
+        for (let y = sy - STATION_HALF; y <= sy + STATION_HALF && ok; y++) for (let x = sx - STATION_HALF; x <= sx + STATION_HALF && ok; x++) ok = houseOk(at([x, y]), 'station');
         for (const p of P.work) if (ok) ok = houseOk(at(p), 'bm');
         if (!ok) continue;
         let wd = 0;

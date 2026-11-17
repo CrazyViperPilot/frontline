@@ -189,7 +189,7 @@ export function updateHelis(game, dt) {
         setIdle(u);
         continue;
       }
-      if (driveTo(game, u, pad.x, pad.y, 40, dt) !== 'arrived') continue; // über dem Heliport (Wegende liegt bis 32 px davor)
+      if (driveTo(game, u, pad.x, pad.y, H.arrive, dt) !== 'arrived') continue; // über dem Heliport (Wegende liegt bis 32 px davor)
       if (!padFree(game, c, pad, u)) continue; // über dem Heliport warten, bis der Luftraum frei ist
       lockPad(game, c, pad, u);
       h.home = pad.id;

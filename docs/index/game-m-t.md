@@ -67,7 +67,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## recovery.js (2.2 KB)
 - updateRecovery(game, dt) – Ein Schritt: jeder lebende Bergepanzer am Boden repariert eigene Fahrzeuge im U…
 
-## relief.js (7.8 KB)
+## relief.js (7.9 KB)
 - RELIEF
 - COARSE_N – 174 Punkte je Achse (0 … 11072)
 - FINE_N – 347
@@ -119,7 +119,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - cmdLayBridge(game, team, cmd) – Brückenleger (Paket E14): Befehl `{ type: 'layBridge', ids, c, r }` (Zelle des…
 - updateBridgeLayers(game, dt) – Brückenleger-Schritt: zum Ufer fahren, legen (def.layTime), Zelle wird befahrba…
 
-## roads.js (5.8 KB)
+## roads.js (5.9 KB)
 - MAP_ROAD – Wert einer Zelle in game.roads.kind: 0 keine, 1 Straße der Zonenstadt, 2 Brücke…
 - BRIDGE_ROAD
 - segDist(px, py, x1, y1, x2, y2) – Abstand eines Punkts zur Strecke (x1, y1)–(x2, y2)

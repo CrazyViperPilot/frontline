@@ -129,7 +129,7 @@ export function cmdGarrison(game, team, cmd) {
     u.repathTimer = 0;
   }
   const rest = list.slice(free);
-  if (rest.length) game.issue(team, { type: 'move', ids: rest.map((u) => u.id), x: h.x, y: h.y + h.ph / 2 + 40 });
+  if (rest.length) game.issue(team, { type: 'move', ids: rest.map((u) => u.id), x: h.x, y: h.y + h.ph / 2 + G.restApproach });
   return { ok: true, count: go.length };
 }
 
@@ -203,7 +203,7 @@ function stepWalker(game, u, dt) {
     return;
   }
   if (!canEnter(h, u.team)) {
-    game.notify(u.team, 'houseTaken', 'Gebäude ist vom Gegner besetzt', 3, h.x, h.y);
+    game.notify(u.team, 'houseTaken', 'Gebäude ist vom Gegner besetzt', BALANCE.notify.houseTaken, h.x, h.y);
     setIdle(u);
     return;
   }
@@ -215,7 +215,7 @@ function stepWalker(game, u, dt) {
   }
   if (st !== 'arrived') return;
   if (h.occupants.length >= h.def.cap) {
-    game.notify(u.team, 'houseFull', 'Gebäude ist voll', 3, h.x, h.y);
+    game.notify(u.team, 'houseFull', 'Gebäude ist voll', BALANCE.notify.houseFull, h.x, h.y);
     setIdle(u);
     return;
   }

@@ -39,7 +39,7 @@ export function createRoads(game) {
   const cols = Math.floor((grid.cols * grid.tile) / S);
   const rows = Math.floor((grid.rows * grid.tile) / S);
   const kind = new Uint8Array(cols * rows);
-  const reach = S * 0.75;
+  const reach = S * CITY.mapRoadReach;
   for (const r of game.map.town?.roads ?? []) {
     if (r.dirt) continue;
     const c0 = Math.max(0, Math.floor((Math.min(r.x1, r.x2) - reach) / S));
@@ -73,7 +73,7 @@ export function createRoads(game) {
  * (alle Zellen quer durch das Band laufen in dieselbe Richtung), idx = Lage der Zelle im Band (0 = oben bzw. links);
  * lanes = Fahrspuren je Richtung für die Kapazität: min(hl, vl), höchstens maxLanes (Kreuzungen zählen so viel wie ihr breitestes Band).
  */
-export function laneGrid(cols, rows, isRoad, maxLanes = 4) {
+export function laneGrid(cols, rows, isRoad, maxLanes = CITY.transport.maxLanes) {
   const n = cols * rows;
   const hl = new Uint16Array(n);
   const vl = new Uint16Array(n);

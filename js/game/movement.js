@@ -6,13 +6,14 @@ import { inRange, resolveTarget, isFoe, canAttack } from './entities.js';
 import { weatherSpeed } from './weather.js';
 import { rangeMul, modOf } from './research.js';
 
-const REPATH = 1.0; // Neuplanung bei Verfolgung (s)
-const BLOCK_REPATH = 0.5; // Neuplanung nach blockiertem Wegpunkt (s)
-const ARRIVE = 0.5; // Wegpunkt erreicht (px)
-const FINAL_ARRIVE = 32; // Endziel erreicht (px): Einheiten am selben Sammelpunkt drängeln sich sonst ewig in 'move'
-const SETTLE_DONE = 4; // Formation: so nah am eigenen Platz gilt er als erreicht (px)
-const SETTLE_TIME = 3; // s, höchstens so lange rückt eine Einheit am Ende auf ihren Platz nach
-const CORNER = 48; // nahe einer Wegecke: bei freier Sicht gleich zum nächsten Wegpunkt (sonst Stau an der Ecke)
+const M = BALANCE.move;
+const REPATH = M.repath; // Neuplanung bei Verfolgung (s)
+const BLOCK_REPATH = M.blockRepath; // Neuplanung nach blockiertem Wegpunkt (s)
+const ARRIVE = M.arrive; // Wegpunkt erreicht (px)
+const FINAL_ARRIVE = M.finalArrive; // Endziel erreicht (px): Einheiten am selben Sammelpunkt drängeln sich sonst ewig in 'move'
+const SETTLE_DONE = M.settleDone; // Formation: so nah am eigenen Platz gilt er als erreicht (px)
+const SETTLE_TIME = M.settleTime; // s, höchstens so lange rückt eine Einheit am Ende auf ihren Platz nach
+const CORNER = M.corner; // nahe einer Wegecke: bei freier Sicht gleich zum nächsten Wegpunkt (sonst Stau an der Ecke)
 const HASH_CELL = 128; // räumliches Hash-Gitter
 const TILE = BALANCE.map.tile;
 
@@ -31,14 +32,14 @@ export function exitHouse(game, u, tx = null, ty = null) {
   const i = h.occupants.indexOf(u);
   if (i >= 0) h.occupants.splice(i, 1);
   if (!h.occupants.length && h.kind === 'house') h.team = -1;
-  const spread = ((u.id % 5) - 2) * 0.3;
+  const spread = ((u.id % M.exitFan) - 2) * M.exitFanStep;
   const a = (tx === null ? u.id * 2.39996 : Math.atan2(ty - h.y, tx - h.x)) + spread;
   const c = Math.cos(a);
   const s = Math.sin(a);
   // Abstand von der Mitte bis zur Wand in Richtung a, dann ein Stück davor
   const wall = Math.min(Math.abs(c) > 1e-6 ? h.pw / 2 / Math.abs(c) : Infinity, Math.abs(s) > 1e-6 ? h.ph / 2 / Math.abs(s) : Infinity);
-  const ox = h.x + c * (wall + 14);
-  const oy = h.y + s * (wall + 14);
+  const ox = h.x + c * (wall + M.exitGap);
+  const oy = h.y + s * (wall + M.exitGap);
   const p = nearestPassable(game.grid, ox, oy, u.team) || { x: ox, y: oy };
   u.x = p.x;
   u.y = p.y;
@@ -83,7 +84,7 @@ export function nearestPassable(grid, x, y, team) {
   const c0 = grid.toCell(x);
   const r0 = grid.toCell(y);
   if (grid.passable(c0, r0, team)) return { x, y };
-  for (let rad = 1; rad <= 30; rad++) {
+  for (let rad = 1; rad <= M.passableRadius; rad++) {
     for (let dr = -rad; dr <= rad; dr++) {
       for (let dc = -rad; dc <= rad; dc++) {
         if (Math.max(Math.abs(dc), Math.abs(dr)) !== rad) continue;
@@ -411,7 +412,7 @@ function onRoad(game, x, y) {
     const dx = r.x2 - r.x1;
     const dy = r.y2 - r.y1;
     const t = Math.max(0, Math.min(1, ((x - r.x1) * dx + (y - r.y1) * dy) / (dx * dx + dy * dy || 1)));
-    if (Math.hypot(x - (r.x1 + dx * t), y - (r.y1 + dy * t)) <= (r.w ?? 40) / 2) return true;
+    if (Math.hypot(x - (r.x1 + dx * t), y - (r.y1 + dy * t)) <= (r.w ?? BALANCE.roads.defaultWidth) / 2) return true;
   }
   return false;
 }
@@ -430,7 +431,7 @@ function roadIndex(game) {
   const rows = Math.ceil(game.map.height / ROAD_BUCKET) + 1;
   const cells = Array.from({ length: cols * rows }, () => []);
   for (const r of list) {
-    const h = (r.w ?? 40) / 2 + 1;
+    const h = (r.w ?? BALANCE.roads.defaultWidth) / 2 + 1;
     const q0 = Math.max(0, Math.floor((Math.min(r.x1, r.x2) - h) / ROAD_BUCKET));
     const q1 = Math.min(cols - 1, Math.floor((Math.max(r.x1, r.x2) + h) / ROAD_BUCKET));
     const r0 = Math.max(0, Math.floor((Math.min(r.y1, r.y2) - h) / ROAD_BUCKET));

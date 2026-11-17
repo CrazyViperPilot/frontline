@@ -9,8 +9,8 @@ import { KIND_ID } from '../data/citykinds.js';
 import { sightOf } from './aircraft.js';
 
 const CONSTRUCTION_SIGHT = BALANCE.construction.siteSight; // Baustellen sehen weniger
-const RAY_GAP = 44; // Abstand benachbarter Sichtstrahlen am Rand (px), kleiner als eine Nebelzelle
-const RAY_STEP = 24; // Schrittweite entlang eines Strahls (px)
+const RAY_GAP = BALANCE.fog.rayGap; // Abstand benachbarter Sichtstrahlen am Rand (px), kleiner als eine Nebelzelle
+const RAY_STEP = BALANCE.fog.rayStep; // Schrittweite entlang eines Strahls (px)
 const SH = BALANCE.sightHeight;
 
 /** Sichtweite mit Weitsicht von oben: + (Höhe − base) / per, höchstens + max. */
@@ -31,7 +31,7 @@ const scratch = new WeakMap(); // Fog → { seen: Uint32Array, tick } (Doppelte 
 const sightCells = new WeakMap(); // Entity → { key, relief, version, cells } (Sichtfeld aus markEntity)
 
 export class Fog {
-  constructor(width, height, cell = 64) {
+  constructor(width, height, cell = BALANCE.fog.cell) {
     this.cell = cell;
     this.cols = Math.ceil(width / cell);
     this.rows = Math.ceil(height / cell);
@@ -102,7 +102,7 @@ export class Fog {
     };
     add(x, y);
     const reach = r + cell / 2;
-    const n = Math.max(16, Math.ceil((2 * Math.PI * reach) / RAY_GAP));
+    const n = Math.max(BALANCE.fog.minRays, Math.ceil((2 * Math.PI * reach) / RAY_GAP));
     for (let k = 0; k < n; k++) {
       const a = (k / n) * Math.PI * 2;
       const dx = Math.cos(a);

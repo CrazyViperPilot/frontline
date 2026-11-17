@@ -12,7 +12,8 @@ const H = BALANCE.map.height;
 const TILE = BALANCE.map.tile;
 const BUILDING_KINDS = ['house', 'factory', 'hall', 'tower', 'train', 'station', 'platform', 'wall']; // wall: Mauer um Fabrikgelände
 const TURNABLE = ['train', 'platform']; // dürfen beliebig gedreht sein (`angle`, Bogenmaß)
-const SPAWN_CLEAR = 180; // freier Platz um einen Startpunkt (Hauptstadt und Startunits)
+const CHECK = MAPGEN.check;
+const SPAWN_CLEAR = CHECK.spawnClear; // freier Platz um einen Startpunkt (Hauptstadt und Startunits)
 export const MAX_CRATES = 24; // Versorgungskisten je Karte
 export const FIELD_CROPS = ['wheat', 'green', 'soil', 'rape']; // Ackerarten: Weizen, junge Saat, gepflügt, Raps
 export const MAX_FIELDS = 300; // Felder und Weiden je Karte
@@ -206,10 +207,10 @@ export function checkMap(map) {
     return false;
   };
   map.spawns.forEach((s, i) => {
-    if (s.x < 250 || s.y < 250 || s.x > W - 250 || s.y > H - 250) problems.push(`Startpunkt ${i + 1} liegt zu nah am Kartenrand`);
+    if (s.x < CHECK.spawnEdgeMin || s.y < CHECK.spawnEdgeMin || s.x > W - CHECK.spawnEdgeMin || s.y > H - CHECK.spawnEdgeMin) problems.push(`Startpunkt ${i + 1} liegt zu nah am Kartenrand`);
     if (hit(s.x, s.y, SPAWN_CLEAR)) problems.push(`Startpunkt ${i + 1}: Gebäude, Bäume oder Hindernisse im Umkreis von ${SPAWN_CLEAR} px`);
   });
-  if (Math.hypot(map.spawns[0].x - map.spawns[1].x, map.spawns[0].y - map.spawns[1].y) < 2500) problems.push('Die Startpunkte liegen zu nah beieinander');
+  if (Math.hypot(map.spawns[0].x - map.spawns[1].x, map.spawns[0].y - map.spawns[1].y) < CHECK.spawnDistMin) problems.push('Die Startpunkte liegen zu nah beieinander');
   const relief = reliefOf(map);
   if (relief) {
     map.spawns.forEach((s, i) => {
@@ -234,7 +235,7 @@ export function checkMap(map) {
   const grid = mapGrid(map);
   const [a, b] = map.spawns;
   const reaches = (path, x, y) => path.length > 0 && Math.hypot(path[path.length - 1].x - x, path[path.length - 1].y - y) < TILE * 2;
-  if (hit(map.zone.x, map.zone.y, 40)) {
+  if (hit(map.zone.x, map.zone.y, CHECK.zoneCenterClear)) {
     // Zonenmitte verstellt: einen Punkt am Zonenrand prüfen
     const zx = map.zone.x + map.zone.r * 0.5;
     if (!reaches(findPath(grid, a.x, a.y, zx, map.zone.y, 0), zx, map.zone.y)) problems.push('Die Konfliktzone ist von Startpunkt 1 nicht erreichbar');
@@ -271,14 +272,14 @@ function mapGrid(map) {
  * Getrennte Zugänge von jedem Startpunkt in die Konfliktzone (höchstens want), wie der Kartengenerator sie zählt: Wege,
  * die sich außerhalb von Startgelände und Zone nicht berühren. Für „Prüfen“ im Editor.
  */
-export function accessRoutes(map, want = 4) {
+export function accessRoutes(map, want = CHECK.routesShown) {
   const grid = mapGrid(map);
   const z = map.zone;
   // Ziel: freie Zelle nächst der Zonenmitte (die Mitte selbst kann verbaut sein)
   let to = null;
   const zc = grid.toCell(z.x);
   const zr = grid.toCell(z.y);
-  for (let d = 0; d < 30 && !to; d++) {
+  for (let d = 0; d < CHECK.zoneSearch && !to; d++) {
     for (let r = zr - d; r <= zr + d && !to; r++) {
       for (let c = zc - d; c <= zc + d; c++) {
         if (Math.max(Math.abs(c - zc), Math.abs(r - zr)) === d && grid.passable(c, r, 0)) {
@@ -293,7 +294,7 @@ export function accessRoutes(map, want = 4) {
     countRoutes(grid, s, to, {
       want,
       keepOut: [
-        { x: s.x, y: s.y, r: 900 },
+        { x: s.x, y: s.y, r: MAPGEN.general.routeKeepOut },
         { x: z.x, y: z.y, r: z.r },
       ],
     }),

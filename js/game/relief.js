@@ -2,16 +2,17 @@
 // auf ein Feinraster von 32 px (= Zellengröße) glatt hochgerechnet. Höhen in Bildschirm-Pixeln bei Zoom 1, wie die
 // Gebäudehöhen der isometrischen Ansicht. Kein DOM.
 import { BALANCE } from '../data/balance.js';
+import { MAPGEN } from '../data/mapgen.js';
 
 const W = BALANCE.map.width;
 
 export const RELIEF = {
   res: 64, // Abstand der gespeicherten Höhenpunkte (px)
   step: BALANCE.map.tile, // Feinraster (Netz, Neigung, Wegfindung)
-  water: -20, // Wasserspiegel: tiefer liegendes Gelände ist See und unpassierbar
-  steep: 0.42, // Neigung (Höhe je px), ab der niemand mehr hinaufkommt (Fels)
-  rock: 0.3, // ab hier zeigt das Bild Fels
-  peak: 300, // Gipfel: darüber ist alles Fels und unpassierbar, auch wenn es flach ist
+  water: MAPGEN.relief.water, // Wasserspiegel: tiefer liegendes Gelände ist See und unpassierbar
+  steep: MAPGEN.relief.steep, // Neigung (Höhe je px), ab der niemand mehr hinaufkommt (Fels)
+  rock: MAPGEN.relief.rock, // ab hier zeigt das Bild Fels
+  peak: MAPGEN.relief.peak, // Gipfel: darüber ist alles Fels und unpassierbar, auch wenn es flach ist
   min: -128, // Speicherformat: 1 Byte je Punkt in 2er-Schritten ab −128 (bis 382)
   q: 2,
 };

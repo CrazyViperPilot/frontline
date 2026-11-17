@@ -36,7 +36,7 @@ export function addUnitWreck(game, u) {
     { id: ++game.scarSeq, kind: 'unit', type: u.type, team: u.team, x: u.x, y: u.y, angle: u.angle || 0, r: u.def.radius, air: !!u.def.air, t0: game.time, seen: seenBy(game, u.x, u.y) },
     S.wreckMax,
   );
-  addCrater(game, u.x, u.y, u.def.radius * 1.5);
+  addCrater(game, u.x, u.y, u.def.radius * S.craterUnitMul);
 }
 
 /** Trümmer eines zerstörten (nicht abgerissenen) Gebäudes auf seiner Grundfläche, mit Brandfleck. */
@@ -47,7 +47,7 @@ export function addBuildingWreck(game, b) {
   const y = b.cy * TILE + h / 2;
   const small = !!(b.def.blocksAll || b.def.gate); // Mauern und Tore: nur ein Schutthaufen, kein Brand
   push(game.wrecks, { id: ++game.scarSeq, kind: 'building', type: b.type, team: b.team, x, y, w, h, small, t0: game.time, seen: seenBy(game, x, y) }, S.wreckMax);
-  if (!small) addCrater(game, x, y, Math.max(w, h) * 0.6);
+  if (!small) addCrater(game, x, y, Math.max(w, h) * S.craterBuildingMul);
 }
 
 /** Ein neues Gebäude räumt die Trümmer auf seiner Fläche weg. */

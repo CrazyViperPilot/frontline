@@ -25,7 +25,7 @@ function nearestFree(grid, x, y) {
   const c0 = grid.toCell(x);
   const r0 = grid.toCell(y);
   if (grid.free(c0, r0)) return { x, y };
-  for (let rad = 1; rad <= 30; rad++) {
+  for (let rad = 1; rad <= C.freeRadius; rad++) {
     for (let dr = -rad; dr <= rad; dr++) {
       for (let dc = -rad; dc <= rad; dc++) {
         if (Math.max(Math.abs(dc), Math.abs(dr)) === rad && grid.free(c0 + dc, r0 + dr)) {
@@ -93,8 +93,8 @@ export function storedCrates(game, team, fobId = 0) {
 /** Platz der i-ten Kiste im Hof einer FOB: Reihen zu vier an der unteren linken Ecke. */
 export function slotPos(f, i) {
   return {
-    x: f.cx * TILE + 14 + (i % 4) * 17,
-    y: (f.cy + f.h) * TILE - 12 - Math.floor(i / 4) * 15,
+    x: f.cx * TILE + C.slotX + (i % C.slotCols) * C.slotDx,
+    y: (f.cy + f.h) * TILE - C.slotY - Math.floor(i / C.slotCols) * C.slotDy,
   };
 }
 
@@ -156,7 +156,7 @@ export function cmdPickup(game, team, cmd) {
   const u = list[0];
   giveOrder(u, { type: 'pickup', x: c.x, y: c.y, targetId: c.id });
   const rest = all.filter((x) => x !== u && !x.crate);
-  if (rest.length) game.issue(team, { type: 'move', ids: rest.map((x) => x.id), x: c.x, y: c.y + 40 });
+  if (rest.length) game.issue(team, { type: 'move', ids: rest.map((x) => x.id), x: c.x, y: c.y + C.restApproach });
   return { ok: true, id: u.id };
 }
 
@@ -188,7 +188,7 @@ function stepPicker(game, u, dt) {
   const c = game.entities.get(u.order.targetId);
   if (!c || c.kind !== 'crate' || c.state !== 'ground' || u.crate) {
     if (c && c.state === 'carried' && game.entities.get(c.carrier)?.team !== u.team) {
-      game.notify(u.team, 'crateGone', 'Der Gegner hat die Kiste zuerst', 5, c.x, c.y);
+      game.notify(u.team, 'crateGone', 'Der Gegner hat die Kiste zuerst', BALANCE.notify.crateGone, c.x, c.y);
     }
     setIdle(u);
     return;
@@ -233,7 +233,7 @@ function stepCarrier(game, u, dt) {
   u.crateStall = Math.hypot(u.x - x0, u.y - y0) < 0.5 ? (u.crateStall || 0) + dt : 0;
   if (st === 'driving' && u.crateStall >= STALL_TIME && footDist(u.x, u.y, f) <= STALL_REACH) st = 'arrived';
   if (st === 'stuck') {
-    game.notify(u.team, 'crateStuck', 'Kein Weg zur FOB', 10, u.x, u.y);
+    game.notify(u.team, 'crateStuck', 'Kein Weg zur FOB', BALANCE.notify.crateStuck, u.x, u.y);
     u.crateHold = game.time + STUCK_HOLD;
     setIdle(u);
     return;
@@ -272,7 +272,7 @@ export function updateCrates(game, dt) {
       }
       if (u && u.crate === c.id) u.crate = 0;
       drop(game, c);
-      game.notify(team, 'crateDrop', 'Kistenträger gefallen – die Kiste liegt am Boden', 5, c.x, c.y);
+      game.notify(team, 'crateDrop', 'Kistenträger gefallen – die Kiste liegt am Boden', BALANCE.notify.crateDrop, c.x, c.y);
     } else if (c.state === 'stored') {
       const f = game.entities.get(c.fobId);
       if (f && f.alive) {

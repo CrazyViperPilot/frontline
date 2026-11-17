@@ -14,6 +14,7 @@ const WORKS_SHORT = { bm: 'BM-Werk' };
 /** Waren mit Lager (BM, MUN, TS in den Lagern der Hauptstadt, Stahl und Kerosin im Stadtlager). */
 export const FLOW_GOODS = STORED_GOODS;
 const WORKS = Object.keys(CITY.chain);
+const FL = CITY.flow; // Fenster, Schwellen und Gewichte der Anzeige (js/data/city.js)
 
 /** Aufbau des Graphen (nur aus CITY.chain): Knoten mit Spalte und Reihe, Kanten. Einmal berechnet. */
 let LAYOUT = null;
@@ -80,7 +81,7 @@ export function teamStock(game, team) {
  * Reparatur, Verluste. `sample` jedes Bild aufrufen (nimmt höchstens alle `step` s eine Probe).
  */
 export class FlowMeter {
-  constructor(window = 60, step = 1) {
+  constructor(window = FL.window, step = 1) {
     this.window = window;
     this.step = step;
     this.samples = [];
@@ -100,7 +101,7 @@ export class FlowMeter {
   rates() {
     const a = this.samples[0];
     const b = this.samples[this.samples.length - 1];
-    if (!a || !b || b.t - a.t < 5) return null;
+    if (!a || !b || b.t - a.t < FL.minSpan) return null;
     const dt = b.t - a.t;
     const out = {};
     for (const g of FLOW_GOODS) {
@@ -171,12 +172,12 @@ export function resourceFlow(game, team, rates = null) {
     if (n.cap <= EPS) {
       n.status = 'bad';
       n.note = 'steht: Arbeiter, Strom';
-      issue(2.5, `${n.name} steht: keine Arbeiter oder kein Strom.`, 'Wohnen oder ein Kraftwerk bauen.');
+      issue(FL.stopWeight, `${n.name} steht: keine Arbeiter oder kein Strom.`, 'Wohnen oder ein Kraftwerk bauen.');
       continue;
     }
     n.util = Math.min(1, n.out / n.cap);
     const what = Object.keys(L.need).map((g) => IMPORTS[g].name).join(' und ');
-    if (n.inp < n.cap * 0.85) {
+    if (n.inp < n.cap * FL.inputShort) {
       // Einfuhr ist der Engpass: kein Einfuhrpunkt, kein Geld, Stau oder Güterbahnhof voll (oder das Lager ist voll, dann fordert es nichts an)
       n.status = 'warn';
       n.note = `wartet · Auslastung ${pct(n.util)}`;
@@ -186,8 +187,8 @@ export function resourceFlow(game, team, rates = null) {
       else issue(1 + (1 - n.util), `${n.name} nur ${pct(n.util)} ausgelastet: zu wenig ${what}.`, 'Straße zum Kartenrand oder Güterbahnhof mit Gleis bauen, Stau auflösen, Geld für die Einfuhr bereithalten.');
     } else n.note = `Auslastung ${pct(n.util)}`;
   }
-  if ((s.importNone ?? 0) > 0) issue(2.4, `${s.importNone} ${s.importNone === 1 ? 'Werk erreicht' : 'Werke erreichen'} keinen Einfuhrpunkt: keine Rohwaren.`, 'Straße zum Kartenrand legen oder einen Güterbahnhof mit Gleis bis zum Kartenrand und Straße zum Werk bauen.');
-  if ((s.importScale ?? 1) < 0.999) issue(3, `Geld reicht nur für ${pct(s.importScale)} der Einfuhr: Werke arbeiten langsamer.`, 'Steuern erhöhen (Wohnen, Gewerbe), Überschuss am Markt verkaufen oder weniger Werke betreiben.');
+  if ((s.importNone ?? 0) > 0) issue(FL.importNoneWeight, `${s.importNone} ${s.importNone === 1 ? 'Werk erreicht' : 'Werke erreichen'} keinen Einfuhrpunkt: keine Rohwaren.`, 'Straße zum Kartenrand legen oder einen Güterbahnhof mit Gleis bis zum Kartenrand und Straße zum Werk bauen.');
+  if ((s.importScale ?? 1) < 0.999) issue(FL.importMoneyWeight, `Geld reicht nur für ${pct(s.importScale)} der Einfuhr: Werke arbeiten langsamer.`, 'Steuern erhöhen (Wohnen, Gewerbe), Überschuss am Markt verkaufen oder weniger Werke betreiben.');
   // Lager: Bestand, gemessene Erzeugung und Verbrauch
   const main = game.mainFob(team);
   const cap = BALANCE.logistics.storeCap;
@@ -220,12 +221,12 @@ export function resourceFlow(game, team, rates = null) {
     if (n.full) {
       n.status = 'warn';
       n.note = 'Hauptlager voll';
-      if (n.rate > EPS) issue(0.8, `${n.name}: Lager der Hauptstadt voll, Erzeugung verfällt.`, GOODS[g]?.full ?? 'Mit LKW zu den FOBs fahren oder am Markt verkaufen.');
+      if (n.rate > EPS) issue(FL.fullWeight, `${n.name}: Lager der Hauptstadt voll, Erzeugung verfällt.`, GOODS[g]?.full ?? 'Mit LKW zu den FOBs fahren oder am Markt verkaufen.');
     } else if (r && r.net < -EPS) {
       const eta = n.stock / -r.net;
-      n.status = eta < 600 ? 'bad' : 'warn';
+      n.status = eta < FL.soon ? 'bad' : 'warn';
       n.note = `leer in ${eta < 60 ? '< 1' : Math.round(eta / 60)} min`;
-      if (eta < 600) issue(3.5 - eta / 600, `${n.name} sinkt um ${fmtFlow(-r.net)}/s: leer in ${eta < 60 ? 'unter 1' : `etwa ${Math.round(eta / 60)}`} min.`, `Verbrauch ${fmtFlow(r.use)}/s, Erzeugung ${fmtFlow(r.made)}/s${Math.abs(r.traded) > EPS ? `, Markt ${r.traded > 0 ? '+' : '−'}${fmtFlow(Math.abs(r.traded))}/s` : ''}: mehr erzeugen.`);
+      if (eta < FL.soon) issue(FL.sinkWeight - eta / FL.soon, `${n.name} sinkt um ${fmtFlow(-r.net)}/s: leer in ${eta < 60 ? 'unter 1' : `etwa ${Math.round(eta / 60)}`} min.`, `Verbrauch ${fmtFlow(r.use)}/s, Erzeugung ${fmtFlow(r.made)}/s${Math.abs(r.traded) > EPS ? `, Markt ${r.traded > 0 ? '+' : '−'}${fmtFlow(Math.abs(r.traded))}/s` : ''}: mehr erzeugen.`);
     } else if (r) n.note = r.net > EPS ? 'steigt' : 'gleich';
     else n.note = 'misst …';
   }
@@ -234,19 +235,19 @@ export function resourceFlow(game, team, rates = null) {
   const fill = s.fill ?? 1;
   const power = s.powerRatio ?? 1;
   const mood = s.mood ?? 1;
-  if (s.jobs > 0 && fill < 0.95) issue(fill < 0.7 ? 3.5 - fill : 2.6 - fill, `Nur ${pct(fill)} der Arbeitsplätze besetzt: alle Werke arbeiten langsamer.`, 'Wohnen bauen.');
-  if (power < 0.999) issue(power < 0.7 ? 3.4 - power : 2.5 - power, `Strom reicht nur für ${pct(power)}: Werke und Güterbahnhof laufen langsamer.`, 'Kraftwerk bauen oder ausbauen.');
+  if (s.jobs > 0 && fill < FL.fillOk) issue(fill < FL.fillBad ? FL.fillBadWeight - fill : FL.fillWeight - fill, `Nur ${pct(fill)} der Arbeitsplätze besetzt: alle Werke arbeiten langsamer.`, 'Wohnen bauen.');
+  if (power < 0.999) issue(power < FL.powerBad ? FL.powerBadWeight - power : FL.powerWeight - power, `Strom reicht nur für ${pct(power)}: Werke und Güterbahnhof laufen langsamer.`, 'Kraftwerk bauen oder ausbauen.');
   // Gewerbe bauen nur, wenn die Läden die Zufriedenheit kaum tragen (Läden-Anteil unter 50 %, seit v5.20)
   const shopLow = (s.shop ?? 1) < 0.5;
-  if ((s.happy ?? 1) < 0.5) issue(0.9, `Zufriedenheit niedrig (${pct(s.happy)}): Erträge × ${mood.toFixed(2).replace('.', ',')}.`, shopLow ? 'Gewerbe bauen, Stadt schützen, Strom sichern.' : 'Stadt schützen, Strom sichern.');
+  if ((s.happy ?? 1) < 0.5) issue(FL.moodWeight, `Zufriedenheit niedrig (${pct(s.happy)}): Erträge × ${mood.toFixed(2).replace('.', ',')}.`, shopLow ? 'Gewerbe bauen, Stadt schützen, Strom sichern.' : 'Stadt schützen, Strom sichern.');
   // Gewerbe braucht Baumaterial, über die Straße vom Lager (seit v5.20, AP3b): wenig versorgt = Steuer und Zufriedenheit fallen
   const sup = s.shopSupply ?? 1;
   if (sup < 0.5 && (s.jobsCom ?? 0) > 0) issue(1 + (0.5 - sup), `Gewerbe ohne Waren (Straße zum Lager, Baumaterial): nur ${pct(sup)} versorgt.`, 'Gewerbe per Straße an das Lager der Hauptstadt anschließen und Baumaterial nachproduzieren.');
   // Straßentransport (seit v5.20, AP5): Stau auf den Straßen (kleinster Stau-Faktor) und Waren, die gar keinen Weg haben
   const jam = s.jam ?? 1;
-  if (jam < 0.95) issue(1 + (1 - jam), `Stau auf den Straßen (${pct(jam)}): Waren und Pendler kommen langsamer.`, `Eine zweite Straße zum Ziel legen oder eine Straße direkt daneben bauen (mehrspurig: Kapazität × Spuren, bis ${CITY.transport.maxLanes}; Straßen tragen ${CITY.transport.cap}/s je Spur, Stadtstraßen ${CITY.transport.mapCap}/s).`);
+  if (jam < FL.jamOk) issue(1 + (1 - jam), `Stau auf den Straßen (${pct(jam)}): Waren und Pendler kommen langsamer.`, `Eine zweite Straße zum Ziel legen oder eine Straße direkt daneben bauen (mehrspurig: Kapazität × Spuren, bis ${CITY.transport.maxLanes}; Straßen tragen ${CITY.transport.cap}/s je Spur, Stadtstraßen ${CITY.transport.mapCap}/s).`);
   const lost = s.lost ?? 0;
-  if (lost > EPS) issue(1.4, `Waren ohne Straßenweg: ${fmtFlow(lost)}/s gehen verloren.`, 'Werk per Straße an das Lager der Hauptstadt anschließen.');
+  if (lost > EPS) issue(FL.lostWeight, `Waren ohne Straßenweg: ${fmtFlow(lost)}/s gehen verloren.`, 'Werk per Straße an das Lager der Hauptstadt anschließen.');
   issues.sort((a, b) => b.sev - a.sev);
 
   // Linien ohne Fluss bekommen trotzdem eine Ware (Farbe)

@@ -366,7 +366,7 @@ function stepBoard(game, u, dt) {
 /** Absetzen: hinfliegen, Passagiere im Kreis ablegen. */
 function stepDropoff(game, h, dt) {
   const o = h.order;
-  const st = driveTo(game, h, o.x, o.y, 40, dt);
+  const st = driveTo(game, h, o.x, o.y, L.dropArrive, dt);
   if (st !== 'arrived') return;
   const n = h.passengers.length;
   h.passengers.forEach((p, i) => {

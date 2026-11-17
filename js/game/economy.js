@@ -21,7 +21,7 @@ function spawnSpot(game, b) {
   const g = game.grid;
   let best = null;
   let bestD = Infinity;
-  for (let ring = 1; ring <= 3 && !best; ring++) {
+  for (let ring = 1; ring <= BALANCE.spawnRing && !best; ring++) {
     for (let r = b.cy - ring; r < b.cy + b.h + ring; r++) {
       for (let c = b.cx - ring; c < b.cx + b.w + ring; c++) {
         const inside = c >= b.cx && c < b.cx + b.w && r >= b.cy && r < b.cy + b.h;

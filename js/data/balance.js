@@ -10,7 +10,8 @@
 //   KI-Schwierigkeit difficulty (weitere KI-Werte: ai.js)
 //   Kampf, Gelände   height, slope, airFire, sightHeight, fogInterval, stealth, garrison, fortress, commander, formation, jets
 //   Wetter, Technik  weather, river (Forschung: js/data/research.js)
-//   Nur Optik        scars, animals
+//   Nur Optik        scars, animals, effects
+//   Bewegung, Sicht  move, path (Wegsuche), fog, formation, scanStagger, spawnRing, shellSpeed, combat, notify (Meldedauern)
 //   Startmenü        menuDefaults
 //   Texte, Farben    resNames, teamNames, teamColors
 
@@ -62,6 +63,8 @@ export const BALANCE = {
   // Eine Gattung füllt von ihrem Ankerpunkt aus die nächsten freien Plätze; Typen ohne Gruppe nehmen `fallback`.
   startLayout: {
     maxDist: 700, // weiter als so viele px von der FOB-Mitte wird nichts aufgestellt
+    minDist: 60, // näher als so viele px an der FOB-Mitte wird nichts aufgestellt (die FOB-Mitte liegt im Gebäude)
+    step: 12, // Rastergröße der Startplätze (px)
     groups: [
       { types: ['tank', 'ifv'], angle: 0, dist: 330, gap: 26 }, // Panzer vorn
       { types: ['rifleman', 'sniper'], angle: 60, dist: 300, gap: 14 }, // Schützen links
@@ -99,8 +102,8 @@ export const BALANCE = {
   },
   // Hot Zone: kleiner Kreis in der Konfliktzone, wandert zufällig oder zu aktiven Bohrern.
   // Einheiten darin bringen statt unitIncome das Doppelte (unitIncome = 2 × zone.unitIncome, nicht zusätzlich).
-  // drillMinFuel = Mindestvorrat der FOB, um einen Bohrer zu starten
-  hot: { r: 300, speed: 40, wanderSpeed: 40 / 3, unitIncome: QUICK.moneyPerUnitHot, wanderMin: 25, wanderMax: 45, drillMinFuel: 10 },
+  // drillMinFuel = Mindestvorrat der FOB, um einen Bohrer zu starten; arrive = so nah (px) am Wanderziel sucht sich die Hot Zone ein neues
+  hot: { r: 300, speed: 40, wanderSpeed: 40 / 3, unitIncome: QUICK.moneyPerUnitHot, wanderMin: 25, wanderMax: 45, drillMinFuel: 10, arrive: 8 },
   // Bauradien eigener FOBs dürfen sich nicht überlappen (minDistOwn = 2 × buildRadius); höchstens 10 FOBs mit der Hauptstadt
   // startStock: eine neue FOB (aufgebautes FOB-Fahrzeug) hat sofort diesen Anteil von storeCap je Sorte im Lager;
   // deploySnap: ist die Stelle des Fahrzeugs blockiert (Baum, Haus), baut es bis so viele px daneben auf
@@ -110,7 +113,7 @@ export const BALANCE = {
   baseAttackWarn: 20, // s zwischen zwei Meldungen „Basis wird angegriffen“
   shortageWarn: 20, // s zwischen zwei Meldungen je Sorte und Team
   // Straßen der Karte (Stadtraster und Feldwege): Bodenfahrzeuge fahren darauf schneller; abseits verbrauchen sie mehr Treibstoff
-  roads: { speedMul: 1.35, offroadFuel: 1.15 },
+  roads: { speedMul: 1.35, offroadFuel: 1.15, defaultWidth: 40 }, // defaultWidth: Breite (px) einer Kartenstraße ohne eigene Angabe, für „auf der Straße“
   // Bagger (seit v5.35): Sekunden Arbeit je Stadtzelle beim Baggern und Abstand (px) zur Zellmitte, ab dem er arbeitet
   excavator: { digTime: 6, reach: 54 },
   fuelSlowMul: 0.25, // Tempo von Fahrzeugen ohne Treibstoff
@@ -134,6 +137,7 @@ export const BALANCE = {
     truckSupplyRange: 180, // Nachfüllen/Mauerbau aus LKW-Ladung
     boardReach: 45, // Infanterie steigt ein, wenn sie so nah am Hubschrauber ist
     dropRing: 26, // Absetzen: Abstand der Passagiere um den Hubschrauber
+    dropArrive: 40, // Absetzen: so nah (px) am Absetzpunkt gilt der Transporthubschrauber als angekommen
   },
   // Bau und Reparatur (§11.8)
   construction: {
@@ -182,7 +186,13 @@ export const BALANCE = {
   // Zelle außerhalb); ring: so weit (Zellen) sucht sie um ein versperrtes Ziel nach der nächsten freien Zelle.
   // Geteilte Wege (pathplan.js): Start höchstens shareStart px und Ziel höchstens shareGoal px von einem eben gefundenen Weg entfernt
   // → die Einheit übernimmt ihn; shareKeep Wege bleiben je Schritt gemerkt.
-  path: { budget: 8000, slice: 8000, pocket: 4096, ring: 64, shareStart: 320, shareGoal: 256, shareKeep: 16 },
+  path: { budget: 8000, slice: 8000, pocket: 4096, ring: 64, shareStart: 320, shareGoal: 256, shareKeep: 16,
+    hWeight: 1.05, // A*: Gewicht der Heuristik bei Hangkosten
+    costDiv: 10, // Hangkosten je Zelle in Zehnteln: Zellenkosten = 1 + Hangwert / costDiv (auch Raster: Hangwert = Steigung × pathCost × costDiv)
+    pullMul: 1.02, // Wegglättung (String-Pulling) mit Hangkosten: eine Abkürzung darf höchstens so viel × der Wegkosten kosten …
+    pullAdd: 0.3, // … plus so viele Kosteneinheiten
+    joinLook: 3, // geteilte Wege: so viele erste Wegpunkte werden auf freie Sicht vom Einstieg geprüft
+  },
   // Häuserkampf (§7): Infanterie besetzt Stadthäuser (cap Plätze, hp hält das Haus aus), schießt von dort mit Reichweite ab Hauswand
   // und steht `floor` px höher (Höhenvorteil). Schwere Waffen (Schaden gegen Gebäude ab `heavy`: Kanone, RPG, Granaten, Mörser)
   // treffen Häuser × heavyMult, Handwaffen nur × lightMult. Stürzt ein Haus ein, fallen die Besatzer mit ejectDamage (Anteil der
@@ -198,6 +208,7 @@ export const BALANCE = {
     floor: 24,
     ejectDamage: 0.35,
     enterReach: 56,
+    restApproach: 40, // px: beim Befehl „Gebäude besetzen“ stellt sich der Rest der Gruppe (Plätze voll) so weit unterhalb der Hauswand auf
     heavy: 25,
     heavyMult: 1.5,
     lightMult: 0.5,
@@ -238,14 +249,31 @@ export const BALANCE = {
   // Ein Soldat hebt eine auf (pickReach), trägt sie mit carrySpeed-Tempo und ohne zu schießen zur nächsten eigenen fertigen FOB
   // (deliverReach zur Wand); jede eingelagerte Kiste bringt dem Team `income` Geld/s. Fällt der Träger oder die FOB, liegt sie wieder am Boden.
   // stuckHold = s, die ein Träger ohne Weg zur FOB wartet, bis er es neu versucht; stallTime = s ohne Fortkommen (Gedränge an der FOB): dann gilt die Kiste als abgeliefert, …; stallReach = … wenn der Träger so nah an der FOB-Wand steht
-  crates: { pairs: 3, income: QUICK.moneyPerCrate, carrySpeed: 0.75, pickReach: 40, deliverReach: 100, stuckHold: 5, stallTime: 3, stallReach: 320 },
+  crates: { pairs: 3, income: QUICK.moneyPerCrate, carrySpeed: 0.75, pickReach: 40, deliverReach: 100, stuckHold: 5, stallTime: 3, stallReach: 320,
+    freeRadius: 30, // Zellen: so weit sucht eine abgelegte Kiste die nächste freie Zellmitte
+    restApproach: 40, // px: beim Aufheben-Befehl stellt sich der Rest der Gruppe so weit unterhalb der Kiste auf
+    // Plätze der eingelagerten Kisten im Hof einer FOB: slotCols je Reihe, ab der unteren linken Ecke (slotX px nach rechts, slotY px nach oben),
+    // je Kiste slotDx px nach rechts, je Reihe slotDy px nach oben
+    slotCols: 4, slotX: 14, slotY: 12, slotDx: 17, slotDy: 15,
+  },
   // Sichtbarer Schaden (rein optisch): Wracks zerstörter Fahrzeuge und Gebäude (wreckLife s, die letzten wreckFade s blassen sie aus,
   // höchstens wreckMax), Krater von Mörsereinschlägen (Radius craterR) und Brandflecken unter Wracks (craterLife s, höchstens craterMax).
-  scars: { wreckLife: 240, wreckFade: 30, wreckMax: 80, craterLife: 180, craterFade: 30, craterMax: 150, craterR: 22 },
+  scars: { wreckLife: 240, wreckFade: 30, wreckMax: 80, craterLife: 180, craterFade: 30, craterMax: 150, craterR: 22,
+    craterUnitMul: 1.5, // Brandfleck unter einem Fahrzeugwrack: Radius = Einheitenradius × so viel
+    craterBuildingMul: 0.6, // Brandfleck unter einem Gebäudewrack: Radius = größere Kante der Grundfläche × so viel
+  },
   // Formationen (§8, nach Age of Empires II): Abstand = größter Durchmesser + gap (spacingMin … spacingMax px); Linie höchstens
   // lineMax breit, Kolonne ab columnSingle Einheiten zweireihig. Geschlossen fahren: wer mehr als lead px (Restweg) vor dem Median
   // liegt, bremst (je brake px weiter voraus stärker, bis slowest × Grundtempo); wer mehr als lag px zurückliegt, fährt eigenes Tempo.
-  formation: { gap: 12, spacingMin: 26, spacingMax: 44, lineMax: 10, columnSingle: 8, lead: 16, brake: 80, slowest: 0.1, lag: 80, stuck: 3, stuckDist: 8 },
+  formation: { gap: 12, spacingMin: 26, spacingMax: 44, lineMax: 10, columnSingle: 8, lead: 16, brake: 80, slowest: 0.1, lag: 80, stuck: 3, stuckDist: 8,
+    wedgeBack: 0.85, // Keil: Abstand der Reihen nach hinten (× Platzabstand)
+    minGap: 0.6, // Mindestabstand zweier Zielplätze (× Platzabstand)
+    ringStep: 0.5, // Suche nach einem freien Platz: Ringe im Abstand von so viel × Platzabstand …
+    ringMax: 4, // … bis höchstens so viel × Platzabstand
+    ringSpots: 12, // Punkte je Ring der Platzsuche
+    spotStep: 24, // Rasterweite (px) der Zielpunkte für Marsch- und Angriffsbefehle ohne Formation
+    spotRingExtra: 4, // Zellen Reserve um die Mindestgröße des Zielfeldes (Wurzel der Einheitenzahl + so viel)
+  },
   // Kommandeur (Held, einer je Team): Aura-Radius, Feuerrate darin (×), Heilung der Infanterie darin (HP/s, erst healDelay s nach dem
   // letzten Treffer); fällt er, bekommt der Gegner deathPoints Punkte
   commander: { aura: 300, fireRate: 1.1, heal: 1.5, healDelay: 6, deathPoints: 5 },
@@ -326,6 +354,16 @@ export const BALANCE = {
     finalCross: 80, // im Endanflug: höchstens so weit seitlich der Mittellinie (px)
     turnIn: 1.5, // Eindrehen: vor der Aufsetzmarke braucht er Seitenablage × turnIn + Gleitpfad × turnGlide px
     turnGlide: 0.6,
+    taxiAhead: 0.6, // Rollen: ein Jet gilt als „im Weg“, wenn der Vordermann im Winkel liegt, dessen Kosinus über so viel liegt (1 = genau voraus)
+    taxiSameDir: 0.3, // … und seine Nase höchstens so weit abweicht (Kosinus der Winkeldifferenz mindestens so groß)
+    taxiAlign: 0.05, // Startlauf: erst wenn die Nase höchstens so viele rad von der Startrichtung abweicht, beschleunigt er
+    centerPull: 4, // Landung: Zug auf die Mittellinie der Bahn (je s, höchstens 1 je Schritt)
+    circleLead: 0.7, // Kreisen: Zielpunkt so viele rad voraus auf dem Kreis
+    nearFinal: 2.5, // „nahe am Endanflug“: Abstand zur Schwelle höchstens final × so viel (px)
+    lockAhead: 60, // px vor Beginn des Gleitpfads belegt er schon die Landebahn (sonst kreist er weiter)
+    edge: 100, // px: Abstand der Platzrunde vom Kartenrand (Zielpunkte werden darauf begrenzt)
+    touchAlt: 0.02, // aufgesetzt, sobald die Flughöhe (Anteil der Reiseflughöhe) höchstens so groß ist
+    goAroundReset: 1.5, // Durchstarten endet, sobald er mehr als base × so viel vor der Schwelle ist
   },
   // Tiere (rein optisch, nach den Jagdtieren aus Age of Empires II): `pairs` Rudelpaare (punktsymmetrisch) außerhalb der Zone, Rehe
   // (deer Tiere je Rudel) und Wildschweine (boar). Sie grasen und ziehen langsam (walk px/s) weiter; kommt eine Einheit näher als
@@ -345,6 +383,60 @@ export const BALANCE = {
     zoneGap: 250, // Abstand der Weiden zur Zonenkante
     spawnGap: 1400, // Abstand der Rudel zu den Startpunkten
     groupGap: 1100, // Abstand der Rudel untereinander
+    edge: 60, // px: Abstand zum Kartenrand, den Tiere nicht betreten
+    lineStep: 32, // px: Schrittweite der Prüfung, ob die Strecke zu einem Ziel offen ist
+    placeTries: 300, // Versuche je Rudelpaar, einen Platz zu finden
+    margin: 500, // px: Rudelmitten liegen mindestens so weit vom Kartenrand
+    spotTries: 6, // Versuche je Tier (× Rudelgröße), einen freien Startplatz um die Rudelmitte zu finden
+    spotMin: 12, // px: Mindestabstand eines Tiers von der Rudelmitte beim Start …
+    spotSpread: 50, // … plus ein Zufallsanteil bis so viel px
+    startGraze: [1, 6], // s: so lange grasen die Tiere am Anfang (Zufall von … bis)
+    fleeAngles: [0, 0.5, -0.5, 1, -1, 1.5, -1.5], // rad: Richtungen zur Wahl bei der Flucht (0 = genau weg von der Gefahr), in dieser Reihenfolge
+    fleeJitter: 0.2, // rad: Zufallsabweichung (±) der Fluchtrichtung
+    refleeDist: 60, // px: ein fliehendes Tier sucht sich ein neues Ziel, wenn das alte nur noch so nah ist
+    runJitter: [0.9, 1.1], // Zufallsfaktor auf das Fluchttempo (von … bis)
+    migrateTries: 8, // Versuche, einen neuen Weideplatz zu finden, wenn das Rudel weiterzieht
+    arriveFlee: 20, // px: ein Fliehender gilt ab so nah am Ziel als angekommen
+    restFlee: [2, 5], // s: Rast nach der Flucht (Zufall von … bis)
+    arriveWalk: 6, // px: ein Gehender gilt ab so nah am Ziel als angekommen
+    graze: [3, 9], // s: Grasen zwischen zwei Wegen (Zufall von … bis)
+    wanderTries: 6, // Versuche, ein neues Ziel in der Nähe der Rudelmitte zu finden
+    walkJitter: [0.8, 1.2], // Zufallsfaktor auf das Gehtempo (von … bis)
+  },
+  // Bewegung der Einheiten (js/game/movement.js): Neuplanung, Ankunftsradien, Formationsplatz, Austritt aus Häusern, Suchradius
+  move: {
+    repath: 1.0, // s: Neuplanung des Wegs bei Verfolgung eines Ziels
+    blockRepath: 0.5, // s: Neuplanung nach einem blockierten Wegpunkt
+    arrive: 0.5, // px: ein Wegpunkt gilt so nah als erreicht
+    finalArrive: 32, // px: das Endziel gilt so nah als erreicht (Einheiten am selben Sammelpunkt drängeln sich sonst ewig in „move“)
+    settleDone: 4, // px: Formation: so nah am eigenen Platz gilt er als erreicht
+    settleTime: 3, // s: höchstens so lange rückt eine Einheit am Ende auf ihren Formationsplatz nach
+    corner: 48, // px: nahe einer Wegecke geht es bei freier Sicht gleich zum nächsten Wegpunkt (sonst Stau an der Ecke)
+    exitFan: 5, // Winkelplätze beim Verlassen eines Hauses ohne Zielrichtung (Einheit-ID reihum, der mittlere zeigt genau zum Ziel)
+    exitFanStep: 0.3, // rad zwischen zwei Winkelplätzen beim Verlassen eines Hauses
+    exitGap: 14, // px: so weit steht eine Einheit vor der Hauswand, wenn sie das Haus verlässt
+    passableRadius: 30, // Zellen: so weit sucht eine Einheit in einer gesperrten Zelle die nächste passierbare
+  },
+  // Nebel des Krieges (js/game/fog.js; Takt: fogInterval): cell = Kantenlänge einer Nebelzelle (px); Sichtstrahlen im Abstand rayGap (px) am
+  // Rand der Sichtweite (kleiner als eine Zelle), mindestens minRays Strahlen je Einheit, Schrittweite entlang eines Strahls rayStep (px)
+  fog: { cell: 64, rayGap: 44, rayStep: 24, minRays: 16 },
+  // Zielsuche verteilen: eine Einheit mit der ID i beginnt ihre Zielsuche nach (i % slots) × step s (verteilt die Last über die Zeit)
+  scanStagger: { slots: 5, step: 0.05 },
+  spawnRing: 3, // Zellen: so weit rings um das Ausbildungsgebäude sucht eine neue Einheit ihren Platz
+  shellSpeed: 300, // px/s: Flugtempo eines Mörsergeschosses, wenn die Waffe keines nennt (Haubitze schneller)
+  // Kampf: cityMargin = zusätzlicher Suchradius (px) nach Stadtgebäuden als Ziel; cannonDamage = Schaden gegen leichte Panzerung, ab dem ein
+  // Schuss als Kanonenschuss gilt (Geschoss plus kleine Explosion im Bild)
+  combat: { cityMargin: 32, cannonDamage: 60 },
+  // Effekte (rein optisch): Lebensdauer je Art in s, ohne Eintrag lifeDefault
+  effects: { life: { tracer: 0.12, shell: 0.3, explosion: 0.5, intercept: 0.4, muzzle: 0.1, death: 0.1 }, lifeDefault: 0.3 },
+  // Meldungen mit Drosselung (game.notify): Mindestabstand in s zwischen zwei gleichen Meldungen je Team (ohne Eintrag shortageWarn)
+  notify: {
+    crateGone: 5, // „Der Gegner hat die Kiste zuerst“
+    crateStuck: 10, // „Kein Weg zur FOB“
+    crateDrop: 5, // „Kistenträger gefallen“
+    houseTaken: 3, // „Gebäude ist vom Gegner besetzt“
+    houseFull: 3, // „Gebäude ist voll“
+    noUni: 30, // „Forschung ruht: keine Universität“
   },
   // Standards im Startmenü (das Menü merkt sich die letzte Wahl je Gerät). new Game() ohne Angabe schaltet alles aus (Tests).
   menuDefaults: { conquest: true, opponents: 1, difficulty: 'normal', radio: true, weather: 'random', research: true, river: true, buildRules: true }, // buildRules: Baugebiet der Stadt (seit v5.78)

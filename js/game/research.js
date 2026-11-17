@@ -5,6 +5,7 @@
 // Einheiten sind immer alle frei; Forschungen verbessern Werte je Einheitengruppe (fx) oder schalten Fähigkeiten frei (unlock).
 // Aus (Standard in new Game()): keine Verbesserungen. Zustand je Team: team.tech = { tier, done: [Schlüssel], cur: { key, t } | null,
 // queue: [Schlüssel] }. Kein DOM.
+import { BALANCE } from '../data/balance.js';
 import { RESEARCH } from '../data/research.js';
 import { CITY } from '../data/city.js';
 import { cityLevel, citySum, powerRatio } from './city/query.js';
@@ -171,7 +172,7 @@ export function updateResearch(game, dt) {
     if (!cur || !game.mainFob(team.id)) continue;
     const sp = researchSpeed(game, team.id);
     if (sp <= 0) {
-      game.notify(team.id, 'noUni', 'Forschung ruht: keine Universität in der Stadt', 30);
+      game.notify(team.id, 'noUni', 'Forschung ruht: keine Universität in der Stadt', BALANCE.notify.noUni);
       continue;
     }
     cur.t += dt * sp;

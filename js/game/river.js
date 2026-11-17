@@ -3,10 +3,12 @@
 // neutrale Entities (team −1, negative IDs ab −10000) mit Lebenspunkten: Ihre Fahrbahn öffnet die Wasserzellen darunter. Nur auf
 // Befehl beschossen (Häuser-Faktoren), zerstört sperren sie wieder; ein Baufahrzeug baut sie für Geld wieder auf. Kein DOM.
 import { BALANCE } from '../data/balance.js';
+import { MAPGEN } from '../data/mapgen.js';
 import { RELIEF } from './relief.js';
 import { driveTo, setIdle, nearestPassable } from './movement.js';
 
 const RV = BALANCE.river;
+const MG = MAPGEN.river; // Maße des Generators (Fahrbahnrand, Höhe, Haltepunkt)
 const TILE = BALANCE.map.tile;
 const fail = (reason) => ({ ok: false, reason });
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
@@ -21,9 +23,9 @@ function axis(br, x, y) {
   return { d: Math.hypot(x - (br.x1 + tc * dx), y - (br.y1 + tc * dy)), t };
 }
 
-/** Zellen unter der Fahrbahn einer Brücke {x1, y1, x2, y2} (Zellmitte höchstens deck/2 + 8 px neben der Achse, zwischen den Enden). */
+/** Zellen unter der Fahrbahn einer Brücke {x1, y1, x2, y2} (Zellmitte höchstens deck/2 + MAPGEN.river.deckMargin px neben der Achse, zwischen den Enden). */
 function deckCells(grid, br) {
-  const half = RV.deck / 2 + 8;
+  const half = RV.deck / 2 + MG.deckMargin;
   const out = [];
   const c0 = Math.max(0, grid.toCell(Math.min(br.x1, br.x2) - half));
   const c1 = Math.min(grid.cols - 1, grid.toCell(Math.max(br.x1, br.x2) + half));
@@ -90,7 +92,7 @@ export function bridgeShape(src, rel, id) {
     angle: Math.atan2(src.y2 - src.y1, src.x2 - src.x1),
     w: len / TILE, // Reichweiten (radiusOf): halbe Länge
     h: len / TILE,
-    deckH: rel ? Math.max(ends, RELIEF.water + 8) + 2 : 0, // Höhe der Fahrbahn (Iso, Höhenvorteil)
+    deckH: rel ? Math.max(ends, RELIEF.water + MG.deckLift) + 2 : 0, // Höhe der Fahrbahn (Iso, Höhenvorteil)
     hp: RV.bridgeHp,
     maxHp: RV.bridgeHp,
     alive: true, // bleibt als Entity, auch zerstört (broken), damit sie wieder aufgebaut werden kann
@@ -121,7 +123,7 @@ export function createBridges(game) {
 
 /** Intakte Brücke, auf deren Fahrbahn (x, y) liegt, oder null (der ganze geöffnete Streifen zählt: deckCells bis zum Zellrand). */
 export function bridgeUnder(game, x, y) {
-  const half = RV.deck / 2 + 8 + TILE / 2;
+  const half = RV.deck / 2 + MG.deckMargin + TILE / 2;
   for (const b of game.bridges ?? []) {
     if (b.broken) continue;
     const a = axis(b, x, y);
@@ -205,7 +207,7 @@ function stepBridgeBuilder(game, u, dt) {
     return;
   }
   const e = endOf(b, o.end);
-  if (driveTo(game, u, e.x, e.y, RV.reach - 20, dt) === 'stuck') {
+  if (driveTo(game, u, e.x, e.y, RV.reach - MG.stopShort, dt) === 'stuck') {
     o.end = 1 - o.end; // dieses Ufer ist nicht erreichbar: das andere versuchen
     u.repathTimer = 1;
   }

@@ -298,7 +298,7 @@ function blockedAhead(game, u) {
     const dy = o.y - u.y;
     const d = Math.hypot(dx, dy);
     if (d > J.gap || d < 1e-6) continue;
-    if (dx * cx + dy * cy > 0.6 * d && Math.cos(o.angle - u.angle) > 0.3) return true;
+    if (dx * cx + dy * cy > J.taxiAhead * d && Math.cos(o.angle - u.angle) > J.taxiSameDir) return true;
   }
   return false;
 }
@@ -460,7 +460,7 @@ function stepRoll(game, u, dt) {
   turnTo(u, head, J.taxiTurn * dt);
   let d = head - u.angle;
   d = Math.atan2(Math.sin(d), Math.cos(d));
-  if (Math.abs(d) > 0.05) return; // erst ausrichten
+  if (Math.abs(d) > J.taxiAlign) return; // erst ausrichten
   u.jet.v = Math.min(full, u.jet.v + J.accel * dt);
   u.x += R.dx * u.jet.v * dt;
   u.y += R.dy * u.jet.v * dt;
@@ -486,8 +486,8 @@ function stepRollout(game, u, dt) {
   u.y += L.dy * u.jet.v * dt;
   // auf die Mittellinie
   const cross = (u.x - L.tx) * -L.dy + (u.y - L.ty) * L.dx;
-  u.x -= -L.dy * cross * Math.min(1, 4 * dt);
-  u.y -= L.dx * cross * Math.min(1, 4 * dt);
+  u.x -= -L.dy * cross * Math.min(1, J.centerPull * dt);
+  u.y -= L.dx * cross * Math.min(1, J.centerPull * dt);
   const left = (L.ex - u.x) * L.dx + (L.ey - u.y) * L.dy;
   if (u.jet.v > J.taxi && left > c.cell / 2) return;
   // Weg von der Zelle unter dem Jet zum Stellplatz
@@ -521,7 +521,7 @@ function fly(u, tx, ty, dt, tf = 1) {
 
 /** Kreisen um (ox, oy) im Abstand orbit: Ziel ein Stück voraus auf dem Kreis. */
 function circle(u, ox, oy, dt, tf) {
-  const a = Math.atan2(u.y - oy, u.x - ox) + 0.7;
+  const a = Math.atan2(u.y - oy, u.x - ox) + J.circleLead;
   fly(u, ox + Math.cos(a) * J.orbit, oy + Math.sin(a) * J.orbit, dt, tf);
 }
 
@@ -568,20 +568,20 @@ function approach(game, u, e, dt) {
   hd = Math.atan2(Math.sin(hd), Math.cos(hd));
   const head = Math.cos(hd); // 1 = Nase in Landerichtung
   const full = u.jet.speed;
-  const near = dist(u.x, u.y, P.tx, P.ty) < J.final * 2.5;
+  const near = dist(u.x, u.y, P.tx, P.ty) < J.final * J.nearFinal;
   const aligned = head > J.alignHead && Math.abs(cross) < J.alignCross;
   let onFinal = head > J.finalHead && Math.abs(cross) < J.finalCross && along < J.touch + J.zone && along > -J.final * 2;
   // Bahn für die Landung belegen, sobald der Gleitpfad beginnt; belegt: weiter Platzrunde
-  if (onFinal && along > -J.glide - 60 && !lockRunway(game, c, route.rw, u)) onFinal = false;
+  if (onFinal && along > -J.glide - J.lockAhead && !lockRunway(game, c, route.rw, u)) onFinal = false;
   const room = J.touch - along >= Math.abs(cross) * J.turnIn + J.glide * J.turnGlide; // genug Strecke, um auf die Mittellinie einzudrehen
-  const clamp = (p) => ({ x: Math.min(BALANCE.map.width - 100, Math.max(100, p.x)), y: Math.min(BALANCE.map.height - 100, Math.max(100, p.y)) });
+  const clamp = (p) => ({ x: Math.min(BALANCE.map.width - J.edge, Math.max(J.edge, p.x)), y: Math.min(BALANCE.map.height - J.edge, Math.max(J.edge, p.y)) });
   let want = full;
   if (onFinal || (along < -J.base && room && !u.jet.goAround)) {
     const t = W(Math.min(along + J.lead, J.touch + J.lead), 0);
     fly(u, t.x, t.y, dt);
     const glide = onFinal && aligned ? Math.max(0, (J.touch - along) / J.glide) : 1;
     u.jet.alt = glide < u.jet.alt ? Math.max(glide, u.jet.alt - (2 * dt) / J.climb) : Math.min(1, u.jet.alt + dt / J.climb);
-    if (onFinal && along >= J.touch - 2 && u.jet.alt <= 0.02) {
+    if (onFinal && along >= J.touch - 2 && u.jet.alt <= J.touchAlt) {
       u.jet.phase = 'rollout'; // aufgesetzt
       u.jet.slot = undefined; // den Platz am Stellplatz gibt er erst beim Einrollen frei (stepRollout)
       u.jet.alt = 0;
@@ -603,7 +603,7 @@ function approach(game, u, e, dt) {
     }
     fly(u, t.x, t.y, dt);
     u.jet.alt = Math.min(1, u.jet.alt + dt / J.climb);
-    if (along < -J.base * 1.5) u.jet.goAround = false;
+    if (along < -J.base * J.goAroundReset) u.jet.goAround = false;
     if (near) want = J.downwind * full;
   }
   if (along > J.touch + J.zone) u.jet.goAround = true; // verpasst: neue Runde

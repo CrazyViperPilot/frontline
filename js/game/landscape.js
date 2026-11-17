@@ -15,6 +15,7 @@ const W = BALANCE.map.width;
 const H = BALANCE.map.height;
 const TWO_PI = Math.PI * 2;
 
+const T = MAPGEN.terrain;
 const HILLS = MAPGEN.terrain.hills;
 const ZONE_HILLS = MAPGEN.terrain.zoneHills;
 const RIDGES = MAPGEN.terrain.ridges;
@@ -22,13 +23,13 @@ const LAKES = MAPGEN.terrain.lakes;
 const SPAWN_FLAT = MAPGEN.terrain.spawnFlat;
 const SPAWN_BLEND = MAPGEN.terrain.spawnBlend;
 const BASE_LEVEL = MAPGEN.terrain.baseLevel;
-const DRY_LEVEL = RELIEF.water + 22; // Mindesthöhe an Wegen, in der Stadt und an den Startpunkten
+const DRY_LEVEL = RELIEF.water + T.dryLevel; // Mindesthöhe an Wegen, in der Stadt und an den Startpunkten
 // Fluss (v4.53): Bogen um jede Startecke zwischen Startgelände und Konfliktzone, vom einen Kartenrand zum anderen. Wasser halfW px
 // beiderseits der Mitte, Uferhang bank px, Mitte depth unter dem Spiegel. Brücken und Furten an festen Winkeln des Bogens (Grad von
 // der Seitenkante aus; die mittlere Brücke trägt den Feldweg zur Stadt), je ±shift Grad auf das niedrigste Gelände verschoben.
 const RIVER = {
   ...MAPGEN.river,
-  fordBed: RELIEF.water - 1.5, // Furt: so tief steht das Wasser (seicht, man sieht die Strömung über den Steinen)
+  fordBed: RELIEF.water - MAPGEN.river.fordDepth, // Furt: so tief steht das Wasser (seicht, man sieht die Strömung über den Steinen)
 };
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
@@ -91,11 +92,11 @@ export function buildLandscape(seed, keep, { river = false } = {}) {
 
   // Freiraum eines Punktes mit Einflussradius `reach` zu Zone, Startpunkten, Zufahrten, Bahn und Rand
   const clear = (x, y, reach, zoneGap = 0) =>
-    x > 150 && y > 150 && x < W - 150 && y < H - 150 &&
+    x > T.clearEdge && y > T.clearEdge && x < W - T.clearEdge && y < H - T.clearEdge &&
     zoneDist(zone, x, y) > ZR + reach + zoneGap &&
     spawns.every((s) => dist(x, y, s.x, s.y) > SPAWN_BLEND + reach) &&
-    roads.every((r) => segDist(x, y, r.x1, r.y1, r.x2, r.y2).d > reach + 40) &&
-    Math.abs(y - railY) > reach + 60;
+    roads.every((r) => segDist(x, y, r.x1, r.y1, r.x2, r.y2).d > reach + T.clearRoad) &&
+    Math.abs(y - railY) > reach + T.clearRail;
   const mirror = (p) => ({ x: W - p.x, y: H - p.y });
 
   // Bergrücken: Linienzug aus zwei Strecken, Querschnitt glockenförmig, Kamm mit Gipfeln und auslaufenden Enden
@@ -111,26 +112,26 @@ export function buildLandscape(seed, keep, { river = false } = {}) {
     return out;
   };
   for (let i = 0; i < RIDGES; i++) {
-    for (let t = 0; t < 400; t++) {
-      const sigma = rng.range(230, 310);
-      const h = rng.range(190, 250);
-      const x0 = rng.range(300, W - 300);
-      const y0 = rng.range(300, H - 300);
+    for (let t = 0; t < T.ridgeTries; t++) {
+      const sigma = rng.range(...T.ridgeSigma);
+      const h = rng.range(...T.ridgeHeight);
+      const x0 = rng.range(T.ridgeEdge, W - T.ridgeEdge);
+      const y0 = rng.range(T.ridgeEdge, H - T.ridgeEdge);
       let a = rng.next() * TWO_PI;
       const pts = [{ x: x0, y: y0 }];
       for (let s = 0; s < 2; s++) {
-        const len = rng.range(480, 900);
+        const len = rng.range(...T.ridgeLeg);
         const p = pts[pts.length - 1];
         pts.push({ x: p.x + Math.cos(a) * len, y: p.y + Math.sin(a) * len });
-        a += rng.range(-0.7, 0.7);
+        a += rng.range(-T.ridgeTurn, T.ridgeTurn);
       }
-      const rd = { pts, sigma, h, phase: rng.next() * 10, bumps: rng.range(2, 4) };
+      const rd = { pts, sigma, h, phase: rng.next() * T.ridgePhase, bumps: rng.range(...T.ridgeBumps) };
       const samples = ridgePts(rd);
-      const reach = 2.3 * sigma;
+      const reach = T.ridgeReach * sigma;
       if (!samples.every((p) => clear(p.x, p.y, reach))) continue;
       const others = ridges.flatMap((o) => ridgePts(o).map((q) => ({ q, s: o.sigma })));
-      if (!samples.every((p) => others.every(({ q, s }) => dist(p.x, p.y, q.x, q.y) > 1.8 * (sigma + s)))) continue;
-      if (!samples.every((p) => samples.every((q) => dist(p.x, p.y, W - q.x, H - q.y) > 3.6 * sigma))) continue;
+      if (!samples.every((p) => others.every(({ q, s }) => dist(p.x, p.y, q.x, q.y) > T.ridgeSpacing * (sigma + s)))) continue;
+      if (!samples.every((p) => samples.every((q) => dist(p.x, p.y, W - q.x, H - q.y) > T.ridgeMirror * sigma))) continue;
       ridges.push(rd, { ...rd, pts: pts.map(mirror) });
       break;
     }
@@ -140,15 +141,15 @@ export function buildLandscape(seed, keep, { river = false } = {}) {
   const lakes = [];
   const nearRidge = (x, y, gap) => ridges.some((rd) => ridgePts(rd).some((q) => dist(x, y, q.x, q.y) < gap + 2 * rd.sigma));
   for (let i = 0; i < LAKES; i++) {
-    for (let t = 0; t < 300; t++) {
-      const r = rng.range(260, 420);
-      const x = rng.range(300, W - 300);
-      const y = rng.range(300, H - 300);
-      if (!clear(x, y, 1.9 * r, 80) || nearRidge(x, y, 2.2 * r)) continue;
-      if (lakes.some((l) => dist(x, y, l.x, l.y) < 2.4 * (r + l.r) + 200)) continue;
-      if (dist(x, y, W - x, H - y) < 3.4 * r) continue;
+    for (let t = 0; t < T.lakeTries; t++) {
+      const r = rng.range(...T.lakeR);
+      const x = rng.range(T.lakeEdge, W - T.lakeEdge);
+      const y = rng.range(T.lakeEdge, H - T.lakeEdge);
+      if (!clear(x, y, T.lakeClear * r, T.lakeZoneGap) || nearRidge(x, y, T.lakeRidgeGap * r)) continue;
+      if (lakes.some((l) => dist(x, y, l.x, l.y) < T.lakeSpacing * (r + l.r) + T.lakeSpacingAdd)) continue;
+      if (dist(x, y, W - x, H - y) < T.lakeMirror * r) continue;
       // Uferlinie unregelmäßig: Radius schwankt mit dem Winkel (Buchten, Landzungen)
-      const wob = [rng.range(0.08, 0.16), rng.next() * TWO_PI, rng.range(0.05, 0.1), rng.next() * TWO_PI];
+      const wob = [rng.range(...T.lakeWobA), rng.next() * TWO_PI, rng.range(...T.lakeWobB), rng.next() * TWO_PI];
       lakes.push({ x, y, r, wob }, { x: W - x, y: H - y, r, wob: [wob[0], wob[1] + Math.PI * 3, wob[2], wob[3] + Math.PI * 5] });
       break;
     }
@@ -157,28 +158,28 @@ export function buildLandscape(seed, keep, { river = false } = {}) {
   // Hügel: sanft genug, dass man hinauffahren kann (max. Neigung ≈ 0,6 · h / σ)
   const hills = [];
   for (let i = 0; i < HILLS; i++) {
-    for (let t = 0; t < 300; t++) {
-      const h = rng.range(80, 150);
-      const sigma = Math.max(2.4 * h, rng.range(330, 520));
-      const x = rng.range(200, W - 200);
-      const y = rng.range(200, H - 200);
+    for (let t = 0; t < T.hillTries; t++) {
+      const h = rng.range(...T.hillHeight);
+      const sigma = Math.max(T.hillSigmaMin * h, rng.range(...T.hillSigma));
+      const x = rng.range(T.hillEdge, W - T.hillEdge);
+      const y = rng.range(T.hillEdge, H - T.hillEdge);
       const dz = zoneDist(zone, x, y);
-      if (dz < ZR + 2 * sigma && h > 0.2 * sigma) continue; // an der Stadt nur ganz flache Hügel
-      if (dz < ZR - 200) continue;
-      if (lakes.some((l) => dist(x, y, l.x, l.y) < 2.4 * l.r + 2 * sigma)) continue;
+      if (dz < ZR + 2 * sigma && h > T.hillZoneSlope * sigma) continue; // an der Stadt nur ganz flache Hügel
+      if (dz < ZR - T.hillZoneInner) continue;
+      if (lakes.some((l) => dist(x, y, l.x, l.y) < T.hillLakeGap * l.r + 2 * sigma)) continue;
       if (spawns.some((s) => dist(x, y, s.x, s.y) < SPAWN_FLAT)) continue;
-      if (dist(x, y, W - x, H - y) < 3 * sigma) continue;
+      if (dist(x, y, W - x, H - y) < T.hillMirror * sigma) continue;
       hills.push({ x, y, h, sigma }, { x: W - x, y: H - y, h, sigma });
       break;
     }
   }
   for (let i = 0; i < ZONE_HILLS; i++) {
     const a = rng.next() * TWO_PI;
-    const d = rng.range(700, ZR - 900);
+    const d = rng.range(T.zoneHillIn, ZR - T.zoneHillOut);
     const x = zone.x + Math.cos(a) * d;
     const y = zone.y + Math.sin(a) * d;
-    const h = rng.range(40, 70);
-    const sigma = rng.range(480, 650);
+    const h = rng.range(...T.zoneHillHeight);
+    const sigma = rng.range(...T.zoneHillSigma);
     hills.push({ x, y, h, sigma }, { x: W - x, y: H - y, h, sigma });
   }
 
@@ -186,8 +187,9 @@ export function buildLandscape(seed, keep, { river = false } = {}) {
   const n = COARSE_N;
   const res = RELIEF.res;
   const coarse = new Float32Array(n * n);
+  const [N0, N1, N2] = T.baseNoise;
   const base = (x, y) =>
-    46 * noise(x / 2600 + 3.1, y / 2600 + 7.7) + 22 * noise(x / 1300 + 11.3, y / 1300 + 1.9) + 10 * noise(x / 650 + 5.5, y / 650 + 13.1);
+    N0.amp * noise(x / N0.scale + N0.ox, y / N0.scale + N0.oy) + N1.amp * noise(x / N1.scale + N1.ox, y / N1.scale + N1.oy) + N2.amp * noise(x / N2.scale + N2.ox, y / N2.scale + N2.oy);
   const ridgeAt = (rd, x, y) => {
     let best = Infinity;
     let along = 0;
@@ -205,12 +207,12 @@ export function buildLandscape(seed, keep, { river = false } = {}) {
       total += L;
     }
     along = at / total;
-    if (best > 3 * rd.sigma) return 0;
-    const env = smooth(0, 0.22, along) * smooth(1, 0.78, along);
-    const crest = rd.h * env * (0.8 + 0.2 * Math.sin(along * rd.bumps * TWO_PI + rd.phase));
+    if (best > T.ridgeCut * rd.sigma) return 0;
+    const env = smooth(0, T.ridgeFadeIn, along) * smooth(1, T.ridgeFadeOut, along);
+    const crest = rd.h * env * (T.ridgeCrest + T.ridgeBump * Math.sin(along * rd.bumps * TWO_PI + rd.phase));
     // Querschnitt spitz zulaufend: Flanken und Kamm sind steil (Fels), der Fuß läuft flach aus
-    const f = Math.max(0, 1 - best / (2.4 * rd.sigma));
-    return crest * f ** 1.7;
+    const f = Math.max(0, 1 - best / (T.ridgeFoot * rd.sigma));
+    return crest * f ** T.ridgeShape;
   };
   for (let j = 0; j < n; j++) {
     for (let i = 0; i < n; i++) {
@@ -218,7 +220,7 @@ export function buildLandscape(seed, keep, { river = false } = {}) {
       const y = j * res;
       const dz = zoneDist(zone, x, y); // in der Form der Zone (Kreis oder Quadrat der Eroberung)
       // Grund: punktsymmetrisch gemittelt, in der Stadt stark gedämpft
-      let h = BASE_LEVEL + 0.7 * (base(x, y) + base(W - x, H - y)) * (0.25 + 0.75 * smooth(ZR - 700, ZR + 800, dz));
+      let h = BASE_LEVEL + T.baseMix * (base(x, y) + base(W - x, H - y)) * (T.townDamp + T.townGain * smooth(ZR - T.townDampIn, ZR + T.townDampOut, dz));
       for (const hl of hills) h += hl.h * Math.exp(-((dist(x, y, hl.x, hl.y) / hl.sigma) ** 2));
       let peak = 0;
       for (const rd of ridges) peak = Math.max(peak, ridgeAt(rd, x, y));
@@ -227,18 +229,18 @@ export function buildLandscape(seed, keep, { river = false } = {}) {
       for (const l of lakes) {
         const th = Math.atan2(y - l.y, x - l.x);
         const d = dist(x, y, l.x, l.y) / (1 + l.wob[0] * Math.sin(3 * th + l.wob[1]) + l.wob[2] * Math.sin(5 * th + l.wob[3]));
-        const w = 1 - smooth(0.85 * l.r, 2.7 * l.r, d);
+        const w = 1 - smooth(T.lakeShoreIn * l.r, T.lakeShoreOut * l.r, d);
         if (w <= 0) continue;
-        const bed = d < l.r ? RELIEF.water - 48 * (1 - (d / l.r) ** 2) : RELIEF.water + 3;
+        const bed = d < l.r ? RELIEF.water - T.lakeDepth * (1 - (d / l.r) ** 2) : RELIEF.water + T.lakeRim;
         h += (bed - h) * w;
       }
       // Zufahrten, Bahn und Stadt liegen nie unter Wasser (kein Tümpel auf dem Weg)
       let near = Math.abs(y - railY);
       for (const r of roads) near = Math.min(near, segDist(x, y, r.x1, r.y1, r.x2, r.y2).d);
-      const dry = Math.max(1 - smooth(70, 260, near), 1 - smooth(ZR, ZR + 300, dz));
+      const dry = Math.max(1 - smooth(T.dryRoadIn, T.dryRoadOut, near), 1 - smooth(ZR, ZR + T.dryZoneOut, dz));
       if (h < DRY_LEVEL) h += (DRY_LEVEL - h) * dry;
       // Gipfel weich begrenzen (Speicherformat reicht bis 382)
-      if (h > 330) h = 330 + (h - 330) * 0.5;
+      if (h > T.peakSoft) h = T.peakSoft + (h - T.peakSoft) * T.peakSoftRate;
       coarse[j * n + i] = Math.max(-118, Math.min(372, h));
     }
   }
@@ -271,7 +273,7 @@ export const RIVER_SIZE = { halfW: RIVER.halfW, reach: RIVER.halfW + RIVER.bank,
 /** Gelände im Flusslauf: d = Abstand zur Flussmitte, h0 = Höhe vorher (Wasser bis halfW, dann der Uferhang bis halfW + bank). */
 export function riverHeight(h0, d) {
   const RW = RIVER.halfW;
-  if (d < RW) return Math.min(h0, RELIEF.water - 3 - RIVER.depth * (1 - (d / RW) ** 2));
+  if (d < RW) return Math.min(h0, RELIEF.water - RIVER.bedBelow - RIVER.depth * (1 - (d / RW) ** 2));
   if (d < RW + RIVER.bank) return Math.min(h0, RELIEF.water + 2 + (h0 - RELIEF.water - 2) * smooth(RW, RW + RIVER.bank, d));
   return h0;
 }
@@ -312,27 +314,27 @@ function carveRivers(coarse, seed, keep) {
       return { x: corner.x + r * (Math.cos(th) * u.x + Math.sin(th) * v.x), y: corner.y + r * (Math.cos(th) * u.y + Math.sin(th) * v.y) };
     };
     const pts = [];
-    for (let d = -12; d <= 102; d += 1.5) pts.push(at(d * DEG));
+    for (let d = RIVER.arc[0]; d <= RIVER.arc[1]; d += RIVER.arcStep) pts.push(at(d * DEG));
     return { at, pts };
   };
   const ok = (rv) =>
     rv.pts.every((q) => {
-      if (q.x < -50 || q.y < -50 || q.x > W + 50 || q.y > H + 50) return true;
+      if (q.x < -RIVER.offMap || q.y < -RIVER.offMap || q.x > W + RIVER.offMap || q.y > H + RIVER.offMap) return true;
       return (
         dist(q.x, q.y, s0.x, s0.y) > SPAWN_BLEND + RW &&
-        dist(q.x, q.y, zone.x, zone.y) > zone.r + reach + 40 && // Fluss: immer der Kreis (zwischen Bauland und Quadrat-Ecke ist kein Platz)
+        dist(q.x, q.y, zone.x, zone.y) > zone.r + reach + RIVER.zoneGap && // Fluss: immer der Kreis (zwischen Bauland und Quadrat-Ecke ist kein Platz)
         coarseAt(coarse, q.x, q.y) < RIVER.maxH
       );
     });
   let rv = null;
-  for (let t = 0; t < 60 && !rv; t++) {
+  for (let t = 0; t < RIVER.tries && !rv; t++) {
     const p = {
       r0: rng.range(...RIVER.r),
-      a1: rng.range(60, 150),
-      k1: rng.range(2.5, 4.5),
+      a1: rng.range(...RIVER.swing1),
+      k1: rng.range(...RIVER.wave1),
       f1: rng.next() * TWO_PI,
-      a2: rng.range(20, 50),
-      k2: rng.range(7, 11),
+      a2: rng.range(...RIVER.swing2),
+      k2: rng.range(...RIVER.wave2),
       f2: rng.next() * TWO_PI,
     };
     const cand = make(p);
@@ -355,13 +357,13 @@ function carveRivers(coarse, seed, keep) {
         let hmax = -Infinity;
         let wet = 0; // Seen hinter dem Ufer: dort führte die Zufahrt ins Wasser
         for (const s of [-1, 1]) {
-          for (let k = 1; k <= 6; k++) {
-            const h = coarseAt(coarse, q.x + nx * s * (RW + 110 * k), q.y + ny * s * (RW + 110 * k));
-            if (k <= 4) hmax = Math.max(hmax, h);
-            if (h < RELIEF.water + 4) wet++;
+          for (let k = 1; k <= RIVER.probes; k++) {
+            const h = coarseAt(coarse, q.x + nx * s * (RW + RIVER.probeStep * k), q.y + ny * s * (RW + RIVER.probeStep * k));
+            if (k <= RIVER.probeKeep) hmax = Math.max(hmax, h);
+            if (h < RELIEF.water + RIVER.wetLevel) wet++;
           }
         }
-        hmax += wet * 1000;
+        hmax += wet * RIVER.wetPenalty;
         if (hmax < bestH) {
           bestH = hmax;
           best = d;
@@ -401,7 +403,7 @@ function carveRivers(coarse, seed, keep) {
     return { x, y, nx, ny, cross, off: Math.abs((x - q.x) * q.nx + (y - q.y) * q.ny) };
   };
   const sites = [
-    ...RIVER.bridges.map((d) => ({ ...snapBridge(site(d, d === 45)), kind: 'bridge' })),
+    ...RIVER.bridges.map((d) => ({ ...snapBridge(site(d, d === RIVER.straight)), kind: 'bridge' })),
     ...RIVER.fords.map((d) => ({ ...site(d, false), kind: 'ford' })),
   ];
   const all = [...sites, ...sites.map((q) => ({ ...q, ...mirror(q), nx: -q.nx, ny: -q.ny }))];
@@ -413,7 +415,7 @@ function carveRivers(coarse, seed, keep) {
       for (let k = 0; k < pts.length - 1; k++) {
         const a = pts[k];
         const b = pts[k + 1];
-        if (Math.abs(x - a.x) > reach + 700 || Math.abs(y - a.y) > reach + 700) continue;
+        if (Math.abs(x - a.x) > reach + RIVER.influence || Math.abs(y - a.y) > reach + RIVER.influence) continue;
         best = Math.min(best, segDist(x, y, a.x, a.y, b.x, b.y).d);
       }
     }
@@ -426,23 +428,23 @@ function carveRivers(coarse, seed, keep) {
       const x = i * res;
       const y = j * res;
       const d = nearLine(x, y);
-      if (d > reach + 700) continue;
+      if (d > reach + RIVER.influence) continue;
       const k = j * n + i;
       const h0 = coarse[k];
       let h = riverHeight(h0, d);
       // flache Zufahrten an Brücken und Furten; in der Furt seichtes Wasser
       for (const q of all) {
         const e = dist(x, y, q.x, q.y);
-        if (e > 900) continue;
+        if (e > RIVER.rampReach) continue;
         // Brücken: Abstand zur Brückenachse (die Zufahrt folgt der Brücke, auch bei schräger Querung); Furten: entlang des Flusses
         const along = q.kind === 'bridge' ? Math.abs((x - q.x) * q.ny - (y - q.y) * q.nx) : Math.sqrt(Math.max(0, e * e - d * d));
-        const w = (1 - smooth(130, 250, along)) * (1 - smooth(RW + 450, RW + 650, d));
+        const w = (1 - smooth(RIVER.rampIn, RIVER.rampOut, along)) * (1 - smooth(RW + RIVER.rampBankIn, RW + RIVER.rampBankOut, d));
         if (w <= 0) continue;
         const ford = q.kind === 'ford';
         if (d < RW && !ford) continue; // unter der Brücke bleibt das Wasser tief
-        const ramp = (ford ? RIVER.fordBed : RELIEF.water + 3) + Math.max(0, d - RW) * RIVER.ramp;
+        const ramp = (ford ? RIVER.fordBed : RELIEF.water + RIVER.rampBase) + Math.max(0, d - RW) * RIVER.ramp;
         // In der Furt immer seicht; an Land die Zufahrt: Hügel abgetragen, Senken und Seen knapp übers Wasser aufgefüllt
-        const target = d < RW ? RIVER.fordBed : Math.min(Math.max(h0, RELIEF.water + 6), ramp);
+        const target = d < RW ? RIVER.fordBed : Math.min(Math.max(h0, RELIEF.water + RIVER.rampMin), ramp);
         h += (target - h) * w;
       }
       coarse[k] = Math.max(-118, h);
@@ -469,11 +471,11 @@ function carveRivers(coarse, seed, keep) {
   const clearings = [];
   for (const q of all) {
     if (q.kind === 'ford') {
-      for (const s of [-1, 1]) clearings.push({ x: q.x + q.nx * s * (RW + 180), y: q.y + q.ny * s * (RW + 180), r: 260 });
-      clearings.push({ x: q.x, y: q.y, r: 220 });
+      for (const s of [-1, 1]) clearings.push({ x: q.x + q.nx * s * (RW + RIVER.fordClearOff), y: q.y + q.ny * s * (RW + RIVER.fordClearOff), r: RIVER.fordClearR });
+      clearings.push({ x: q.x, y: q.y, r: RIVER.fordClearMid });
     } else {
       const h = halfOf(q);
-      for (const s of [-1, 1]) clearings.push({ x: q.x + q.nx * s * (h + 90), y: q.y + q.ny * s * (h + 90), r: 200 });
+      for (const s of [-1, 1]) clearings.push({ x: q.x + q.nx * s * (h + RIVER.bridgeClearOff), y: q.y + q.ny * s * (h + RIVER.bridgeClearOff), r: RIVER.bridgeClearR });
       clearings.push({ x: q.x, y: q.y, r: h });
     }
   }
@@ -487,7 +489,7 @@ export function groundOk(relief, x, y, r = 0, maxSlope = RELIEF.rock) {
   const pts = [[x, y]];
   if (r > 0) for (let k = 0; k < 8; k++) pts.push([x + Math.cos((k * TWO_PI) / 8) * r, y + Math.sin((k * TWO_PI) / 8) * r]);
   for (const [px, py] of pts) {
-    if (relief.heightAt(px, py) < RELIEF.water + 8) return false;
+    if (relief.heightAt(px, py) < RELIEF.water + T.groundDry) return false;
     const g = relief.gradAt(px, py);
     if (Math.hypot(g.x, g.y) > maxSlope) return false;
   }
@@ -498,7 +500,7 @@ export function groundOk(relief, x, y, r = 0, maxSlope = RELIEF.rock) {
  * Zählt getrennte Wege von `from` nach `to` (bis `want`): Weg suchen, den Korridor um ihn (Radius `band`) sperren, erneut
  * suchen. Kreise in `keepOut` (Startbereich, Konfliktzone) werden nie gesperrt. Das Raster bleibt unverändert.
  */
-export function countRoutes(grid, from, to, { want = 3, band = 340, keepOut = [] } = {}) {
+export function countRoutes(grid, from, to, { want = MAPGEN.general.routeWant, band = MAPGEN.general.routeBand, keepOut = [] } = {}) {
   const saved = grid.terrain.slice();
   const t = grid.tile;
   const rc = Math.ceil(band / t);

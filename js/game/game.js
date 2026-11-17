@@ -49,7 +49,7 @@ const TILE = BALANCE.map.tile;
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;
 const NOISY = new Set(['tracer', 'shell', 'explosion', 'muzzle']); // Effekte, die Stadtbewohner in der Konfliktzone vertreiben (cityNoise in js/game/city/state.js)
-const EFFECT_LIFE = { tracer: 0.12, shell: 0.3, explosion: 0.5, intercept: 0.4, muzzle: 0.1, death: 0.1 };
+const EFFECT_LIFE = BALANCE.effects.life; // Lebensdauer je Effektart (s)
 const SHORTAGE_TEXT = {
   mun: 'Einheiten ohne Munition',
   fuel: 'Fahrzeuge ohne Treibstoff',
@@ -58,7 +58,7 @@ const SHORTAGE_TEXT = {
 
 const zeroRes = () => ({ money: 0, bm: 0, mun: 0, fuel: 0 });
 
-const START_STEP = 12; // Rastergröße der Startplätze (px)
+const START_STEP = BALANCE.startLayout.step; // Rastergröße der Startplätze (px)
 
 /**
  * Startaufstellung um die Hauptstadt nach Truppengattung getrennt (BALANCE.startLayout): jede Gattung hat einen Ankerpunkt
@@ -73,12 +73,12 @@ function startFormation(grid, team, cx, cy, types) {
   fy /= fl;
   const layout = BALANCE.startLayout;
   const R = layout.maxDist;
-  // Kandidaten in Ringen 60–R px um die FOB (FOB-Mitte liegt im Gebäude und ist nicht passierbar)
+  // Kandidaten in Ringen minDist–R px um die FOB (FOB-Mitte liegt im Gebäude und ist nicht passierbar)
   const cands = [];
   for (let dy = -R; dy <= R; dy += START_STEP) {
     for (let dx = -R; dx <= R; dx += START_STEP) {
       const r = Math.hypot(dx, dy);
-      if (r < 60 || r > R) continue;
+      if (r < layout.minDist || r > R) continue;
       const x = cx + dx;
       const y = cy + dy;
       if (!grid.passable(grid.toCell(x), grid.toCell(y), team)) continue;
@@ -309,7 +309,7 @@ export class Game {
 
   /** `snd`: Hinweis für den Ton (ui/Sound): Waffen-ID, Rüstungsklasse eines Gefallenen oder 'building'; die Simulation wertet ihn nicht aus. */
   addEffect(type, x, y, team = -1, x2 = x, y2 = y, snd = null) {
-    this.effects.push({ type, x, y, x2, y2, team, snd, t: 0, life: EFFECT_LIFE[type] ?? 0.3 });
+    this.effects.push({ type, x, y, x2, y2, team, snd, t: 0, life: EFFECT_LIFE[type] ?? BALANCE.effects.lifeDefault });
     if (this.city && NOISY.has(type)) {
       cityNoise(this, x, y); // Stadt: Bewohner der Konfliktzone fliehen vor Schüssen und Einschlägen
       if (x2 !== x || y2 !== y) cityNoise(this, x2, y2);

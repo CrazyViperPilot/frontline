@@ -15,10 +15,10 @@ const H = BALANCE.map.height;
 const fail = (reason) => ({ ok: false, reason });
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 
-/** Freie Formationspunkte im 24-px-Raster um (x, y), nach Entfernung sortiert. */
+/** Freie Formationspunkte im Raster formation.spotStep (px) um (x, y), nach Entfernung sortiert. */
 function formationSpots(game, team, x, y, n) {
-  const step = 24;
-  const R = Math.ceil(Math.sqrt(n)) + 4;
+  const step = BALANCE.formation.spotStep;
+  const R = Math.ceil(Math.sqrt(n)) + BALANCE.formation.spotRingExtra;
   const cand = [];
   for (let j = -R; j <= R; j++) {
     for (let i = -R; i <= R; i++) {

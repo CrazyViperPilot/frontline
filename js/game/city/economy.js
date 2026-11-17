@@ -56,7 +56,7 @@ function calmMarket(c, dt) {
   if (!heat) return;
   for (const g of Object.keys(heat)) {
     heat[g] -= heat[g] * CITY.market.calm * dt;
-    if (heat[g] < 0.001) heat[g] = 0;
+    if (heat[g] < CITY.market.heatMin) heat[g] = 0;
   }
 }
 
@@ -120,7 +120,7 @@ function clearRuins(game, c, id) {
 /** Treffer merken (KI meidet die Gegend beim Bauen und schickt Verteidiger). */
 function logHits(game, c, dt) {
   for (const e of c.ents.values()) {
-    if (e.lastHitTime > game.time - dt * 1.5) {
+    if (e.lastHitTime > game.time - dt * CITY.hitFresh) {
       c.hitLog = (c.hitLog ?? []).filter((h) => h.t > game.time - CITY.ai.dangerTime).slice(1 - CITY.ai.hitLog);
       c.hitLog.push({ x: e.x, y: e.y, t: game.time });
     }

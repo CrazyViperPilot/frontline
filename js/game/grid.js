@@ -137,7 +137,7 @@ export class Grid {
    */
   rasterizeRelief(relief, fords = []) {
     if (!relief) return;
-    const k = BALANCE.slope.pathCost * 10;
+    const k = BALANCE.slope.pathCost * BALANCE.path.costDiv;
     const R = BALANCE.river;
     this.cost = new Uint8Array(this.cols * this.rows);
     this.ford = fords.length ? new Uint8Array(this.cols * this.rows) : null;

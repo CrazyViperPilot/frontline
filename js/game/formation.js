@@ -35,7 +35,7 @@ function layout(kind, n, s) {
     // gefüllter Keil: Reihe r hat r + 1 Plätze, die Spitze vorn
     for (let r = 0, i = 0; i < n; r++) {
       const inRow = Math.min(r + 1, n - i);
-      for (let j = 0; j < inRow; j++, i++) out.push({ lat: (j - (inRow - 1) / 2) * s, back: r * s * 0.85 });
+      for (let j = 0; j < inRow; j++, i++) out.push({ lat: (j - (inRow - 1) / 2) * s, back: r * s * F.wedgeBack });
     }
   } else {
     const width = n > F.columnSingle ? 2 : 1;
@@ -68,12 +68,12 @@ export function formationSlots(game, team, units, tx, ty, kind) {
   const s = Math.min(F.spacingMax, Math.max(F.spacingMin, 2 * Math.max(...ground.map((u) => u.def.radius)) + F.gap));
   const grid = game.grid;
   const taken = [];
-  const free = (x, y) => grid.passable(grid.toCell(x), grid.toCell(y), team) && taken.every((p) => dist(p.x, p.y, x, y) >= s * 0.6);
+  const free = (x, y) => grid.passable(grid.toCell(x), grid.toCell(y), team) && taken.every((p) => dist(p.x, p.y, x, y) >= s * F.minGap);
   const place = (x, y) => {
     let best = free(x, y) ? { x, y } : null;
-    for (let r = s * 0.5; !best && r <= s * 4; r += s * 0.5) {
-      for (let k = 0; k < 12 && !best; k++) {
-        const a = (k / 12) * Math.PI * 2;
+    for (let r = s * F.ringStep; !best && r <= s * F.ringMax; r += s * F.ringStep) {
+      for (let k = 0; k < F.ringSpots && !best; k++) {
+        const a = (k / F.ringSpots) * Math.PI * 2;
         if (free(x + Math.cos(a) * r, y + Math.sin(a) * r)) best = { x: x + Math.cos(a) * r, y: y + Math.sin(a) * r };
       }
     }

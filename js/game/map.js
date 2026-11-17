@@ -34,6 +34,13 @@ const OBSTACLE_PAIRS = MAPGEN.scatter.obstaclePairs;
 const MIN_ROUTES = MAPGEN.general.minRoutes;
 const BUILD_LAND = MAPGEN.general.buildLand; // Bauland um die Startpunkte (seit v5.03)
 const ZONE_SLOPE = MAPGEN.general.zoneSlope;
+const GEN = MAPGEN.general;
+const SC = MAPGEN.scatter;
+const TOWN = MAPGEN.town;
+const OUT = MAPGEN.outposts;
+const CR = MAPGEN.crates;
+const FARM = MAPGEN.farms;
+const RV = MAPGEN.river;
 const TWO_PI = Math.PI * 2;
 
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
@@ -41,7 +48,7 @@ const reaches = (path, x, y) => path.length > 0 && path[path.length - 1].x === x
 
 /**
  * Erzeugt eine Karte. Scheitert die Platzierung oder ist die Karte nicht zusammenhängend,
- * wird mit seed + 1, + 2, … neu versucht (max. 20×).
+ * wird mit seed + 1, + 2, … neu versucht (höchstens MAPGEN.general.attempts ×).
  * river: je ein Fluss vor jeder Startecke mit Brücken und Furten (v4.53; ohne ihn bleibt jede Karte wie zuvor).
  * @returns {{ width, height, tile, obstacles: {x,y,r}[], town: {roads, buildings, parks, cars, trees, fields}, trees: {x,y,r}[] (Bäume außerhalb der Stadt; wie die Stadtbäume blockierend), spawns: {x,y}[], zone: {x,y,r}, crates: {x,y}[] (Versorgungskisten), relief: string (Höhengelände, relief.js), fords?: {x,y,r}[], bridges?: {x1,y1,x2,y2}[] (nur mit Fluss) }}
  */
@@ -74,11 +81,11 @@ function tryBuild(seed, river = false) {
   const obstacles = [];
   for (let i = 0; i < OBSTACLE_PAIRS; i++) {
     let ob = null;
-    for (let t = 0; t < 300 && !ob; t++) {
-      const r = 2 * Math.round(rng.range(30, 90)); // immer gerade: nur Wald, keine Felsen
+    for (let t = 0; t < SC.obstacleTries && !ob; t++) {
+      const r = 2 * Math.round(rng.range(...SC.obstacleR)); // immer gerade: nur Wald, keine Felsen
       const x = Math.round(rng.range(r, W - r));
       const y = Math.round(rng.range(r, H - r));
-      if (zd(x, y) < ZONE_R + r + 40) continue; // Stadt bleibt frei von Felsen/Wald
+      if (zd(x, y) < ZONE_R + r + SC.obstacleZoneGap) continue; // Stadt bleibt frei von Felsen/Wald
       if (inRail(y, r)) continue; // Bahnlinie bleibt frei
       if (SPAWNS.some((s) => dist(x, y, s.x, s.y) < BUILD_LAND + r)) continue;
       if (!groundOk(relief, x, y, r) || !groundOk(relief, W - x, H - y, r)) continue;
@@ -149,18 +156,18 @@ function regionSize(grid, x, y, cap, within = null, goal = null) {
 }
 
 /**
- * Jede Brücke und Furt führt wirklich hinüber: beide Ufer (RW + 250 px quer zur Mitte) sind frei, auf kurzem Weg über die Querung
+ * Jede Brücke und Furt führt wirklich hinüber: beide Ufer (RW + MAPGEN.general.crossBank px quer zur Mitte) sind frei, auf kurzem Weg über die Querung
  * verbunden und gehören, wenn alle Querungen gesperrt sind, je zu einem großen Gebiet (keine Tasche hinter Fels oder See).
  */
 function crossingsOk(grid, crossings) {
-  const off = RIVER_SIZE.halfW + 250;
+  const off = RIVER_SIZE.halfW + GEN.crossBank;
   const banks = crossings.map((q) => [
     { x: q.x - q.nx * off, y: q.y - q.ny * off },
     { x: q.x + q.nx * off, y: q.y + q.ny * off },
   ]);
   for (let k = 0; k < crossings.length; k++) {
     const [a, b] = banks[k];
-    if (!regionSize(grid, a.x, a.y, Infinity, { x: crossings[k].x, y: crossings[k].y, r: off + 200 }, b).hit) return false;
+    if (!regionSize(grid, a.x, a.y, Infinity, { x: crossings[k].x, y: crossings[k].y, r: off + GEN.crossReach }, b).hit) return false;
   }
   // alle Querungen zu: Brücken wieder gesperrt, Furten auch
   const closed = new Grid(grid.cols, grid.rows, grid.tile);
@@ -171,7 +178,7 @@ function crossingsOk(grid, crossings) {
   return banks.every((pair) => pair.every((p) => regionSize(closed, p.x, p.y, CROSS_REGION).n >= CROSS_REGION));
 }
 
-/** Straßen ohne ihre Stücke über Wasser (Abtastung alle 8 px); was kürzer als 40 px bleibt, entfällt. */
+/** Straßen ohne ihre Stücke über Wasser (Abtastung alle 8 px); was kürzer als MAPGEN.river.minPiece px bleibt, entfällt. */
 function cutRoads(roads, relief) {
   const out = [];
   for (const r of roads) {
@@ -180,7 +187,7 @@ function cutRoads(roads, relief) {
     const wet = (i) => relief.heightAt(r.x1 + ((r.x2 - r.x1) * i) / n, r.y1 + ((r.y2 - r.y1) * i) / n) < RELIEF.water + 1;
     let start = null;
     const push = (i0, i1) => {
-      if (((i1 - i0) / n) * len < 40) return;
+      if (((i1 - i0) / n) * len < RV.minPiece) return;
       const at = (i) => [Math.round(r.x1 + ((r.x2 - r.x1) * i) / n), Math.round(r.y1 + ((r.y2 - r.y1) * i) / n)];
       const [x1, y1] = at(i0);
       const [x2, y2] = at(i1);
@@ -203,7 +210,7 @@ function cutRoads(roads, relief) {
 function accessRoads() {
   return SPAWNS.map((s) => {
     const a = Math.atan2(CY - s.y, CX - s.x);
-    return { x1: s.x, y1: s.y, x2: CX - Math.cos(a) * (ZONE_R - 80), y2: CY - Math.sin(a) * (ZONE_R - 80) };
+    return { x1: s.x, y1: s.y, x2: CX - Math.cos(a) * (ZONE_R - TOWN.accessEnd), y2: CY - Math.sin(a) * (ZONE_R - TOWN.accessEnd) };
   });
 }
 
@@ -249,23 +256,21 @@ function blockGrid(obstacles, buildings, trees, relief, fords = [], bridges = []
 
 function isConnected(grid) {
   const [a, b] = SPAWNS;
-  const cy = CY - RAIL_HALF - 20; // Zonenmitte liegt unter dem Zug: Nachbarpunkt prüfen
+  const cy = CY - RAIL_HALF - TOWN.railMargin; // Zonenmitte liegt unter dem Zug: Nachbarpunkt prüfen
   if (!reaches(findPath(grid, a.x, a.y, CX, cy, 0), CX, cy)) return false;
   if (!reaches(findPath(grid, a.x, a.y, b.x, b.y, 0), b.x, b.y)) return false;
   for (const o of SPAWNS.slice(2)) if (!reaches(findPath(grid, o.x, o.y, CX, cy, 0), CX, cy)) return false; // weitere Startecken (Eroberung)
   // Mehrere getrennte Zugänge zur Zone (die Karte ist punktsymmetrisch: Start 0 genügt)
-  const keepOut = [{ x: a.x, y: a.y, r: 900 }, { x: CX, y: CY, r: ZONE_R }];
+  const keepOut = [{ x: a.x, y: a.y, r: GEN.routeKeepOut }, { x: CX, y: CY, r: ZONE_R }];
   return countRoutes(grid, a, { x: CX, y: cy }, { want: MIN_ROUTES, keepOut }) >= MIN_ROUTES;
 }
 
 // ---- Osteuropäische Stadt in der Konfliktzone (punktsymmetrisch um die Zonenmitte) ----
 // Bahnlinie: gerade quer über die Karte durch die Zonenmitte (y = CY), Schienen sind begehbar, der stehende Zug in der Mitte nicht.
 const RAIL_HALF = MAPGEN.town.railHalf;
-const TRAIN = [
-  { part: 'tank', dx: -100 },
-  { part: 'container', dx: 0 },
-  { part: 'loco', dx: 100 },
-];
+const TRAIN = TOWN.train;
+const [TRAIN_W, TRAIN_H] = TOWN.trainSize;
+const [ROLL_HOUSES, ROLL_FACTORY, ROLL_HALL, ROLL_PARK] = TOWN.lotRolls; // Obergrenzen der Blockarten
 const inRail = (y, pad = 0) => Math.abs(y - CY) < RAIL_HALF + pad;
 const BLOCK = MAPGEN.town.block;
 const ROAD_W = MAPGEN.town.roadW;
@@ -279,8 +284,8 @@ const CAR_COLORS = ['#b8b8b0', '#8a2f2f', '#2f4f7a', '#d0c060', '#3b3b3b', '#d8d
 const TOWER_SIZE = MAPGEN.town.towerSize;
 // oben (Mitte) und links (knapp über der Bahnlinie); unten und rechts entstehen als Spiegelbild
 const TOWER_AT = [
-  { x: CX, y: CY - 0.86 * ZONE_R },
-  { x: CX - 0.86 * ZONE_R, y: CY - 190 },
+  { x: CX, y: CY - TOWN.towerRim * ZONE_R },
+  { x: CX - TOWN.towerRim * ZONE_R, y: CY - TOWN.towerLeftDy },
 ];
 
 /** Große Blöcke (MAPGEN.town.bigBlocks) samt Spiegelbild: Blockindizes i0..i0+1, j0..j0+1. */
@@ -316,13 +321,13 @@ function buildTown(rng) {
   const parks = [];
   const cars = [];
   const trees = [];
-  const span = Math.floor((ZONE_R - 150) / BLOCK); // Blöcke je Richtung vom Zentrum
+  const span = Math.floor((ZONE_R - TOWN.blockMargin) / BLOCK); // Blöcke je Richtung vom Zentrum
 
   // Straßen zwischen den Blöcken, an der Zonenkante gekappt (Kreissehne)
   for (let k = -span - 1; k <= span; k++) {
     const off = (k + 0.5) * BLOCK;
-    const half = Math.sqrt(Math.max(0, (ZONE_R - 60) ** 2 - off * off));
-    if (half < 100) continue;
+    const half = Math.sqrt(Math.max(0, (ZONE_R - TOWN.roadRim) ** 2 - off * off));
+    if (half < TOWN.roadMin) continue;
     const w = Math.abs(off) < BLOCK / 2 + 1 ? AVENUE_W : ROAD_W;
     // Große Blöcke: Straßenstücke zwischen ihren zwei Blöcken entfallen (Lücke von Kreuzung zu Kreuzung)
     for (const [a, b] of cutRoad(k, 'v', -half, half)) roads.push({ x1: CX + off, y1: CY + a, x2: CX + off, y2: CY + b, w });
@@ -334,9 +339,9 @@ function buildTown(rng) {
     roads.push({
       x1: s.x,
       y1: s.y,
-      x2: CX - Math.cos(a) * (ZONE_R - 80),
-      y2: CY - Math.sin(a) * (ZONE_R - 80),
-      w: 52,
+      x2: CX - Math.cos(a) * (ZONE_R - TOWN.accessEnd),
+      y2: CY - Math.sin(a) * (ZONE_R - TOWN.accessEnd),
+      w: TOWN.accessW,
       dirt: true,
     });
   }
@@ -346,7 +351,7 @@ function buildTown(rng) {
     buildings.push(b, { ...b, x: W - b.x, y: H - b.y });
   };
   const addTree = (x, y) => {
-    const r = Math.round(rng.range(12, 20));
+    const r = Math.round(rng.range(...TOWN.treeR));
     trees.push({ x, y, r }, { x: W - x, y: H - y, r });
   };
   const addCar = (x, y, vertical, color) => {
@@ -354,11 +359,11 @@ function buildTown(rng) {
   };
 
   // Zentrumsplatz: Park (nur Dekoration), bleibt frei begehbar
-  const plaza = { x: CX, y: CY, r: 150 };
+  const plaza = { x: CX, y: CY, r: TOWN.plazaR };
   parks.push(plaza);
-  for (let i = 0; i < 6; i++) {
-    const a = (i / 6) * TWO_PI;
-    trees.push({ x: Math.round(CX + Math.cos(a) * 110), y: Math.round(CY + Math.sin(a) * 110), r: 14 });
+  for (let i = 0; i < TOWN.plazaTrees; i++) {
+    const a = (i / TOWN.plazaTrees) * TWO_PI;
+    trees.push({ x: Math.round(CX + Math.cos(a) * TOWN.plazaTreeDist), y: Math.round(CY + Math.sin(a) * TOWN.plazaTreeDist), r: TOWN.plazaTreeR });
   }
 
   for (let i = -span; i <= span; i++) {
@@ -366,55 +371,56 @@ function buildTown(rng) {
       if (i < 0 || (i === 0 && j <= 0)) continue; // nur eine Hälfte, der Rest wird gespiegelt
       const bx = CX + i * BLOCK;
       const by = CY + j * BLOCK;
-      if (dist(bx, by, CX, CY) > ZONE_R - 230) continue;
+      if (dist(bx, by, CX, CY) > ZONE_R - TOWN.lotRim) continue;
       const roll = rng.next();
-      if (roll < 0.34) {
+      if (roll < ROLL_HOUSES) {
         // Wohnhäuser
-        for (const [sx, sy] of [[-90, -90], [90, -90], [-90, 90], [90, 90]]) {
-          if (rng.next() < 0.2) continue;
+        const hc = TOWN.houseCorner;
+        for (const [sx, sy] of [[-hc, -hc], [hc, -hc], [-hc, hc], [hc, hc]]) {
+          if (rng.next() < TOWN.houseSkip) continue;
           addBuilding({
-            x: Math.round(bx + sx + rng.range(-10, 10)),
-            y: Math.round(by + sy + rng.range(-10, 10)),
-            w: Math.round(rng.range(80, 100)),
-            h: Math.round(rng.range(64, 86)),
+            x: Math.round(bx + sx + rng.range(-TOWN.houseJitter, TOWN.houseJitter)),
+            y: Math.round(by + sy + rng.range(-TOWN.houseJitter, TOWN.houseJitter)),
+            w: Math.round(rng.range(...TOWN.houseW)),
+            h: Math.round(rng.range(...TOWN.houseH)),
             kind: 'house',
           });
         }
-        addTree(bx + rng.range(-20, 20), by + rng.range(-20, 20));
-      } else if (roll < 0.54) {
+        addTree(bx + rng.range(-TOWN.houseTreeJitter, TOWN.houseTreeJitter), by + rng.range(-TOWN.houseTreeJitter, TOWN.houseTreeJitter));
+      } else if (roll < ROLL_FACTORY) {
         // Fabrik mit Schornstein
         const flip = rng.next() < 0.5;
         addBuilding({
-          x: Math.round(bx + rng.range(-15, 15)),
-          y: Math.round(by + rng.range(-15, 15)),
-          w: flip ? 170 : 260,
-          h: flip ? 260 : 170,
+          x: Math.round(bx + rng.range(-TOWN.factoryJitter, TOWN.factoryJitter)),
+          y: Math.round(by + rng.range(-TOWN.factoryJitter, TOWN.factoryJitter)),
+          w: flip ? TOWN.factorySize[0] : TOWN.factorySize[1],
+          h: flip ? TOWN.factorySize[1] : TOWN.factorySize[0],
           kind: 'factory',
         });
-      } else if (roll < 0.72) {
+      } else if (roll < ROLL_HALL) {
         // Halle(n)
-        addBuilding({ x: bx, y: Math.round(by - 80), w: 290, h: 100, kind: 'hall' });
-        if (rng.next() < 0.6) addBuilding({ x: bx, y: Math.round(by + 90), w: 220, h: 80, kind: 'hall' });
-      } else if (roll < 0.88) {
+        addBuilding({ x: bx, y: Math.round(by - TOWN.hallDy), w: TOWN.hallSize[0], h: TOWN.hallSize[1], kind: 'hall' });
+        if (rng.next() < TOWN.hall2Chance) addBuilding({ x: bx, y: Math.round(by + TOWN.hall2Dy), w: TOWN.hall2Size[0], h: TOWN.hall2Size[1], kind: 'hall' });
+      } else if (roll < ROLL_PARK) {
         // kleiner Park
-        parks.push({ x: bx, y: by, r: 150 });
-        parks.push({ x: W - bx, y: H - by, r: 150 });
-        const n = Math.round(rng.range(7, 12));
-        for (let t = 0; t < n; t++) addTree(bx + rng.range(-135, 135), by + rng.range(-135, 135));
+        parks.push({ x: bx, y: by, r: TOWN.parkR });
+        parks.push({ x: W - bx, y: H - by, r: TOWN.parkR });
+        const n = Math.round(rng.range(...TOWN.parkTrees));
+        for (let t = 0; t < n; t++) addTree(bx + rng.range(-TOWN.parkSpread, TOWN.parkSpread), by + rng.range(-TOWN.parkSpread, TOWN.parkSpread));
       } else {
         // zwei Häuser und Bäume
-        addBuilding({ x: bx - 80, y: by - 70, w: 96, h: 76, kind: 'house' });
-        addBuilding({ x: bx + 80, y: by + 70, w: 90, h: 70, kind: 'house' });
-        for (let t = 0; t < 4; t++) addTree(bx + rng.range(-140, 140), by + rng.range(-140, 140));
+        addBuilding({ x: bx - TOWN.pairOffset[0], y: by - TOWN.pairOffset[1], w: TOWN.pairA[0], h: TOWN.pairA[1], kind: 'house' });
+        addBuilding({ x: bx + TOWN.pairOffset[0], y: by + TOWN.pairOffset[1], w: TOWN.pairB[0], h: TOWN.pairB[1], kind: 'house' });
+        for (let t = 0; t < TOWN.pairTrees; t++) addTree(bx + rng.range(-TOWN.pairSpread, TOWN.pairSpread), by + rng.range(-TOWN.pairSpread, TOWN.pairSpread));
       }
       // geparkte Autos am Straßenrand
-      const nCars = Math.floor(rng.range(0, 4));
+      const nCars = Math.floor(rng.range(0, TOWN.carMax));
       for (let c = 0; c < nCars; c++) {
         const col = CAR_COLORS[rng.int(0, CAR_COLORS.length - 1)];
         const side = rng.next() < 0.5 ? -1 : 1;
-        const t = rng.range(-130, 130);
+        const t = rng.range(-TOWN.carSpread, TOWN.carSpread);
         // am Rand der Straße (Straßenmitte BLOCK / 2, Fahrbahn eine Stadtzelle breit)
-        const edge = BLOCK / 2 - 18;
+        const edge = BLOCK / 2 - TOWN.carEdge;
         if (rng.next() < 0.5) addCar(Math.round(bx + t), Math.round(by + side * edge), false, col);
         else addCar(Math.round(bx + side * edge), Math.round(by + t), true, col);
       }
@@ -423,10 +429,10 @@ function buildTown(rng) {
   // Vier Wachtürme am Rand der Konfliktzone (oben, unten, links, rechts; punktsymmetrisch). Was dort im Weg steht, entfällt.
   for (const t of TOWER_AT) {
     for (const p of [t, { x: W - t.x, y: H - t.y }]) {
-      const hit = (o, w, h) => Math.abs(o.x - p.x) < (w + TOWER_SIZE) / 2 + 30 && Math.abs(o.y - p.y) < (h + TOWER_SIZE) / 2 + 30;
+      const hit = (o, w, h) => Math.abs(o.x - p.x) < (w + TOWER_SIZE) / 2 + TOWN.towerClear && Math.abs(o.y - p.y) < (h + TOWER_SIZE) / 2 + TOWN.towerClear;
       for (let i = buildings.length - 1; i >= 0; i--) if (hit(buildings[i], buildings[i].w, buildings[i].h)) buildings.splice(i, 1);
       for (let i = trees.length - 1; i >= 0; i--) if (hit(trees[i], trees[i].r * 2, trees[i].r * 2)) trees.splice(i, 1);
-      for (let i = cars.length - 1; i >= 0; i--) if (hit(cars[i], 40, 40)) cars.splice(i, 1);
+      for (let i = cars.length - 1; i >= 0; i--) if (hit(cars[i], TOWN.carSize, TOWN.carSize)) cars.splice(i, 1);
       buildings.push({ x: Math.round(p.x), y: Math.round(p.y), w: TOWER_SIZE, h: TOWER_SIZE, kind: 'tower' });
     }
   }
@@ -434,7 +440,7 @@ function buildTown(rng) {
   for (const g of BIG_BLOCKS) {
     const r = bigRect(g);
     const inner = (o, pad) => o.x > r.x0 + pad && o.x < r.x1 - pad && o.y > r.y0 + pad && o.y < r.y1 - pad;
-    for (let i = cars.length - 1; i >= 0; i--) if (inner(cars[i], 40)) cars.splice(i, 1);
+    for (let i = cars.length - 1; i >= 0; i--) if (inner(cars[i], TOWN.carBigPad)) cars.splice(i, 1);
     if (!g.empty) continue;
     for (let i = buildings.length - 1; i >= 0; i--) if (inner(buildings[i], 0) && buildings[i].kind !== 'tower') buildings.splice(i, 1);
     for (let i = trees.length - 1; i >= 0; i--) if (inner(trees[i], 0)) trees.splice(i, 1);
@@ -446,11 +452,11 @@ function buildTown(rng) {
     roads,
     buildings: free(buildings, (b) => b.h / 2),
     parks,
-    cars: free(cars, () => 20),
+    cars: free(cars, () => TOWN.carHalf),
     trees: free(trees, (t) => t.r),
     rails: [{ x1: 0, y1: CY, x2: W, y2: CY }],
   };
-  for (const c of TRAIN) town.buildings.push({ x: CX + c.dx, y: CY, w: 96, h: 46, kind: 'train', part: c.part });
+  for (const c of TRAIN) town.buildings.push({ x: CX + c.dx, y: CY, w: TRAIN_W, h: TRAIN_H, kind: 'train', part: c.part });
   return town;
 }
 
@@ -473,21 +479,21 @@ function buildOutposts(rng, obstacles, relief = null, clearings = []) {
     clearings.every((c) => dist(x, y, c.x, c.y) > c.r + r) && // Zufahrten der Brücken und Furten (punktsymmetrisch)
     [[x, y], [W - x, H - y]].every(
       ([px, py]) =>
-        px > r + 300 &&
-        py > r + 300 &&
-        px < W - r - 300 &&
-        py < H - r - 300 &&
+        px > r + OUT.edge &&
+        py > r + OUT.edge &&
+        px < W - r - OUT.edge &&
+        py < H - r - OUT.edge &&
         !inRail(py, r) &&
-        zd(px, py) > ZONE_R + r + 150 &&
+        zd(px, py) > ZONE_R + r + OUT.zoneGap &&
         SPAWNS.every((sp) => dist(px, py, sp.x, sp.y) > BUILD_LAND + r) &&
-        obstacles.every((o) => dist(px, py, o.x, o.y) > o.r + r + 40) &&
-        areas.every((a) => dist(px, py, a.x, a.y) > a.r + r + 60) &&
-        groundOk(relief, px, py, r, 0.22)
+        obstacles.every((o) => dist(px, py, o.x, o.y) > o.r + r + OUT.obstacleGap) &&
+        areas.every((a) => dist(px, py, a.x, a.y) > a.r + r + OUT.areaGap) &&
+        groundOk(relief, px, py, r, OUT.maxSlope)
     );
   const place = (r, make) => {
-    for (let t = 0; t < 600; t++) {
-      const x = Math.round(rng.range(r + 300, W - r - 300));
-      const y = Math.round(rng.range(r + 300, H - r - 300));
+    for (let t = 0; t < OUT.tries; t++) {
+      const x = Math.round(rng.range(r + OUT.edge, W - r - OUT.edge));
+      const y = Math.round(rng.range(r + OUT.edge, H - r - OUT.edge));
       if (!fits(x, y, r)) continue;
       const list = make(x, y);
       for (const b of list) buildings.push(b, { ...b, x: W - b.x, y: H - b.y });
@@ -497,10 +503,10 @@ function buildOutposts(rng, obstacles, relief = null, clearings = []) {
   };
   for (let i = 0; i < OUTPOST_FACTORIES; i++) {
     const flip = rng.next() < 0.5;
-    const fw = flip ? 170 : 260;
-    const fh = flip ? 260 : 170;
+    const fw = flip ? TOWN.factorySize[0] : TOWN.factorySize[1];
+    const fh = flip ? TOWN.factorySize[1] : TOWN.factorySize[0];
     const gapsOnX = rng.next() < 0.5; // Lücken links/rechts (sonst oben/unten)
-    place(Math.hypot(fw, fh) / 2 + WALL_MARGIN + 30, (x, y) => {
+    place(Math.hypot(fw, fh) / 2 + WALL_MARGIN + OUT.factoryPad, (x, y) => {
       const list = [{ x, y, w: fw, h: fh, kind: 'factory' }];
       const A = fw / 2 + WALL_MARGIN; // halbe Ringbreite (Mitte der Mauer)
       const B = fh / 2 + WALL_MARGIN;
@@ -527,10 +533,10 @@ function buildOutposts(rng, obstacles, relief = null, clearings = []) {
   }
   for (let i = 0; i < OUTPOST_HALLS; i++) {
     const flip = rng.next() < 0.5;
-    place(160, (x, y) => [{ x, y, w: flip ? 100 : 290, h: flip ? 290 : 100, kind: 'hall' }]);
+    place(OUT.hallR, (x, y) => [{ x, y, w: flip ? TOWN.hallSize[1] : TOWN.hallSize[0], h: flip ? TOWN.hallSize[0] : TOWN.hallSize[1], kind: 'hall' }]);
   }
   for (let i = 0; i < OUTPOST_HOUSES; i++) {
-    place(80, (x, y) => [{ x, y, w: Math.round(rng.range(80, 100)), h: Math.round(rng.range(64, 86)), kind: 'house' }]);
+    place(OUT.houseR, (x, y) => [{ x, y, w: Math.round(rng.range(...TOWN.houseW)), h: Math.round(rng.range(...TOWN.houseH)), kind: 'house' }]);
   }
   return { buildings, areas };
 }
@@ -541,26 +547,26 @@ const SCATTER_PAIRS = MAPGEN.scatter.scatterPairs;
 function scatterTrees(rng, obstacles, keepOut = [], relief = null) {
   const trees = [];
   const ok = (x, y) =>
-    x > 40 &&
-    y > 40 &&
-    x < W - 40 &&
-    y < H - 40 &&
-    !inRail(y, 20) &&
-    zd(x, y) > ZONE_R + 30 &&
+    x > SC.treeEdge &&
+    y > SC.treeEdge &&
+    x < W - SC.treeEdge &&
+    y < H - SC.treeEdge &&
+    !inRail(y, SC.treeRail) &&
+    zd(x, y) > ZONE_R + SC.treeZoneGap &&
     SPAWNS.every((s) => dist(x, y, s.x, s.y) > BUILD_LAND) &&
-    obstacles.every((o) => dist(x, y, o.x, o.y) > o.r + 25) &&
-    keepOut.every((a) => dist(x, y, a.x, a.y) > a.r + 25) &&
+    obstacles.every((o) => dist(x, y, o.x, o.y) > o.r + SC.treeObstacleGap) &&
+    keepOut.every((a) => dist(x, y, a.x, a.y) > a.r + SC.treeAreaGap) &&
     groundOk(relief, x, y);
   const add = (x, y) => {
     if (!ok(x, y) || !ok(W - x, H - y)) return;
-    const r = Math.round(rng.range(10, 19));
+    const r = Math.round(rng.range(...SC.treeR));
     trees.push({ x, y, r }, { x: W - x, y: H - y, r });
   };
   for (let i = 0; i < SCATTER_PAIRS; i++) {
     const x = Math.round(rng.range(0, W));
     const y = Math.round(rng.range(0, H));
     add(x, y);
-    if (rng.next() < 0.5) add(x + 40, y + 20); // Baumgruppe
+    if (rng.next() < 0.5) add(x + SC.treeGroup[0], y + SC.treeGroup[1]); // Baumgruppe
   }
   return trees;
 }
@@ -609,13 +615,13 @@ function placeCrates(rng, grid) {
     });
   const crates = [];
   for (let i = 0; i < BALANCE.crates.pairs; i++) {
-    for (let t = 0; t < 300; t++) {
-      const x = Math.round(rng.range(400, W - 400));
-      const y = Math.round(rng.range(400, H - 400));
+    for (let t = 0; t < CR.tries; t++) {
+      const x = Math.round(rng.range(CR.edge, W - CR.edge));
+      const y = Math.round(rng.range(CR.edge, H - CR.edge));
       const ok = [[x, y], [W - x, H - y]].every(
         ([px, py]) =>
           zd(px, py) > ZONE_R + CRATE_ZONE &&
-          !inRail(py, 80) &&
+          !inRail(py, CR.railGap) &&
           SPAWNS.every((s) => dist(px, py, s.x, s.y) > CRATE_SPAWN) &&
           crates.every((c) => dist(px, py, c.x, c.y) > CRATE_GAP) &&
           open(px, py),
@@ -694,21 +700,21 @@ function placeFarms(seed, town, outpostBuildings, obstacles, trees, relief) {
     const R = boxR(f);
     const sides = [[f.x, f.y], [W - f.x, H - f.y]];
     const near = (list, r) => list.filter((o) => sides.some(([x, y]) => dist(x, y, o.x, o.y) < R + r(o)));
-    const obs = near(obstacles, (o) => o.r + 20);
-    const bld = near(buildings, (b) => boxR(b) + 25);
+    const obs = near(obstacles, (o) => o.r + FARM.fieldNearObstacle);
+    const bld = near(buildings, (b) => boxR(b) + FARM.fieldNearBuilding);
     const fld = near(fields, (o) => boxR(o) + FIELD_GAP);
     const rds = roads.filter((r) => sides.some(([x, y]) => segDist(x, y, r.x1, r.y1, r.x2, r.y2).d < R + r.w));
     return fieldPoints(f).every(([x, y]) =>
       [[x, y], [W - x, H - y]].every(
         ([px, py]) =>
-          px > 150 && py > 150 && px < W - 150 && py < H - 150 &&
-          !inRail(py, 30) &&
-          zd(px, py) > ZONE_R + 120 &&
+          px > FARM.fieldEdge && py > FARM.fieldEdge && px < W - FARM.fieldEdge && py < H - FARM.fieldEdge &&
+          !inRail(py, FARM.fieldRail) &&
+          zd(px, py) > ZONE_R + FARM.fieldZone &&
           SPAWNS.every((sp) => dist(px, py, sp.x, sp.y) > BUILD_LAND) &&
-          obs.every((o) => dist(px, py, o.x, o.y) > o.r + 15) &&
-          bld.every((b) => !inBox(b, px, py, 20)) &&
+          obs.every((o) => dist(px, py, o.x, o.y) > o.r + FARM.fieldObstacle) &&
+          bld.every((b) => !inBox(b, px, py, FARM.fieldBuilding)) &&
           fld.every((o) => !inBox(o, px, py, FIELD_GAP / 2)) &&
-          rds.every((r) => segDist(px, py, r.x1, r.y1, r.x2, r.y2).d > r.w / 2 + 12) &&
+          rds.every((r) => segDist(px, py, r.x1, r.y1, r.x2, r.y2).d > r.w / 2 + FARM.fieldRoad) &&
           dry(px, py),
       ),
     );
@@ -721,10 +727,10 @@ function placeFarms(seed, town, outpostBuildings, obstacles, trees, relief) {
       const x = x1 + ((x2 - x1) * i) / n;
       const y = y1 + ((y2 - y1) * i) / n;
       for (const [px, py] of [[x, y], [W - x, H - y]]) {
-        if (px < 60 || py < 60 || px > W - 60 || py > H - 60 || dist(px, py, CX, CY) < ZONE_R - 60) return false;
-        if (obstacles.some((o) => dist(px, py, o.x, o.y) < o.r + 8)) return false;
-        if (buildings.some((b) => !mine(b, ownA) && !mine(b, ownB) && inBox(b, px, py, 6))) return false;
-        if (fields.some((f) => inBox(f, px, py, -4))) return false;
+        if (px < FARM.trackEdge || py < FARM.trackEdge || px > W - FARM.trackEdge || py > H - FARM.trackEdge || dist(px, py, CX, CY) < ZONE_R - FARM.trackZone) return false;
+        if (obstacles.some((o) => dist(px, py, o.x, o.y) < o.r + FARM.trackObstacle)) return false;
+        if (buildings.some((b) => !mine(b, ownA) && !mine(b, ownB) && inBox(b, px, py, FARM.trackBuilding))) return false;
+        if (fields.some((f) => inBox(f, px, py, -FARM.trackField))) return false;
         if (!dry(px, py)) return false;
       }
     }
@@ -745,10 +751,10 @@ function placeFarms(seed, town, outpostBuildings, obstacles, trees, relief) {
     const u = alongX ? [c * sg, sn * sg] : [-sn * sg, c * sg];
     return { angle, alongX, u, v: [-u[1], u[0]] };
   };
-  const randAngle = () => (rng.next() < 0.4 ? 0 : Math.round(rng.range(-0.35, 0.35) * 100) / 100);
+  const randAngle = () => (rng.next() < FARM.angleStraight ? 0 : Math.round(rng.range(-FARM.angleMax, FARM.angleMax) * 100) / 100);
   const randWidths = (lo, hi) => {
     const out = [];
-    for (let k = rng.int(lo, hi); k > 0; k--) out.push(Math.round(rng.range(170, 320)));
+    for (let k = rng.int(lo, hi); k > 0; k--) out.push(Math.round(rng.range(...FARM.fieldWidth)));
     return out;
   };
   // Feldreihe um (ax, ay): Felder der Tiefe `depth` nebeneinander entlang v, ihre Mitte bei u = uc; nur die freien kommen mit
@@ -767,7 +773,7 @@ function placeFarms(seed, town, outpostBuildings, obstacles, trees, relief) {
         w: fr.alongX ? depth : wv,
         h: fr.alongX ? wv : depth,
         ...(fr.angle ? { angle: fr.angle } : {}),
-        kind: roll < 0.3 ? 'pasture' : 'field',
+        kind: roll < FARM.pasture ? 'pasture' : 'field',
       };
       if (f.kind === 'field') f.crop = CROP_ROLL.find(([, p]) => cr <= p)[0];
       if (fieldOk(f)) out.push({ f, v0: vc - wv / 2, v1: vc + wv / 2 });
@@ -790,34 +796,34 @@ function placeFarms(seed, town, outpostBuildings, obstacles, trees, relief) {
     for (let t = 0; t < FARM_TRIES; t++) {
       const fr = frame(randAngle(), rng.int(0, 3));
       const halfU = (Math.abs(fr.u[0]) * h.w + Math.abs(fr.u[1]) * h.h) / 2;
-      const depth = Math.round(rng.range(170, 300));
-      const got = row(h.x, h.y, fr, halfU + FIELD_YARD + depth / 2, depth, randWidths(1, 3), rng.range(-60, 60));
+      const depth = Math.round(rng.range(...FARM.farmDepth));
+      const got = row(h.x, h.y, fr, halfU + FIELD_YARD + depth / 2, depth, randWidths(...FARM.farmFields), rng.range(-FARM.farmShift, FARM.farmShift));
       if (got.length && (!best || area(got) > area(best.got))) best = { fr, halfU, got };
     }
     if (!best) continue;
     commit(best.got);
-    const v0 = Math.min(0, ...best.got.map((c) => c.v0)) - 10;
-    const v1 = Math.max(0, ...best.got.map((c) => c.v1)) + 10;
+    const v0 = Math.min(0, ...best.got.map((c) => c.v0)) - FARM.laneExtra;
+    const v1 = Math.max(0, ...best.got.map((c) => c.v1)) + FARM.laneExtra;
     const ln = lane(h.x, h.y, best.fr, best.halfU + FIELD_YARD / 2, v0, v1);
     const own = trackOk(...ln, h) ? addTrack(...ln) : [];
     farms.push({ x: h.x, y: h.y, b: h, ends: [[h.x, h.y]], own });
   }
   // 2. Freie Flure: zwei Feldreihen beiderseits eines Feldwegs
   for (let i = 0; i < FIELD_BLOCKS; i++) {
-    for (let t = 0; t < 40; t++) {
-      const x = rng.range(400, W - 400);
-      const y = rng.range(400, H - 400);
-      if (zd(x, y) < ZONE_R + 400) continue;
+    for (let t = 0; t < FARM.blockTries; t++) {
+      const x = rng.range(FARM.blockEdge, W - FARM.blockEdge);
+      const y = rng.range(FARM.blockEdge, H - FARM.blockEdge);
+      if (zd(x, y) < ZONE_R + FARM.blockZoneGap) continue;
       const angle = randAngle();
       const fr = frame(angle, 0);
       const back = frame(angle, 2);
-      const depth = Math.round(rng.range(180, 300));
+      const depth = Math.round(rng.range(...FARM.blockDepth));
       const uc = TRACK_W / 2 + FIELD_GAP / 2 + depth / 2;
-      const widths = randWidths(2, 3);
+      const widths = randWidths(...FARM.blockFields);
       const got = [...row(x, y, fr, uc, depth, widths, 0), ...row(x, y, back, uc, depth, widths, 0).map((c) => ({ ...c, v0: -c.v1, v1: -c.v0 }))];
-      if (got.length < 3) continue;
+      if (got.length < FARM.blockMin) continue;
       commit(got);
-      const ln = lane(x, y, fr, 0, Math.min(...got.map((c) => c.v0)) - 10, Math.max(...got.map((c) => c.v1)) + 10);
+      const ln = lane(x, y, fr, 0, Math.min(...got.map((c) => c.v0)) - FARM.laneExtra, Math.max(...got.map((c) => c.v1)) + FARM.laneExtra);
       const own = trackOk(...ln) ? addTrack(...ln) : [];
       farms.push({ x, y, b: null, ends: [[ln[0], ln[1]], [ln[2], ln[3]]], own });
       break;
@@ -830,15 +836,15 @@ function placeFarms(seed, town, outpostBuildings, obstacles, trees, relief) {
       for (const r of [...roads, ...tracks]) {
         if (fm.own.includes(r)) continue; // der eigene Weg an der Feldreihe bindet nicht an
         const q = segDist(sx, sy, r.x1, r.y1, r.x2, r.y2);
-        if (q.d > 40 && q.d < TRACK_REACH) cands.push({ d: q.d, sx, sy, x: q.x, y: q.y, to: null });
+        if (q.d > FARM.trackMin && q.d < TRACK_REACH) cands.push({ d: q.d, sx, sy, x: q.x, y: q.y, to: null });
       }
       for (const o of farms) {
         const d = dist(sx, sy, o.x, o.y);
-        if (o !== fm && o.b && d < TRACK_REACH) cands.push({ d: d * 1.15, sx, sy, x: o.x, y: o.y, to: o.b });
+        if (o !== fm && o.b && d < TRACK_REACH) cands.push({ d: d * FARM.trackDetour, sx, sy, x: o.x, y: o.y, to: o.b });
       }
     }
     cands.sort((a, b) => a.d - b.d);
-    for (const q of cands.slice(0, 8)) {
+    for (const q of cands.slice(0, FARM.trackCands)) {
       if (!trackOk(q.sx, q.sy, q.x, q.y, fm.b, q.to)) continue;
       addTrack(q.sx, q.sy, q.x, q.y);
       break;

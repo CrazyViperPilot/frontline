@@ -188,7 +188,7 @@ function searchTarget(game, hash, s, R, dmg, { minRange = 0, prefer = null, unit
   for (const h of game.garrisoned) consider(h);
   if (done() || !buildings) return best;
   for (const b of game.buildings) if (!b.def.blocksAll && !b.def.gate) consider(b);
-  if (!best) forEnemyCity(game, team, s.x, s.y, R + 32, consider);
+  if (!best) forEnemyCity(game, team, s.x, s.y, R + BALANCE.combat.cityMargin, consider);
   return best;
 }
 
@@ -199,7 +199,7 @@ function findTarget(game, hash, s, radius, minRange, allowBuildings, dmg, anti) 
 
 function fireDirect(game, s, t, w) {
   const dmg = shotDamage(w, s, t, heightMult(game, s, t)) * dealtMul(game, s, t); // Forschung (Stellungen)
-  if ((w.damage.light || 0) >= 60) {
+  if ((w.damage.light || 0) >= BALANCE.combat.cannonDamage) {
     // Panzerabwehr / Kampfpanzer: Geschoss plus kleine Explosion
     game.addEffect('shell', s.x, s.y, s.team, t.x, t.y, 'cannon');
     game.addEffect('explosion', t.x, t.y, s.team, t.x, t.y, 'hit');
@@ -266,7 +266,7 @@ function fireWeapon(game, u, w, t) {
     fireUnitShell(game, u, w, t.x, t.y);
     return;
   }
-  if ((w.spec.damage.light || 0) >= 60) {
+  if ((w.spec.damage.light || 0) >= BALANCE.combat.cannonDamage) {
     game.addEffect('shell', u.x, u.y, u.team, t.x, t.y, w.spec.id);
     game.addEffect('explosion', t.x, t.y, u.team, t.x, t.y, 'hit');
   } else {

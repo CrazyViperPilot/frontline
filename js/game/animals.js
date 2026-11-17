@@ -21,12 +21,12 @@ const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 /** Zelle frei für Tiere (kein Gelände-, Wald- oder Gebäudehindernis, im Feld). */
 function open(game, x, y) {
   const g = game.grid;
-  return x > 60 && y > 60 && x < W - 60 && y < H - 60 && g.free(g.toCell(x), g.toCell(y));
+  return x > A.edge && y > A.edge && x < W - A.edge && y < H - A.edge && g.free(g.toCell(x), g.toCell(y));
 }
 
-/** Gerade Strecke über offenen Boden (alle 32 px geprüft). */
+/** Gerade Strecke über offenen Boden (alle lineStep px geprüft). */
 function clearLine(game, x1, y1, x2, y2) {
-  const n = Math.max(1, Math.ceil(dist(x1, y1, x2, y2) / 32));
+  const n = Math.max(1, Math.ceil(dist(x1, y1, x2, y2) / A.lineStep));
   for (let i = 1; i <= n; i++) if (!open(game, x1 + ((x2 - x1) * i) / n, y1 + ((y2 - y1) * i) / n)) return false;
   return true;
 }
@@ -47,9 +47,9 @@ export function createAnimals(game) {
   const near = (x, y) => groups.some((g) => dist(x, y, g.cx, g.cy) < GROUP_GAP);
   for (let p = 0; p < A.pairs; p++) {
     const kind = KINDS[p % KINDS.length];
-    for (let t = 0; t < 300; t++) {
-      const x = Math.round(rng.range(500, W - 500));
-      const y = Math.round(rng.range(500, H - 500));
+    for (let t = 0; t < A.placeTries; t++) {
+      const x = Math.round(rng.range(A.margin, W - A.margin));
+      const y = Math.round(rng.range(A.margin, H - A.margin));
       const ok = [[x, y], [W - x, H - y]].every(
         ([px, py]) => meadow(game, px, py) && game.map.spawns.every((s) => dist(px, py, s.x, s.y) > SPAWN_GAP) && !near(px, py),
       );
@@ -57,9 +57,9 @@ export function createAnimals(game) {
       const [lo, hi] = A[kind];
       const n = rng.int(lo, hi);
       const spots = [];
-      for (let k = 0; k < n * 6 && spots.length < n; k++) {
+      for (let k = 0; k < n * A.spotTries && spots.length < n; k++) {
         const a = rng.next() * Math.PI * 2;
-        const d = 12 + rng.next() * 50;
+        const d = A.spotMin + rng.next() * A.spotSpread;
         const sx = Math.round(x + Math.cos(a) * d);
         const sy = Math.round(y + Math.sin(a) * d);
         if (open(game, sx, sy) && open(game, W - sx, H - sy)) spots.push([sx, sy, rng.next() * Math.PI * 2]);
@@ -82,7 +82,7 @@ export function createAnimals(game) {
             ty: ay,
             speed: 0,
             state: 'graze',
-            until: rng.range(1, 6),
+            until: rng.range(...A.startGraze),
             step: 0, // zurückgelegter Weg (Gangart im Bild)
           });
         }
@@ -124,8 +124,8 @@ function fleeTarget(game, a, fx, fy, rng) {
   const base = Math.atan2(a.y - fy, a.x - fx);
   const d = rng.range(...A.flee);
   let fallback = null;
-  for (const off of [0, 0.5, -0.5, 1, -1, 1.5, -1.5]) {
-    const ang = base + off + rng.range(-0.2, 0.2);
+  for (const off of A.fleeAngles) {
+    const ang = base + off + rng.range(-A.fleeJitter, A.fleeJitter);
     const x = a.x + Math.cos(ang) * d;
     const y = a.y + Math.sin(ang) * d;
     if (meadow(game, x, y)) return { x, y };
@@ -158,9 +158,9 @@ function think(game, time) {
       let sx = 0;
       let sy = 0;
       for (const a of members) {
-        if (a.state !== 'flee' || dist(a.x, a.y, a.tx, a.ty) < 60) {
+        if (a.state !== 'flee' || dist(a.x, a.y, a.tx, a.ty) < A.refleeDist) {
           const q = fleeTarget(game, a, t.x, t.y, rng);
-          if (q) setGoal(a, q.x, q.y, A.run[a.kind] * rng.range(0.9, 1.1), 'flee');
+          if (q) setGoal(a, q.x, q.y, A.run[a.kind] * rng.range(...A.runJitter), 'flee');
         }
         sx += a.tx;
         sy += a.ty;
@@ -176,7 +176,7 @@ function think(game, time) {
     if (time >= g.migrateAt) {
       // weiterziehen: neue Rudelmitte auf einer Weide in der Nähe
       g.migrateAt = time + rng.range(...MIGRATE);
-      for (let k = 0; k < 8; k++) {
+      for (let k = 0; k < A.migrateTries; k++) {
         const ang = rng.next() * Math.PI * 2;
         const d = rng.range(...MIGRATE_DIST);
         const x = g.cx + Math.cos(ang) * d;
@@ -190,33 +190,33 @@ function think(game, time) {
   }
   for (const a of game.animals) {
     if (a.state === 'flee' && scared.has(a.group)) continue;
-    if (a.state === 'flee' && dist(a.x, a.y, a.tx, a.ty) > 20) continue; // erst ankommen
+    if (a.state === 'flee' && dist(a.x, a.y, a.tx, a.ty) > A.arriveFlee) continue; // erst ankommen
     if (a.state === 'flee') {
       a.state = 'graze';
       a.speed = 0;
-      a.until = time + rng.range(2, 5);
+      a.until = time + rng.range(...A.restFlee);
       continue;
     }
-    if (a.state === 'walk' && dist(a.x, a.y, a.tx, a.ty) > 6) continue;
+    if (a.state === 'walk' && dist(a.x, a.y, a.tx, a.ty) > A.arriveWalk) continue;
     if (a.state === 'walk') {
       a.state = 'graze';
       a.speed = 0;
-      a.until = time + rng.range(3, 9);
+      a.until = time + rng.range(...A.graze);
       continue;
     }
     if (time < a.until) continue;
     const g = game.animalGroups[a.group];
     const far = dist(a.x, a.y, g.cx, g.cy) > WANDER * 2; // zurückgeblieben: trabt hinterher
-    for (let k = 0; k < 6; k++) {
+    for (let k = 0; k < A.wanderTries; k++) {
       const ang = rng.next() * Math.PI * 2;
       const d = rng.next() * WANDER;
       const x = g.cx + Math.cos(ang) * d;
       const y = g.cy + Math.sin(ang) * d;
       if (!open(game, x, y) || !clearLine(game, a.x, a.y, x, y)) continue;
-      setGoal(a, x, y, A.walk * rng.range(0.8, 1.2) * (far ? 2 : 1), 'walk');
+      setGoal(a, x, y, A.walk * rng.range(...A.walkJitter) * (far ? 2 : 1), 'walk');
       break;
     }
-    a.until = time + rng.range(3, 9);
+    a.until = time + rng.range(...A.graze);
   }
 }
 

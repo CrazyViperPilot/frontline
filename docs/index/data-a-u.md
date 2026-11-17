@@ -106,14 +106,14 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - CQ_CONTACT – px: Kontaktradius; wer im Gebiet ohne Gegner in diesem Umkreis steht, rückt auf…
 - CQ_MAST_SHARE – Anteil der Zonengröße: wer weiter als das vom Sendemast der Flagge steht, rückt…
 
-## balance.js (29 KB)
+## balance.js (37 KB)
 - QUICK – == SCHNELLEINSTELLUNGEN == Hier ändern; BALANCE unten liest diese Werte
 - BALANCE
 
 ## buildings.js (6.8 KB)
 - BUILDINGS
 
-## city.js (37 KB)
+## city.js (39 KB)
 - CITY
 
 ## citykinds.js (15 KB)
@@ -141,8 +141,8 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - IMPORTS – Rohwaren (Paket „Import“): kommen von außerhalb der Karte über eine eigene Stra…
 - IMPORT_GOODS – Rohwaren in der Reihenfolge des Registers
 
-## mapgen.js (5.6 KB)
-- MAPGEN – Werte des Kartengenerators (js/game/map.js, js/game/landscape.js)
+## mapgen.js (24 KB)
+- MAPGEN – Werte des Kartengenerators (js/game/map.js, landscape.js, relief.js, river.js,…
 
 ## research.js (12 KB)
 - RESEARCH

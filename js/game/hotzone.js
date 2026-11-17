@@ -153,7 +153,7 @@ export function updateHot(game, dt) {
     if (hot.drillTarget) hot.wanderT = 0;
     hot.drillTarget = false;
     hot.wanderT -= dt;
-    if (hot.wanderT <= 0 || dist(hot.x, hot.y, hot.tx, hot.ty) < 8) {
+    if (hot.wanderT <= 0 || dist(hot.x, hot.y, hot.tx, hot.ty) < H.arrive) {
       const a = hot.rng.range(0, Math.PI * 2);
       const rad = Math.sqrt(hot.rng.next()) * Math.max(0, zone.r - hot.r);
       hot.tx = zone.x + Math.cos(a) * rad;

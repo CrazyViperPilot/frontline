@@ -1,9 +1,10 @@
 // Pfadsuche (A*, 8 Nachbarn) und Sichtlinie. Kein DOM.
 // Die Arbeitsspeicher (Typed Arrays, Binärheap) werden pro Grid-Größe wiederverwendet. Einheiten planen über findUnitPath
 // (unerreichbare Ziele billig, lange Suchen über mehrere Schritte, seit v5.61), Kartenbau über findPath.
+import { BALANCE } from '../data/balance.js';
 
 const SQRT2 = Math.SQRT2;
-const H_WEIGHT = 1.05; // Gewicht der Heuristik bei Hangkosten
+const H_WEIGHT = BALANCE.path.hWeight; // Gewicht der Heuristik bei Hangkosten
 const DIAG_EXTRA = SQRT2 - 1;
 // Index 0-3: orthogonal, 4-7: diagonal
 const DX = [1, -1, 0, 0, 1, 1, -1, -1];
@@ -399,7 +400,7 @@ function advance(st, n) {
       // Diagonal nur, wenn beide Orthogonalen passierbar sind
       if (k >= 4 && (!isOpen(r * cols + nc) || !isOpen(nr * cols + c))) continue;
       if (closed[ni] === stamp) continue;
-      const ng = gi + (k < 4 ? 1 : SQRT2) * (cost ? 1 + cost[ni] / 10 : 1);
+      const ng = gi + (k < 4 ? 1 : SQRT2) * (cost ? 1 + cost[ni] / BALANCE.path.costDiv : 1);
       if (seen[ni] === stamp && g[ni] <= ng) continue;
 
       seen[ni] = stamp;
@@ -451,7 +452,7 @@ function finish(st) {
     let last = i;
     for (let k = i; k < pts.length; k++) {
       if (!lineOfSight(grid, ax, ay, pts[k].x, pts[k].y, team)) break;
-      if (cost && k > i && lineCost(grid, ax, ay, pts[k].x, pts[k].y) > (gAt(k) - ag) * 1.02 + 0.3) break;
+      if (cost && k > i && lineCost(grid, ax, ay, pts[k].x, pts[k].y) > (gAt(k) - ag) * BALANCE.path.pullMul + BALANCE.path.pullAdd) break;
       last = k;
     }
     out.push(pts[last]);
@@ -473,7 +474,7 @@ function lineCost(grid, x0, y0, x1, y1) {
     const f = (k + 0.5) / n;
     const c = Math.floor((x0 + (x1 - x0) * f) / grid.tile);
     const r = Math.floor((y0 + (y1 - y0) * f) / grid.tile);
-    sum += 1 + (grid.inBounds(c, r) ? cost[r * grid.cols + c] : 0) / 10;
+    sum += 1 + (grid.inBounds(c, r) ? cost[r * grid.cols + c] : 0) / BALANCE.path.costDiv;
   }
   return (sum * len) / n / grid.tile;
 }

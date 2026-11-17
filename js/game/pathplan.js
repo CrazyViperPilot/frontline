@@ -148,13 +148,13 @@ function sharePath(game, u, x, y) {
 }
 
 /**
- * Einstieg: der erste Wegpunkt (unter den ersten drei) mit freier Sicht von der Einheit, dann so weit voran, wie die Sicht reicht.
+ * Einstieg: der erste Wegpunkt (unter den ersten path.joinLook) mit freier Sicht von der Einheit, dann so weit voran, wie die Sicht reicht.
  * Ausstieg: der letzte Wegpunkt ab dort mit freier Sicht zum eigenen Ziel. Wegpunkte werden kopiert (kein geteiltes Objekt).
  */
 function joinPath(grid, u, x, y, path) {
   const vis = (a, b) => lineOfSight(grid, a.x, a.y, b.x, b.y, u.team);
   let j = -1;
-  for (let k = 0; k < path.length && k < 3 && j < 0; k++) if (vis(u, path[k])) j = k;
+  for (let k = 0; k < path.length && k < BALANCE.path.joinLook && j < 0; k++) if (vis(u, path[k])) j = k;
   if (j < 0) return null;
   while (j + 1 < path.length && vis(u, path[j + 1])) j++;
   const goal = { x, y };

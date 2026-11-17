@@ -125,8 +125,34 @@ export const CITY = {
   metalCost: { truck: 20, scout: 30, engineer: 20, fobTruck: 80, ifv: 120, tank: 250, flak: 80, sam: 110, gepard: 180, pzh: 280, mlrs: 300, excavator: 80, bridgelayer: 70, recovery: 40, jammer: 40, littlebird: 120, drone: 50, fpv: 50, transporter: 120, gunship: 250, f16: 320, f22: 450, u2: 300, su27: 330, a10: 360, c130: 380 },
   // Markt: handelt in Losen; verkaufen bringt wenig, kaufen kostet viel (Geld je Los)
   // surge: Aufschlag auf den Kaufpreis einer Ware für das Team, je gekauftem Los (multiplikativ: 8 %); calm: Anteil des Aufschlags, der je s
-  // abklingt (1 %, unter 0,001 fällt er ganz weg). Verkaufspreise bleiben fest. Paket „Knappes Geld“.
-  market: { lot: 100, maxCount: 100, surge: 0.08, calm: 0.01, sell: byGood('sell'), buy: byGood('buy') }, // maxCount: höchstens so viele Lose je Befehl (Knöpfe ×10, ×100 im Marktmenü); Preise je Ware im Register js/data/goods.js
+  // abklingt (1 %, unter heatMin fällt er ganz weg). Verkaufspreise bleiben fest. Paket „Knappes Geld“.
+  market: { lot: 100, maxCount: 100, surge: 0.08, calm: 0.01, heatMin: 0.001, sell: byGood('sell'), buy: byGood('buy') }, // maxCount: höchstens so viele Lose je Befehl (Knöpfe ×10, ×100 im Marktmenü); Preise je Ware im Register js/data/goods.js
+
+  mapRoadReach: 0.75, // Straßen der Karte im Stadtraster: eine Zelle gilt als Straße, wenn die Straßenmitte höchstens so viele Zellkanten entfernt liegt
+  hitFresh: 1.5, // ein Treffer gilt als frisch (für den Trefferspeicher der Stadt-KI), wenn er höchstens so viele Schritte (× dt) zurückliegt
+  // Anzeige des Ressourcenflusses (js/game/flow.js): window = Messfenster (s), minSpan = Mindestmessdauer vor der Anzeige von Raten (s).
+  // Hinweise: weight = Gewicht beim Sortieren (größer = weiter oben). Die Schwellen sind Anteile von 1.
+  flow: {
+    window: 60, // s: Messfenster der Verbrauchsanzeige
+    minSpan: 5, // s: Mindestmessdauer, bevor Raten angezeigt werden
+    stopWeight: 2.5, // Gewicht „Werk steht“ (keine Arbeiter oder kein Strom)
+    inputShort: 0.85, // Einfuhr-Engpass: Zufluss unter so viel Anteil der Kapazität
+    importNoneWeight: 2.4, // Gewicht „kein Einfuhrpunkt“
+    importMoneyWeight: 3, // Gewicht „Geld reicht nicht für die Einfuhr“
+    fullWeight: 0.8, // Gewicht „Lager der Hauptstadt voll“
+    soon: 600, // s: Lager sinkt und wäre in so viel s leer → Warnung (zugleich Maß für das Gewicht)
+    sinkWeight: 3.5, // Gewicht „Lager sinkt“ (abzüglich Restzeit ÷ soon)
+    fillOk: 0.95, // Arbeitsplätze: unter so viel Anteil besetzt → Hinweis
+    fillBad: 0.7, // Arbeitsplätze: unter so viel Anteil besetzt → starkes Gewicht
+    fillBadWeight: 3.5, // Gewicht bei stark unbesetzten Arbeitsplätzen
+    fillWeight: 2.6, // Gewicht bei leicht unbesetzten Arbeitsplätzen
+    powerBad: 0.7, // Strom: unter so viel Anteil gedeckt → starkes Gewicht
+    powerBadWeight: 3.4, // Gewicht bei starkem Strommangel
+    powerWeight: 2.5, // Gewicht bei leichtem Strommangel
+    moodWeight: 0.9, // Gewicht „Zufriedenheit niedrig“
+    jamOk: 0.95, // Stau: unter so viel Anteil Durchfluss → Hinweis
+    lostWeight: 1.4, // Gewicht „Waren ohne Straßenweg“
+  },
 
   // ---- Straßentransport (seit v5.20, Werte für AP2/AP3; PRD §15 „Straßentransport“) ----
   // cap: Einheiten je s, die eine eigene Straßenzelle (je Spur) trägt; mapCap: Stadtstraßen der Karte. Paket „Industriepark“: 24/40 (vorher
@@ -212,7 +238,7 @@ export const CITY = {
     // (Raten wie bei den Jets, tank.rate/depot.rate je Stufe des Lagers). Start und Landung sperren alle Heliports im Umkreis sepRadius
     // Zellen sep s, mit Tower (atcRadius) sepAtc s. Heimflug, wenn der Treibstoff nur noch für den Heimweg × home + reserve s reicht
     // oder die Bordwaffen leer sind.
-    heli: { liftTime: 2.5, sep: 6, sepAtc: 2, sepRadius: 6, home: 1.3, reserve: 6 },
+    heli: { liftTime: 2.5, sep: 6, sepAtc: 2, sepRadius: 6, home: 1.3, reserve: 6, arrive: 40 }, // arrive: so nah (px) über dem Heliport gilt der Landeanflug als angekommen
     // Alarmrotte (Paket „Alarmrotte“, Logik js/game/scramble.js, PRD docs/prd/stadt-luft.md): Jets mit Luft-Luft-Waffe in Bereitschaft
     // starten von selbst, sobald ein für das Team sichtbares feindliches Luftfahrzeug im Alarmradius liegt. Gemessen an KI gegen KI
     // (Seeds 3, 7, 11, 21, bis 40 min): feindliche Luftfahrzeuge kamen nie näher als rund 4400 px an die Hauptstadt; der Radius schützt

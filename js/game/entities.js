@@ -26,7 +26,7 @@ export function createUnit(id, type, team, x, y) {
     pathIndex: 0,
     targetId: null,
     cooldown: 0,
-    scanTimer: (id % 5) * 0.05, // verteilt die Zielsuche über die Zeit
+    scanTimer: (id % BALANCE.scanStagger.slots) * BALANCE.scanStagger.step, // verteilt die Zielsuche über die Zeit
     anchorX: x,
     anchorY: y,
     lastHitTime: -1e9,
@@ -124,7 +124,7 @@ export function createBuilding(id, type, team, cx, cy, tile) {
     targetId: null,
     cooldown: 0,
     aaCooldown: 0,
-    scanTimer: (id % 5) * 0.05,
+    scanTimer: (id % BALANCE.scanStagger.slots) * BALANCE.scanStagger.step,
     main: false,
     infinite: false,
     produces: type === 'fob' ? [] : (def.produces ?? []), // ohne Eintrag: bildet nichts aus (KI und Befehlskarte lesen .length)
@@ -156,7 +156,7 @@ export function createShell(id, team, sx, sy, tx, ty, def) {
     x: sx,
     y: sy,
     t: 0,
-    duration: d / (def.shellSpeed ?? 300), // Mörser 300 px/s, Haubitze schneller
+    duration: d / (def.shellSpeed ?? BALANCE.shellSpeed), // Mörser shellSpeed px/s, Haubitze schneller
     damage: def.damage,
     splash: def.splash,
     alive: true,

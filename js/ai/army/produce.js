@@ -95,7 +95,7 @@ export const produceMethods = {
     }
 
 
-    if (this.saveForScout || this.saveForRadio || this.saveForResearch || this.saveForFob) return; // Geld für Späher, Sendemast, Stufe bzw. FOB-Fahrzeug sparen
+    if (this.saveForScout || this.saveForRadio || this.saveForResearch || this.saveForFob || this.saveForJet) return; // Geld für Späher, Sendemast, Stufe, FOB-Fahrzeug bzw. Jet sparen
     // Festung (seit v5.26): steht ein Turm und fehlt der Transporthubschrauber, zuerst auf ihn sparen (buyHeli in fortify kauft ihn)
     if (!s.helis.length && !this.queued(s, 'transporter') && s.own.some((b) => b.type === 'tower' && b.built)) {
       if (res.money < UNITS.transporter.cost.money + HELI_MIN_MONEY) return;

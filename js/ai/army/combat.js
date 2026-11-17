@@ -72,6 +72,8 @@ export const combatMethods = {
     const g = this.game;
     const t = this.team;
     const ports = standsOf(g, t);
+    this.saveForJet = false;
+    this.cityMem.hold = 0;
     if (!ports.length) return;
     const jets = s.units.filter((u) => u.def.jet);
     // Alarmrotte (Paket „Alarmrotte“): Bereitschaft der Jets mit Luft-Luft-Waffe nach BALANCE.difficulty[…].scramble (Standard an)
@@ -98,9 +100,14 @@ export const combatMethods = {
       const keep = from != null && !jets.some((u) => u.def.highAlt) ? CITY.ai.reconMax : 0;
       const empty = ports.filter((p) => p.queue.length === 0 && freeSpace(g, p) >= (UNITS.u2.standSlots ?? 2) && supplied(g, p));
       const reserved = new Set(empty.slice(-keep || empty.length).map((p) => p.id).slice(0, keep));
-      if (money >= UNITS[type].cost.money + (type === 'a10' ? CITY.ai.a10Reserve : CITY.ai.jetReserve)) {
-        const b = ports.filter((p) => !reserved.has(p.id) && p.queue.length < JET_QUEUE && freeSpace(g, p) > 0 && supplied(g, p)).sort((p, q) => p.queue.length - q.queue.length || p.id - q.id)[0];
+      const price = UNITS[type].cost.money + (type === 'a10' ? CITY.ai.a10Reserve : CITY.ai.jetReserve);
+      const b = ports.filter((p) => !reserved.has(p.id) && p.queue.length < JET_QUEUE && freeSpace(g, p) > 0 && supplied(g, p)).sort((p, q) => p.queue.length - q.queue.length || p.id - q.id)[0];
+      if (money >= price) {
         if (b && steelFor(g, t, type)) g.issue(t, { type: 'train', buildingId: b.id, unit: type });
+      } else if (b && total < (CITY.ai.jetSave[this.difficulty] ?? 0)) {
+        // Sparen (Paket „Luftwaffe der KI“): sonst gibt die Armee alles für Bodentruppen und die Stadt für den Ausbau aus
+        this.saveForJet = true;
+        this.cityMem.hold = price;
       }
     }
     const ready = fighters.filter((u) => u.parked && u.jet?.ready && u.order.type === 'idle' && !u.jet.qra).sort((a, b) => a.id - b.id);

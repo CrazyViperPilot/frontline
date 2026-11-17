@@ -45,6 +45,7 @@ export class AI {
     this.saveForFob = false; // ebenso, bis das nächste FOB-Fahrzeug bezahlt ist
     this.saveForRadio = false; // ebenso, bis der Sendemast bezahlt ist
     this.saveForResearch = false; // ebenso, bis die nächste Stufe bezahlt ist
+    this.saveForJet = false; // ebenso, bis der nächste Jet bezahlt ist (CITY.ai.jetSave, combat.js jets)
     this.scoutHome = false; // Späher fliegt zum Auftanken heim
     this.seenFobs = new Map(); // Gebäude-ID -> gesehene gegnerische FOB
     this.fallbackUntil = 0; // bis dahin greift army nicht an (Gruppen-Rückzug läuft)

@@ -27,7 +27,7 @@ function standsAllowed(game, c, q, r, w, h) {
  * und Munitionslager kommen daneben mit Straße zum Lager (Paket „Fliegerhorst-Anschluss“: die Bahn braucht keine Straße, Tank und Lager
  * schon). Danach je Takt ein weiterer Stellplatz an der Bahn, bis sie `want` hat.
  */
-export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal') {
+export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal', mem = null) {
   const A = CITY.ai;
   if (!main) return false;
   const RW = CITY.air.runwayWidth; // Breite der Bahn (Zellen)
@@ -98,6 +98,8 @@ export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal
     if (!retry()) return false;
   }
   if (work < A.airportFrom || stands.length) return false;
+  // Sparen auf die Bahn (Paket „Luftwaffe der KI“): sonst baut der Stadtausbau die freien Flächen zu, bevor das Geld reicht
+  if (mem && !hasRunway) mem.airHold = true;
   if (money < A.airportMoney + reserve || main.store.bm < A.airportBm) return false;
   const [fc, fr] = cellAt(c, main.x, main.y);
   const R = A.airportReach;
@@ -115,17 +117,25 @@ export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal
     for (const vertical of [false, true]) {
       // Bahn L × RW (bzw. RW × L) mit einer Reihe B × B-Bauten daneben: Fläche L × (RW + B)
       if (!fits(q, r, vertical ? RW + B : L, vertical ? L : RW + B)) continue;
-      // Die ersten beiden Stellplätze müssen im eigenen Gebiet erlaubt sein (die Bahn selbst darf hinaus; sonst entstand eine Bahn
-      // außerhalb, an der nie ein Stellplatz gebaut werden konnte)
-      if (!standsAllowed(game, c, vertical ? q + RW : q, vertical ? r : r + RW, vertical ? B : 2 * B, vertical ? 2 * B : B)) continue;
-      // Bahn bauen; scheitert der Befehl hier, die nächste Stelle versuchen (vorher Abbruch: die KI blieb an derselben Stelle hängen)
-      const rwCmd = vertical ? { type: 'city', kind: 'runway', c0: q, r0: r, c1: q + RW - 1, r1: r + L - 1 } : { type: 'city', kind: 'runway', c0: q, r0: r, c1: q + L - 1, r1: r + RW - 1 };
-      if (!game.issue(c.team, rwCmd).ok) continue;
-      // Stellplätze und Tower neben der Bahn (sie brauchen keine Straße), dann Kerosintank und Munitionslager mit Straße zum Lager
-      A.airportRow.forEach((kind, k) => (vertical ? put(kind, q + RW, r + k * B) : put(kind, q + k * B, r + RW)));
-      putDepot('ktank');
-      putDepot('mdepot');
-      return true;
+      // Die Reihe liegt unter bzw. rechts der Bahn oder (flip) darüber bzw. links davon: je nach Ecke der Hauptstadt liegt nur eine
+      // Seite im eigenen Gebiet (vorher nur unten/rechts: die KI oben rechts fand nie einen Platz)
+      for (const flip of [false, true]) {
+        const rq = vertical && flip ? q + B : q; // Anker der Bahn
+        const rr = !vertical && flip ? r + B : r;
+        const sq = vertical ? (flip ? q : q + RW) : q; // Anker der Reihe
+        const sr = vertical ? r : flip ? r : r + RW;
+        // Die ersten beiden Stellplätze müssen im eigenen Gebiet erlaubt sein (die Bahn selbst darf hinaus; sonst entstand eine Bahn
+        // außerhalb, an der nie ein Stellplatz gebaut werden konnte)
+        if (!standsAllowed(game, c, sq, sr, vertical ? B : 2 * B, vertical ? 2 * B : B)) continue;
+        // Bahn bauen; scheitert der Befehl hier, die nächste Stelle versuchen (vorher Abbruch: die KI blieb an derselben Stelle hängen)
+        const rwCmd = vertical ? { type: 'city', kind: 'runway', c0: rq, r0: rr, c1: rq + RW - 1, r1: rr + L - 1 } : { type: 'city', kind: 'runway', c0: rq, r0: rr, c1: rq + L - 1, r1: rr + RW - 1 };
+        if (!game.issue(c.team, rwCmd).ok) continue;
+        // Stellplätze und Tower neben der Bahn (sie brauchen keine Straße), dann Kerosintank und Munitionslager mit Straße zum Lager
+        A.airportRow.forEach((kind, k) => (vertical ? put(kind, sq, sr + k * B) : put(kind, sq + k * B, sr)));
+        putDepot('ktank');
+        putDepot('mdepot');
+        return true;
+      }
     }
   }
   return false;

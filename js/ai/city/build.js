@@ -20,6 +20,7 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
   const money = () => game.teams[team].res.money;
   importWatch(game, city, mem);
   aiMarket(game, team, reserve, mem);
+  const keep = reserve + (mem.hold ?? 0); // spart die Armee auf einen Jet, ruht der Ausbau darüber (Einfuhr und Anschluss nicht)
   mem.turn++;
   let n = 0;
   // Einfuhr (Paket „Import“): ohne Einfuhrpunkt (Straße am Kartenrand zerstört oder überbaut) zuerst eine Straße zum Kartenrand
@@ -42,10 +43,11 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
     rad = CITY.territory.main + CITY.territory.building * CITY.ai.growRing;
     if (!anchor) return;
   }
-  if (aiAirport(game, city, main, reserve, CITY.ai.jets[difficulty] ?? CITY.ai.jets.normal, difficulty)) n++;
-  if (n < CITY.ai.perStep && aiStation(game, city, main, money(), reserve, difficulty, mem)) n++;
+  mem.airHold = false;
+  if (aiAirport(game, city, main, keep, CITY.ai.jets[difficulty] ?? CITY.ai.jets.normal, difficulty, mem)) n++;
+  if (n < CITY.ai.perStep && aiStation(game, city, main, money(), keep, difficulty, mem)) n++;
   if (n < CITY.ai.perStep && aiConnect(game, city, mem.turn)) n++;
   // Spuren (Paket „Straßennetz der KI“): dauerhaft überlastete Straßen verbreitern; kostet nur Baumaterial, zählt nicht zu perStep
   const hot = aiLanes(game, city, main, mem);
-  growCells(game, team, city, main, anchor, rad, n, reserve, mem, hot);
+  growCells(game, team, city, main, anchor, rad, n, keep + (mem.airHold ? CITY.ai.airportMoney : 0), mem, hot);
 }

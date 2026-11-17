@@ -1,1 +1,0 @@
-**Einheitentabelle Stadt** (§6 „Werte“, nur Doku): Die erzeugte Tabelle „Werte“ zeigt je Einheit auch Stahl (`CITY.metalCost`), Einwohner (`CITY.crew`) und das Ausbildungsgebäude der Stadt (`CITY.produces`); der Rollentext verweist darauf statt auf die Daten.

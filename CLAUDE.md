@@ -35,6 +35,7 @@ npm test                                # alle Tests, Minuten: vor dem Push
 node --test --test-reporter=dot test/radio.test.js   # eine Datei
 npm run docs                            # Wertetabellen in docs/prd/ neu erzeugen
 npm run metrics                         # KI-Kennzahlen (bei KI-, Stadt-, Kampf-Paketen)
+npm run econ -- --seeds 3,7 --min 25    # Wirtschaft je 5 min (Einfuhr, Werke, Straße); --conquest, --set CITY.x=…, compare a.json b.json
 npm run smoke                           # Browser-Rundgang mit Fotos in .smoke/
 ```
 
@@ -47,7 +48,8 @@ URL-Parameter, Smoke-Varianten, Prüfsummen und Prüftests: `docs/testen.md`.
 - **Versionen und Cache** vergibt nur `npm run release` (Regel 6, 7): Jedes Paket legt seinen Eintrag als Datei nach `docs/changes/`.
   Beim Zusammenführen: `git pull origin main`, `npm run release`, `npm test`, committen, nach `main` pushen.
 - **Vor dem Plan messen:** Beruht ein Paket auf einer Annahme über das Spiel (wie oft, wie weit, ob die KI etwas tut),
-  sie vorher mit einem kurzen Skript an echten Seeds prüfen (`new Game({ seed, … })`, KI gegen KI).
+  sie vorher mit einem kurzen Skript an echten Seeds prüfen (`new Game({ seed, … })`, KI gegen KI);
+  Wirtschaft und Einfuhr mit `npm run econ` (Werte ohne Codeänderung per `--set`, vorher/nachher mit `--json` und `compare`).
 
 ## Kontext sparen
 

@@ -23,6 +23,7 @@ npm run smoke -- --long 30        # langer Lauf: 30 Spielminuten bei 10× Tempo,
 node tools/unitpreview.mjs f22    # Einheiten-Modelle als Bild (8 Richtungen, 2D, Spielgröße) neben f16 und tank: .preview/units.png (Rezept docs/rezept-einheiten.md)
 npm run release                   # Versionen vergeben (nur beim Zusammenführen auf main, siehe „Zusammenarbeit“)
 npm run metrics                   # KI-Kennzahlen: 3 Seeds × 15 min KI gegen KI (~30 s), warnt bei groben Ausreißern; auch in der CI
+npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminuten (tools/econ.mjs, Optionen im Dateikopf); compare a.json b.json
 ```
 
 ## Regeln für Tests

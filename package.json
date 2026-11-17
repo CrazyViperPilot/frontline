@@ -9,6 +9,7 @@
     "smoke": "node tools/smoke.mjs",
     "release": "node tools/release.mjs",
     "metrics": "node tools/metrics.mjs",
+    "econ": "node tools/econ.mjs",
     "docs": "node tools/doc-tables.mjs",
     "preview": "node tools/unitpreview.mjs",
     "deadcode": "node tools/deadcode.mjs",

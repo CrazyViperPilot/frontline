@@ -1,4 +1,4 @@
-// Erzeugt die Wertetabellen des PRD (§6 in docs/prd/einheiten.md, Forschung in docs/prd/wetter-forschung.md, seit v5.79) aus js/data/ (Einheiten, Gebäude, Waffen), damit das PRD nie veraltet.
+// Erzeugt die Wertetabellen des PRD (§6; „Werte“ seit Paket „Einheitentabelle Stadt“ mit Stahl, Einwohnern und Ausbildungsgebäude aus CITY) in docs/prd/einheiten.md, Forschung in docs/prd/wetter-forschung.md, seit v5.79) aus js/data/ (Einheiten, Gebäude, Waffen), damit das PRD nie veraltet.
 // Aufruf: `npm run docs` (schreibt die Dateien unter docs/prd/). test/doctables.test.js schlägt fehl, wenn die Tabellen nicht mehr zur Config passen.
 // Die Tabellen stehen in den Dateien unter docs/prd/ zwischen <!-- auto:NAME:start --> und <!-- auto:NAME:end -->; dazwischen nichts von Hand ändern.
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
@@ -7,6 +7,8 @@ import { BALANCE } from '../js/data/balance.js';
 import { UNITS } from '../js/data/units.js';
 import { BUILDINGS } from '../js/data/buildings.js';
 import { RESEARCH } from '../js/data/research.js';
+import { CITY } from '../js/data/city.js';
+import { KIND_NAME } from '../js/data/citykinds.js';
 import { researchEffect } from '../js/game/research.js';
 
 export const PRD_DIR = fileURLToPath(new URL('../docs/prd/', import.meta.url)); // Themen-Dateien des PRD (seit v5.79)
@@ -15,6 +17,8 @@ export const PRD_FILES = readdirSync(PRD_DIR).filter((f) => f.endsWith('.md')).s
 const CLASSES = ['inf', 'light', 'heavy', 'struct', 'air', 'jet'];
 const CLASS_NAMES = { inf: 'Inf', light: 'Leicht', heavy: 'Schwer', struct: 'Geb', air: 'Luft', jet: 'Flugzeug' };
 const UNIT_NAMES = Object.fromEntries(Object.entries(UNITS).map(([k, u]) => [k, u.name]));
+// Stadtgebäude, das die Einheit ausbildet (CITY.produces, Paket „Einheitentabelle Stadt“)
+const TRAINED_IN = Object.fromEntries(Object.entries(CITY.produces).flatMap(([kind, list]) => list.map((k) => [k, KIND_NAME[kind] ?? kind])));
 
 /** Zahl deutsch (Komma), höchstens 3 Nachkommastellen. */
 const fmt = (n) => String(Math.round(n * 1000) / 1000).replace('.', ',');
@@ -39,8 +43,14 @@ function unitsTable() {
     costText(u.cost),
     `${fmt(u.buildTime)} s`,
     u.fuelMax ? `${fmt(u.fuelMax)} / ${fmt(u.fuelPerSec)}` : '–',
+    CITY.metalCost[k] ? fmt(CITY.metalCost[k]) : '–', // Stahl aus dem Stadtlager (nur mit Stadt)
+    fmt(CITY.crew[k] ?? CITY.crew.default), // Einwohner, die zu Truppen werden (nur mit Stadt)
+    TRAINED_IN[k] ?? '–',
   ]);
-  return table(['Einheit', 'Taste', 'Plätze', 'HP', 'Tempo', 'Sicht', 'Reichweite', 'Preis', 'Ausbildung', 'Treibstoff (max / je s)'], rows);
+  return table(
+    ['Einheit', 'Taste', 'Plätze', 'HP', 'Tempo', 'Sicht', 'Reichweite', 'Preis', 'Ausbildung', 'Treibstoff (max / je s)', 'Stahl', 'Einwohner', 'Ausbildung (Stadt)'],
+    rows,
+  );
 }
 
 function buildingsTable() {

@@ -1,6 +1,6 @@
 // Die Rollenbeschreibungen der Einheiten in docs/prd/einheiten.md (§6, Tabelle vor „### Werte“) dürfen keine Zahlen zu Geld, Stahl,
-// Einwohnern, Plätzen oder Tasten nennen, die von den Daten abweichen. Zahlen dieser Art stehen in den erzeugten Tabellen oder in
-// js/data/ (CITY.metalCost, CITY.crew). Nur diese Werte werden geprüft: HP, Heilraten und Mechanik-Zahlen bleiben im Text.
+// Einwohnern, Plätzen oder Tasten nennen, die von den Daten abweichen. Zahlen dieser Art stehen in den erzeugten Tabellen (in „Werte“
+// auch Stahl und Einwohner aus CITY.metalCost, CITY.crew). Nur diese Werte werden geprüft: HP, Heilraten und Mechanik-Zahlen bleiben im Text.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';

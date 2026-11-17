@@ -6,8 +6,8 @@
 ## 6. Einheiten
 
 > Zahlen zu Preis, Ausbildung, HP, Tempo, Sicht, Reichweite, Schaden, Kadenz, Munition,
-> Treibstoff und Taste stehen nur in den erzeugten Tabellen „Werte“ und „Waffen und Schaden“ weiter unten (Quelle `js/data/`); Stahl und Einwohner je Einheit nennt der Text nicht,
-> sie stehen in `CITY.metalCost` und `CITY.crew` (`js/data/city.js`).
+> Treibstoff, Taste, Stahl, Einwohner und Ausbildungsgebäude der Stadt stehen nur in den erzeugten Tabellen „Werte“ und „Waffen und Schaden“ weiter unten
+> (Quelle `js/data/`; Stahl, Einwohner und Gebäude aus `CITY.metalCost`, `CITY.crew` und `CITY.produces` in `js/data/city.js`).
 > „Plätze“ in der Werte-Tabelle ist der Platzbedarf im Einheitenlimit; die Sitze für Passagiere (`seats`) nennt der Text.
 
 | Einheit | Gebaut in | Rolle |
@@ -93,7 +93,7 @@
   **Keine Luft-Boden-Raketen**: sie greift keine Panzer, Fahrzeuge oder Gebäude an, auch nicht Infanterie.
   Ihre Rolle ist das Luftüberlegenheitsjet; sie fliegt wie die F-16 (`jet`, eine Waffe), Treibstoff wie in der Tabelle.
   Leer geschossen fliegt sie heim und lädt am Munitionslager nach wie die F-16.
-  Ausbildung mit Stahl und Einwohnern (`UNITS.f22`, `CITY.produces.stand`, `js/game/aircraft.js`).
+  Ausbildung am Stellplatz mit Stahl und Einwohnern (Tabelle „Werte“; `UNITS.f22`, `js/game/aircraft.js`).
   Die KI baut keine F-22 (Abschnitt „Flugzeuge“ in PRD §10).
 - **A-10 (Erdkampfflugzeug, Paket E12):** Langsamer als F-16, F-22 und Su-27, Kreisen und Heimflug über die vorhandene Jet-Logik.
   Die KI baut sie nicht.
@@ -101,7 +101,7 @@
 - **Su-27 (Kampfflugzeug, Paket „Su-27“):** Luft-Luft-Lenkraketen an den Flügelspitzen, nur gegen Hubschrauber und Flugzeuge, und Luft-Boden-Raketen unter den Flügeln (Panzer, Fahrzeuge,
   Gebäude), parallel feuernd.
   Mehr Treibstoff als die F-16 (Tabelle „Werte“).
-  Ausbildung mit Stahl und Einwohnern (`UNITS.su27`, `CITY.produces.stand`, `js/game/aircraft.js`).
+  Ausbildung am Stellplatz mit Stahl und Einwohnern (Tabelle „Werte“; `UNITS.su27`, `js/game/aircraft.js`).
   Die KI baut keine Su-27 (Abschnitt „Flugzeuge“ in PRD §10).
 - **U-2 (Höhenaufklärer, seit v5.83):** Sicht **1800 px in der Luft** (`airSight`; am Boden gilt die Sicht der Tabelle).
   **In der Luft nur die F-22 kann sie treffen** (Waffe mit `antiHighAlt`);
@@ -160,52 +160,52 @@ stirbt der Hubschrauber, sind die Passagiere verloren.
 Schadensmodell: Schaden je Schuss nach Panzerklasse des Ziels (Infanterie / leicht / schwer / Gebäude) – Werte in §6 „Waffen und Schaden“. Höhenvorteil siehe §7 „Gelände“.
 
 **Preislogik (seit Paket „Balance-Preise“):** Infanterie ist das Rückgrat einer Armee und bleibt günstig; Fahrzeuge und Flieger sind teure Entscheidungen, die Kampfflugzeuge am teuersten.
-Fahrzeuge und Flieger kosten zusätzlich Metall aus dem Stadtlager (`CITY.metalCost`).
+Mit Stadt kosten Fahrzeuge und Flieger zusätzlich Stahl aus dem Stadtlager, jede Einheit dazu Einwohner (Spalten „Stahl“ und „Einwohner“ der Tabelle „Werte“).
 Die Preise stehen in der Tabelle „Werte“ und in `js/data/units.js` (`cost.money`).
 
-### Werte (Quelle: `js/data/units.js`, `js/data/buildings.js`, `js/data/balance.js`)
+### Werte (Quelle: `js/data/units.js`, `js/data/buildings.js`, `js/data/balance.js`, `js/data/city.js`)
 
 Die Tabellen „Werte“ und „Waffen und Schaden“ erzeugt `npm run docs` aus `js/data/` (`tools/doc-tables.mjs`); zwischen den Markierungen nichts von Hand ändern.
 Ein Test meldet, wenn sie nicht mehr zur Config passen.
 
 <!-- auto:units:start -->
-| Einheit | Taste | Plätze | HP | Tempo | Sicht | Reichweite | Preis | Ausbildung | Treibstoff (max / je s) |
-|---|---|---|---|---|---|---|---|---|---|
-| Schütze | Q | 1 | 100 | 45 | 260 | 200 | 60 Geld | 5 s | – |
-| Pionier | F | 1 | 100 | 45 | 260 | 200 | 70 Geld | 6 s | – |
-| Sanitäter | K | 1 | 100 | 45 | 260 | – | 90 Geld | 5 s | – |
-| MANPADS-Soldat | I | 1 | 90 | 40 | 260 | 300 | 120 Geld | 8 s | – |
-| Flammenwerfer | D | 1 | 100 | 40 | 260 | 70 | 60 Geld | 5 s | – |
-| Mörsertrupp | E | 1 | 100 | 25 | 260 | 700 | 90 Geld | 8 s | – |
-| Panzerabwehrsoldat | W | 1 | 90 | 40 | 260 | 240 | 120 Geld | 8 s | – |
-| Scharfschütze | T | 1 | 70 | 38 | 440 | 480 | 220 Geld | 10 s | – |
-| Kommandeur | C | 0 | 300 | 42 | 340 | 180 | 400 Geld | 20 s | – |
-| LKW | E | 1 | 250 | 110 | 220 | – | 80 Geld | 6 s | 30 / 0,16 |
-| Aufklärungsfahrzeug | K | 1 | 200 | 160 | 520 | 220 | 100 Geld | 7 s | 30 / 0,16 |
-| Baufahrzeug | R | 1 | 400 | 70 | 260 | – | 150 Geld | 9 s | 40 / 0,24 |
-| Bergepanzer | W | 1 | 350 | 60 | 260 | – | 130 Geld | 8 s | 40 / 0,24 |
-| Störsender | U | 1 | 300 | 60 | 260 | – | 150 Geld | 8 s | 40 / 0,24 |
-| Brückenleger | C | 2 | 600 | 46 | 240 | – | 300 Geld | 14 s | 45 / 0,28 |
-| Bagger | X | 2 | 650 | 48 | 240 | 34 | 320 Geld | 14 s | 45 / 0,28 |
-| FOB-Fahrzeug | B | 2 | 600 | 60 | 260 | – | 500 Geld | 30 s | 50 / 0,32 |
-| Schützenpanzer | A | 3 | 450 | 85 | 300 | 240 | 450 Geld | 12 s | 40 / 0,32 |
-| Kampfpanzer | S | 5 | 1100 | 60 | 320 | 300 | 1000 Geld | 20 s | 60 / 0,48 |
-| Little Bird | D | 1 | 220 | 170 | 380 | – | 650 Geld | 15 s | 60 / 0,5 |
-| Aufklärungsdrohne | R | 1 | 120 | 130 | 450 | – | 300 Geld | 12 s | 40 / 0,5 |
-| Kamikazedrohne | X | 1 | 60 | 190 | 250 | 15 | 300 Geld | 12 s | 40 / 0,5 |
-| Transporthubschrauber | F | 1 | 500 | 130 | 320 | – | 900 Geld | 20 s | 90 / 0,7 |
-| Kampfhubschrauber | G | 1 | 650 | 150 | 400 | 340 | 1700 Geld | 28 s | 70 / 0,8 |
-| F-16 | K | 3 | 450 | 420 | 560 | 640 | 2600 Geld | 40 s | 55 / 1 |
-| F-22 | I | 3 | 500 | 460 | 600 | 700 | 3500 Geld | 55 s | 55 / 1 |
-| A-10 | D | 3 | 700 | 252 | 560 | 340 | 2800 Geld | 45 s | 90 / 1 |
-| C-130 | C | 3 | 900 | 200 | 400 | – | 3000 Geld | 60 s | 90 / 1 |
-| Su-27 | S | 3 | 480 | 450 | 560 | 640 | 2800 Geld | 45 s | 75 / 1 |
-| U-2 | O | 3 | 400 | 300 | 300 | – | 2600 Geld | 50 s | 180 / 1 |
-| Flakpanzer | Z | 2 | 300 | 70 | 380 | 330 | 300 Geld | 10 s | 40 / 0,32 |
-| SAM-Startrampe | N | 2 | 350 | 65 | 440 | 420 | 400 Geld | 12 s | 40 / 0,32 |
-| Flakpanzer Gepard | L | 3 | 450 | 62 | 480 | 420 | 1000 Geld | 16 s | 45 / 0,28 |
-| Panzerhaubitze | O | 4 | 500 | 50 | 280 | 1400 | 1500 Geld | 22 s | 40 / 0,28 |
-| Raketenwerfer | T | 4 | 500 | 50 | 280 | 1600 | 1700 Geld | 26 s | 40 / 0,28 |
+| Einheit | Taste | Plätze | HP | Tempo | Sicht | Reichweite | Preis | Ausbildung | Treibstoff (max / je s) | Stahl | Einwohner | Ausbildung (Stadt) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Schütze | Q | 1 | 100 | 45 | 260 | 200 | 60 Geld | 5 s | – | – | 1 | Kaserne |
+| Pionier | F | 1 | 100 | 45 | 260 | 200 | 70 Geld | 6 s | – | – | 1 | Kaserne |
+| Sanitäter | K | 1 | 100 | 45 | 260 | – | 90 Geld | 5 s | – | – | 1 | Kaserne |
+| MANPADS-Soldat | I | 1 | 90 | 40 | 260 | 300 | 120 Geld | 8 s | – | – | 1 | Kaserne |
+| Flammenwerfer | D | 1 | 100 | 40 | 260 | 70 | 60 Geld | 5 s | – | – | 1 | Kaserne |
+| Mörsertrupp | E | 1 | 100 | 25 | 260 | 700 | 90 Geld | 8 s | – | – | 1 | Kaserne |
+| Panzerabwehrsoldat | W | 1 | 90 | 40 | 260 | 240 | 120 Geld | 8 s | – | – | 1 | Kaserne |
+| Scharfschütze | T | 1 | 70 | 38 | 440 | 480 | 220 Geld | 10 s | – | – | 1 | Kaserne |
+| Kommandeur | C | 0 | 300 | 42 | 340 | 180 | 400 Geld | 20 s | – | – | 1 | Kaserne |
+| LKW | E | 1 | 250 | 110 | 220 | – | 80 Geld | 6 s | 30 / 0,16 | 20 | 1 | Fabrikhalle |
+| Aufklärungsfahrzeug | K | 1 | 200 | 160 | 520 | 220 | 100 Geld | 7 s | 30 / 0,16 | 30 | 1 | Fabrikhalle |
+| Baufahrzeug | R | 1 | 400 | 70 | 260 | – | 150 Geld | 9 s | 40 / 0,24 | 20 | 1 | Fabrikhalle |
+| Bergepanzer | W | 1 | 350 | 60 | 260 | – | 130 Geld | 8 s | 40 / 0,24 | 40 | 2 | Fabrikhalle |
+| Störsender | U | 1 | 300 | 60 | 260 | – | 150 Geld | 8 s | 40 / 0,24 | 40 | 2 | Fabrikhalle |
+| Brückenleger | C | 2 | 600 | 46 | 240 | – | 300 Geld | 14 s | 45 / 0,28 | 70 | 2 | Fabrikhalle |
+| Bagger | X | 2 | 650 | 48 | 240 | 34 | 320 Geld | 14 s | 45 / 0,28 | 80 | 2 | Fabrikhalle |
+| FOB-Fahrzeug | B | 2 | 600 | 60 | 260 | – | 500 Geld | 30 s | 50 / 0,32 | 80 | 2 | Fabrikhalle |
+| Schützenpanzer | A | 3 | 450 | 85 | 300 | 240 | 450 Geld | 12 s | 40 / 0,32 | 120 | 3 | Fabrikhalle |
+| Kampfpanzer | S | 5 | 1100 | 60 | 320 | 300 | 1000 Geld | 20 s | 60 / 0,48 | 250 | 3 | Fabrikhalle |
+| Little Bird | D | 1 | 220 | 170 | 380 | – | 650 Geld | 15 s | 60 / 0,5 | 120 | 2 | Heliport |
+| Aufklärungsdrohne | R | 1 | 120 | 130 | 450 | – | 300 Geld | 12 s | 40 / 0,5 | 50 | 1 | Heliport |
+| Kamikazedrohne | X | 1 | 60 | 190 | 250 | 15 | 300 Geld | 12 s | 40 / 0,5 | 50 | 1 | Heliport |
+| Transporthubschrauber | F | 1 | 500 | 130 | 320 | – | 900 Geld | 20 s | 90 / 0,7 | 120 | 2 | Heliport |
+| Kampfhubschrauber | G | 1 | 650 | 150 | 400 | 340 | 1700 Geld | 28 s | 70 / 0,8 | 250 | 2 | Heliport |
+| F-16 | K | 3 | 450 | 420 | 560 | 640 | 2600 Geld | 40 s | 55 / 1 | 320 | 2 | Stellplatz |
+| F-22 | I | 3 | 500 | 460 | 600 | 700 | 3500 Geld | 55 s | 55 / 1 | 450 | 2 | Stellplatz |
+| A-10 | D | 3 | 700 | 252 | 560 | 340 | 2800 Geld | 45 s | 90 / 1 | 360 | 2 | Stellplatz |
+| C-130 | C | 3 | 900 | 200 | 400 | – | 3000 Geld | 60 s | 90 / 1 | 380 | 3 | Stellplatz |
+| Su-27 | S | 3 | 480 | 450 | 560 | 640 | 2800 Geld | 45 s | 75 / 1 | 330 | 2 | Stellplatz |
+| U-2 | O | 3 | 400 | 300 | 300 | – | 2600 Geld | 50 s | 180 / 1 | 300 | 2 | Stellplatz |
+| Flakpanzer | Z | 2 | 300 | 70 | 380 | 330 | 300 Geld | 10 s | 40 / 0,32 | 80 | 2 | Fabrikhalle |
+| SAM-Startrampe | N | 2 | 350 | 65 | 440 | 420 | 400 Geld | 12 s | 40 / 0,32 | 110 | 2 | Fabrikhalle |
+| Flakpanzer Gepard | L | 3 | 450 | 62 | 480 | 420 | 1000 Geld | 16 s | 45 / 0,28 | 180 | 3 | Fabrikhalle |
+| Panzerhaubitze | O | 4 | 500 | 50 | 280 | 1400 | 1500 Geld | 22 s | 40 / 0,28 | 280 | 4 | Fabrikhalle |
+| Raketenwerfer | T | 4 | 500 | 50 | 280 | 1600 | 1700 Geld | 26 s | 40 / 0,28 | 300 | 4 | Fabrikhalle |
 <!-- auto:units:end -->
 
 <!-- auto:buildings:start -->

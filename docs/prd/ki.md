@@ -283,7 +283,7 @@ je Zeile mit Kommentar; die Tabelle nennt nur die wichtigsten.
 | Straßen räumen (Paket „Straßen“) | Takt (`ROAD_REPAIR_EVERY`) · kein Räumen bei sichtbaren Gegnern näher als (`ROAD_REPAIR_SAFE`) | 10 s / 400 px |
 | Stellwerte der Armee-KI (Paket „KI-Zahlen in die Daten“) | Höhensuche: Punkte auf dem Kreis (`HIGH_SAMPLES`) · Zonen-FOB gilt bis `ZONE_FOB_R` + `ZONE_FOB_SLACK` · Haubitzen je Reihe (`ART_COLS`) · Verteilen an der Zone ab (`CLUMP_MIN`) Einheiten | 8 · 16 px · 3 · 2 |
 | Stellwerte der Armee-KI (Paket „KI-Zahlen in die Daten“) | „draußen“ ab `GATHER_DIST` × `FIELD_MUL` · Kommandeur am Ziel bis `CMD_MOVE` × `CMD_ARRIVED` · F-16 gegen Panzer bis `DEF_RANGE` × `JET_ARMOR_RANGE` · Stahl-Lose vor einer Flugzeugbestellung (`JET_STEEL_LOTS`) | 2 · 0,5 · 2 · 10 |
-| Stellwerte der Stadt-KI (Paket „KI-Zahlen in die Daten“) | Ausbau-Umkreis `territory.main` + `CITY.ai.growRing` × `territory.building` · Reihenfolge Ring × `ringWeight` + Abstand · Großbau-Versuche je Zelle (`bigTries`) · Reihe neben der Bahn (`airportRow`) | 4 · 100 · 8 · Stellplatz, Stellplatz, Tower |
+| Stellwerte der Stadt-KI (Paket „KI-Zahlen in die Daten“) | Ausbau-Umkreis (`CITY.ai.growRing` × `territory.building`) · Ring × `ringWeight` + Abstand · Großbau-Versuche (`bigTries`) · Reihe an der Bahn (`airportRow`) | 4 · 100 · 8 · 2 Stellplätze, Tower |
 | Stellwerte der Stadt-KI (Paket „KI-Zahlen in die Daten“) | Grundriss des Industrieparks `CITY.parkPlan` (9 × 5, Bahnhof in der Mitte, Gleis nach unten) · Fliegerhorst-Geometrie aus `CITY.air.runwayWidth` und `CITY.size.stand` | – |
 
 Prüftest `test/config.test.js` („js/ai: keine Spielwerte als Zahlenliterale“): in `js/ai` sind außer 0, 1, 2 und 0,5 keine Zahlenliterale

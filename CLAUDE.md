@@ -28,15 +28,15 @@ Diese Datei ist der Kern: Regeln, Befehle, Wegweiser. Alles Weitere gezielt übe
 ## Befehle
 
 ```sh
-python3 -m http.server 8765             # Spiel http://localhost:8765/, Editor /editor.html
-npm run test:quick                      # Config und PRD-Tabellen, Sekunden
-npm run test:fast                       # alle ohne „[langsam]“, zum Iterieren
-npm test                                # alle Tests, Minuten: vor dem Push
-node --test --test-reporter=dot test/radio.test.js   # eine Datei
-npm run docs                            # Wertetabellen in docs/prd/ neu erzeugen
-npm run metrics                         # KI-Kennzahlen (bei KI-, Stadt-, Kampf-Paketen)
-npm run econ -- --seeds 3,7 --min 25    # Wirtschaft je 5 min (Einfuhr, Werke, Straße); --conquest, --set CITY.x=…, compare a.json b.json
-npm run smoke                           # Browser-Rundgang mit Fotos in .smoke/
+python3 -m http.server 8765 # Spiel localhost:8765/, Editor /editor.html
+npm run test:quick          # Config und PRD-Tabellen, Sekunden
+npm run test:fast           # alle ohne „[langsam]“, zum Iterieren
+npm test                    # alle Tests, Minuten: vor dem Push
+node --test --test-reporter=dot test/radio.test.js # eine Datei
+npm run docs                # Wertetabellen in docs/prd/ neu erzeugen
+npm run metrics             # KI-Kennzahlen (bei KI-, Stadt-, Kampf-Paketen)
+npm run econ                # Wirtschaft messen (tools/econ.mjs)
+npm run smoke               # Browser-Rundgang mit Fotos in .smoke/
 ```
 
 URL-Parameter, Smoke-Varianten, Prüfsummen und Prüftests: `docs/testen.md`.
@@ -47,9 +47,8 @@ URL-Parameter, Smoke-Varianten, Prüfsummen und Prüftests: `docs/testen.md`.
   nicht durchnummerieren (P1, A1 …): zwei Agenten vergeben sonst dieselben Namen.
 - **Versionen und Cache** vergibt nur `npm run release` (Regel 6, 7): Jedes Paket legt seinen Eintrag als Datei nach `docs/changes/`.
   Beim Zusammenführen: `git pull origin main`, `npm run release`, `npm test`, committen, nach `main` pushen.
-- **Vor dem Plan messen:** Beruht ein Paket auf einer Annahme über das Spiel (wie oft, wie weit, ob die KI etwas tut),
-  sie vorher mit einem kurzen Skript an echten Seeds prüfen (`new Game({ seed, … })`, KI gegen KI);
-  Wirtschaft und Einfuhr mit `npm run econ` (Werte ohne Codeänderung per `--set`, vorher/nachher mit `--json` und `compare`).
+- **Vor dem Plan messen:** Annahmen über das Spiel (wie oft, wie weit, ob die KI etwas tut) vorher an echten Seeds prüfen,
+  KI gegen KI: Wirtschaft mit `npm run econ`, sonst ein kurzes Skript (`new Game({ seed, … })`).
 
 ## Kontext sparen
 

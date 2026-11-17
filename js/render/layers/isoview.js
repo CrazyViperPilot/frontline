@@ -20,10 +20,11 @@ import {
   drawFire,
   drawMine,
 } from '../fx.js';
-import { drawCityGround, drawCityBadges } from '../citylayer.js';
+import { drawCityGround } from '../citylayer.js';
 import { drawWays } from '../ways.js';
 import { TILE, W, H, BG, SMALL_FX, HP_OFFSET, STAR_UP, STAR_R, ISO_PAD, SC } from './consts.js';
 import { updateFogLayer } from './fog.js';
+import { ISO_PASSES, runPasses } from './passes.js';
 
 const BG_RGB = [13, 17, 13];
 const ISO_STAR_UP = 0; // Iso: zusätzlich angehoben (Welt-px), über dem Kopf der Figur
@@ -36,35 +37,8 @@ export const isoViewMethods = {
    * Bildschirmanzeigen.
    */
   renderIso(f) {
-    const { ctx, cam, dpr } = f;
-    f.relief = cam.relief; // gesetzt nur mit WebGL-Boden
-    const pf = this.perf; // Messanzeige: je Ebene (sonst ohne Kosten)
-    let t = pf ? performance.now() : 0;
-    this.isoGround(f);
-    if (pf) t = pf.lap('Boden', t);
-    this.isoMarks(f);
-    if (pf) t = pf.lap('Markierungen', t);
-    const { items, air } = this.isoItems(f);
-    if (pf) t = pf.lap('Sortierung', t);
-    this.isoShadows(f, items);
-    if (pf) t = pf.lap('Schatten', t);
-    this.isoObjects(f, items);
-    if (pf) t = pf.lap('Objekte', t);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawCityBadges(this, ctx, f.team, f.known, f.inRect, true); // Stadt: Schilder über den Dächern (über allen Gebäuden)
-    if (pf) t = pf.lap('Schilder', t);
-    for (const u of air) this.drawUnitIsoAt(f, u);
-    if (pf) t = pf.lap('Flieger', t);
-    this.isoEffects(f);
-    if (pf) t = pf.lap('Effekte', t);
-    this.isoFog(f);
-    if (pf) t = pf.lap('Nebel', t);
-    this.drawSky(f);
-    if (pf) t = pf.lap('Wetter', t);
-    this.isoBars(f);
-    if (pf) t = pf.lap('Balken', t);
-    this.isoScreen(f);
-    if (pf) pf.lap('Anzeigen', t);
+    f.relief = f.cam.relief; // gesetzt nur mit WebGL-Boden
+    runPasses(this, ISO_PASSES, f); // Durchläufe und Messung: layers/passes.js
   },
 
   /** Iso, Boden: Gelände (WebGL oder flaches Bild), Parks, Wege, Krater, Brücken, Stadtstraßen, Zone und Hot Zone. */

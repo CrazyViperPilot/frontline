@@ -28,7 +28,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - updateReliefTiles(t, relief, x0, y0, x1, y1) – Weltrechteck [x0, x1] × [y0, y1] des Editor-Geländebilds neu zeichnen (nach Heb…
 - drawReliefTiles(ctx, t, layer, ox, oy, s, vw, vh) – Sichtbare Kacheln einer Ebene ('mat' oder 'shade') zeichnen
 
-## renderer.js (1.7 KB)
+## renderer.js (1.8 KB)
 - Renderer (aus core.js) – Haupt-Renderer (docs/archiv/verlauf.md §5 render/renderer.js)
 - MAX_DPR_SHARP (aus consts.js)
 - MAX_DPR_FAST (aus consts.js)

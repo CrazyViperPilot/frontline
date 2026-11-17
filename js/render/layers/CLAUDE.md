@@ -5,6 +5,7 @@
 - `core.js` – Klasse `Renderer`: Konstruktor, `resize`, `render`, `frameOf` (Werte eines Bildes), `worldTransform`
 - `top.js` – 2D von oben: `renderTop`, `topGround`, `topObjects`, `topEffects`, `topFog`, `topBars`, `drawSky`
 - `isoview.js` – Iso-Bild: `renderIso`, `isoGround`, `isoMarks`, `isoEffects`, `isoFog`, `isoBars`, `isoScreen`
+- `passes.js` – Durchläufe als Listen `TOP_PASSES`, `ISO_PASSES` ({ name wie in der Messanzeige, run, when? }); `runPasses` misst je Eintrag
 - `isoitems.js` – Iso-Objekte nach Tiefe sortiert. `isoItems`, `isoShadows`, `isoObjects`, `drawUnitIsoAt`
 - `relief.js` – Boden und Relief: `syncRelief`, `groundAt`, `groundLine`, `fogData`, `lightVec`, `buildDeco`
 - `world.js` – gemeinsames Welt-Zeug: Kisten `crateMarks`, Narben `drawScars`, Trümmer `drawRubble`, `smokeSources`
@@ -16,7 +17,7 @@
 
 ## Besonderheiten
 - Jede Ebene ist ein Objekt mit Methoden (`topMethods`, `isoViewMethods`, …), das `core.js` einhängt; Methoden rufen sich über `this` auf.
-- Ein Bild läuft in Durchläufen: `render` → `frameOf` (Kamera, Ausschnitt `inRect`, Sichtregeln `seen`/`known`/`shown`) → `renderTop` oder `renderIso`.
+- Ein Bild läuft in Durchläufen: `render` → `frameOf` (Kamera, Ausschnitt `inRect`, Sichtregeln `seen`/`known`/`shown`) → `renderTop` oder `renderIso` → `runPasses` über `TOP_PASSES` bzw. `ISO_PASSES` (`passes.js`). Neuer Durchlauf: Eintrag dort, nie `pf.lap` von Hand.
 - Nebel: `fogData` liefert dem WebGL-Nebel (`ground.renderFog`) weichgezeichnete Werte; ohne WebGL und für die Minimap `updateFogLayer`.
 - Neue Ebene: Methodenobjekt anlegen, in `core.js` einhängen, keine Importe von `core.js`.
 

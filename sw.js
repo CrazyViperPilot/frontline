@@ -163,6 +163,7 @@ const ASSETS = [
   './js/render/layers/consts.js',
   './js/render/layers/fog.js',
   './js/render/layers/top.js',
+  './js/render/layers/passes.js',
   './js/render/layers/relief.js',
   './js/render/layers/isoview.js',
   './js/render/layers/isoitems.js',

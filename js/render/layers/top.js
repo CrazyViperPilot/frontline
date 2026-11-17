@@ -21,6 +21,7 @@ import { drawCityGround, drawCityTop, drawCityRoofs, drawCityBadges } from '../c
 import { drawWays } from '../ways.js';
 import { TILE, W, H, BG, SMALL_FX, HP_OFFSET, STAR_UP, STAR_R } from './consts.js';
 import { updateFogLayer } from './fog.js';
+import { TOP_PASSES, runPasses } from './passes.js';
 
 // Turm und Waffe zeichnen (aimOf, nur Darstellung): Drehtempo in rad/s (Fahrzeuge, Infanterie) und Haltezeit nach Zielverlust in ms
 const AIM_TURN = 4;
@@ -37,24 +38,7 @@ export const topMethods = {
     ctx.fillRect(0, 0, this.cssW, this.cssH);
     this.worldTransform(f);
     ctx.imageSmoothingEnabled = true;
-    const pf = this.perf; // Messanzeige: je Ebene (sonst ohne Kosten)
-    let t = pf ? performance.now() : 0;
-    this.topGround(f);
-    if (pf) t = pf.lap('Boden', t);
-    this.topObjects(f);
-    if (pf) t = pf.lap('Objekte', t);
-    this.topEffects(f);
-    if (pf) t = pf.lap('Effekte', t);
-    this.topFog(f);
-    if (pf) t = pf.lap('Nebel', t);
-    // Regen, Schnee und Nebel über der Welt (Bildschirmkoordinaten), danach wieder die Welt-Transformation
-    this.drawSky(f);
-    if (pf) t = pf.lap('Wetter', t);
-    this.worldTransform(f);
-    this.topBars(f);
-    if (pf) t = pf.lap('Balken', t);
-    this.topScreen(f);
-    if (pf) pf.lap('Anzeigen', t);
+    runPasses(this, TOP_PASSES, f); // Durchläufe und Messung: layers/passes.js
   },
 
   /** 2D, Boden: Gelände, Wege, Kartenstadt, Brücken, Krater, Stadt (Straßen, Dächer, Schilder), Natur, Zone und Hot Zone. */

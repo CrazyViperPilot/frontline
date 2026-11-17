@@ -7,6 +7,7 @@
 //   2D von oben: Boden, Objekte, Effekte, Nebel, Balken, Hinweise   top.js
 //   Boden und Relief: Zeichnen auf dem Boden, Welt ↔ Bildschirm, Nebel-Bytes, Bäume   relief.js
 //   Iso: Bild, Boden, Markierungen, Effekte, Nebel, Balken      isoview.js
+//   Durchläufe als Listen (TOP_PASSES, ISO_PASSES), Messung je Durchlauf   passes.js
 //   Iso: Objekte (Liste, Schatten, Reihenfolge, Stadtteile, Einheiten)   isoitems.js
 //   Gemeinsam: Kisten, Narben, Trümmer, Rauch, Bodenhöhe        world.js
 //   Zonen: Konfliktzone, Eroberung (Flaggen), Hot Zone          zones.js

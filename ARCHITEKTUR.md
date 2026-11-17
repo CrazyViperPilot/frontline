@@ -173,7 +173,7 @@ Besonderheiten des Ordners). Claude Code lädt sie, sobald im Ordner gelesen wir
 | [`js/ai/city/`](js/ai/city/CLAUDE.md) | Stadt-KI (Einstieg `js/ai/cityai.js`) |
 | [`js/data/`](js/data/CLAUDE.md) | Spielwerte und Register (`QUICK`, `BALANCE`, `UNITS`, `CITY`, …) |
 | [`js/render/`](js/render/CLAUDE.md) | Darstellung, liest nur: gemalte Bilder, Iso, WebGL-Boden, Minimap |
-| [`js/render/layers/`](js/render/layers/CLAUDE.md) | Ebenen der Klasse `Renderer` (2D, Iso, Nebel, Overlays) |
+| [`js/render/layers/`](js/render/layers/CLAUDE.md) | Ebenen der Klasse `Renderer` (2D, Iso, Nebel, Overlays); Durchläufe als Listen in `passes.js` |
 | [`js/ui/`](js/ui/CLAUDE.md) | Steuerung (`controller/`), HUD (`hud/`), Fenster, Spielstände |
 | [`js/ui/menu/`](js/ui/menu/CLAUDE.md) | Overlay-Menüs: Start, Pause, Hilfe, Ende, Konto |
 

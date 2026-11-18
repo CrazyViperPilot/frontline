@@ -1,5 +1,7 @@
 // Minimap (docs/archiv/verlauf.md §5 render/minimap.js): Gelände, Zone, Gebäude und Einheiten als Punkte, Nebel, Kamerarahmen.
 // Zeichnet in Weltkoordinaten (Transformation Welt → Canvas) und nutzt dieselben Sichtregeln wie der Hauptrenderer.
+// Paket „Minimap isometrisch“: in der Iso-Ansicht mit derselben Drehung und halben Höhe wie die Kamera (Raute, Box 2 : 1), damit
+// Bildschirm und Minimap gleich ausgerichtet sind (rechts = rechts); der Kamerarahmen ist dann ein gerades Rechteck.
 import { BALANCE } from '../data/balance.js';
 import { buildTerrain } from './terrain.js';
 import { drawMapTownMini } from './maptown.js';
@@ -52,12 +54,37 @@ export class Minimap {
     this.dpr = dpr;
   }
 
-  /** Minimap-Position (CSS-Pixel im Canvas) → Weltkoordinate. */
+  /**
+   * Abbildung Welt → Minimap (CSS-Pixel) als [a, b, c, d, e, f] wie ctx.setTransform: 2D genordet über die ganze Box; isometrisch wie die
+   * Kamera (isoMatrix mit Drehung, ohne Zoom), die Raute der Karte mittig in die Box eingepasst.
+   */
+  view() {
+    if (!this.camera.iso) return [this.cssW / W, 0, 0, this.cssH / H, 0, 0];
+    const [a, b, c, d] = this.camera.isoMatrix(1);
+    const xs = [];
+    const ys = [];
+    for (const [x, y] of [[0, 0], [W, 0], [W, H], [0, H]]) {
+      xs.push(a * x + c * y);
+      ys.push(b * x + d * y);
+    }
+    const x0 = Math.min(...xs);
+    const x1 = Math.max(...xs);
+    const y0 = Math.min(...ys);
+    const y1 = Math.max(...ys);
+    const s = Math.min(this.cssW / (x1 - x0), this.cssH / (y1 - y0));
+    return [s * a, s * b, s * c, s * d, (this.cssW - s * (x0 + x1)) / 2, (this.cssH - s * (y0 + y1)) / 2];
+  }
+
+  /** Minimap-Position (CSS-Pixel im Canvas) → Weltkoordinate (Umkehrung von view, auch isometrisch). */
   toWorld(mx, my) {
-    return { x: (mx * W) / this.cssW, y: (my * H) / this.cssH };
+    const [a, b, c, d, e, f] = this.view();
+    const det = a * d - b * c;
+    return { x: (d * (mx - e) - c * (my - f)) / det, y: (-b * (mx - e) + a * (my - f)) / det };
   }
 
   render() {
+    // Iso-Ansicht: Box 2 : 1 (CSS .mm.iso); die neue Größe übernimmt resize() im selben Bild
+    this.canvas.parentElement?.classList.toggle('iso', !!this.camera.iso);
     if (this.canvas.clientWidth && (this.canvas.clientWidth !== this.cssW || this.canvas.clientHeight !== this.cssH)) {
       this.resize();
     }
@@ -67,13 +94,14 @@ export class Minimap {
     const reveal = this.revealAll;
     const known = (x, y) => reveal || g.isExplored(team, x, y);
     const seen = (x, y) => reveal || g.isVisible(team, x, y);
-    const kx = this.cssW / W; // CSS-Pixel je Weltpixel
-    const ky = this.cssH / H;
-    const px = 1 / kx; // Weltlänge von 1 CSS-Pixel (quadratische Minimap)
+    const [ma, mb, mc, md, me, mf] = this.view();
+    const px = 1 / Math.sqrt(Math.abs(ma * md - mb * mc)); // Weltlänge von 1 CSS-Pixel (isometrisch gemittelt)
 
-    ctx.setTransform(this.dpr * kx, 0, 0, this.dpr * ky, 0, 0);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = '#0a0d0a';
-    ctx.fillRect(0, 0, W, H);
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height); // auch die Ecken neben der Raute
+    const r = this.dpr;
+    ctx.setTransform(r * ma, r * mb, r * mc, r * md, r * me, r * mf);
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(this.terrain, 0, 0, this.terrain.width, this.terrain.height, 0, 0, W, H);
     drawMapTownMini(ctx, g.map.town, g.weather?.season); // Parks und Gebäude der Karte (seit v5.23 nicht mehr im Geländebild)

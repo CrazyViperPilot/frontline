@@ -870,3 +870,10 @@ body.flow-open .flow-fab { background: #2e372e; }
 .fl-book.in tfoot td:nth-child(2) { color: #8fd17f; }
 .fl-book.out tfoot td:nth-child(2) { color: var(--bad); }
 .fl-book .muted { color: var(--muted); text-align: left; }
+/* Minimap in der Iso-Ansicht (Paket „Minimap isometrisch“): Raute 2 : 1 wie die Kamera */
+.mm.iso { width: 230px; height: 116px; }
+.mm.iso canvas { width: 228px; height: 114px; }
+@media (max-height: 520px) { /* wie die kleine Minimap oben (Handy quer) */
+  .mm.iso { width: 140px; height: 71px; }
+  .mm.iso canvas { width: 138px; height: 69px; }
+}

@@ -150,12 +150,13 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawMilIso(ctx, cam, b, color) – Iso-Bild eines Militärgebäudes (Ankerpunkt = Mitte des Grundrisses)
 - drawMilTop(ctx, b, color, zoom) – 2D von oben (Kamera-Transformation gesetzt, Weltkoordinaten)
 
-## minimap.js (9.0 KB)
+## minimap.js (11 KB)
 - class Minimap
   - constructor(canvas, game, camera, team)
   - setMaxDpr(max) – Obergrenze der Pixeldichte setzen (Bildauflösung) und die Minimap sofort neu au…
   - resize() – Canvas-Pufferung an CSS-Größe und DPR anpassen (höchstens maxDpr)
-  - toWorld(mx, my) – Minimap-Position (CSS-Pixel im Canvas) → Weltkoordinate
+  - view() – Abbildung Welt → Minimap (CSS-Pixel) als [a, b, c, d, e, f] wie ctx.setTransfor…
+  - toWorld(mx, my) – Minimap-Position (CSS-Pixel im Canvas) → Weltkoordinate (Umkehrung von view, au…
   - render()
   - cityImage(c, color) – Kleines Bild (eine Zelle = ein Pixel) von Gebiet und Gebäuden einer Stadt
 
@@ -173,4 +174,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawTreeTop(ctx, t, season, zoom) – Baum von oben (2D, Welt-Transformation gesetzt), mit Schatten
 - drawBushIso(ctx, cam, b, season) – Busch in Iso (Fuß am Weltpunkt)
 - drawBushTop(ctx, b, season, zoom) – Busch von oben (2D)
-- natureShadowIso(ctx, cam, o, t) – Hängt den Schatten eines Baums (t 1), Felsens (2) oder Buschs (13) als Ellipse…

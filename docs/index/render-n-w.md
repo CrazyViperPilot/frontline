@@ -3,6 +3,7 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
 ## nature.js (Fortsetzung)
+- natureShadowIso(ctx, cam, o, t) – Hängt den Schatten eines Baums (t 1), Felsens (2) oder Buschs (13) als Ellipse…
 - drawRockIso(ctx, cam, o, season) – Fels in Iso (Fuß am Weltpunkt), in jeder Drehung der Ansicht von der passenden…
 - drawRockTop(ctx, o, season, zoom) – Fels von oben (2D) mit Schatten nach rechts unten
 - drawAnimalIso(ctx, cam, a, p, now) – Tier in Iso an Bildpunkt p (Boden), Blick nach a.angle (8 Richtungen)

@@ -67,6 +67,9 @@
   Punkte Blau/Rot mit Balken (klassisch; Eroberung: Tickets je Team mit Balken und Flaggenzahl, dazu die Leiste A bis P in der Farbe der Besitzer, [eroberung.md](eroberung.md)),
   Zonenstatus mit Geld/s und Einheitenzahl (Zone, Hot Zone; klassisch), Hot-Zone-Anzeige,
   Spielzeit, Geschwindigkeit.
+- **Minimap in der Iso-Ansicht (Paket „Minimap isometrisch“):** Sie ist dann wie das Spielfeld gedreht und in der Höhe gestaucht (Raute 2 : 1,
+  auch nach ⟲/⟳): Bildschirm rechts = Minimap rechts, der Kamerarahmen ist ein gerades Rechteck, Antippen setzt die Kamera auf den Punkt
+  unter dem Finger. Box 228 × 114 px, auf dem Handy quer 138 × 69 px; in 2D genordet und quadratisch wie bisher.
 - Unten links Minimap, Mitte Auswahlinfo (FOB: Lager; LKW: Ladung und Ladungsart; Einheiten: Munition/Treibstoff;
   Eroberung: bei Gebäuden, die Bodeneinheiten ausbilden, die Auswahl „Neue Einheiten erscheinen“),
   rechts Befehlskarte mit Kosten und Tastenkürzeln (nicht bezahlbare Buttons ausgegraut mit Grund).

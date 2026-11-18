@@ -385,6 +385,14 @@ export const combatMethods = {
       return;
     }
     this.scoutHome = false;
+    // Umland erkunden (Paket „KI-Fliegerhorst“): findet die Stadt-KI keinen Platz für die Bahn, weil das Land nahe der Hauptstadt unerkundet
+    // ist, deckt der Späher es zuerst auf (cityMem.exploreAt aus aiAirport); danach wieder an die Zone
+    const ex = this.cityMem.exploreAt;
+    if (ex && g.fog[t].isExplored(ex.x, ex.y)) this.cityMem.exploreAt = null;
+    else if (ex) {
+      if (dist(bird.x, bird.y, ex.x, ex.y) > SCOUT_MOVE && this.once('scout-go', SCOUT_EVERY)) g.issue(t, { type: 'move', ids: [bird.id], x: ex.x, y: ex.y });
+      return;
+    }
     // Zielpunkt: Zonenrand zur Gegnerseite (vom eigenen Zonenrand aus gesehen auf der anderen Seite)
     const foe = g.foeSpawn(t);
     const v = unitVec(foe.x - z.x, foe.y - z.y);

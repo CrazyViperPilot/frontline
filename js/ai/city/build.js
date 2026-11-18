@@ -43,7 +43,7 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
     rad = CITY.territory.main + CITY.territory.building * CITY.ai.growRing;
     if (!anchor) return;
   }
-  if (aiAirport(game, city, main, reserve, CITY.ai.jets[difficulty] ?? CITY.ai.jets.normal, difficulty)) n++;
+  if (aiAirport(game, city, main, reserve, CITY.ai.jets[difficulty] ?? CITY.ai.jets.normal, difficulty, mem)) n++;
   if (n < CITY.ai.perStep && aiStation(game, city, main, money(), reserve, difficulty, mem)) n++;
   if (n < CITY.ai.perStep && aiWarehouse(game, city, main, money(), reserve, difficulty, mem)) n++;
   if (n < CITY.ai.perStep && aiConnect(game, city, mem.turn)) n++;

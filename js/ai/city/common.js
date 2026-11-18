@@ -66,6 +66,8 @@ export function cityAiMemory() {
     parkWait: {}, // Werksplatz-Anker → Spielzeit, bis zu der er nach einer Ablehnung nicht erneut versucht wird
     linkWait: {}, // Startzelle des Straßenanschlusses ohne Weg → Spielzeit bis
     laneWait: {}, // überlastete Straßenzelle ohne Platz für eine zweite Spur → Spielzeit bis
+    exploreAt: null, // { x, y }: unerkundeter Platz nahe der Hauptstadt, den der Späher aufdecken soll (aiAirport findet sonst keinen Platz; combat.js scout)
+    airportSave: false, // true: die Armee spart auf die Bahn des Fliegerhorsts (aiAirport, CITY.ai.airportSave; produce.js liest es)
   };
 }
 

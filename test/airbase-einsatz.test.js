@@ -170,6 +170,29 @@ test('KI mit Baugebiet: Bahn außerhalb des Gebiets (kein Stellplatz möglich) �
   assert.ok(standsOf(g, 1).every((s) => buildWhy(g, c, s.cityCell, 'stand') === null), 'Stellplätze liegen im Gebiet');
 });
 
+test('KI spart auf die Bahn (nicht auf Leicht); ohne Platz im Erkundeten schickt sie den Späher ins Umland (Paket „KI-Fliegerhorst“)', async () => {
+  const { aiAirport, cityAiMemory } = await import('../js/ai/cityai.js');
+  const g = new Game({ seed: 3, buildRules: true });
+  const { c, m } = rich(g, 1);
+  const mem = cityAiMemory();
+  withValue(CITY.ai, 'airportFrom', 0, () => {
+    m.store.bm = CITY.ai.airportBm;
+    g.teams[1].res.money = CITY.ai.airportMoney - 1;
+    assert.equal(aiAirport(g, c, m, 0, 2, 'easy', mem), false);
+    assert.equal(mem.airportSave, false, 'Leicht spart nicht');
+    assert.equal(aiAirport(g, c, m, 0, 2, 'normal', mem), false);
+    assert.equal(mem.airportSave, true, 'Normal spart auf die Bahn');
+    // alles unerkundet: kein Platz, die Suche merkt sich die nächste dunkle Zelle und spart eine Weile nicht
+    g.fog[1].explored.fill(0);
+    g.teams[1].res.money = CITY.ai.airportMoney;
+    assert.equal(aiAirport(g, c, m, 0, 2, 'normal', mem), false);
+    assert.ok(mem.exploreAt && !g.fog[1].isExplored(mem.exploreAt.x, mem.exploreAt.y), 'Ziel für den Späher');
+    g.teams[1].res.money = CITY.ai.airportMoney - 1;
+    aiAirport(g, c, m, 0, 2, 'normal', mem);
+    assert.equal(mem.airportSave, false, 'nach erfolgloser Suche airportWait s nicht sparen');
+  });
+});
+
 test('Stellplatz: Ausbau nur per Befehl, Stufe 2 Geld + BM, Stufe 3 auch Stahl; wächst nicht von selbst', () => {
   const g = new Game({ seed: 3 });
   const { c, m, stands } = airbase(g);

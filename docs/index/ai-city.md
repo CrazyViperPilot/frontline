@@ -2,13 +2,13 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/ai/city/`. Pfade relativ zu `js/ai/city/`.
 
-## airbase.js (8.8 KB)
-- aiAirport(game, c, main, reserve, want, difficulty) – Fliegerhorst der KI (ersetzt den Flughafen): ab CITY.ai.airportFrom Arbeitsstät…
+## airbase.js (10 KB)
+- aiAirport(game, c, main, reserve, want, difficulty, mem) – Fliegerhorst der KI (ersetzt den Flughafen): ab CITY.ai.airportFrom Arbeitsstät…
 
 ## build.js (3.2 KB)
 - aiCity(game, team, difficulty, mem) – KI-Schritt (alle ai.interval s von ai.js): weist die nächsten Zellen aus, solan…
 
-## common.js (4.7 KB)
+## common.js (5.0 KB)
 - nearCells(c, reach, d) – Zellen höchstens `d` Schritte (4er-Nachbarschaft, alle Zellen) von einer Zelle…
 - aiRoad(col, row, ac, ar) – Ist die Zelle im Muster um den Anker (ac, ar) eine Straße? Jede roadEvery-te Ze…
 - inDanger(c, col, row, now) – Liegt die Zelle nahe einem frischen Treffer auf die eigene Stadt?

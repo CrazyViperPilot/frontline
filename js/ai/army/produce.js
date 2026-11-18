@@ -95,7 +95,7 @@ export const produceMethods = {
     }
 
 
-    if (this.saveForScout || this.saveForResearch || this.saveForFob || this.saveForJet) return; // Geld für Späher, Stufe, FOB-Fahrzeug bzw. Jet sparen
+    if (this.saveForScout || this.saveForResearch || this.saveForFob || this.saveForJet || this.cityMem.airportSave) return; // Geld für Späher, Stufe, FOB-Fahrzeug, Jet bzw. Bahn sparen
     // Festung (seit v5.26): steht ein Turm und fehlt der Transporthubschrauber, zuerst auf ihn sparen (buyHeli in fortify kauft ihn)
     if (!s.helis.length && !this.queued(s, 'transporter') && s.own.some((b) => b.type === 'tower' && b.built)) {
       if (res.money < UNITS.transporter.cost.money + HELI_MIN_MONEY) return;
@@ -289,6 +289,7 @@ export const produceMethods = {
     const t = this.team;
     this.saveForResearch = false;
     if (!g.research || !s.home || !s.home.built || g.time < this.cfg.research[0]) return;
+    if (this.cityMem.airportSave || this.saveForJet) return; // Sparen auf die Bahn des Fliegerhorsts (aiAirport) bzw. den ersten Jet geht vor
     const tech = g.teams[t].tech;
     if (tech.cur && tech.queue.length >= UPGRADE_QUEUE) return;
     const items = RESEARCH.items;

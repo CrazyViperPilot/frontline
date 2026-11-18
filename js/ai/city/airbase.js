@@ -27,8 +27,9 @@ function standsAllowed(game, c, q, r, w, h) {
  * und Munitionslager kommen daneben mit Straße zum Lager (Paket „Fliegerhorst-Anschluss“: die Bahn braucht keine Straße, Tank und Lager
  * schon). Danach je Takt ein weiterer Stellplatz an der Bahn, bis sie `want` hat.
  */
-export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal') {
+export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal', mem = null) {
   const A = CITY.ai;
+  if (mem) mem.airportSave = false;
   if (!main) return false;
   const RW = CITY.air.runwayWidth; // Breite der Bahn (Zellen)
   const B = CITY.size.stand; // Kantenlänge der Bauten neben der Bahn (Stellplatz, Tower, Kerosintank, Munitionslager)
@@ -97,8 +98,13 @@ export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal
     }
     if (!retry()) return false;
   }
-  if (work < A.airportFrom || stands.length) return false;
-  if (money < A.airportMoney + reserve || main.store.bm < A.airportBm) return false;
+  if (work < A.airportFrom || stands.length || main.store.bm < A.airportBm) return false;
+  const wait = mem?.wait ?? {};
+  if (money < A.airportMoney + reserve) {
+    // Sparen (Paket „KI-Fliegerhorst“): die Armee bildet keine Kampfeinheiten aus, bis das Geld für die Bahn da ist (produce.js)
+    if (mem && A.airportSave[difficulty] && !(game.time < (wait.airport ?? -Infinity))) mem.airportSave = true;
+    return false;
+  }
   const [fc, fr] = cellAt(c, main.x, main.y);
   const R = A.airportReach;
   const L = A.runwayLen; // Länge der Bahn
@@ -120,11 +126,19 @@ export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal
       for (const flip of [false, true]) {
         const rq = vertical && flip ? q + B : q; // Anker der Bahn
         const rr = !vertical && flip ? r + B : r;
-        const sq = vertical ? (flip ? q : q + RW) : q; // Anker der Reihe
-        const sr = vertical ? r : flip ? r : r + RW;
-        // Die ersten beiden Stellplätze müssen im eigenen Gebiet erlaubt sein (die Bahn selbst darf hinaus; sonst entstand eine Bahn
-        // außerhalb, an der nie ein Stellplatz gebaut werden konnte)
-        if (!standsAllowed(game, c, sq, sr, vertical ? B : 2 * B, vertical ? 2 * B : B)) continue;
+        // Die Reihe (Stellplatz, Stellplatz, Tower) darf entlang der Bahn verschoben liegen (Paket „KI-Fliegerhorst“): so trifft sie öfter
+        // das eigene Gebiet, wenn die Bahn halb hinausragt; die nächste Lage zum Anfang der Bahn zuerst
+        const row = A.airportRow.length * B;
+        let sq = -1;
+        let sr = -1;
+        for (let o = 0; o <= L - row && sq < 0; o++) {
+          const aq = vertical ? (flip ? q : q + RW) : q + o; // Anker der Reihe
+          const ar = vertical ? r + o : flip ? r : r + RW;
+          // Die ersten beiden Stellplätze müssen im eigenen Gebiet erlaubt sein (die Bahn selbst darf hinaus; sonst entstand eine Bahn
+          // außerhalb, an der nie ein Stellplatz gebaut werden konnte)
+          if (standsAllowed(game, c, aq, ar, vertical ? B : 2 * B, vertical ? 2 * B : B)) [sq, sr] = [aq, ar];
+        }
+        if (sq < 0) continue;
         // Bahn bauen; scheitert der Befehl hier, die nächste Stelle versuchen (vorher Abbruch: die KI blieb an derselben Stelle hängen)
         const rwCmd = vertical ? { type: 'city', kind: 'runway', c0: rq, r0: rr, c1: rq + RW - 1, r1: rr + L - 1 } : { type: 'city', kind: 'runway', c0: rq, r0: rr, c1: rq + L - 1, r1: rr + RW - 1 };
         if (!game.issue(c.team, rwCmd).ok) continue;
@@ -136,5 +150,9 @@ export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal
       }
     }
   }
+  wait.airport = game.time + A.airportWait; // kein Platz: eine Weile nicht sparen
+  // Kein Platz: oft liegt das freie Land hinter der Hauptstadt noch unerkundet. Der Späher deckt die nächste solche Zelle auf (combat.js scout)
+  const dark = cand.find(({ q, r }) => buildWhy(game, c, r * c.cols + q, 'runway') === 'unexplored');
+  if (mem) mem.exploreAt = dark ? { x: c.x0 + (dark.q + 0.5) * c.cell, y: c.y0 + (dark.r + 0.5) * c.cell } : null;
   return false;
 }

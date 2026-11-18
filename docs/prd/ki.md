@@ -199,7 +199,16 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   Gemessen (30 min KI gegen KI, Normal): in Seed 7 je Team F-16, F-22 und eine U-2 im Aufklärungsflug;
   Gemessen im Paket „Luftwaffe der KI“ (30 min, alle Menü-Schalter, Seeds 3, 7, 11): vorher bestellte keine KI ein Flugzeug (die F-16 kostet 2600,
   ihr Geld blieb unter 2000) und die KI oben rechts baute nie eine Bahn; jetzt haben 5 von 6 einen versorgten Fliegerhorst (ab 710 bis 1150 s),
-  3 bis 4 von 6 ihren ersten Jet (ab 1280 s). Offen: in Seed 3 findet die KI oben rechts keine freie Fläche für Bahn und Stellplätze.
+  3 bis 4 von 6 ihren ersten Jet (ab 1280 s).
+- **Sparen auf den Fliegerhorst (Paket „KI-Fliegerhorst“):** Hat die KI genug Arbeitsstätten (`airportFrom`) und Baumaterial (`airportBm`), aber zu
+  wenig Geld für die Bahn (`airportMoney` über der Reserve), bildet die Armee keine Kampfeinheiten aus und forscht nicht, bis es reicht
+  (`CITY.ai.airportSave`: Leicht nein, Normal und Schwer ja); ebenso wartet die Forschung, solange sie auf den ersten Jet spart (`jetSave`).
+  Findet die Suche danach keinen Platz, spart sie `airportWait` (120) s lang nicht und schickt ihren Späher zur nächsten unerkundeten Zelle im
+  Suchradius (oft liegt das freie Land hinter der Hauptstadt noch im Dunkeln); danach fliegt er wieder an die Zone.
+  Die Reihe aus Stellplätzen und Tower darf entlang der Bahn verschoben liegen, wenn sie am Anfang der Bahn nicht ins eigene Gebiet passt.
+  Gemessen (30 min, alle Menü-Schalter, Normal, Seeds 3, 7, 11): vorher hatten 2 von 6 eine Bahn und 1 von 6 einen Jet (die Forschung und die
+  Armee brauchten das Geld laufend auf, die KI kam nie auf 1200; in Seed 11 fand eine keinen Platz im Erkundeten); jetzt 6 von 6 eine Bahn
+  (versorgte Stellplätze ab 570 bis 810 s) und 6 von 6 einen Jet (ab 770 bis 1750 s); Ausbildung und Abschüsse (`npm run metrics`) im Rahmen.
 - **Lagerhalle (Paket „Lagerhalle 3“, `js/ai/city/warehouse.js`, Werte `CITY.ai.hall*`):** Ab `hallFrom` (Leicht nie, Normal 360 s,
   Schwer 300 s) baut die KI eine Lagerhalle in Reichweite (`CITY.warehouse.feed.reach`, 1800 px) ihrer zur Zone nächsten vorderen FOB,
   deren Lager bei einer Sorte unter `hallLow` (1000) liegt und die noch keine Halle in Reichweite hat; höchstens eine je vordere FOB.

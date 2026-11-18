@@ -356,6 +356,11 @@ export const CITY = {
     airportReach: 60, // so viele Zellen um die Hauptstadt sucht sie Platz für die Bahn mit ihren Bauten (runwayLen × 4 Zellen plus Rand)
     airportMoney: 900, // Geld über der Reserve, ab dem sie den Fliegerhorst anlegt
     airportBm: 800, // … und Baumaterial im Lager der Hauptstadt
+    // Sparen auf den Fliegerhorst (Paket „KI-Fliegerhorst“): hat sie genug Arbeitsstätten und Baumaterial, aber zu wenig Geld für die Bahn,
+    // bildet die Armee keine Kampfeinheiten aus, bis airportMoney über der Reserve liegt (sonst gab sie alles laufend aus und baute nie eine
+    // Bahn). Findet die Suche danach keinen Platz, spart sie airportWait s lang nicht.
+    airportSave: { easy: false, normal: true, hard: true },
+    airportWait: 120,
     airportMax: 2, // höchstens so viele Bahnen: einen zweiten Fliegerhorst nur, wenn am ersten nie ein Stellplatz entstehen kann (Notausgang, aiAirport)
     runwayLen: 10, // Länge (Zellen) der Bahn, die sie anlegt
     airportRow: ['stand', 'stand', 'atc'], // Bauten in der Reihe neben der neuen Bahn, von ihrem Anfang an (je size.stand Zellen breit)

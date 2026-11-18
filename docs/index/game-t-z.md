@@ -13,7 +13,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - ejectCrew(game, b) – Besatzer fallen verletzt heraus, wenn der Turm zerstört wird (beim Abriss unver…
 - updateTowers(game, dt) – Ein Schritt: Aufbauten werden fertig (Bauzeit läuft nur, solange der Turm steht)
 
-## transport.js (19 KB)
+## transport.js (20 KB)
 - mainAccess – liegt seit dem Paket „Straßen“ in cells.js (Anschlusspflicht des Baugebiets)
 - pathEff(tr, path) – Wirkung eines Weges: kleinster Stau-Faktor auf ihm (leerer Weg: 1, kein Weg (nu…
 - addLoad(tr, path, amount) – Last `amount` (Einheiten je s) auf alle Zellen des Weges legen

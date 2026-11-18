@@ -28,7 +28,7 @@ const STATE = new WeakMap();
 const FREE_EPS = 1e-4;
 
 /** Gruppen der Breitensuche-Felder, die transportOf anlegt. */
-const GROUPS = ['imp', 'res', 'main']; // imp: Einfuhrpunkte (Paket „Import“)
+const GROUPS = ['imp', 'res', 'main', 'hall']; // imp: Einfuhrpunkte (Paket „Import“); hall: angeschlossene Lagerhallen (Ausbildung)
 
 /** Ausbildungsgebäude der Stadt (CITY.produces: Kaserne, Fabrikhalle, Heliport, Stellplatz), versorgt über ihren Weg zum Lager (Paket „Straßen“). */
 const TRAINERS = new Set(Object.keys(CITY.produces).map((k) => KIND_ID[k]));
@@ -173,7 +173,8 @@ function newTransport(c) {
     shop: new Map(),
     depot: new Map(), // seit v5.35: Kerosintank und Munitionslager ↔ Lager
     store: new Map(), // Lagerhalle ↔ Lager (Paket „Lagerhalle“)
-    supply: new Map(), // Paket „Straßen“: Ausbildungsgebäude ↔ Lager
+    supply: new Map(), // Paket „Straßen“: Ausbildungsgebäude ↔ Lager (oder Lagerhalle)
+    supplyHall: new Set(), // Ausbildungsgebäude, deren Weg zu einer Lagerhalle führt (Paket „Ausbildung an der Lagerhalle“)
     load: new Float32Array(n),
     factor,
     cap: new Float32Array(n),
@@ -275,6 +276,9 @@ function build(game, c, tr) {
   nearestField(c, res, tr.cap, tr.fields.res);
   nearestField(c, imp, tr.cap, tr.fields.imp);
   nearestField(c, [{ cells: mainAccess(game, c), owner: MAIN }], tr.cap, tr.fields.main);
+  // Lagerhallen mit Straßenweg zum Lager (Paket „Ausbildung an der Lagerhalle“): Quelle für die Versorgung der Ausbildung
+  const halls = anchors.filter((a) => c.kind[a] === KIND_ID.warehouse && pathFrom(tr.fields.main, accessCells(c, a)));
+  nearestField(c, halls.map((a) => ({ cells: accessCells(c, a), owner: a })), tr.cap, tr.fields.hall);
 
   const routes = new Map();
   const imports = new Map();
@@ -283,6 +287,7 @@ function build(game, c, tr) {
   const depot = new Map();
   const store = new Map();
   const supply = new Map();
+  const supplyHall = new Set();
   for (const a of anchors) {
     const k = KINDS[c.kind[a] - 1];
     if (PRODUCT_KINDS.includes(k)) {
@@ -300,7 +305,15 @@ function build(game, c, tr) {
     if (k === 'com' || k === 'market') shop.set(a, pathFrom(tr.fields.main, accessCells(c, a))?.path ?? null);
     if (k === 'warehouse') store.set(a, pathFrom(tr.fields.main, accessCells(c, a))?.path ?? null); // Lagerhalle: Zulauf vom Lager (Paket „Lagerhalle“)
     if (k === 'ktank' || k === 'mdepot') depot.set(a, pathFrom(tr.fields.main, accessCells(c, a))?.path ?? null); // Fliegerhorst (seit v5.35); nur über Straßen (Paket „Fliegerhorst-Anschluss“)
-    if (TRAINERS.has(c.kind[a])) supply.set(a, pathFrom(tr.fields.main, accessCells(c, a))?.path ?? null); // Ausbildung (Paket „Straßen“)
+    if (TRAINERS.has(c.kind[a])) {
+      // Ausbildung (Paket „Straßen“): Weg zum Lager; seit Paket „Ausbildung an der Lagerhalle“ der kürzere zum Lager oder zu einer
+      // angeschlossenen Lagerhalle (sie bringt das Material näher an die Front)
+      const toMain = pathFrom(tr.fields.main, accessCells(c, a))?.path ?? null;
+      const toHall = halls.length ? pathFrom(tr.fields.hall, accessCells(c, a))?.path ?? null : null;
+      const hall = !!toHall && (!toMain || toHall.length < toMain.length);
+      supply.set(a, hall ? toHall : toMain);
+      if (hall) supplyHall.add(a);
+    }
   }
   // Stellplatz und Heliport ohne Straßenweg: versorgt über einen Kerosintank oder Munitionslager mit Straßenweg im Umkreis (Weg 0, keine Last)
   for (const a of anchors) if (AIRFIELD_TRAINERS.has(c.kind[a]) && supply.get(a) == null && fedNearby(c, a, depot)) supply.set(a, NO_PATH);
@@ -312,6 +325,7 @@ function build(game, c, tr) {
   tr.depot = depot;
   tr.store = store;
   tr.supply = supply;
+  tr.supplyHall = supplyHall;
 }
 
 /**
@@ -327,7 +341,7 @@ function build(game, c, tr) {
  *   shop:    Map<Anker, Int32Array | null>  Weg Gewerbe/Markt → Lager
  *   depot:   Map<Anker, Int32Array | null>  Weg Kerosintank/Munitionslager → Lager (seit v5.35)
  *   store:   Map<Anker, Int32Array | null>  Weg Lagerhalle → Lager (Paket „Lagerhalle“)
- *   supply:  Map<Anker, Int32Array | null>  Weg Ausbildungsgebäude → Lager (Paket „Straßen“; Stellplatz über Rollfeld und Bahn)
+ *   supply:  Map<Anker, Int32Array | null>  Weg Ausbildungsgebäude → Lager oder Lagerhalle (supplyHall; Stellplatz über Rollfeld und Bahn)
  *   load, factor, cap: Float32Array je Stadtzelle (factor = c.congestion); list: Int32Array der Straßenzellen;
  *   active (die ersten nActive): Straßenzellen mit Last oder Stau
  * `dist` = Anzahl der Straßenzellen auf dem Weg (0, wenn es kein Ziel gibt).
@@ -388,18 +402,19 @@ export function transportInfo(game, c, anker) {
 
 
 /**
- * Versorgung eines Ausbildungsgebäudes der Stadt (Paket „Straßen“, Teil 2; nur lesen): { path, dist, v, eff, rate }. dist = Straßenzellen
- * des Wegs zum Lager, v = Versorgungsgrad nach der Weglänge (CITY.supply), eff = Stau-Faktor des Wegs, rate = v × eff = Tempo der
+ * Versorgung eines Ausbildungsgebäudes der Stadt (Paket „Straßen“, Teil 2; nur lesen): { path, dist, v, eff, rate, hall }. dist = Straßenzellen
+ * des Wegs zum Lager bzw. zur Lagerhalle (hall), v = Versorgungsgrad nach der Weglänge (CITY.supply), eff = Stau-Faktor des Wegs, rate = v × eff = Tempo der
  * Ausbildung. Ohne Weg (oder ohne fertiges Gebäude) rate 0.
  */
 export function supplyOf(game, c, a) {
-  const path = transportOf(game, c).supply.get(a) ?? null;
-  if (!path) return { path: null, dist: 0, v: 0, eff: 0, rate: 0 };
+  const tr = transportOf(game, c);
+  const path = tr.supply.get(a) ?? null;
+  if (!path) return { path: null, dist: 0, v: 0, eff: 0, rate: 0, hall: false };
   const S = CITY.supply;
   const dist = path.length;
   const v = Math.max(S.min, 1 - S.perCell * Math.max(0, dist - S.free));
-  const eff = pathEff(transportOf(game, c), path);
-  return { path, dist, v, eff, rate: v * eff };
+  const eff = pathEff(tr, path);
+  return { path, dist, v, eff, rate: v * eff, hall: tr.supplyHall.has(a) };
 }
 
 /** Tempo der Ausbildung im Gebäude e (Ziel-Entity der Stadt; andere Gebäude: 1). */

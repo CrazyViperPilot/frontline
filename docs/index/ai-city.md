@@ -5,7 +5,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## airbase.js (10 KB)
 - aiAirport(game, c, main, reserve, want, difficulty, mem) – Fliegerhorst der KI (ersetzt den Flughafen): ab CITY.ai.airportFrom Arbeitsstät…
 
-## build.js (3.2 KB)
+## build.js (3.3 KB)
 - aiCity(game, team, difficulty, mem) – KI-Schritt (alle ai.interval s von ai.js): weist die nächsten Zellen aus, solan…
 
 ## common.js (5.0 KB)
@@ -52,5 +52,6 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - importWatch(game, c, mem) – Einfuhr-Wächter (Paket „Import“, Stadt-KI): zählt die Zeit in mem.importBad (s)…
 - aiStation(game, c, main, money, reserve, difficulty, mem) – Industriepark der KI (Paket „Industriepark“, PRD §10 „Einfuhr“): ab stationFrom…
 
-## warehouse.js (5.3 KB)
+## warehouse.js (8.2 KB)
 - aiWarehouse(game, c, main, money, reserve, difficulty, mem) – Ein Ausbauschritt der KI für Lagerhallen; true, wenn sie eine gebaut hat
+- aiHallTrainer(game, c, main, money, reserve, difficulty, mem) – Ausbildung an der Lagerhalle (Paket „Ausbildung an der Lagerhalle“): eine Kaser…

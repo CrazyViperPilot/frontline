@@ -182,3 +182,70 @@ test('KI-Lagerhalle: liegt der Weg zur vorderen FOB im Dunkeln, schickt sie den 
   assert.equal(call(), true, 'erkundet: Halle mit Straße');
   assert.ok(c.list.some((i) => c.kind[i] === KIND_ID.warehouse));
 });
+
+test('Ausbildung an der Lagerhalle: ein Ausbildungsgebäude (hier Heliport) nimmt den kürzeren Weg, zur Lagerhalle statt zum Lager (Paket „Ausbildung an der Lagerhalle“)', async () => {
+  const { placeBuilt, rebuildList } = await import('../js/game/city/state.js');
+  const { cellAt, canZone } = await import('../js/game/city/cells.js');
+  const { supplyOf } = await import('../js/game/transport.js');
+  const g = new Game({ seed: 3, startMoney: 5000 });
+  const c = g.city[0];
+  const m = g.mainFob(0);
+  const [mq, mr] = cellAt(c, m.x, m.y);
+  const sq = Math.sign(g.zone.x - m.x);
+  const sr = Math.sign(g.zone.y - m.y);
+  const add = (i, kind) => {
+    placeBuilt(g, c, i, kind);
+    if (c.kind[i] !== KIND_ID[kind] || !c.level[i]) return null;
+    rebuildList(c);
+    c.ver++;
+    return c.part[i] ? c.part[i] - 1 : i; // Anker (Großbau: in c.part)
+  };
+  // Heliport (Ausbildungsgebäude, 1 × 1) möglichst weit von der Hauptstadt Richtung Zone (im ausweisbaren Gebiet), mit Straße zum Lager
+  let a = null;
+  for (let k = 40; k >= 12 && a == null; k--) {
+    for (let o = -6; o <= 6 && a == null; o++) {
+      const i = (mr + sr * k) * c.cols + mq + sq * k + o;
+      if (canZone(g, c, i) && !c.kind[i]) a = add(i, 'heliport');
+    }
+  }
+  assert.ok(a != null, 'Heliport steht');
+  withValue(CITY.transport, 'connectMax', 400, () => assert.ok(connectRoad(g, c, a, false) >= 0, 'Heliport: Weg zum Lager'));
+  const far = supplyOf(g, c, a);
+  assert.ok(far.path && !far.hall, 'ohne Halle: Weg zum Lager');
+  // Lagerhalle direkt daneben, ebenfalls angeschlossen
+  let h = null;
+  const [aq, ar] = [a % c.cols, Math.floor(a / c.cols)];
+  for (const [dq, dr] of [[2, 0], [-3, 0], [0, 2], [0, -3], [2, 2], [-3, -3], [3, 0], [-4, 0]]) {
+    if (h != null) break;
+    const i = (ar + dr) * c.cols + aq + dq;
+    if (canZone(g, c, i) && !c.kind[i]) h = add(i, 'warehouse');
+  }
+  assert.ok(h != null, 'Lagerhalle steht');
+  withValue(CITY.transport, 'connectMax', 400, () => assert.ok(connectRoad(g, c, h, false) >= 0, 'Halle: Weg zum Lager'));
+  const near = supplyOf(g, c, a);
+  assert.ok(near.hall, 'jetzt über die Lagerhalle');
+  assert.ok(near.dist < far.dist, `kürzerer Weg (${near.dist} statt ${far.dist})`);
+  assert.ok(near.v >= far.v, 'Versorgung mindestens so gut');
+});
+
+test('KI baut eine Kaserne neben ihre angeschlossene Lagerhalle, nicht vor hallTrainFrom, nicht auf Leicht (Paket „Ausbildung an der Lagerhalle“)', async () => {
+  const { aiHallTrainer } = await import('../js/ai/city/warehouse.js');
+  const { cityAiMemory } = await import('../js/ai/city/common.js');
+  const { g, c, a, m } = scene();
+  const mem = cityAiMemory();
+  m.store.bm = 5000;
+  g.teams[0].res.money = 5000;
+  const call = (diff) => aiHallTrainer(g, c, m, g.teams[0].res.money, CITY.ai.reserve[diff], diff, mem);
+  // die Halle der Szene steht nahe der Hauptstadt mit ihrer Startkaserne: Umkreis 0, damit sie hier baut
+  withValue(CITY.ai, 'hallTrainNear', 0, () => {
+    assert.equal(call('normal'), false, 'vor hallTrainFrom nicht');
+    g.time = CITY.ai.hallTrainFrom.normal + 1;
+    assert.equal(call('easy'), false, 'Leicht baut keine');
+    const before = c.list.filter((i) => c.kind[i] === KIND_ID.barracks).length;
+    assert.equal(call('normal'), true, 'Normal baut eine');
+    assert.ok(c.list.filter((i) => c.kind[i] === KIND_ID.barracks).length > before, 'Kaserne ausgewiesen');
+    const R = CITY.ai.hallTrainReach + CITY.size.barracks;
+    const [aq, ar] = [a % c.cols, Math.floor(a / c.cols)];
+    assert.ok(c.list.some((i) => c.kind[i] === KIND_ID.barracks && Math.max(Math.abs((i % c.cols) - aq), Math.abs(Math.floor(i / c.cols) - ar)) <= R), 'nahe der Halle');
+  });
+});

@@ -107,10 +107,10 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## buildings.js (6.1 KB)
 - BUILDINGS
 
-## city.js (43 KB)
+## city.js (44 KB)
 - CITY
 
-## citykinds.js (15 KB)
+## citykinds.js (16 KB)
 - CITY_KINDS – Register der Stadtzellenarten (Review-Paket P6, Befunde E-01, Q-03, A-02): eine…
 - KIND – Eintrag je Schlüssel (auch das Werkzeug Räumen)
 - KINDS – Zellenarten nach Code (Code = Index + 1; 0 = leer)

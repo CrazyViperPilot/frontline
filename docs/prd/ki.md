@@ -230,6 +230,15 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   Schwer den Festungsausbau). Bei den Mehrzweckjets wechseln F-16 und Su-27; Teams mit ungerader Nummer (Rot, Gelb) beginnen mit der Su-27.
   Gemessen (30 min, Normal, Seeds 3, 7, 11): Kampfhubschrauber bei 3 von 6 Teams (einem vierten fehlte Stahl), Su-27 bei allen roten;
   Abschüsse je Team 114 bis 159 wie vorher.
+- **Kaserne an der Lagerhalle (Paket „Ausbildung an der Lagerhalle“, `aiHallTrainer` in `js/ai/city/warehouse.js`):** Ab `CITY.ai.hallTrainFrom`
+  (Leicht nie, Normal 600 s, Schwer 480 s) baut die KI neben eine angeschlossene Lagerhalle ohne Ausbildungsgebäude im Umkreis von `hallTrainNear`
+  (12) Zellen eine Kaserne (`hallTrainer`), höchstens `hallTrainReach` (8) Zellen entfernt, mit Straße zum Lager; Geld und Baumaterial wie bei
+  der Halle. Die Ausbildung nimmt die Kaserne mit der kürzesten Warteschlange, bei Gleichstand die nächste zur Zone.
+  Gemessen (30 min, Normal, Seeds 3, 7, 11): alle 6 Teams bauen sie (nach 760 bis 1500 s), dort laufen 6 bis 11 Aufträge; Kennzahlen im Rahmen.
+- **Bewusst nicht genutzt (Paket „KI-Einheiten“, gemessen):** Bagger (die nächste Stelle, deren Abriss den Weg zu einer gegnerischen Lagerhalle
+  trennt, lag über 5000 px hinter der eigenen Front; mit 48 px/s kam er nie an), Brückenleger (in KI-Partien bricht keine Brücke, zerstörte baut
+  das Baufahrzeug wieder auf), C-130 mit Fallschirmjägern (3000 Geld und 380 Stahl ohne Ladung; das Geld der KI blieb unter 1700, Sparen
+  darauf ließe die Armee verhungern wie beim Kampfhubschrauber).
 - **Sparen auf Kampfflugzeuge (Paket „Luftwaffe der KI“):** Hat die KI weniger als `CITY.ai.jetSave` Jets (Leicht 0, Normal 1, Schwer 2), einen
   freien versorgten Stellplatz und zu wenig Geld für den Jet mit `jetReserve`, bildet sie keine Bodentruppen aus, bis er bezahlt ist (`saveForJet`,
   wie beim Späher); die Stadt baut weiter. Weitere Jets nur aus Überschuss. Gemessen: Stadt nach 30 min gleich groß (−2 %),

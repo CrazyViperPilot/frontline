@@ -79,7 +79,9 @@ Wege und Lasten liegen in einer WeakMap je Stadt und werden nicht gespeichert, d
   **KI:** Sie schließt Ausbildungsgebäude ohne Weg mit `connectRoad` an (wie Werke).
   Gemessen (Seeds 3/7/11, 15 min, Normal): alle Ausbildungsgebäude der KI haben einen Weg von 1 bis 12 Zellen (Entfernung 100 %);
   der Stau an den Straßen direkt am Lager, über die auch alle Waren fahren, drückt das Tempo dort auf 36 bis 100 %.
-  Lagerhallen (Material näher an der Front) kommen später.
+  **Ausbildung an der Lagerhalle (Paket „Ausbildung an der Lagerhalle“):** Hat ein Ausbildungsgebäude auch einen Straßenweg zu einer fertigen
+  Lagerhalle mit Weg zum Lager, zählt der kürzere der beiden Wege (Entfernung, Stau und Last auf ihm); das Infofeld nennt dann
+  „Weg zur Lagerhalle“. Eine Kaserne neben der Halle an der Front bildet also mit voller Versorgung aus.
 - **Lagerhalle (Paket „Lagerhalle 1“, Plan [docs/plan-lagerhallen.md](../plan-lagerhallen.md), Werte `CITY.warehouse`):** Großbau 2 × 2
   der Stadt (150 Geld, 200 Baumaterial, Strom 3). Höchstens **eine je eigene fertige vordere FOB** (`perFob`); ohne vordere FOB keine.
   Wie jede Stadtzelle nur im Baugebiet, also nicht in der Konfliktzone; sie braucht eine Straße zum Lager.
@@ -93,6 +95,7 @@ Wege und Lasten liegen in einer WeakMap je Stadt und werden nicht gespeichert, d
   **LKW** laden dort wie an einer FOB (Rechtsklick mit LKW auf die Lagerhalle, Pendeln mit der Lagerhalle als Start); abladen kann man dort nicht.
   **Einheiten** im Umkreis von **450 px** (`radius`) füllen aus ihr nach, wenn keine FOB sie versorgt.
   Zerstört ist ihr Inhalt verloren.
+  Ausbildungsgebäude in ihrer Nähe messen ihre Versorgung bis zu ihr, wenn der Weg kürzer ist als zum Lager (oben, „Versorgung der Ausbildung“).
   **FOBs auffüllen (Paket „Lagerhalle 2“, `CITY.warehouse.feed`):** Sie gibt je Sorte zusammen bis **3 / 6 / 9 je s** (Stufe, `rate`), mindestens
   aber so viel, wie gerade ankommt, an eigene
   fertige vordere FOBs bis **1800 px** (`reach`) ab, auch an FOBs in der Konfliktzone, in der sie selbst nicht stehen darf. Die nächste FOB

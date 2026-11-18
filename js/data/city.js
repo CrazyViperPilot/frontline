@@ -422,6 +422,13 @@ export const CITY = {
     hallTries: 6,
     hallConnect: 80, // so viele neue Straßenzellen legt sie höchstens bis zur Lagerhalle (die FOB-Viertel liegen weit vom Straßennetz; sonst connectMax)
     hallRetry: 60, // s bis zum nächsten Versuch nach einem Fehlschlag (kein Platz, kein Weg)
+    // Ausbildung an der Lagerhalle (Paket „Ausbildung an der Lagerhalle“, aiHallTrainer in js/ai/city/warehouse.js): ab hallTrainFrom s
+    // (null = nie) baut sie neben jede angeschlossene Lagerhalle ohne Ausbildungsgebäude im Umkreis von hallTrainNear Zellen eine Kaserne
+    // (hallTrainer), höchstens hallTrainReach Zellen von der Halle; Geld und Baumaterial wie bei der Halle (hallMoney, hallBm) über dem Preis
+    hallTrainFrom: { easy: null, normal: 600, hard: 480 },
+    hallTrainer: 'barracks',
+    hallTrainNear: 12,
+    hallTrainReach: 8,
     stationRetry: 120, // s: eine Stelle, an der der Bau scheiterte, und eine Suche ohne Platz werden so lange nicht wiederholt
     stationWait: 20, // s: Platz gefunden, aber Geld oder Baumaterial reichen noch nicht für Park, Zufahrt und Gleis: so lange keine neue Suche
     // Industriepark (Paket „Industriepark“, Logik aiStation in js/ai/city/station.js, parkSite in js/ai/city/park.js): statt eines einzelnen Bahnhofs legt die KI einen

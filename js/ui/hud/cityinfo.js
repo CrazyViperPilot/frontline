@@ -216,7 +216,7 @@ export const cityInfoMethods = {
       const S = supplyOf(g, c, i);
       if (!S.path) h += warn('Kein Straßenweg zum Lager der Hauptstadt: Ausbildung steht');
       else {
-        h += line(`Versorgung ${pct(S.rate)} · Weg zum Lager ${S.dist} ${S.dist === 1 ? 'Feld' : 'Felder'} (Entfernung ${pct(S.v)}, Stau ${pct(S.eff)})`);
+        h += line(`Versorgung ${pct(S.rate)} · Weg ${S.hall ? 'zur Lagerhalle' : 'zum Lager'} ${S.dist} ${S.dist === 1 ? 'Feld' : 'Felder'} (Entfernung ${pct(S.v)}, Stau ${pct(S.eff)})`);
         if (S.rate < 1) h += `<div class="muted small">Ausbildung läuft mit ${pct(S.rate)} des Tempos</div>`;
       }
     }

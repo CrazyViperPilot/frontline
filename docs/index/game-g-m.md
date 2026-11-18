@@ -36,8 +36,8 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - stockReason(team, x, y, cost) – Begründung, warum die Sorten für (x, y) nicht bezahlt werden können
   - missingMoney()
   - canAfford(team, cost) – Geld (globaler Vorrat)
-  - pay(team, cost)
-  - refund(team, cost, factor) – Geld-Erstattung (nur money; Sorten gehen über refundStock)
+  - pay(team, cost, why) – Geld abziehen; why = Zweck im Kassenbuch (ledger.js OUT_KEYS)
+  - refund(team, cost, factor, why) – Geld-Erstattung (nur money; Sorten gehen über refundStock); mindert die Ausgabe…
   - refundStock(team, payerId, cost, factor, x, y) – Erstattet Sorten an den Zahler `payerId` (eigene Entity mit Lager)
   - spawnUnit(type, team, x, y)
   - spawnBuilding(type, team, cx, cy, { built = true, main = false, payerId = null, leaf = null, axi… – Gebäude an Zelle (cx, cy) anlegen und Fußabdruck belegen
@@ -116,6 +116,12 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - groundOk(relief, x, y, r, maxSlope) – Gelände um (x, y) im Radius r eignet sich für Wald, Gehöfte oder Bäume: kein Wa…
 - countRoutes(grid, from, to, { want = MAPGEN.general.routeWant, band = MAPG… – Zählt getrennte Wege von `from` nach `to` (bis `want`): Weg suchen, den Korrido…
 
+## ledger.js (1.3 KB)
+- IN_KEYS – Quellen der Einnahmen in Anzeigereihenfolge
+- OUT_KEYS – Zwecke der Ausgaben in Anzeigereihenfolge
+- earn(t, key, amount) – Einnahme `amount` (≥ 0) aus Quelle `key` gutschreiben
+- spend(t, key, amount) – Ausgabe `amount` für Zweck `key` abziehen; negativ = Erstattung (mindert die Au…
+
 ## logistics.js (20 KB)
 - PRESETS – Ladungsarten des LKW (Text, steht in Spielständen): 'mix' = alle drei Sorten, e…
 - presetKinds(preset) – Sorten einer Ladungsart in fester Reihenfolge ('mix' = alle drei); unbekannte A…
@@ -145,9 +151,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - MAX_BRIDGES – Brücken je Karte
 - BRIDGE_LEN – kürzeste und längste Brücke (px)
 - createEmptyMap(name) – Leere Karte: nur Startpunkte in den Ecken und die Konfliktzone in der Mitte
-- normalizeMap(raw) – Beliebiges Kartenobjekt (generiert oder aus JSON) → vollständige, bereinigte Ka…
-- cloneMap(m)
-- footprint(b) – Umschließendes Rechteck eines (evtl. gedrehten) Gebäudes: {x, y, w, h}
-- blockers(buildings) – Rechtecke, die den Weg versperren: alle Gebäude außer Bahnsteigen (begehbar), g…
-- describeMap(m) – Zusammenfassung für Menü und Editor
-- checkMap(map) – Prüft, ob die Karte spielbar ist

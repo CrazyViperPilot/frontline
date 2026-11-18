@@ -1,5 +1,6 @@
 // Konfliktzone: Kontrolle, Geld, Punkte und Siegprüfung (docs/archiv/verlauf.md §5, game/zone.js). Kein DOM.
 import { BALANCE } from '../data/balance.js';
+import { earn } from './ledger.js';
 
 const Z = BALANCE.zone;
 const H = BALANCE.hot;
@@ -12,6 +13,7 @@ export function updateZone(game, dt) {
   const counts = [0, 0];
   const weight = [0, 0];
   const money = [0, 0]; // Geld je Sekunde je Team (ohne incomeMult)
+  const hotMoney = [0, 0]; // davon in der Hot Zone (Kassenbuch, ledger.js)
   for (const u of game.units) {
     if (!u.alive) continue;
     const inZone = Math.hypot(u.x - z.x, u.y - z.y) <= z.r;
@@ -20,7 +22,7 @@ export function updateZone(game, dt) {
     // Gewichtung: Einheiten in der Hot Zone zählen doppelt (sie liegt innerhalb der Konfliktzone)
     weight[u.team] += (inZone ? 1 : 0) + (inHot ? 1 : 0);
     // Geld: je Einheit in der Zone; in der Hot Zone das Doppelte statt zusätzlich
-    if (inHot) money[u.team] += H.unitIncome;
+    if (inHot) hotMoney[u.team] += H.unitIncome;
     else if (inZone) money[u.team] += Z.unitIncome;
   }
   // Besetzte Häuser (seit v5.66): Hausmitte in der Zone bzw. Hot Zone zählt zoneWeight Gewicht je Stufe, zusätzlich zu den Besatzern
@@ -46,10 +48,11 @@ export function updateZone(game, dt) {
   // Geld: jede Einheit in der Zone zahlt, für beide Teams gleichzeitig (auch umkämpft)
   for (let t = 0; t < game.teams.length; t++) {
     const team = game.teams[t];
-    const perSec = money[t] * team.incomeMult;
+    const perSec = (money[t] + hotMoney[t]) * team.incomeMult;
     if (perSec > 0) {
       team.rate.money += perSec;
-      team.res.money += perSec * dt;
+      earn(team, 'zone', money[t] * team.incomeMult * dt); // Kassenbuch: Konfliktzone und Hot Zone getrennt
+      earn(team, 'hot', hotMoney[t] * team.incomeMult * dt);
     }
   }
 

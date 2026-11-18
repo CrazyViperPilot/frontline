@@ -1,8 +1,14 @@
-# Symbol-Index game (Teil 3 von 4, mapdata.js bis scramble.js)
+# Symbol-Index game (Teil 3 von 4, mapdata.js bis scars.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
 
 ## mapdata.js (Fortsetzung)
+- normalizeMap(raw) – Beliebiges Kartenobjekt (generiert oder aus JSON) → vollständige, bereinigte Ka…
+- cloneMap(m)
+- footprint(b) – Umschließendes Rechteck eines (evtl. gedrehten) Gebäudes: {x, y, w, h}
+- blockers(buildings) – Rechtecke, die den Weg versperren: alle Gebäude außer Bahnsteigen (begehbar), g…
+- describeMap(m) – Zusammenfassung für Menü und Editor
+- checkMap(map) – Prüft, ob die Karte spielbar ist
 - terrainGrid(map, relief) – Raster einer Karte vor jedem Spielgeschehen: Hindernisse, Stadthäuser, Bäume, G…
 - accessRoutes(map, want) – Getrennte Zugänge von jedem Startpunkt in die Konfliktzone (höchstens want), wi…
 - listMaps() – Gespeicherte Karten: [{ id, name, saved, map }] (neueste zuerst)
@@ -155,9 +161,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - updateScarIntel(game) – Sichtstand der Narben nach jeder Nebelrechnung
 - updateScars(game) – Abgelaufene Narben entfernen
 - scarAlpha(s, time, life, fade) – Deckkraft einer Narbe (1 → 0 in den letzten fade Sekunden ihres Lebens)
-
-## scramble.js (7.3 KB)
-- alertable(u) – Kann der Jet in Bereitschaft gehen (Luft-Luft-Waffe)? A-10, C-130 und U-2 nicht
-- alertOn(u) – Ist der Jet in Bereitschaft? Standard an (u.jet.alert fehlt), aus nur mit u.jet…
-- updateScramble(game) – Ein Simulationsschritt der Alarmrotte (vor updateAircraft)
-- cmdScramble(game, team, cmd) – Befehl `{ type: 'scramble', ids, on }`: Alarmbereitschaft der gewählten Jets mi…

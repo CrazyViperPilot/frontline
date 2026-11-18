@@ -4,6 +4,7 @@ import { BALANCE } from '../data/balance.js';
 import { inZone } from './zonegeo.js';
 import { aliveTeams } from './teams.js';
 import { nearestPassable } from './movement.js';
+import { earn } from './ledger.js';
 
 const Q = BALANCE.conquest;
 const H = BALANCE.hot;
@@ -214,7 +215,7 @@ function updateConquest(game, dt) {
     const perSec = (money[t] + held[t] * Q.flagIncome) * team.incomeMult;
     if (perSec > 0) {
       team.rate.money += perSec;
-      team.res.money += perSec * dt;
+      earn(team, 'flags', perSec * dt);
     }
   }
 

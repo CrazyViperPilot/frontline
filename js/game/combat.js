@@ -14,6 +14,7 @@ import { damageBridge, deckDist } from './river.js';
 import { forEnemyCity } from './city/query.js';
 import { jetGrounded, parkedArmor, isHighAlt, canHitAltitude } from './aircraft.js';
 import { UNITS } from '../data/units.js';
+import { spend } from './ledger.js';
 
 const SCAN = BALANCE.scanInterval;
 const MAX_UNIT_RADIUS = Math.max(...Object.values(UNITS).map((u) => u.radius ?? 0)); // größter Einheitenradius (Trefferkreis-Suche; seit v5.83 die U-2 mit 22)
@@ -111,7 +112,7 @@ function takeAmmo(game, s, need, money = 0) {
   }
   if (sup) sup.store.mun -= need;
   team.used.mun += need;
-  team.res.money -= money;
+  spend(team, 'upkeep', money);
   return true;
 }
 

@@ -29,6 +29,7 @@ import { setWeather, WEATHER_NAMES } from './weather.js';
 import { cmdMove, cmdAttack, cmdDeploy, cmdMortarTarget, cmdRally, cmdSpawnAt } from './cmd/units.js';
 import { cmdBuild, cmdBuildWall, cmdDemolish } from './cmd/build.js';
 import { cmdTrain, cmdCancelTrain } from './cmd/train.js';
+import { earn } from './ledger.js';
 
 const fail = (reason) => ({ ok: false, reason });
 
@@ -56,7 +57,7 @@ function cmdSetDifficulty(game, team, cmd) {
 function cmdDebug(game, team, cmd) {
   if (!game.debug) return fail('Nur im Debug-Modus');
   if (cmd.weather && !WEATHER_NAMES[cmd.weather]) return fail('Unbekanntes Wetter');
-  if (cmd.money) game.teams[team].res.money += cmd.money;
+  if (cmd.money) earn(game.teams[team], 'debug', cmd.money);
   if (cmd.weather) {
     setWeather(game, cmd.weather, cmd.season);
     if (cmd.hold) game.weather.next = Infinity;

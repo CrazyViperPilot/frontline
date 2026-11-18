@@ -852,3 +852,21 @@ body.flow-open .flow-fab { background: #2e372e; }
 .copybox { margin-top: 12px; }
 .row2 { display: flex; gap: 8px; margin-top: 4px; }
 .menu .row2 button { flex: 1; }
+/* Wirtschaftsanzeige: Reiter Ressourcen / Geld (Paket „Wirtschaft: Geld“) */
+.fl-tabs { display: flex; gap: 4px; }
+.fl-tab { padding: 3px 10px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--panel-2); color: var(--muted); font: inherit; font-size: 13px; cursor: pointer; }
+.fl-tab.on { color: var(--text); border-color: #d9a865; background: #2a2418; }
+.fl-money { padding: 8px 2px; font-size: 13px; }
+.fl-book-top { margin-bottom: 8px; }
+.fl-book-top b { font-variant-numeric: tabular-nums; }
+.fl-book-top .pos { color: #8fd17f; }
+.fl-book-top .neg { color: var(--bad); }
+.fl-book-cols { display: flex; flex-wrap: wrap; gap: 14px; }
+.fl-book { flex: 1 1 280px; border-collapse: collapse; }
+.fl-book th, .fl-book td { padding: 3px 8px; text-align: right; border-bottom: 1px solid var(--line-2); font-variant-numeric: tabular-nums; }
+.fl-book th:first-child, .fl-book td:first-child { text-align: left; }
+.fl-book thead th { color: #d9a865; font-weight: 600; }
+.fl-book tfoot td { font-weight: 600; border-bottom: 0; }
+.fl-book.in tfoot td:nth-child(2) { color: #8fd17f; }
+.fl-book.out tfoot td:nth-child(2) { color: var(--bad); }
+.fl-book .muted { color: var(--muted); text-align: left; }

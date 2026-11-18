@@ -1,6 +1,12 @@
-# Symbol-Index game (Teil 4 von 4, teams.js bis zonegeo.js)
+# Symbol-Index game (Teil 4 von 4, scramble.js bis zonegeo.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
+
+## scramble.js (7.3 KB)
+- alertable(u) – Kann der Jet in Bereitschaft gehen (Luft-Luft-Waffe)? A-10, C-130 und U-2 nicht
+- alertOn(u) – Ist der Jet in Bereitschaft? Standard an (u.jet.alert fehlt), aus nur mit u.jet…
+- updateScramble(game) – Ein Simulationsschritt der Alarmrotte (vor updateAircraft)
+- cmdScramble(game, team, cmd) – Befehl `{ type: 'scramble', ids, on }`: Alarmbereitschaft der gewählten Jets mi…
 
 ## teams.js (1.0 KB)
 - hostile(a, b) – Sind die Teams a und b Gegner? (-1 = neutral: niemandes Gegner)
@@ -38,7 +44,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - weatherSpeed(game, u) – Faktor des Tempos dieser Einheit: Bodenfahrzeuge bei Schnee und auf Winterboden…
 - setWeather(game, kind, season) – Test- und Debug-Hilfe: schaltet sofort auf dieses Wetter (ohne Übergang und Mel…
 
-## zone.js (3.0 KB)
+## zone.js (3.3 KB)
 - updateZone(game, dt) – Ein Schritt: Zählung der Einheiten in der Zone, Kontrolle, Zonengeld und Punkte
 
 ## zonegeo.js (0.9 KB)

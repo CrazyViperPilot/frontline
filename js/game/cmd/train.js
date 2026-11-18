@@ -30,7 +30,7 @@ export function cmdTrain(game, team, cmd) {
   const cost = UNITS[cmd.unit].cost;
   if (!game.canAfford(team, cost)) return fail(game.missingMoney());
   if (!payMetal(game, team, cmd.unit)) return fail('Zu wenig Stahl (Stadt: Stahlwerk mit Eiseneinfuhr oder Markt)');
-  game.pay(team, cost);
+  game.pay(team, cost, 'train');
   b.queue.push({ unit: cmd.unit, payerId: b.id });
   b.queueTimes.push(0);
   return { ok: true };
@@ -43,7 +43,7 @@ export function cmdCancelTrain(game, team, cmd) {
   const entry = b.queue.pop();
   b.queueTimes.pop();
   const cost = UNITS[entry.unit].cost;
-  game.refund(team, cost);
+  game.refund(team, cost, 1, 'train');
   game.refundStock(team, entry.payerId, cost, 1, b.x, b.y);
   payMetal(game, team, entry.unit, -1); // Stahl zurück ins Stadtlager
   return { ok: true };

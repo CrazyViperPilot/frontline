@@ -27,6 +27,7 @@ Regeln: PRD.md und `docs/prd/`, Werte `js/data/`. Stadt: `city/CLAUDE.md`. Jede 
 - `map.js`, `landscape.js`, `relief.js`, `mapdata.js` – Zufallskarte, Gelände, Höhenraster, Kartenformat. `generateMap`, `Relief`
 - `scars.js`, `animals.js` – Wracks und Krater, Tiere (nur Optik, aber Simulation)
 - `savegame.js` – Spielstand als JSON. `snapshotGame`, `restoreGame`
+- `ledger.js` – Kassenbuch je Team: Geld mit Grund buchen (Wirtschaftsanzeige, Reiter „Geld“). `earn`, `spend`, `IN_KEYS`, `OUT_KEYS`
 
 ## Besonderheiten
 - Importe ohne Zyklus (`test/imports.test.js`); Geometrie der Zone und Beziehungen der Teams haben gar keine Importe: nie eigene Kreisrechnung oder `1 - team`.

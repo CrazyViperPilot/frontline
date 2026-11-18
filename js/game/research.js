@@ -124,7 +124,7 @@ export function cmdResearch(game, team, cmd) {
   if (why) return fail(why);
   const cost = { money: R.items[cmd.key].money };
   if (!game.canAfford(team, cost)) return fail(game.missingMoney());
-  game.pay(team, cost);
+  game.pay(team, cost, 'research');
   const tech = game.teams[team].tech;
   if (!tech.cur) tech.cur = { key: cmd.key, t: 0 };
   else tech.queue.push(cmd.key);
@@ -139,7 +139,7 @@ export function cmdCancelResearch(game, team, cmd = {}) {
   const tech = game.teams[team].tech;
   const key = cmd.key ?? tech.cur?.key;
   if (!key || (tech.cur?.key !== key && !tech.queue.includes(key))) return fail('Diese Forschung läuft nicht und wartet nicht');
-  const refund = (k) => game.refund(team, { money: R.items[k].money });
+  const refund = (k) => game.refund(team, { money: R.items[k].money }, 1, 'research');
   refund(key);
   if (tech.cur?.key === key) tech.cur = null;
   else tech.queue.splice(tech.queue.indexOf(key), 1);

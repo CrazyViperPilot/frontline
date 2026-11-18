@@ -1,4 +1,4 @@
-# Symbol-Index ui
+# Symbol-Index ui (Teil 1 von 2, citypanel.js bis stats.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/ui/`. Pfade relativ zu `js/ui/`.
 
@@ -73,10 +73,13 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - hint() – Kurzer Hinweistext für den aktuellen Modus (leer im Normalbetrieb)
   - handleHotkey(key) – Taste (bereits groß geschrieben, "Entf" für Entf) auf die Befehlskarte anwenden
 
-## flowpanel.js (9.5 KB)
+## flowpanel.js (14 KB)
 - class FlowPanel
   - constructor(parent, game, team)
   - toggle(on)
+  - setTab(tab) – Reiter wechseln: 'res' (Fluss der Waren) oder 'money' (Einnahmen und Ausgaben)
+  - sampleMoney() – Kassenbuch je Sekunde Spielzeit merken (auch geschlossen), MONEY_WINDOW s lang
+  - moneyHtml() – Reiter „Geld“: Einnahmen nach Quelle und Ausgaben nach Zweck, je s (letzte MONE…
   - update(force) – Jedes Bild: Messung (auch geschlossen, damit der Verbrauch beim Öffnen schon da…
   - draw(f) – Graph als SVG: Spaltenköpfe, Linien (Breite = Menge je s), Knoten
   - destroy()
@@ -199,8 +202,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## stats.js (3.6 KB)
 - hm(sec) – Spielzeit in Sekunden als „12 min“ oder „2 h 05 min“
 - statsHtml(st) – HTML der Spielstatistik aus der Antwort von matchStats(): Kasse, Kennzahlen und…
-
-## status.js (3.1 KB)
-- alertText(u) – Zustand der Alarmrotte eines Jets (Paket „Alarmrotte“): Alarmstart, Alarmflug,…
-- fobLabel(game, b) – Name einer eigenen FOB nach Reihenfolge der Gründung: „FOB 2“ bzw. „FOB 2 (Baus…
-- orderText(game, u) – Kurztext des Auftrags einer eigenen Einheit (Auftragstyp aus Engine)

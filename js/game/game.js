@@ -45,6 +45,7 @@ import { updateDig } from './excavator.js';
 import { updateRoadWar } from './roadwar.js';
 import { commandOf, OWN_DRIVERS } from './commands.js';
 import { STOCK_KEYS, covers, canPlace, gatePreview, deploySpot } from './cmd/build.js';
+import { earn, spend } from './ledger.js';
 
 const TILE = BALANCE.map.tile;
 const W = BALANCE.map.width;
@@ -488,13 +489,14 @@ export class Game {
     return this.teams[team].res.money >= (cost.money || 0);
   }
 
-  pay(team, cost) {
-    this.teams[team].res.money -= cost.money || 0;
+  /** Geld abziehen; why = Zweck im Kassenbuch (ledger.js OUT_KEYS). */
+  pay(team, cost, why = 'build') {
+    spend(this.teams[team], why, cost.money || 0);
   }
 
-  /** Geld-Erstattung (nur money; Sorten gehen über refundStock). */
-  refund(team, cost, factor = 1) {
-    this.teams[team].res.money += (cost.money || 0) * factor;
+  /** Geld-Erstattung (nur money; Sorten gehen über refundStock); mindert die Ausgaben des Zwecks why. */
+  refund(team, cost, factor = 1, why = 'build') {
+    spend(this.teams[team], why, -(cost.money || 0) * factor);
   }
 
   /**
@@ -663,7 +665,7 @@ export class Game {
   /** Geld für ein Team (Abschuss, Bau); ab `bounty.notify` mit Meldung. */
   reward(team, amount, why = '') {
     if (!(amount > 0)) return;
-    this.teams[team].res.money += amount;
+    earn(this.teams[team], 'bounty', amount);
     this.teams[team].earned = (this.teams[team].earned || 0) + amount;
     if (why && amount >= BALANCE.bounty.notify) this.message(team, `+${amount} Geld: ${why}`);
   }

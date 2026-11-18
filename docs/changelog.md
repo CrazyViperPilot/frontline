@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.220: **Wirtschaft: Reiter Ressourcen und Geld** (§15 „Wirtschaftsanzeige“): Die Wirtschaftsanzeige hat zwei Reiter; „Geld“ zeigt Einnahmen nach Quelle und Ausgaben nach Zweck (je s und seit Start) aus dem neuen Kassenbuch, „Ressourcen“ zusätzlich die Einwohner (gesamt, frei, im Dienst). Cache v284.
 - v5.219: **Kopfleiste und Wirtschaft** (§8, §15 „Wirtschaftsanzeige“): Oben steht nur noch das Geld; die Front-Lager (BM, MUN, TS) zeigt jetzt die Anzeige „📊 Wirtschaft“ (vorher „Ressourcen“), dazu dort das Geld je s. Cache v283.
 - v5.218: **Lagerhalle: Zulauf nach Straße** (§15 „Straßentransport“): Die Lagerhalle füllt sich so schnell, wie ihr Straßenweg frei hat (mindestens wie bisher, höchstens 30/45/60 je s), und gibt an die FOBs mindestens so viel ab, wie ankommt; breitere Straßen bringen mehr an die Front. Cache v282.
 - v5.217: **KI baut Lagerhallen** (§10, Plan `docs/plan-lagerhallen.md`, Paket 3): Ab Minute 6 (Schwer 5, Leicht nie) baut die KI eine Lagerhalle in Reichweite ihrer vordersten FOB mit knappem Lager und legt die Straße zum Lager dorthin. Cache v281.

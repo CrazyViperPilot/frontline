@@ -3,6 +3,7 @@
 // Kein DOM.
 import { BALANCE } from '../data/balance.js';
 import { driveTo, setIdle, footDist } from './movement.js';
+import { earn } from './ledger.js';
 
 const C = BALANCE.crates;
 const TILE = BALANCE.map.tile;
@@ -279,7 +280,7 @@ export function updateCrates(game, dt) {
         const t = game.teams[team];
         const perSec = C.income * t.incomeMult;
         t.rate.money += perSec;
-        t.res.money += perSec * dt;
+        earn(t, 'crates', perSec * dt);
         continue;
       }
       lostAt.set(c.fobId, team);

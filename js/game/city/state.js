@@ -208,7 +208,7 @@ export function syncEntity(game, c, i) {
 /** Warteschlange eines Ausbildungsgebäudes erstatten (Geld und Metall), wenn der Besitzer es abreißt oder überbaut. */
 export function refundQueue(game, team, e) {
   for (const q of e?.queue ?? []) {
-    game.refund(team, UNITS[q.unit].cost);
+    game.refund(team, UNITS[q.unit].cost, 1, 'train');
     payMetal(game, team, q.unit, -1);
   }
 }

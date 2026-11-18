@@ -3,6 +3,13 @@
 // die Lager mit Erzeugung und Verbrauch; Linienbreite = Menge je s. Rot = Engpass, gelb = Werk wartet oder Rohstoff verfällt.
 // Unten die Engpässe in Worten. Der Graph kommt aus js/game/flow.js (CITY.chain), hier wird er nur gezeichnet. Das Spiel läuft weiter.
 import { resourceFlow, FlowMeter, fmtFlow } from '../game/flow.js';
+import { IN_KEYS, OUT_KEYS } from '../game/ledger.js';
+import { freePop, draftedCount } from '../game/city/query.js';
+
+/** Namen im Reiter „Geld“ (Kassenbuch js/game/ledger.js). */
+const IN_NAME = { zone: 'Konfliktzone', hot: 'Hot Zone', flags: 'Flaggen', crates: 'Versorgungskisten', tax: 'Steuern der Stadt', market: 'Markt (Verkauf)', bounty: 'Prämien (Abschüsse, Bauten)', debug: 'Debug' };
+const OUT_NAME = { train: 'Ausbildung', build: 'Militärgebäude, Ausbau', city: 'Stadt (Bauen, Ausbau)', research: 'Forschung', import: 'Einfuhr der Rohwaren', market: 'Markt (Kauf)', upkeep: 'Phalanx-Munition' };
+const MONEY_WINDOW = 30; // s Spielzeit, über die der Reiter „Geld“ die Raten misst
 import { GOOD_COLOR, GOOD_SHORT, IMPORTS } from '../data/goods.js';
 
 const NW = 158; // Breite eines Knotens (SVG-Einheiten; seit v5.30 158 statt 140, damit Namen und Mengen ganz hineinpassen)
@@ -35,15 +42,22 @@ export class FlowPanel {
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-label', 'Wirtschaft');
     root.innerHTML = `
-      <div class="fl-head"><b>📊 Wirtschaft</b><div class="fl-chips" data-fl-chips></div>
+      <div class="fl-head"><b>📊 Wirtschaft</b>
+        <div class="fl-tabs" role="tablist"><button type="button" class="fl-tab on" data-fl-tab="res" role="tab">Ressourcen</button><button type="button" class="fl-tab" data-fl-tab="money" role="tab">Geld</button></div>
+        <div class="fl-chips" data-fl-chips></div>
         <button type="button" class="btn-sm fl-close" data-fl-close title="Schließen (Esc)" aria-label="Schließen">✕</button></div>
-      <svg class="fl-graph" data-fl-svg preserveAspectRatio="xMidYMin meet"></svg>
-      <ul class="fl-issues" data-fl-issues></ul>`;
+      <div data-fl-res><svg class="fl-graph" data-fl-svg preserveAspectRatio="xMidYMin meet"></svg>
+      <ul class="fl-issues" data-fl-issues></ul></div>
+      <div class="fl-money" data-fl-money hidden></div>`;
     parent.appendChild(root);
     this.root = root;
     this.svg = root.querySelector('[data-fl-svg]');
+    this.tab = 'res';
+    this.samples = []; // Kassenbuch je Sekunde Spielzeit: { t, in, out } (Reiter „Geld“)
     root.addEventListener('click', (e) => {
       if (e.target.closest('[data-fl-close]')) this.toggle(false);
+      const tab = e.target.closest('[data-fl-tab]');
+      if (tab) this.setTab(tab.dataset.flTab);
     });
   }
 
@@ -54,13 +68,77 @@ export class FlowPanel {
     if (on) this.update(true);
   }
 
+  /** Reiter wechseln: 'res' (Fluss der Waren) oder 'money' (Einnahmen und Ausgaben). */
+  setTab(tab) {
+    this.tab = tab === 'money' ? 'money' : 'res';
+    for (const b of this.root.querySelectorAll('[data-fl-tab]')) b.classList.toggle('on', b.dataset.flTab === this.tab);
+    this.root.querySelector('[data-fl-res]').hidden = this.tab !== 'res';
+    this.root.querySelector('[data-fl-money]').hidden = this.tab !== 'money';
+    this.update(true);
+  }
+
+  /** Kassenbuch je Sekunde Spielzeit merken (auch geschlossen), MONEY_WINDOW s lang. */
+  sampleMoney() {
+    const g = this.game;
+    const last = this.samples[this.samples.length - 1];
+    if (last && g.time - last.t < 1) return;
+    const b = g.teams[this.team].book ?? { in: {}, out: {} };
+    this.samples.push({ t: g.time, in: { ...b.in }, out: { ...b.out } });
+    while (this.samples.length > 2 && this.samples[0].t < g.time - MONEY_WINDOW) this.samples.shift();
+  }
+
+  /** Reiter „Geld“: Einnahmen nach Quelle und Ausgaben nach Zweck, je s (letzte MONEY_WINDOW s) und seit Spielbeginn. */
+  moneyHtml() {
+    const t = this.game.teams[this.team];
+    const b = t.book ?? { in: {}, out: {} };
+    const a = this.samples[0];
+    const z = this.samples[this.samples.length - 1];
+    const dt = a && z ? z.t - a.t : 0;
+    const rate = (side, k) => (dt > 0 ? ((z[side][k] ?? 0) - (a[side][k] ?? 0)) / dt : 0);
+    const fmt = (v) => `${v < -0.005 ? '−' : ''}${fmtFlow(Math.abs(v))}`;
+    const rows = (side, keys, names) => {
+      let sumR = 0;
+      let sumT = 0;
+      const tr = keys
+        .filter((k) => (b[side][k] ?? 0) !== 0 || rate(side, k) !== 0)
+        .map((k) => {
+          const r = rate(side, k);
+          const tot = b[side][k] ?? 0;
+          sumR += r;
+          sumT += tot;
+          return `<tr><td>${esc(names[k] ?? k)}</td><td>${fmt(r)}/s</td><td>${int(tot)}</td></tr>`;
+        })
+        .join('');
+      return { html: tr || '<tr><td colspan="3" class="muted">noch nichts</td></tr>', sumR, sumT };
+    };
+    const inn = rows('in', IN_KEYS, IN_NAME);
+    const out = rows('out', OUT_KEYS, OUT_NAME);
+    const net = inn.sumR - out.sumR;
+    const table = (title, r, cls) =>
+      `<table class="fl-book ${cls}"><thead><tr><th>${title}</th><th>je s</th><th>seit Start</th></tr></thead><tbody>${r.html}</tbody>` +
+      `<tfoot><tr><td>Summe</td><td>${fmt(r.sumR)}/s</td><td>${int(r.sumT)}</td></tr></tfoot></table>`;
+    return (
+      `<div class="fl-book-top">Kasse <b>${int(t.res.money)}</b> · Bilanz <b class="${net < 0 ? 'neg' : 'pos'}">${net < 0 ? '−' : '+'}${fmtFlow(Math.abs(net))}/s</b>` +
+      `<span class="muted"> (gemessen über die letzten ${Math.round(dt)} s)</span></div>` +
+      `<div class="fl-book-cols">${table('Einnahmen', inn, 'in')}${table('Ausgaben', out, 'out')}</div>`
+    );
+  }
+
   /** Jedes Bild: Messung (auch geschlossen, damit der Verbrauch beim Öffnen schon da ist), Zeichnen nur offen, alle 0,5 s. */
   update(force = false) {
     this.meter.sample(this.game, this.team);
+    this.sampleMoney();
     if (!this.open) return;
     const now = performance.now();
     if (!force && now - (this.last || 0) < 500) return;
     this.last = now;
+    if (this.tab === 'money') {
+      const team = this.game.teams[this.team];
+      const inc = team.income?.money ?? 0;
+      this.root.querySelector('[data-fl-chips]').innerHTML = `<span class="fl-chip${inc < 0 ? ' bad' : ''}">Geld <b>${inc < 0 ? '−' : '+'}${fmtFlow(Math.abs(inc))} G/s</b></span>`;
+      this.root.querySelector('[data-fl-money]').innerHTML = this.moneyHtml();
+      return;
+    }
     const f = resourceFlow(this.game, this.team, this.meter.rates());
     if (!f) return;
     const F = f.factors;
@@ -70,8 +148,12 @@ export class FlowPanel {
     // Paket „Kopfleiste“: Einnahmen gesamt (wie das Geld oben) und die Front-Lager (Summe der vorderen FOBs), die oben nicht mehr stehen
     const team = this.game.teams[this.team];
     const inc = team.income?.money ?? 0;
+    // Einwohner (Paket „Wirtschaft: Geld“): gesamt, frei für die Ausbildung, im Dienst (ausgebildete Truppen; die Startarmee zählt nicht)
+    const c = this.game.city?.[this.team];
+    const pop = c ? Math.floor(c.popF + 1e-6) : 0;
     this.root.querySelector('[data-fl-chips]').innerHTML =
       chip('Geld', `${inc < 0 ? '−' : '+'}${fmtFlow(Math.abs(inc))} G/s`, inc < 0) +
+      (c ? chip('Einwohner', `${pop} · frei ${Math.max(0, freePop(this.game, this.team))} · im Dienst ${draftedCount(this.game, this.team)}`, freePop(this.game, this.team) <= 0) : '') +
       chip('Front-Lager', `BM ${Math.floor(team.res.bm)} · MUN ${Math.floor(team.res.mun)} · TS ${Math.floor(team.res.fuel)}`, false) +
       chip('Arbeiter', `${Math.round(F.fill * 100)} %`, F.fill < 0.95) +
       chip('Strom', `${Math.round(F.power * 100)} %`, F.power < 0.999) +

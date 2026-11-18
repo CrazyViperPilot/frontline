@@ -51,7 +51,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - auraCooldown(u, cooldown) – Abklingzeit einer Waffe: in der Aura um fireRate kürzer
 - commanderFallen(game, u) – Ein Kommandeur ist gefallen: Punkte für den Gegner (kann die Partie entscheiden…
 
-## commands.js (6.5 KB)
+## commands.js (6.6 KB)
 - COMMANDS
 - OWN_DRIVERS – Auftragsarten, die ihr Modul selbst fährt (updateMovement lässt sie aus)
 - commandOf(type) – Registereintrag eines Befehlstyps oder null (auch für geerbte Schlüssel wie 'to…

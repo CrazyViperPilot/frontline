@@ -190,7 +190,7 @@ export const KEYS = [
     `Jedes Werk holt sich seine Rohwaren beim nächsten Einfuhrpunkt auf dem kürzesten Straßenweg (bei Stau weicht es nicht aus; direkt am Güterbahnhof braucht es keine Straße); ` +
     `ohne Einfuhrpunkt erzeugt es nichts · Reicht das Geld nicht, sinkt die Einfuhr anteilig; die Kasse geht nie unter 0 · ` +
     `Der Markt bleibt für fertige Waren (Lose zu ${CITY.market.lot}; der Kaufpreis steigt mit jedem Los und fällt langsam wieder)`],
-  ['📊', 'Wirtschaft: Knopf rechts oben unter „Forschung“ zeigt oben Geld je s, die Front-Lager (Summe der vorderen FOBs), Arbeiter, Strom, Zufriedenheit, Steuern und Einfuhr, darunter den Fluss von der Einfuhr (Rohware je s und Geld je s) über die Werke bis zu den Lagern und dem Verbrauch; ' +
+  ['📊', 'Wirtschaft: Knopf rechts oben unter „Forschung“; Reiter „Geld“: Einnahmen nach Quelle und Ausgaben nach Zweck (je s und seit Start); Reiter „Ressourcen“ zeigt oben Geld je s, Einwohner, die Front-Lager (Summe der vorderen FOBs), Arbeiter, Strom, Zufriedenheit, Steuern und Einfuhr, darunter den Fluss von der Einfuhr (Rohware je s und Geld je s) über die Werke bis zu den Lagern und dem Verbrauch; ' +
     'Linienbreite = Menge je s, rot = Engpass, gelb = Werk wartet auf Rohwaren, unten die Engpässe mit Rat · Esc schließt'],
   ['F3', 'Messanzeige an/aus: Bilder je s, Bildzeit, Simulation, Zeichenzeit je Ebene und Verzögerung der Eingaben (auch mit ?perf=1 in der Adresse); hilft, ' +
     'Ruckler und träge Befehle auf dem eigenen Gerät zu finden'],

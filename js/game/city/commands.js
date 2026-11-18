@@ -9,6 +9,7 @@ import { woodScan, fellTiles, clearableAt, demolish, felledOf } from './clearing
 import { hasMarket, marketBuyPrice } from './query.js';
 import { zeroGoods, rebuildList, syncEntity, refundQueue, dropEntity } from './state.js';
 import { connectPath } from './roadnet.js';
+import { earn, spend } from '../ledger.js';
 
 /** Großbau mit Mitte a abreißen oder überbauen: alle Zellen leer, begehbar, Ziel weg, eigene Ausbildung zurück. */
 function clearBig(game, team, c, a) {
@@ -48,7 +49,7 @@ function placeBig(game, team, c, kind, col, row) {
   const main = game.mainFob(team);
   if (t.res.money < price) return { ok: false, reason: 'Zu wenig Geld' };
   if (bm && (!main || main.store.bm < bm)) return { ok: false, reason: 'Zu wenig Baumaterial im Lager der Hauptstadt' };
-  t.res.money -= price;
+  spend(t, 'city', price);
   if (bm) main.store.bm -= bm;
   for (const j of bigCells(c, a, n)) {
     c.kind[j] = KIND_ID[kind];
@@ -105,13 +106,13 @@ function tradeLot(game, team, cmd) {
   if (cmd.dir === 'sell') {
     if (have < M.lot) return { ok: false, reason: 'Zu wenig zum Verkaufen' };
     add(-M.lot);
-    t.res.money += M.sell[cmd.good];
+    earn(t, 'market', M.sell[cmd.good]);
     return { ok: true, money: M.sell[cmd.good] };
   }
   const price = marketBuyPrice(game, team, cmd.good);
   if (t.res.money < price) return { ok: false, reason: 'Zu wenig Geld' };
   if (have + M.lot > cap) return { ok: false, reason: 'Lager voll' };
-  t.res.money -= price;
+  spend(t, 'market', price);
   add(M.lot);
   c.marketHeat ??= {}; // Aufschlag dieser Ware steigt um CITY.market.surge (Paket „Knappes Geld“)
   c.marketHeat[cmd.good] = (1 + (c.marketHeat[cmd.good] ?? 0)) * (1 + M.surge) - 1;
@@ -137,7 +138,7 @@ export function cmdCityUpgrade(game, team, cmd) {
   if (money < cost.money) return { ok: false, reason: `Zu wenig Geld (${cost.money} nötig)` };
   if (cost.bm && (!main || main.store.bm < cost.bm)) return { ok: false, reason: `Zu wenig Baumaterial im Lager der Hauptstadt (${cost.bm} nötig)` };
   if (cost.steel && c.metal < cost.steel) return { ok: false, reason: `Zu wenig Stahl (${cost.steel} nötig)` };
-  game.teams[team].res.money -= cost.money;
+  spend(game.teams[team], 'city', cost.money);
   if (cost.bm) main.store.bm -= cost.bm;
   if (cost.steel) c.metal -= cost.steel;
   for (const j of cellsOf(c, i)) c.level[j] = lv + 1;
@@ -257,7 +258,7 @@ function zoneCell(game, team, city, col, row, cmd, id, f) {
       f.broke = t.res.money < price ? 'money' : 'bm';
       return;
     }
-    t.res.money -= price;
+    spend(t, 'city', price);
     if (bm) main.store.bm -= bm;
   }
   if (city.part[i]) clearBig(game, team, city, anchorOf(city, i)); // Räumen: Großbau ganz weg (alle Zellen)

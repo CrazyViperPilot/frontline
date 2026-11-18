@@ -140,8 +140,15 @@ Was daraus wird (Baumaterial, Stahl, Munition, Treibstoff, Kerosin), steht wie b
 
 - **Wirtschaftsanzeige (bis Paket „Kopfleiste“ „Ressourcenanzeige“):** Großer Knopf **📊 Wirtschaft** rechts oben unter „🔬 Forschung“ („🚧 Bauer“
   rückt eins nach unten) öffnet ein Fenster mit dem **Fluss der Rohwaren durch die Werke bis zu den Lagern**, damit man sieht, wo der Engpass ist.
-  Oben stehen Geld je s (wie oben im Spiel), die **Front-Lager** (BM, MUN, TS: Summe der vorderen FOBs, seit dem Paket „Kopfleiste“ nicht mehr
-  in der Kopfleiste), Arbeiter, Strom, Zufriedenheit, Steuern und Einfuhr. Hier soll alles stehen, was zur Wirtschaft wissenswert ist.
+  Hier soll alles stehen, was zur Wirtschaft wissenswert ist. Zwei Reiter (Paket „Wirtschaft: Geld“):
+  **Ressourcen:** oben Geld je s (wie oben im Spiel), **Einwohner** (gesamt · frei für die Ausbildung · im Dienst, d. h. ausgebildete Truppen;
+  die Startarmee zählt nicht), die **Front-Lager** (BM, MUN, TS: Summe der vorderen FOBs, seit dem Paket „Kopfleiste“ nicht mehr in der
+  Kopfleiste), Arbeiter, Strom, Zufriedenheit, Steuern und Einfuhr; darunter der Fluss Einfuhr → Werke → Lager und die Engpässe.
+  **Geld:** Kasse und Bilanz je s, dazu **Einnahmen nach Quelle** (Konfliktzone, Hot Zone, Flaggen, Versorgungskisten, Steuern der Stadt,
+  Markt, Prämien) und **Ausgaben nach Zweck** (Ausbildung, Militärgebäude und Ausbau, Stadt, Forschung, Einfuhr, Markt, Phalanx-Munition),
+  je s (gemessen über die letzten 30 s Spielzeit) und seit Spielbeginn; Erstattungen mindern die Ausgaben ihres Zwecks.
+  Quelle ist das Kassenbuch `team.book` (`js/game/ledger.js`): jede Geldbuchung der Simulation trägt ihren Grund (gehört zum Spielstand).
+  Die Marktpreise stehen nur im Marktmenü.
   Das Spiel läuft weiter; ✕ oder Esc schließt.
   - **Spalten von links nach rechts:** **Einfuhr** (die vier Rohwaren: angekommene Menge je s und Geld je s; „keine Einfuhr“, wenn nichts ankommt),
     **Werke** (BM-Werk, Stahlwerk, Munitionswerk, Raffinerie, Kerosin-Raffinerie: Zahl, Leistung und Ausstoß je Sekunde, Auslastungsbalken),

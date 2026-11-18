@@ -10,6 +10,7 @@ import { isFlat, isPart, cellsOf, cellFree, releaseCell, growLinked } from './ce
 import { draftedCount, freePop, trainersOf } from './query.js';
 import { UNITS } from '../../data/units.js';
 import { zeroGoods, zeroStats, updateClaim, occupyCell, totals, syncEntity, dropEntity } from './state.js';
+import { earn, spend } from '../ledger.js';
 
 /** Arbeitsspeicher je Stadt (einmal angelegt, kein Allokieren im Schritt): Eingang und Wirkung je Gebäude, Liste der fertigen Gebäude. */
 const SCRATCH = new WeakMap();
@@ -78,7 +79,7 @@ export function updateCity(game, dt) {
     const s = produce(game, c, id, P, dt);
     c.stats = s;
 
-    team.res.money += s.money * dt;
+    earn(team, 'tax', s.money * dt);
     team.rate.money += s.money - s.importCost; // Einfuhr (Paket „Import“) ist in produce schon bezahlt, zählt aber in der Rate mit
     updateCare(game, c, dt);
   });
@@ -405,7 +406,7 @@ function runWorks(x) {
     else s[prod] += rest * pathEff(tr, p); // Ankunft im Lager (bm, mun, fuel, kero, metal = Stahl)
   }
   s.importCost = paid;
-  team.res.money = Math.max(0, team.res.money - paid * dt);
+  spend(team, 'import', Math.min(team.res.money, paid * dt)); // nie unter 0 (wie vorher Math.max)
 }
 
 /** Lager gutschreiben: Baumaterial, Munition, Treibstoff ins Lager der Hauptstadt, Stahl und Kerosin ins Stadtlager. */

@@ -57,6 +57,7 @@ const TEMPLATES = {
   scramble: { ids: 'ids', on: 'bool' },
   airstrike: { x: 'x', y: 'y', targetId: 'target' },
   cityUpgrade: { buildingId: 'cityEnt' },
+  cityConnect: { buildingId: 'cityEnt' },
   dig: { ids: 'ids', c0: 'col', r0: 'row', c1: 'col', r1: 'row', append: 'bool' },
   shellRoad: { ids: 'ids', c0: 'col', r0: 'row', c1: 'col', r1: 'row' },
   clearRubble: { ids: 'ids', c0: 'col', r0: 'row' },

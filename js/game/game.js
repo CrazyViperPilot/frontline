@@ -110,7 +110,7 @@ const fail = (reason) => ({ ok: false, reason });
 const dist = (ax, ay, bx, by) => Math.hypot(ax - bx, ay - by);
 /** Felder mit Koordinaten in Befehlen (Weltpunkt x/y, Linie x1…y2, Turmziel tx/ty, Stadtzellen c0…r1); game.issue prüft sie. */
 // Befehle, deren x/y keine Weltpunkte sind (Stadtzellen) oder die kein Ziel auf der Karte haben: keine Prüfung der Viertel-Sperre
-const WORLD_FREE = new Set(['city', 'cityUpgrade', 'trade', 'train', 'cancelTrain', 'research', 'cancelResearch', 'setDifficulty', 'debug', 'spawnAt']);
+const WORLD_FREE = new Set(['city', 'cityUpgrade', 'cityConnect', 'trade', 'train', 'cancelTrain', 'research', 'cancelResearch', 'setDifficulty', 'debug', 'spawnAt']);
 const COORD_FIELDS = ['x', 'y', 'x1', 'y1', 'x2', 'y2', 'tx', 'ty', 'c0', 'r0', 'c1', 'r1'];
 
 /** Zähler je Team für den Endbildschirm (seit v5.65). Reine Anzeige: die Simulation liest sie nicht. */

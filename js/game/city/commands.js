@@ -8,6 +8,7 @@ import { isFlat, idx, sizeOf, anchorOf, bigCells, cellsOf, fitBig, releaseCell, 
 import { woodScan, fellTiles, clearableAt, demolish, felledOf } from './clearing.js';
 import { hasMarket, marketBuyPrice } from './query.js';
 import { zeroGoods, rebuildList, syncEntity, refundQueue, dropEntity } from './state.js';
+import { connectPath } from './roadnet.js';
 
 /** Großbau mit Mitte a abreißen oder überbauen: alle Zellen leer, begehbar, Ziel weg, eigene Ausbildung zurück. */
 function clearBig(game, team, c, a) {
@@ -268,4 +269,42 @@ function zoneCell(game, team, city, col, row, cmd, id, f) {
 function failReason(f) {
   const poor = f.broke === 'bm' ? 'Zu wenig Baumaterial im Lager der Hauptstadt' : 'Zu wenig Geld';
   return f.broke ? poor : f.occupied ? 'Dort steht schon etwas: erst räumen' : f.outside ? 'Nur im eigenen Gebiet bauen' : f.rule ? BUILD_BLOCK[f.rule] : f.manned ? 'Besetzte Häuser lassen sich nicht räumen' : f.stuck ? 'Nur Bäume und Häuser lassen sich räumen, kein Fels, Wasser, Turm oder Mauer' : 'Nichts zu ändern';
+}
+
+/** Stadtgebäude, das eine Straße zum Lager braucht (nicht Straße, Bahn, Rollfeld, Gleis, Stellplatz, Tower). */
+export const needsMainRoad = (c, i) => !!c.kind[i] && !isFlat(c.kind[i]) && !['stand', 'atc'].includes(KINDS[c.kind[i] - 1]);
+
+/**
+ * Weg für „Straße zum Lager“ (Paket „Straße zum Lager“): neue Straßenzellen vom Gebäude mit Anker a bis zur Straße zum Lager
+ * (höchstens CITY.playerConnect, Baugebiet wie beim Bauen), [] wenn es schon angeschlossen ist, null ohne Weg. Liest nur.
+ */
+export function mainRoadPlan(game, c, a) {
+  const anchor = anchorOf(c, a);
+  return connectPath(game, c, cellsOf(c, anchor), true, null, undefined, CITY.playerConnect);
+}
+
+/**
+ * Befehl `{ type: 'cityConnect', buildingId }`: legt den kürzesten Weg aus neuen Straßen vom eigenen Stadtgebäude bis zur Straße zum
+ * Lager der Hauptstadt (mainRoadPlan) und bezahlt jede Zelle wie eine Straße. Antwort mit der Zahl der Zellen und den Kosten.
+ */
+export function cmdCityConnect(game, team, cmd) {
+  const c = game.city[team];
+  const e = game.getEntity(cmd.buildingId);
+  if (!e || !e.alive || e.team !== team || e.cityCell == null) return { ok: false, reason: 'Eigenes Stadtgebäude wählen' };
+  if (!needsMainRoad(c, e.cityCell)) return { ok: false, reason: 'Dieses Gebäude braucht keine Straße zum Lager' };
+  const path = mainRoadPlan(game, c, e.cityCell);
+  if (path === null) return { ok: false, reason: `Kein freier Weg zum Lager (höchstens ${CITY.playerConnect} Zellen im eigenen Baugebiet)` };
+  if (!path.length) return { ok: false, reason: 'Hat schon eine Straße zum Lager' };
+  const money = CITY.cost.road * path.length;
+  const bm = CITY.costBm.road * path.length;
+  const main = game.mainFob(team);
+  if (game.teams[team].res.money < money) return { ok: false, reason: `Zu wenig Geld (${money} für ${path.length} Straßenzellen)` };
+  if (!main || main.store.bm < bm) return { ok: false, reason: `Zu wenig Baumaterial im Lager der Hauptstadt (${bm} für ${path.length} Straßenzellen)` };
+  for (const i of path) {
+    const col = i % c.cols;
+    const row = (i - col) / c.cols;
+    const r = cmdCity(game, team, { type: 'city', kind: 'road', c0: col, r0: row, c1: col, r1: row });
+    if (!r.ok) return { ok: false, reason: r.reason };
+  }
+  return { ok: true, cells: path.length, money, bm };
 }

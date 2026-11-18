@@ -19,6 +19,7 @@ import { RESEARCH } from '../../data/research.js';
 import { canShellRoads } from '../../game/roadwar.js';
 import { presetKinds, presetOf } from '../../game/logistics.js';
 import { isCarrier } from './util.js';
+import { mainRoadPlan, needsMainRoad } from '../../game/city/commands.js';
 import { MODES } from './modes.js';
 
 const BUILD_MENU = Object.keys(BUILDINGS).filter((k) => BUILDINGS[k].hotkey && BUILDINGS[k].buildable !== false);
@@ -453,6 +454,35 @@ export const cardMethods = {
   },
 
   /** Gewähltes Stadtgebäude: Handel (nur Markt), Baumodus, Abreißen (wie „Räumen“ im Baumodus, ohne Erstattung). */
+  /**
+   * Knopf „Straße zum Lager“ (Paket „Straße zum Lager“): Weg und Kosten vorab (mainRoadPlan, je Stadtstand c.ver einmal gerechnet);
+   * null, wenn das Gebäude schon angeschlossen ist; gesperrt, wenn kein Weg passt oder Geld bzw. Baumaterial fehlt.
+   */
+  connectEntry(b, c, i) {
+    const key = `${b.id}:${c.ver}`;
+    if (this.connectPlan?.key !== key) this.connectPlan = { key, path: mainRoadPlan(this.game, c, i) };
+    const path = this.connectPlan.path;
+    const n = path?.length ?? 0;
+    const money = CITY.cost.road * n;
+    const bm = CITY.costBm.road * n;
+    const main = this.game.mainFob(this.team);
+    let reason = '';
+    if (path && !n) return null; // schon angeschlossen
+    if (path === null) reason = `Kein freier Weg zum Lager (höchstens ${CITY.playerConnect} Zellen im eigenen Baugebiet)`;
+    else if (this.game.teams[this.team].res.money < money) reason = `Zu wenig Geld (${money} nötig)`;
+    else if (!main || main.store.bm < bm) reason = `Zu wenig Baumaterial (${bm} nötig)`;
+    const price = [money ? `${money} Geld` : '', bm ? `${bm} Baumaterial` : ''].filter(Boolean).join(' und ') || 'kostenlos';
+    return entry('Straße zum Lager', null, {
+      cost: n ? (bm ? `${bm} BM` : money ? `${money} G` : '') : '',
+      tip: n
+        ? `Straße zum Lager: ${n} Straßenzellen auf dem kürzesten freien Weg zur Straße zum Lager der Hauptstadt, ${price}`
+        : 'Straße zum Lager: legt den kürzesten Weg aus Straßen bis zur Straße zum Lager der Hauptstadt',
+      enabled: !reason,
+      reason,
+      action: () => this.issue({ type: 'cityConnect', buildingId: b.id }),
+    });
+  },
+
   cityCard(b) {
     const c = this.game.city[b.team];
     const i = b.cityCell;
@@ -515,6 +545,8 @@ export const cardMethods = {
         }),
       );
     }
+    const link = needsMainRoad(c, i) && c.level[i] ? this.connectEntry(b, c, i) : null;
+    if (link) card.push(link);
     if (CITY_KINDS[c.kind[i] - 1] === 'market') {
       card.push(entry('Handel', 'T', { tip: 'Marktmenü: Waren kaufen und verkaufen (T, auch über die Geldanzeige oben)', action: () => this.onMarket?.() }));
     }

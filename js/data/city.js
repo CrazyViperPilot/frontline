@@ -163,6 +163,9 @@ export const CITY = {
   // die Stadt ändert (Bau, Abriss, Wachstum, Ruinen, Flucht der Bewohner), nicht nach Zeit (seit dem Review von v5.20, vorher reroute 3 s).
   // connectMax (seit v5.20, AP4): längster neuer Anschluss an die Straße zum Lager in Zellen (Startviertel und KI, connectRoad in city.js).
   // maxLanes (seit v5.38): Straßen nebeneinander bilden ein mehrspuriges Band; Kapazität je Zelle × Spuren je Richtung, höchstens so viele
+  // Knopf „Straße zum Lager“ (Paket „Straße zum Lager“): so viele neue Straßenzellen legt der Befehl höchstens (Kosten je Zelle wie eine
+  // Straße, CITY.cost.road und costBm.road); die Hauptstadt liegt von der nächsten Kartenstraße rund 80 Zellen entfernt
+  playerConnect: 160,
   transport: { cap: 24, mapCap: 40, maxLanes: 4, commute: 0.05, maxDist: 260, smooth: 2, connectMax: 30 }, // maxDist seit Paket „Straßen“ 260 (vorher 160): die Kartenmitte ist ohne Umwege schon 150 Zellen entfernt
   // Versorgung der Ausbildungsgebäude über das Straßennetz (Paket „Straßen“, Teil 2, PRD §15 „Straßentransport“): Kaserne, Fabrikhalle,
   // Heliport und Stellplatz bilden nur so schnell aus, wie ihr Straßenweg zum Lager der Hauptstadt es erlaubt. Versorgungsgrad

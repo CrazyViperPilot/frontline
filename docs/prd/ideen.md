@@ -80,5 +80,5 @@ Ideen von Daniel, die festgehalten, aber **noch nicht umgesetzt** werden. Gebaut
       ob Kartenstraßen und Brücken auch zerstörbar sind (trifft beide Teams, Brücken wären echte Kampfziele); ob Haubitze (Panzerhaubitze) und Mörser dazugehören;
       wie die KI Straßen angreift, schützt und repariert; Anzeige gesperrter Zellen.
       Die Wege rechnen sich bei jeder Änderung neu (`c.ver`, wie beim Bagger).
-  - **Offen:** Knopf „Straße zum Lager bauen“ für den Spieler (am Handy sind 80 Zellen von Hand mühsam); KI baut Ausbildungsgebäude nur im Heimatviertel;
+  - **Gebaut im Paket „Straße zum Lager“:** Knopf „Straße zum Lager“ für den Spieler (§15 „Straßentransport“). **Offen:** KI baut Ausbildungsgebäude nur im Heimatviertel;
     Tests, die in Stadtgebäuden ohne Weg zum Lager ausbilden (`airbase`, `city`, `helipad`), brauchen einen Weg.

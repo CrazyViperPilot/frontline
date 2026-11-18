@@ -175,6 +175,8 @@ export const KEYS = [
     `nach jedem Start und jeder Landung ist der Luftraum ${AIR.heli.sep} s gesperrt, mit Tower ${AIR.heli.sepAtc} s; ` +
     `bei knappem Treibstoff oder leeren Waffen fliegt er selbst heim · gebaut an einer Straße oder einem Rollfeld mit Bahn; ` +
     `ausgebildet über eine Straße zum Lager oder einen Kerosintank bzw. ein Munitionslager mit Straße im Umkreis`],
+  ['Straße zum Lager', `Stadtgebäude ohne Straße zum Lager (Werk, Kaserne, Kerosintank …): Knopf „Straße zum Lager“ in seiner Befehlskarte legt ` +
+    `den kürzesten freien Weg (höchstens ${CITY.playerConnect} Zellen) und bezahlt ihn wie Straßen; Länge und Kosten zeigt der Tipp`],
   ['Einfuhr (Stadt)', `Rohwaren kommen von außerhalb der Karte: Rohmaterial (${de(CITY.import.price.raw)} Geld je Einheit, fürs BM-Werk), Eisen (${de(CITY.import.price.ore)}, ` +
     `fürs Stahlwerk und Munitionswerk), Öl (${de(CITY.import.price.oil)}, fürs Raffinerie und Kerosin-Raffinerie), Sprengstoff (${de(CITY.import.price.expl)}, fürs Munitionswerk). ` +
     `Bezahlt wird je angekommener Einheit; Rohwaren werden nicht gelagert und nicht gehandelt · Einfuhrpunkte: ` +

@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.214: **Straße zum Lager** (§15 „Straßentransport“): Stadtgebäude ohne Straße zum Lager haben in ihrer Befehlskarte den Knopf „Straße zum Lager“; er legt den kürzesten freien Weg (bis 160 Zellen) und bezahlt ihn wie Straßen, Länge und Kosten stehen im Tipp. Cache v278.
 - v5.213: **Luftschlag** (§8, §15 „Fliegerhorst“): Knopf „✈ Luftschlag“ und Taste F4 schicken bis zu vier startbereite Jets mit Bodenwaffen (F-16, Su-27, A-10) auf ein angeklicktes Ziel oder einen Punkt, ohne sie vorher zu wählen; nach dem Einsatz landen sie wieder. Cache v277.
 - v5.212: **Luftwaffe der KI** (§10 „Flugzeuge“): Die KI spart auf ihr erstes Kampfflugzeug (`CITY.ai.jetSave`, Bodentruppen warten, die Stadt baut weiter) und legt die Stellplätze auch auf die andere Seite der Bahn; vorher kaufte sie nie einen Jet, und die KI oben rechts baute oft keinen Fliegerhorst. Cache v276.
 - v5.211: **Stadt ist Kern abgeschlossen** (S2f, `docs/plan-stadt-kern.md`): Jede Partie hat eine Stadt, die Option `city` ist entfernt; Spielstände ohne Stadt lehnt das Spiel beim Laden mit Meldung ab. Die alte Ausbildungsliste der Hauptstadt (`BUILDINGS.fob.produces`) ist gestrichen, das Rezept „Neue Einheit“ trägt in `CITY.produces` ein. Cache v275.

@@ -80,6 +80,12 @@ Wege und Lasten liegen in einer WeakMap je Stadt und werden nicht gespeichert, d
   Gemessen (Seeds 3/7/11, 15 min, Normal): alle Ausbildungsgebäude der KI haben einen Weg von 1 bis 12 Zellen (Entfernung 100 %);
   der Stau an den Straßen direkt am Lager, über die auch alle Waren fahren, drückt das Tempo dort auf 36 bis 100 %.
   Lagerhallen (Material näher an der Front) kommen später.
+- **Straße zum Lager (Paket „Straße zum Lager“, Befehl `cityConnect`, `js/game/city/commands.js`):** Hat ein eigenes fertiges Stadtgebäude
+  (nicht Straße, Bahn, Rollfeld, Gleis, Stellplatz, Tower) keine Straße zum Lager, zeigt seine Befehlskarte den Knopf **Straße zum Lager**
+  mit Länge und Kosten im Tipp. Er legt den kürzesten Weg aus neuen Straßenzellen bis zur Straße zum Lager der Hauptstadt (dieselbe
+  Wegsuche wie die KI, `connectPath` in `roadnet.js`; nur freie, ausweisbare Zellen im Baugebiet, höchstens `CITY.playerConnect` 160 Zellen)
+  und bezahlt jede Zelle wie eine Straße (heute 10 Baumaterial je Zelle, `CITY.costBm.road`, kein Geld). Gesperrt, wenn kein Weg passt oder Geld bzw. Baumaterial fehlt;
+  angeschlossen verschwindet der Knopf. Gedacht für Tablet und Handy, wo lange Straßen von Hand mühsam sind.
 - **Straßen zerstören und räumen (Paket „Straßen“, Teil 3; `js/game/roadwar.js`, Werte `CITY.roadWar`):** Nur auf **ausdrücklichen Befehl** „Beschuss“ (Taste E,
   in der Befehlskarte „Straße beschießen“ im Tipp, Befehl `shellRoad`, Rechteck von Zellen) schießen Einheiten auf eine Straßenzelle; von selbst zielt niemand auf Straßen.
   Es können alle Einheiten mit einer Waffe mit Schaden gegen Bauten ab `minStruct` = 20:

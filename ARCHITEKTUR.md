@@ -135,6 +135,7 @@ Neue Befehle: Rezept `docs/rezepte/neuer-befehl.md`.
 | `scramble` | `ids, on?` | `scramble.js` `cmdScramble` | Alarmbereitschaft der gewählten Jets mit Luft-Luft-Waffe an (`on: true`) oder aus; ohne `on` umschalten |
 | `airstrike` | `x, y, targetId?` | `airstrike.js` `cmdAirstrike` | Luftschlag: bis `CITY.air.strike.maxJets` startbereite Jets mit Bodenwaffen greifen das Ziel an oder fliegen im Angriffsmarsch zum Punkt, danach Landung |
 | `cityUpgrade` | `buildingId` | `city/commands.js` `cmdCityUpgrade` | Stellplatz eine Stufe ausbauen (Überdachung, Stahlbeton-Shelter) gegen Geld, BM und Stahl |
+| `cityConnect` | `buildingId` | `city/commands.js` `cmdCityConnect` | Straße zum Lager: kürzester Weg aus neuen, bezahlten Straßenzellen vom Stadtgebäude zur Straße zum Lager (höchstens `CITY.playerConnect`) |
 | `layBridge` | `ids, c, r` | `river.js` `cmdLayBridge` | Brückenleger legt auf einer Flusszelle am Ufer eine Behelfsbrücke (E14); Schritt `updateBridgeLayers` (nach `updateBridges`) |
 | `dig` | `ids, c0, r0, c1, r1, append?` | `excavator.js` `cmdDig` | Bagger räumen die Zellen des Rechtecks nacheinander (Zonenstraße, Bäume, Häuser, eigene Gebäude, Schutt und gegnerische Straßen) |
 | `shellRoad` | `ids, c0, r0, c1?, r1?` | `roadwar.js` `cmdShellRoad` | Einheiten mit Granaten oder Raketen beschießen die Straßenzellen des Rechtecks, bis sie zu Schutt werden (Paket „Straßen“, Teil 3) |
@@ -238,6 +239,7 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Aussehen der Stadtgebäude, Baustellen, Ruinen | `stadt-aussehen` | `render/townhouses.js` | Bild `render/works.js`, `render/citysite.js` | `citysite` |
 | Stadtstraßen der Karte | `stadt-transport` | `game/roads.js` | Bild `render/citylayer.js` | `city` |
 | Straßentransport, Stau, Pendler, Versorgung der Ausbildung | `stadt-transport` | `game/transport.js` | Bild `render/citylayer.js` | `transport`, `supply` |
+| Straße zum Lager (Knopf am Stadtgebäude) | `stadt-transport` | `game/city/commands.js` | Weg `game/city/roadnet.js` `connectPath` | `cityconnect` |
 | Straßen zerstören und räumen | `stadt-transport` | `game/roadwar.js` | `game/excavator.js`; KI `ai/army/logistics.js` | `roadwar` |
 | Ressourcenanzeige | `stadt-wirtschaft` | `game/flow.js` | UI `ui/flowpanel.js` | `flow` |
 | Einfuhr der Rohwaren, Güterbahnhof | `stadt-wirtschaft` | `game/transport.js` | `game/city/roadnet.js`; KI `ai/city/roads.js` | `import`, `flow` |

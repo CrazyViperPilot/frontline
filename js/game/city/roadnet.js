@@ -66,14 +66,36 @@ export function connectRoad(game, c, a, pay, goal = null) {
  * (Vorgabe: die des Gebäudes). Der Weg führt nie über die Zellen selbst.
  */
 export function connectCells(game, c, cells, pay, goal = null, have = roadsAround(c, cells, [])) {
+  const path = connectPath(game, c, cells, pay, goal, have, CITY.transport.connectMax);
+  if (path === null) return -1;
+  if (!path.length) return 0;
+  if (pay) {
+    const main = game.mainFob(c.team);
+    if (!main || main.store.bm < CITY.costBm.road * path.length || game.teams[c.team].res.money < CITY.cost.road * path.length) return -1;
+    for (const i of path) {
+      const col = i % c.cols;
+      const row = (i - col) / c.cols;
+      game.issue(c.team, { type: 'city', kind: 'road', c0: col, r0: row, c1: col, r1: row });
+    }
+  } else {
+    for (const i of path) placeBuilt(game, c, i, 'road');
+    rebuildList(c);
+  }
+  return path.length;
+}
+
+/**
+ * Weg für connectCells, ohne zu bauen: neue Straßenzellen (kürzester Weg, höchstens `max`), [] wenn der Anschluss schon besteht,
+ * null ohne Weg. Mit `pay` gilt das Baugebiet (Spieler und KI), sonst nur die Ausweisbarkeit (Startviertel).
+ */
+export function connectPath(game, c, cells, pay, goal = null, have = roadsAround(c, cells, []), max = CITY.transport.connectMax) {
   const reach = goal ?? mainRoadReach(game, c);
   // Ohne Ziel (Lager): auch eine freie Zelle in der Zone des Lagers ist Anschluss, sie wird Straße dort
   const zone = goal ? null : mainZone(game, c);
   const atEnd = (i) => !!zone?.[i] || nbrsOf(c, i).some((j) => reach[j]);
-  if (have.some((j) => reach[j])) return 0;
-  const max = CITY.transport.connectMax;
-  // Ohne erlaubte Länge (max < 1) wird keine Schicht geprüft: wie vorher −1 (gridBfs prüfte die Startzellen sonst trotzdem)
-  if (max < 1) return -1;
+  if (have.some((j) => reach[j])) return [];
+  // Ohne erlaubte Länge (max < 1) wird keine Schicht geprüft: kein Weg (gridBfs prüfte die Startzellen sonst trotzdem)
+  if (max < 1) return null;
   const n = c.cols * c.rows;
   // Baugebiet (seit v5.78) gilt für Anschlüsse, die der Spieler oder die KI bezahlen (pay); das Startviertel (pay false) baut ohne Regel
   const inside = new Set(cells);
@@ -93,21 +115,8 @@ export function connectCells(game, c, cells, pay, goal = null, have = roadsAroun
   // Breitensuche in Schichten (gridBfs, Startabstand 1): Schicht d hat Wege mit d neuen Zellen; Ende an der ersten Zelle, die an eine
   // verbundene Straße grenzt. Zellen mit Abstand max werden nicht mehr erweitert.
   const r = gridBfs(c, starts, ok, max, { base: 1, goal: atEnd, scratch: true });
-  if (r.end < 0) return -1;
-  const path = bfsPath(r, r.end);
-  if (pay) {
-    const main = game.mainFob(c.team);
-    if (!main || main.store.bm < CITY.costBm.road * path.length || game.teams[c.team].res.money < CITY.cost.road * path.length) return -1;
-    for (const i of path) {
-      const col = i % c.cols;
-      const row = (i - col) / c.cols;
-      game.issue(c.team, { type: 'city', kind: 'road', c0: col, r0: row, c1: col, r1: row });
-    }
-  } else {
-    for (const i of path) placeBuilt(game, c, i, 'road');
-    rebuildList(c);
-  }
-  return path.length;
+  if (r.end < 0) return null;
+  return bfsPath(r, r.end);
 }
 
 /**

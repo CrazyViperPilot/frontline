@@ -7,7 +7,7 @@
 // Neuer Befehl: Handler schreiben, hier eintragen, in ARCHITEKTUR §6 beschreiben (test/docs.test.js prüft das).
 import { BALANCE } from '../data/balance.js';
 import { setIdle } from './movement.js';
-import { cmdCity, cmdCityUpgrade, cmdTrade } from './city/commands.js';
+import { cmdCity, cmdCityUpgrade, cmdCityConnect, cmdTrade } from './city/commands.js';
 import { cmdDrill } from './hotzone.js';
 import { cmdLoad, cmdUnload, cmdRoute, cmdSetPreset, cmdBoard, cmdDropoff } from './logistics.js';
 import { cmdRepair } from './construction.js';
@@ -104,6 +104,7 @@ export const COMMANDS = {
   clearRubble: { run: cmdClearRubble, drives: true, sound: true },
   city: { run: cmdCity },
   cityUpgrade: { run: cmdCityUpgrade },
+  cityConnect: { run: cmdCityConnect, sound: true }, // Straße vom Stadtgebäude zum Lager (Paket „Straße zum Lager“)
   trade: { run: cmdTrade },
   train: { run: cmdTrain },
   cancelTrain: { run: cmdCancelTrain },

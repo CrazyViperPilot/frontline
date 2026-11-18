@@ -2,7 +2,7 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/ui/controller/`. Pfade relativ zu `js/ui/controller/`.
 
-## cards.js (32 KB)
+## cards.js (34 KB)
 - costText(cost) – Kosten kurz für Schaltflächen: "400 BM"
 - cardMethods
   - buildPermission() – Wer darf bauen: 'all' (Baufahrzeug), 'fort' (nur Infanterie: Mauer/Tor) oder nu…
@@ -14,7 +14,8 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - commandCard() – Befehlskarte für Auswahl bzw. Modus
   - buildCard() – Baumenü: Baufahrzeug alles, Infanterie nur Mauer/Tor (FOBs: FOB-Fahrzeug, Aufba…
   - selectionCard()
-  - cityCard(b) – Gewähltes Stadtgebäude: Handel (nur Markt), Baumodus, Abreißen (wie „Räumen“ im…
+  - connectEntry(b, c, i) – Knopf „Straße zum Lager“ (Paket „Straße zum Lager“): Weg und Kosten vorab (main…
+  - cityCard(b)
   - trainEntries(blds) – Ausbildungs-Einträge der Befehlskarte für die gewählten Gebäude (Hauptstadt bzw…
   - buildingCard(blds)
 

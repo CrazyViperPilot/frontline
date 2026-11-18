@@ -447,7 +447,7 @@ function supplyTrainers(game, x) {
 
 /**
  * Lagerhallen (Paket „Lagerhalle“): je Sorte (Baumaterial, Munition, Treibstoff) aus dem Lager der Hauptstadt über ihren Straßenweg
- * befüllen, höchstens CITY.warehouse.fill je s und Stufe, bis cap; die Hauptstadt behält keep je Sorte. Last = Menge, Ankunft × pathEff.
+ * befüllen, so viel wie der Weg frei hat (höchstens CITY.warehouse.fillMax je s und Stufe), bis cap; die Hauptstadt behält keep je Sorte. Last = Menge, Ankunft × pathEff.
  */
 function fillWarehouses(x) {
   const { c, tr, dt, anchors, nA, main, credit } = x;
@@ -462,18 +462,36 @@ function fillWarehouses(x) {
     if (!e || !p || !credit) continue;
     const lv = c.level[i];
     e.store ??= { bm: 0, mun: 0, fuel: 0 };
-    for (const g of ['bm', 'mun', 'fuel']) {
-      const room = Math.max(0, W.cap[lv] - e.store[g]) / dt;
-      const src = Math.max(0, main.store[g] - W.keep) / dt;
-      const want = Math.min(W.fill[lv], room, src);
-      if (!(want > 0)) continue;
-      addLoad(tr, p, want);
-      main.store[g] = Math.max(0, main.store[g] - want * dt);
-      const got = want * pathEff(tr, p);
+    e.inRate = { bm: 0, mun: 0, fuel: 0 }; // Zulauf dieses Schritts je s (feedFobs gibt mindestens so viel ab)
+    // So viel, wie die Straße frei hat (Paket „Zulauf nach Straße“): kleinste Restkapazität des Wegs nach allen Flüssen davor in diesem Schritt
+    // (Werke, Pendler, Fliegerhorst), mindestens fill je Sorte (dann wie vorher auch mit Stau), höchstens fillMax
+    let left = Math.min(W.fillMax[lv], Math.max(spareOf(tr, p), W.fill[lv] * WH_GOODS.length));
+    const want = {};
+    for (const g of WH_GOODS) want[g] = Math.max(0, Math.min((W.cap[lv] - e.store[g]) / dt, (main.store[g] - W.keep) / dt));
+    // gleich auf die Sorten verteilen; was eine nicht braucht, bekommen die anderen
+    const order = WH_GOODS.slice().sort((a, b) => want[a] - want[b]);
+    for (let k = 0; k < order.length; k++) {
+      const g = order[k];
+      const take = Math.min(want[g], left / (order.length - k));
+      if (!(take > 0)) continue;
+      left -= take;
+      addLoad(tr, p, take);
+      main.store[g] = Math.max(0, main.store[g] - take * dt);
+      const got = take * pathEff(tr, p);
       e.store[g] = Math.min(W.cap[lv], e.store[g] + got * dt);
+      e.inRate[g] = got;
       (x.s.whIn ??= { bm: 0, mun: 0, fuel: 0 })[g] += got; // Zulauf je s (Ressourcenanzeige)
     }
   }
+}
+
+const WH_GOODS = ['bm', 'mun', 'fuel'];
+
+/** Freie Kapazität eines Straßenwegs in diesem Schritt (Einheiten je s): kleinste Kapazität − Last seiner Zellen; Weg ohne Zellen unbegrenzt. */
+function spareOf(tr, p) {
+  let m = Infinity;
+  for (let k = 0; k < p.length; k++) m = Math.min(m, tr.cap[p[k]] - tr.load[p[k]]);
+  return Math.max(0, m);
 }
 
 /** Abgabefaktor der Lagerhalle an eine FOB im Abstand d (CITY.warehouse.feed): bis near 1, dann linear bis min bei reach, darüber 0. */
@@ -506,8 +524,8 @@ function feedFobs(game, x) {
       .filter((o) => o.k > 0)
       .sort((a, b) => b.k - a.k || a.f.id - b.f.id);
     if (!near.length) continue;
-    const rate = F.rate[c.level[i]];
     for (const g of ['bm', 'mun', 'fuel']) {
+      const rate = Math.max(F.rate[c.level[i]], e.inRate?.[g] ?? 0); // mindestens so viel, wie gerade ankommt (sonst staut es sich an der Halle)
       let budget = rate * dt;
       for (const { f, k } of near) {
         const give = Math.min(budget, rate * k * dt, Math.max(0, cap - f.store[g]), e.store[g]);

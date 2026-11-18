@@ -20,4 +20,10 @@ Daniel, 2026-11-18: Entwurf angenommen, Variante 1 (großer Versorgungsumkreis s
 | Lagerhalle 1 | Zellenart, Bau, Füllen über die Straße, Infofeld, LKW laden dort, Einheiten im Umkreis nachfüllen | gebaut |
 | Lagerhalle 2 | FOBs im Umkreis (etwa 1800 px) automatisch auffüllen, Ressourcenanzeige | gebaut |
 | Lagerhalle 3 | KI baut und nutzt sie; Messung mit `npm run metrics` und `npm run econ` | gebaut (5 von 6 KI-Städten, siehe PRD §10) |
+| Zulauf nach Straße | Zulauf so schnell, wie die Straße frei hat (mindestens wie vorher), Abgabe an FOBs mindestens wie Zulauf | gebaut |
 | Lagerhalle 4 | Ausbildung misst bis zur nächsten Lagerhalle | geparkt |
+
+## Gemessen nach „Zulauf nach Straße“ (KI, 20 min, Seeds 3, 7, 11)
+- Nur mit freier Straßenkapazität kam weniger an als mit festem Zulauf (FOB-Lager z. B. 1041 → 916): die Straßen der KI am Lager sind
+  meist voll. Mit Mindestzulauf gleich oder leicht besser als vorher. Die Straße ist der Engpass: Grund für die geparkte Gleis-Anbindung
+  (`docs/prd/ideen.md`).

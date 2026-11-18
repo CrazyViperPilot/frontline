@@ -83,13 +83,18 @@ Wege und Lasten liegen in einer WeakMap je Stadt und werden nicht gespeichert, d
 - **Lagerhalle (Paket „Lagerhalle 1“, Plan [docs/plan-lagerhallen.md](../plan-lagerhallen.md), Werte `CITY.warehouse`):** Großbau 2 × 2
   der Stadt (150 Geld, 200 Baumaterial, Strom 3). Höchstens **eine je eigene fertige vordere FOB** (`perFob`); ohne vordere FOB keine.
   Wie jede Stadtzelle nur im Baugebiet, also nicht in der Konfliktzone; sie braucht eine Straße zum Lager.
-  Über ihren Straßenweg füllt sie sich je Sorte (Baumaterial, Munition, Treibstoff) aus dem Lager der Hauptstadt: bis **3 / 6 / 9 je s**
-  (Stufe 1/2/3, `fill`), Lager **1500 / 3000 / 5000** je Sorte (`cap`); Last auf der Straße und Ankunft × Entfernung und Stau wie bei Werken.
+  Über ihren Straßenweg füllt sie sich je Sorte (Baumaterial, Munition, Treibstoff) aus dem Lager der Hauptstadt (Paket „Zulauf nach Straße“):
+  so viel, wie der Weg nach allen anderen Flüssen frei hat (kleinste Restkapazität seiner Zellen, ohne Stau zu machen), mindestens aber
+  **3 / 6 / 9 je Sorte und s** (Stufe 1/2/3, `fill`; dann wie vorher auch mit Stau), alle Sorten zusammen höchstens **30 / 45 / 60 je s**
+  (`fillMax`), gleich auf die Sorten verteilt. Lager **1500 / 3000 / 5000** je Sorte (`cap`); Ankunft × Stau-Faktor wie bei Werken.
+  Breitere Straßen (Spuren) bringen also mehr an die Front. Gemessen (KI, 20 min): ihre Straßen am Lager sind meist voll, sie bekommt kaum
+  mehr als den Mindestzulauf.
   Die Hauptstadt behält mindestens **500** je Sorte (`keep`). Ohne Straßenweg füllt sie sich nicht (Warnung im Infofeld).
   **LKW** laden dort wie an einer FOB (Rechtsklick mit LKW auf die Lagerhalle, Pendeln mit der Lagerhalle als Start); abladen kann man dort nicht.
   **Einheiten** im Umkreis von **450 px** (`radius`) füllen aus ihr nach, wenn keine FOB sie versorgt.
   Zerstört ist ihr Inhalt verloren.
-  **FOBs auffüllen (Paket „Lagerhalle 2“, `CITY.warehouse.feed`):** Sie gibt je Sorte zusammen bis **3 / 6 / 9 je s** (Stufe, `rate`) an eigene
+  **FOBs auffüllen (Paket „Lagerhalle 2“, `CITY.warehouse.feed`):** Sie gibt je Sorte zusammen bis **3 / 6 / 9 je s** (Stufe, `rate`), mindestens
+  aber so viel, wie gerade ankommt, an eigene
   fertige vordere FOBs bis **1800 px** (`reach`) ab, auch an FOBs in der Konfliktzone, in der sie selbst nicht stehen darf. Die nächste FOB
   zuerst; jede bekommt höchstens rate × Faktor (bis 450 px `near` 1, dann linear bis 0,3 `min` bei 1800 px), bis zur Obergrenze ihres Lagers.
   Die Ressourcenanzeige zeigt am Lagerknoten „davon … Hallen“ (Inhalt aller Lagerhallen) und „→ FOBs“ (Abgabe je s); der Inhalt der

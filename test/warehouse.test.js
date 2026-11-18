@@ -7,6 +7,7 @@ import { CITY } from '../js/data/city.js';
 import { KIND_ID } from '../js/data/citykinds.js';
 import { BALANCE } from '../js/data/balance.js';
 import { connectRoad } from '../js/game/city/roadnet.js';
+import { transportOf } from '../js/game/transport.js';
 import { feedFactor } from '../js/game/city/economy.js';
 import { spot, run } from './cityhelp.js';
 import { fobAt } from './gamehelp.js';
@@ -48,6 +49,7 @@ test('Lagerhalle: höchstens eine je vordere FOB, ohne vordere FOB keine', () =>
 
 test('Lagerhalle füllt sich über die Straße aus der Hauptstadt (je Sorte, bis cap), die Hauptstadt behält keep', () => {
   const { g, hall, m } = scene();
+  for (const b of g.buildings) if (b.type === 'fob' && !b.main) b.store.bm = b.store.mun = b.store.fuel = BALANCE.logistics.storeCap; // FOBs voll: die Halle behält
   const before = { ...m.store };
   run(g, 20);
   const st = hall.store;
@@ -56,6 +58,11 @@ test('Lagerhalle füllt sich über die Straße aus der Hauptstadt (je Sorte, bis
     assert.ok(st[k] <= CITY.warehouse.cap[1] + 1e-6, `${k} bis cap`);
   }
   assert.ok(m.store.mun < before.mun + 1, 'die Hauptstadt gibt Munition ab');
+  // so schnell, wie die Straße frei hat (Paket „Zulauf nach Straße“), aber ohne Stau: der Stau-Faktor auf ihrem Weg bleibt 1
+  const tr = transportOf(g, g.city[0]);
+  const path = tr.store.get(hall.cityCell);
+  assert.ok(path && [...path].every((i) => tr.factor[i] > 0.999), 'kein Stau durch die Lagerhalle');
+  assert.ok(hall.inRate.bm + hall.inRate.mun + hall.inRate.fuel <= CITY.warehouse.fillMax[1] + 1e-6, 'höchstens fillMax');
   // Mindestbestand: die Lagerhalle zieht die Hauptstadt nie unter keep (die Werke liefern laufend nach)
   for (const k of ['bm', 'mun', 'fuel']) m.store[k] = CITY.warehouse.keep;
   for (let n = 0; n < 100; n++) {
@@ -76,7 +83,7 @@ test('LKW laden an der Lagerhalle, Einheiten im Umkreis füllen aus ihr nach', (
   assert.equal(r.ok, true, r.reason);
   for (let k = 0; k < 120 && truck.cargo.mun <= 0; k++) run(g, 1);
   assert.ok(truck.cargo.mun > 0, 'LKW hat Munition geladen');
-  assert.ok(hall.store.mun < mun0 + CITY.warehouse.fill[1] * 130, 'aus der Lagerhalle');
+  assert.ok(hall.store.mun < mun0 + CITY.warehouse.fillMax[1] * 130, 'aus der Lagerhalle');
   truck.alive = false; // der LKW hätte die Halle weiter geleert
   run(g, 10);
   assert.ok(hall.store.mun > 1, `Lagerhalle hat wieder Munition (${hall.store.mun})`);
@@ -98,7 +105,7 @@ test('LKW laden an der Lagerhalle, Einheiten im Umkreis füllen aus ihr nach', (
   const hallMun = hall.store.mun;
   run(g, 3);
   assert.ok(rifle.ammo > 0, 'Schütze füllt aus der Lagerhalle nach');
-  assert.ok(hall.store.mun < hallMun + CITY.warehouse.fill[1] * 3, 'Munition aus der Lagerhalle');
+  assert.ok(hall.store.mun < hallMun + CITY.warehouse.fillMax[1] * 3, 'Munition aus der Lagerhalle');
 });
 
 test('Lagerhalle füllt vordere FOBs bis feed.reach auf, nahe zuerst; weiter weg langsamer, außerhalb nichts (Paket „Lagerhalle 2“)', () => {
@@ -121,9 +128,11 @@ test('Lagerhalle füllt vordere FOBs bis feed.reach auf, nahe zuerst; weiter weg
   run(g, 10);
   assert.ok(near.store.mun > 0, `nahe FOB bekommt Munition (${near.store.mun})`);
   assert.equal(far.store.mun, 0, 'außerhalb von reach nichts');
-  // je Sorte höchstens rate je s zusammen: in 10 s höchstens 10 × rate (Stufe 1) an alle FOBs
+  // je Sorte zusammen höchstens max(rate, Zulauf) je s (Paket „Zulauf nach Straße“: mindestens so viel, wie ankommt); der Zulauf aller Sorten
+  // zusammen ist höchstens fillMax: in 10 s also höchstens 10 × max(rate, fillMax) (Stufe 1) an alle FOBs
   const lv = 1;
-  assert.ok(near.store.mun + mid.store.mun <= 10 * F.rate[lv] + 1e-6, `zusammen höchstens rate je s (${near.store.mun + mid.store.mun})`);
+  const bound = 10 * Math.max(F.rate[lv], CITY.warehouse.fillMax[lv]);
+  assert.ok(near.store.mun + mid.store.mun <= bound + 1e-6, `zusammen höchstens max(rate, Zulauf) je s (${near.store.mun + mid.store.mun})`);
   // weiter weg langsamer: die mittlere bekommt erst, was die nahe übrig lässt, höchstens rate × Faktor
   assert.ok(mid.store.mun <= near.store.mun + 1e-6, 'nahe FOB zuerst');
 });

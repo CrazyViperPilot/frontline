@@ -219,12 +219,17 @@ export const CITY = {
   // Treibstoff) und Stufe; LKW laden dort wie an einer FOB, Einheiten im Umkreis füllen daraus nach.
   warehouse: {
     cap: [0, 1500, 3000, 5000], // Lager je Sorte und Stufe
-    fill: [0, 3, 6, 9], // Zulauf je Sorte und s (Stufe 1 etwa ein LKW alle 2 Minuten)
+    // Zulauf (Paket „Zulauf nach Straße“): so viel, wie ihr Straßenweg nach allen anderen Flüssen frei hat, mindestens aber fill je Sorte (wie
+    // vor dem Paket: auch auf voller Straße, dann mit Stau), alle Sorten zusammen höchstens fillMax je s und Stufe, gleich auf die Sorten verteilt.
+    // Gemessen (KI, 20 min): nur mit freier Kapazität kam weniger an als mit festem Zulauf, ihre Straßen am Lager sind meist voll
+    fill: [0, 3, 6, 9],
+    fillMax: [0, 30, 45, 60],
     keep: 500, // so viel je Sorte bleibt mindestens im Lager der Hauptstadt (sie läuft nicht leer)
     radius: 450, // px: Einheiten in diesem Umkreis füllen aus der Lagerhalle nach (wie der Bauradius einer FOB)
     perFob: 1, // höchstens so viele Lagerhallen je eigene vordere FOB
     // Paket „Lagerhalle 2“ (Variante 1): sie füllt eigene fertige vordere FOBs bis reach px selbst auf, auch in der Konfliktzone (dort darf sie
-    // nicht stehen). Je Sorte gibt sie zusammen höchstens rate je s ab, die nächste FOB zuerst; jede FOB bekommt höchstens rate × Faktor:
+    // nicht stehen). Je Sorte gibt sie zusammen höchstens rate je s ab (mindestens so viel, wie gerade ankommt), die nächste FOB zuerst;
+    // jede FOB bekommt höchstens rate × Faktor:
     // bis near px 1, dann linear bis min bei reach (weiter weg nichts).
     feed: { reach: 1800, near: 450, min: 0.3, rate: [0, 3, 6, 9] },
   },

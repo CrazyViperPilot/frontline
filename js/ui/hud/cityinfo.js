@@ -123,7 +123,8 @@ export const cityInfoMethods = {
       const W = CITY.warehouse;
       const st = b.store ?? { bm: 0, mun: 0, fuel: 0 };
       h += line(`Lager: BM ${Math.floor(st.bm)} · MUN ${Math.floor(st.mun)} · TS ${Math.floor(st.fuel)} (je Sorte bis ${W.cap[lv]})`);
-      h += line(`Zulauf bis ${W.fill[lv]}/s je Sorte über die Straße aus dem Lager der Hauptstadt (dort bleiben ${W.keep} je Sorte) · LKW laden hier, Einheiten im Umkreis von ${W.radius} px füllen nach`);
+      const inn = b.inRate ? b.inRate.bm + b.inRate.mun + b.inRate.fuel : 0;
+      h += line(`Zulauf gerade ${fmtRate(inn)}/s über die Straße aus dem Lager der Hauptstadt (so viel, wie die Straße frei hat, höchstens ${W.fillMax[lv]}/s; dort bleiben ${W.keep} je Sorte) · LKW laden hier, Einheiten im Umkreis von ${W.radius} px füllen nach`);
       if (!transportOf(g, c).store?.get(b.cityCell)) h += '<div class="warn small">Kein Straßenweg zum Lager der Hauptstadt: die Lagerhalle füllt sich nicht</div>';
     }
     return h;

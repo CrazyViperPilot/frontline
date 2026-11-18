@@ -35,6 +35,11 @@ Ideen von Daniel, die festgehalten, aber **noch nicht umgesetzt** werden. Gebaut
   - **Flucht:** Wird in einer Wohnzelle der Konfliktzone oder ihren Nachbarzellen geschossen, ziehen Bewohner aus; nach etwa 60 s Ruhe kehren sie langsam zurück. Leere Häuser zahlen keine Steuern.
   - **Entschieden (v4.83):** Rohstofffelder werden nicht leer; die Förderung je Zelle ist durch die Arbeitsplätze der Anlage begrenzt.
     *Gegenstandslos seit dem Paket „Import“:* Es gibt keine Rohstofffelder mehr.
+- **Lagerhallen per Gleis an den Güterbahnhof** (2026-11-18, Daniels Idee): Der Güterbahnhof nimmt Baumaterial, Munition und Treibstoff
+  von der Straße auf und gibt sie über ein Gleis an Lagerhallen weiter (leistungsstarke Nachschublinie zur Front, lohnendes Angriffsziel).
+  Gemessen im Paket „Zulauf nach Straße“: die Straßen der KI am Lager sind meist voll, die Straße ist der Engpass, das spricht dafür.
+  Offen: Gleise sind heute nur ein Anschluss zum Kartenrand (keine Wegsuche zwischen Gebäuden, keine Kapazität), Knopf „Gleis zum Bahnhof“,
+  KI legt Gleise, Gleise zerstörbar (Straßenkrieg), Zuordnung Bahnhof ↔ Halle. Plan: `docs/plan-lagerhallen.md`.
 - **Häuserkampf ausbauen** (2026-10-27): Die Grundform gibt es seit v4.43 (§7 „Häuserkampf“: Infanterie besetzt Stadthäuser,
   schießt aus den Fenstern, Häuser stürzen unter Beschuss ein, die KI besetzt Häuser in der Zone).
   Stand 2026-10-30: Stürmen, Splitterschaden auf die Besatzung und Ausbau zur Stellung gebaut (v4.74).

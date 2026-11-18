@@ -1,8 +1,9 @@
-# Symbol-Index game (Teil 3 von 4, mapdata.js bis teams.js)
+# Symbol-Index game (Teil 3 von 4, mapdata.js bis scramble.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
 
 ## mapdata.js (Fortsetzung)
+- terrainGrid(map, relief) – Raster einer Karte vor jedem Spielgeschehen: Hindernisse, Stadthäuser, Bäume, G…
 - accessRoutes(map, want) – Getrennte Zugänge von jedem Startpunkt in die Konfliktzone (höchstens want), wi…
 - listMaps() – Gespeicherte Karten: [{ id, name, saved, map }] (neueste zuerst)
 - loadMap(id)
@@ -160,6 +161,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - alertOn(u) – Ist der Jet in Bereitschaft? Standard an (u.jet.alert fehlt), aus nur mit u.jet…
 - updateScramble(game) – Ein Simulationsschritt der Alarmrotte (vor updateAircraft)
 - cmdScramble(game, team, cmd) – Befehl `{ type: 'scramble', ids, on }`: Alarmbereitschaft der gewählten Jets mi…
-
-## teams.js (1.0 KB)
-- hostile(a, b) – Sind die Teams a und b Gegner? (-1 = neutral: niemandes Gegner)

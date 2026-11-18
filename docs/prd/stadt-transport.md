@@ -80,6 +80,15 @@ Wege und Lasten liegen in einer WeakMap je Stadt und werden nicht gespeichert, d
   Gemessen (Seeds 3/7/11, 15 min, Normal): alle Ausbildungsgebäude der KI haben einen Weg von 1 bis 12 Zellen (Entfernung 100 %);
   der Stau an den Straßen direkt am Lager, über die auch alle Waren fahren, drückt das Tempo dort auf 36 bis 100 %.
   Lagerhallen (Material näher an der Front) kommen später.
+- **Lagerhalle (Paket „Lagerhalle 1“, Plan [docs/plan-lagerhallen.md](../plan-lagerhallen.md), Werte `CITY.warehouse`):** Großbau 2 × 2
+  der Stadt (150 Geld, 200 Baumaterial, Strom 3). Höchstens **eine je eigene fertige vordere FOB** (`perFob`); ohne vordere FOB keine.
+  Wie jede Stadtzelle nur im Baugebiet, also nicht in der Konfliktzone; sie braucht eine Straße zum Lager.
+  Über ihren Straßenweg füllt sie sich je Sorte (Baumaterial, Munition, Treibstoff) aus dem Lager der Hauptstadt: bis **3 / 6 / 9 je s**
+  (Stufe 1/2/3, `fill`), Lager **1500 / 3000 / 5000** je Sorte (`cap`); Last auf der Straße und Ankunft × Entfernung und Stau wie bei Werken.
+  Die Hauptstadt behält mindestens **500** je Sorte (`keep`). Ohne Straßenweg füllt sie sich nicht (Warnung im Infofeld).
+  **LKW** laden dort wie an einer FOB (Rechtsklick mit LKW auf die Lagerhalle, Pendeln mit der Lagerhalle als Start); abladen kann man dort nicht.
+  **Einheiten** im Umkreis von **450 px** (`radius`) füllen aus ihr nach, wenn keine FOB sie versorgt.
+  Zerstört ist ihr Inhalt verloren. Später (Paket „Lagerhalle 2“): FOBs im Umkreis von etwa 1800 px selbst auffüllen.
 - **Straße zum Lager (Paket „Straße zum Lager“, Befehl `cityConnect`, `js/game/city/commands.js`):** Hat ein eigenes fertiges Stadtgebäude
   (nicht Straße, Bahn, Rollfeld, Gleis, Stellplatz, Tower) keine Straße zum Lager, zeigt seine Befehlskarte den Knopf **Straße zum Lager**
   mit Länge und Kosten im Tipp. Er legt den kürzesten Weg aus neuen Straßenzellen bis zur Straße zum Lager der Hauptstadt (dieselbe

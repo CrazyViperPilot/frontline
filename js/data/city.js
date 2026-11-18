@@ -214,6 +214,16 @@ export const CITY = {
   // Stellplatz (2 × 2): je ein Flugzeug, bildet es aus; Schaden an einem abgestellten Flugzeug × shelter[Stufe] (1 offen, 2 Überdachung,
   // 3 Stahlbeton). Kerosintank und Munitionslager (2 × 2) werden über die Straße aus dem Stadtlager bzw. dem Lager der Hauptstadt
   // befüllt (fill je s, Stufe × Rate), Flugzeuge auf Stellplätzen im Umkreis supplyRadius Zellen tanken und laden daraus (rate je s).
+  // Lagerhalle (Paket „Lagerhalle“, PRD docs/prd/stadt-transport.md, Plan docs/plan-lagerhallen.md): füllt sich über ihren Straßenweg aus
+  // dem Lager der Hauptstadt (Last auf der Straße, Tempo × Entfernung und Stau wie die Werke), je Sorte (Baumaterial, Munition,
+  // Treibstoff) und Stufe; LKW laden dort wie an einer FOB, Einheiten im Umkreis füllen daraus nach.
+  warehouse: {
+    cap: [0, 1500, 3000, 5000], // Lager je Sorte und Stufe
+    fill: [0, 3, 6, 9], // Zulauf je Sorte und s (Stufe 1 etwa ein LKW alle 2 Minuten)
+    keep: 500, // so viel je Sorte bleibt mindestens im Lager der Hauptstadt (sie läuft nicht leer)
+    radius: 450, // px: Einheiten in diesem Umkreis füllen aus der Lagerhalle nach (wie der Bauradius einer FOB)
+    perFob: 1, // höchstens so viele Lagerhallen je eigene vordere FOB
+  },
   air: {
     runwayMin: 8,
     runwayWidth: 2,

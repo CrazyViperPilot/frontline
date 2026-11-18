@@ -2,7 +2,7 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/ui/hud/`. Pfade relativ zu `js/ui/hud/`.
 
-## cityinfo.js (14 KB)
+## cityinfo.js (15 KB)
 - cityInfoMethods
   - cityInfo(b) – Stadtgebäude (seit v4.94 antippbar): Stufe, Zustand, Wohn- oder Arbeitsplätze,…
   - trainInfo(g, c, b, k, lv) – Ausbildungsgebäude der Stadt: Typen, Fortschritt, Heliport- und Stellplatz-Zeil…

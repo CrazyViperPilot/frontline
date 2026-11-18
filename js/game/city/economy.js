@@ -229,6 +229,7 @@ function produce(game, c, id, P, dt) {
   runWorks(x);
   storeGoods(x);
   fillAirbase(x);
+  fillWarehouses(x);
   supplyTrainers(game, x);
   // Stau: kleinster Stau-Faktor auf den in diesem Schritt benutzten Straßen (1 ohne Stau), dann Glättung für den nächsten Schritt
   s.jam = minFactor(tr);
@@ -440,6 +441,35 @@ function supplyTrainers(game, x) {
       load += ((CITY.metalCost[u] ?? 0) / UNITS[u].buildTime) * sup.rate;
     }
     if (load > 0) addLoad(tr, sup.path, load);
+  }
+}
+
+/**
+ * Lagerhallen (Paket „Lagerhalle“): je Sorte (Baumaterial, Munition, Treibstoff) aus dem Lager der Hauptstadt über ihren Straßenweg
+ * befüllen, höchstens CITY.warehouse.fill je s und Stufe, bis cap; die Hauptstadt behält keep je Sorte. Last = Menge, Ankunft × pathEff.
+ */
+function fillWarehouses(x) {
+  const { c, tr, dt, anchors, nA, main, credit } = x;
+  const W = CITY.warehouse;
+  const WH = KIND_ID.warehouse;
+  if (!(dt > 0)) return;
+  for (let m = 0; m < nA; m++) {
+    const i = anchors[m];
+    if (c.kind[i] !== WH || !c.level[i]) continue;
+    const e = c.ents.get(i);
+    const p = tr.store?.get(i) ?? null;
+    if (!e || !p || !credit) continue;
+    const lv = c.level[i];
+    e.store ??= { bm: 0, mun: 0, fuel: 0 };
+    for (const g of ['bm', 'mun', 'fuel']) {
+      const room = Math.max(0, W.cap[lv] - e.store[g]) / dt;
+      const src = Math.max(0, main.store[g] - W.keep) / dt;
+      const want = Math.min(W.fill[lv], room, src);
+      if (!(want > 0)) continue;
+      addLoad(tr, p, want);
+      main.store[g] = Math.max(0, main.store[g] - want * dt);
+      e.store[g] = Math.min(W.cap[lv], e.store[g] + want * pathEff(tr, p) * dt);
+    }
   }
 }
 

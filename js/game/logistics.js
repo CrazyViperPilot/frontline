@@ -62,11 +62,32 @@ function applyPreset(u, preset) {
 }
 
 /** Eigene fertige FOB per ID oder null. */
-function ownFob(game, team, id, needBuilt) {
+function ownFob(game, team, id, needBuilt, store = false) {
   const f = game.getEntity(id);
+  if (store && isWarehouse(game, f) && f.team === team) {
+    f.store ??= { bm: 0, mun: 0, fuel: 0 };
+    return f; // Lagerhalle: Ladequelle wie eine FOB (Paket „Lagerhalle“)
+  }
   if (!f || f.team !== team || f.type !== 'fob') return null;
   if (needBuilt && !f.built) return null;
   return f;
+}
+
+/** Fertige Lagerhalle der Stadt (Paket „Lagerhalle“): Stadtgebäude der Art warehouse mit Stufe ≥ 1 und Lager. */
+export function isWarehouse(game, e) {
+  if (!e?.alive || e.type !== 'city' || e.cityCell == null) return false;
+  const c = game.city[e.team];
+  return KINDS[c.kind[e.cityCell] - 1] === 'warehouse' && c.level[e.cityCell] > 0;
+}
+
+/** Fertige Lagerhallen je Team (Paket „Lagerhalle“), mit Lager (store, legt sie an). */
+function warehousesOf(game) {
+  return game.teams.map((t) => {
+    const c = game.city[t.id];
+    const out = [];
+    for (const e of c.ents.values()) if (isWarehouse(game, e)) out.push(Object.assign(e, { store: e.store ?? { bm: 0, mun: 0, fuel: 0 } }));
+    return out;
+  });
 }
 
 /**
@@ -104,8 +125,8 @@ export function cmdLoad(game, team, cmd) {
     if (!src) return fail('Kein eigenes fertiges Werk mit Ausgangslager gewählt');
     work = anchorOf(game.city[team], cmd.work);
   } else {
-    src = ownFob(game, team, cmd.fobId, true);
-    if (!src) return fail('Keine fertige eigene FOB gewählt');
+    src = ownFob(game, team, cmd.fobId, true, true);
+    if (!src) return fail('Keine fertige eigene FOB oder Lagerhalle gewählt');
   }
   for (const u of trucks) {
     applyPreset(u, cmd.preset);
@@ -136,7 +157,7 @@ export function cmdRoute(game, team, cmd) {
   if (cmd.fromWork != null) {
     from = ownWork(game, team, cmd.fromWork);
     if (from) work = anchorOf(game.city[team], cmd.fromWork);
-  } else from = ownFob(game, team, cmd.fromId, true);
+  } else from = ownFob(game, team, cmd.fromId, true, true);
   const to = ownFob(game, team, cmd.toId, false);
   if (!from || !to) return fail('Route braucht einen eigenen Start (fertige FOB oder Werk) und eine eigene FOB als Ziel');
   if (from === to) return fail('Start und Ziel sind gleich');
@@ -258,7 +279,7 @@ function stepTruck(game, u, dt) {
   }
   // Ladestelle Werk: Ankunft an der Werksmitte (plus halbe Kantenlänge), sonst wie an der FOB
   const loadsHere = o.type === 'load' || (o.type === 'route' && o.phase === 'load');
-  const reach = loadsHere && atWork(o) ? workReach(game, u, o.work) : L.transferReach;
+  const reach = loadsHere && atWork(o) ? workReach(game, u, o.work) : loadsHere && dest.type === 'city' ? L.transferReach + (game.city[u.team].cell * sizeOf('warehouse')) / 2 : L.transferReach;
   const st = driveTo(game, u, dest.x, dest.y, reach, dt);
   if (st === 'stuck') {
     if (o.type === 'route') game.message(u.team, 'Route unterbrochen', u.x, u.y);
@@ -387,13 +408,15 @@ function stepDropoff(game, h, dt) {
 // ---- Nachfüllen -------------------------------------------------------------------
 
 /** Quelle für Munition/Treibstoff/Baumaterial (Soldaten): eigene fertige FOB im Bauradius mit Vorrat, sonst eigener LKW mit Ladung in Reichweite. */
-function findSource(game, u, k) {
+function findSource(game, u, k, halls = null) {
   const R = BALANCE.fob.buildRadius;
   for (const b of game.buildings) {
     if (!b.alive || !b.built || b.team !== u.team || b.type !== 'fob') continue;
     if (b.store[k] <= EPS) continue;
     if (dist(b.x, b.y, u.x, u.y) <= R) return b;
   }
+  // Lagerhallen (Paket „Lagerhalle“) im Umkreis CITY.warehouse.radius
+  for (const h of halls?.[u.team] ?? []) if (h.store[k] > EPS && dist(h.x, h.y, u.x, u.y) <= CITY.warehouse.radius) return h;
   for (const t of game.units) {
     if (!t.alive || t === u || t.team !== u.team || t.type !== 'truck') continue;
     if (t.cargo[k] <= EPS) continue;
@@ -403,12 +426,12 @@ function findSource(game, u, k) {
 }
 
 /** Füllt eine Sorte einer Einheit aus der Quelle nach (Rate je Sekunde × Takt, begrenzt durch Vorrat und Bedarf). */
-function feed(game, u, k, passDt) {
+function feed(game, u, k, passDt, halls = null) {
   const max = k === 'mun' ? u.def.ammoMax : k === 'bm' ? u.def.bmCap : u.def.fuelMax;
   const have = k === 'mun' ? u.ammo : k === 'bm' ? u.cargo.bm : u.fuel;
   const need = max - have;
   if (!(need > EPS)) return;
-  const src = findSource(game, u, k);
+  const src = findSource(game, u, k, halls);
   if (!src) return;
   const stock = src.kind === 'building' ? src.store : src.cargo;
   const rate = k === 'mun' ? L.ammoRate : k === 'bm' ? L.bmRate : L.resupplyRate; // Munition fließt schneller (große Magazine)
@@ -424,11 +447,12 @@ function feed(game, u, k, passDt) {
 /** Nachfüllen aller Einheiten mit Bedarf; Verbrauch aus den Lagern wird als Rate je Team gemerkt. */
 function resupply(game, passDt) {
   for (const t of game.teams) t.flow = { bm: 0, mun: 0, fuel: 0 };
+  const halls = warehousesOf(game);
   for (const u of game.units) {
     if (!u.alive || u.def.jet || (u.heli && u.heli.phase !== 'air')) continue; // Jets tanken und laden nur am Stellplatz (aircraft.js), Hubschrauber auf dem Heliport nur dort (helipad.js, seit v5.51)
-    if (u.def.ammoMax > 0) feed(game, u, 'mun', passDt);
-    if (u.def.fuelMax > 0) feed(game, u, 'fuel', passDt);
-    if (u.def.bmCap > 0) feed(game, u, 'bm', passDt);
+    if (u.def.ammoMax > 0) feed(game, u, 'mun', passDt, halls);
+    if (u.def.fuelMax > 0) feed(game, u, 'fuel', passDt, halls);
+    if (u.def.bmCap > 0) feed(game, u, 'bm', passDt, halls);
   }
   for (const t of game.teams) {
     for (const k of CARGO) t.flow[k] /= passDt;

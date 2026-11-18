@@ -240,6 +240,7 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Stadtstraßen der Karte | `stadt-transport` | `game/roads.js` | Bild `render/citylayer.js` | `city` |
 | Straßentransport, Stau, Pendler, Versorgung der Ausbildung | `stadt-transport` | `game/transport.js` | Bild `render/citylayer.js` | `transport`, `supply` |
 | Straße zum Lager (Knopf am Stadtgebäude) | `stadt-transport` | `game/city/commands.js` | Weg `game/city/roadnet.js` `connectPath` | `cityconnect` |
+| Lagerhalle (füllt sich über die Straße, LKW laden, Nachfüllen) | `stadt-transport` | `game/city/economy.js` `fillWarehouses` | `game/logistics.js`; Bild `render/bigbuild.js` | `warehouse` |
 | Straßen zerstören und räumen | `stadt-transport` | `game/roadwar.js` | `game/excavator.js`; KI `ai/army/logistics.js` | `roadwar` |
 | Ressourcenanzeige | `stadt-wirtschaft` | `game/flow.js` | UI `ui/flowpanel.js` | `flow` |
 | Einfuhr der Rohwaren, Güterbahnhof | `stadt-wirtschaft` | `game/transport.js` | `game/city/roadnet.js`; KI `ai/city/roads.js` | `import`, `flow` |

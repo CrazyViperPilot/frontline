@@ -4,7 +4,7 @@
 import { cityEntityAt } from '../game/city/query.js';
 import { BALANCE } from '../data/balance.js';
 import { canBuild } from '../game/construction.js';
-import { cargoSum, canSeat } from '../game/logistics.js';
+import { cargoSum, canSeat, isWarehouse } from '../game/logistics.js';
 import { canGarrison } from '../game/garrison.js';
 import { canCarry } from '../game/crates.js';
 import { FORMATIONS, FORMATION_NAMES } from '../game/formation.js';
@@ -514,6 +514,16 @@ export class Controller {
       if (eng.length && this.issue({ type: 'repairBridge', ids: eng.map((u) => u.id), bridgeId: broken.id }).ok) {
         this.moveMarker(broken.x, broken.y);
         rest = rest.filter((u) => !eng.includes(u));
+        if (!rest.length) return;
+      }
+    }
+    // Eigene Lagerhalle (Paket „Lagerhalle“): LKW laden dort wie an einer FOB
+    const hall = cityEntityAt(this.game, wx, wy);
+    if (hall && hall.team === this.team && isWarehouse(this.game, hall)) {
+      const trucks = rest.filter(isCarrier);
+      if (trucks.length && this.issue({ type: 'load', ids: trucks.map((u) => u.id), fobId: hall.id }).ok) {
+        this.moveMarker(hall.x, hall.y);
+        rest = rest.filter((u) => !trucks.includes(u));
         if (!rest.length) return;
       }
     }

@@ -175,6 +175,9 @@ export const KEYS = [
     `nach jedem Start und jeder Landung ist der Luftraum ${AIR.heli.sep} s gesperrt, mit Tower ${AIR.heli.sepAtc} s; ` +
     `bei knappem Treibstoff oder leeren Waffen fliegt er selbst heim · gebaut an einer Straße oder einem Rollfeld mit Bahn; ` +
     `ausgebildet über eine Straße zum Lager oder einen Kerosintank bzw. ein Munitionslager mit Straße im Umkreis`],
+  ['Lagerhalle', `Großbau der Stadt (Baumenü, Ressourcen), höchstens ${CITY.warehouse.perFob} je vordere FOB: füllt sich über die Straße aus dem Lager der ` +
+    `Hauptstadt mit Baumaterial, Munition und Treibstoff (bis ${CITY.warehouse.cap[1]} je Sorte in Stufe 1); LKW laden dort (Rechtsklick), ` +
+    `Einheiten im Umkreis von ${CITY.warehouse.radius} px füllen nach`],
   ['Straße zum Lager', `Stadtgebäude ohne Straße zum Lager (Werk, Kaserne, Kerosintank …): Knopf „Straße zum Lager“ in seiner Befehlskarte legt ` +
     `den kürzesten freien Weg (höchstens ${CITY.playerConnect} Zellen) und bezahlt ihn wie Straßen; Länge und Kosten zeigt der Tipp`],
   ['Einfuhr (Stadt)', `Rohwaren kommen von außerhalb der Karte: Rohmaterial (${de(CITY.import.price.raw)} Geld je Einheit, fürs BM-Werk), Eisen (${de(CITY.import.price.ore)}, ` +

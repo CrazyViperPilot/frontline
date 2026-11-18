@@ -8,7 +8,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawAirbaseIso(ctx, cam, p, color) – Ein Teil isometrisch (Ankerpunkt = Mitte, Höhe vom Renderer gesetzt)
 - drawAirbaseTop(ctx, p, color, zoom) – Ein Teil von oben (Weltkoordinaten, Kamera-Transformation gesetzt)
 
-## bigbuild.js (29 KB)
+## bigbuild.js (31 KB)
 - drawShowIso(ctx, cam, p) – Ausstellungsstück isometrisch (Bildschirmpunkt aus der Kamera)
 - BIG_KINDS – Großbauten, die hier gezeichnet werden (die Universität hat ihr eigenes Bild, u…
 - VEH – Fahrzeuge auf Höfen: Länge, Breite, Höhe der Wanne (Weltpixel)

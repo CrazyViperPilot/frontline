@@ -25,6 +25,6 @@ Gewerbe-Versorgung `shopSupply`,
 **Straßentransport** (`transportOf(game, c)` in `js/game/transport.js`): Zustand je Stadtobjekt in einer `WeakMap` (`STATE`). Er enthält `routes` (Lieferweg je Werk zum Lager: Ziel, Weg, Länge),
 `imports` (Einfuhrweg je Werk zum nächsten Einfuhrpunkt: `from` = `'edge'` für den Kartenrand oder Anker des Güterbahnhofs, Weg, Länge; `null` = keiner),
 `stations` (Güterbahnhöfe mit Gleis zum Kartenrand),
-`depot` (Wege zu Kerosintank und Munitionslager), `commute` (Pendlerweg je Arbeitsstätte, `null` = keine Wohnung), `shop` (Weg Gewerbe und Markt zum Lager), `load`, `factor`,
+`depot` (Wege zu Kerosintank und Munitionslager), `store` (Weg Lagerhalle ↔ Lager, Paket „Lagerhalle“), `commute` (Pendlerweg je Arbeitsstätte, `null` = keine Wohnung), `shop` (Weg Gewerbe und Markt zum Lager), `load`, `factor`,
 `cap` je Stadtzelle und `list` (Straßenzellen).
 Der Zustand liegt nicht im Objektgraphen und damit nicht im Spielstand; nach dem Laden wird er beim ersten Zugriff neu berechnet.

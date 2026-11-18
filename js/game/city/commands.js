@@ -4,7 +4,7 @@ import { BALANCE } from '../../data/balance.js';
 import { CITY } from '../../data/city.js';
 import { KINDS, KIND_ID, KIND_NAME } from '../../data/citykinds.js';
 import { STORED_GOODS, MARKET_GOODS, CITY_STORE_GOODS } from '../../data/goods.js';
-import { isFlat, idx, sizeOf, anchorOf, bigCells, cellsOf, fitBig, releaseCell, growLinked, canZone, buildAllowed, buildWhy, roadLinkWhy, airLinkWhy, BUILD_BLOCK } from './cells.js';
+import { isFlat, idx, isPart, sizeOf, anchorOf, bigCells, cellsOf, fitBig, releaseCell, growLinked, canZone, buildAllowed, buildWhy, roadLinkWhy, airLinkWhy, BUILD_BLOCK } from './cells.js';
 import { woodScan, fellTiles, clearableAt, demolish, felledOf } from './clearing.js';
 import { hasMarket, marketBuyPrice } from './query.js';
 import { zeroGoods, rebuildList, syncEntity, refundQueue, dropEntity } from './state.js';
@@ -166,6 +166,12 @@ export function cmdCity(game, team, cmd) {
   const r0 = Math.max(0, Math.min(cmd.r0, cmd.r1) | 0);
   const r1 = Math.min(city.rows - 1, Math.max(cmd.r0, cmd.r1) | 0);
   if (!(c1 >= c0 && r1 >= r0)) return { ok: false, reason: 'Außerhalb der Karte' };
+  if (cmd.kind === 'warehouse') {
+    // Lagerhalle (Paket „Lagerhalle“): höchstens CITY.warehouse.perFob je eigene fertige vordere FOB
+    const fobs = game.buildings.filter((b) => b.alive && b.built && b.team === team && b.type === 'fob' && !b.main).length;
+    const have = city.list.filter((i) => city.kind[i] === KIND_ID.warehouse && !isPart(city, i)).length;
+    if (have >= fobs * CITY.warehouse.perFob) return { ok: false, reason: fobs ? `Höchstens ${CITY.warehouse.perFob === 1 ? 'eine Lagerhalle' : `${CITY.warehouse.perFob} Lagerhallen`} je vordere FOB` : 'Lagerhalle erst mit einer vorderen FOB' };
+  }
   if (!erase && sizeOf(cmd.kind) > 1) {
     // Großbau: ein Gebäude mitten im Rechteck; bei gerader Kantenlänge liegt der Anker links oben der Mitte (seit v5.08; ein Tipp: dort
     // der Anker, das Quadrat reicht nach rechts unten)

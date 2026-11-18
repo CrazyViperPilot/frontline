@@ -42,7 +42,7 @@ export const MODES = {
   },
   routeFrom: {
     target: true,
-    hint: () => 'Pendeln: Start eigene fertige FOB oder Werk (Ausgangslager) anklicken · Esc bricht ab',
+    hint: () => 'Pendeln: Start eigene fertige FOB, Lagerhalle oder Werk (Ausgangslager) anklicken · Esc bricht ab',
     click: (c, wx, wy) => c.confirmRouteFrom(wx, wy),
   },
   routeTo: {

@@ -28,7 +28,7 @@ export function drawShowIso(ctx, cam, p) {
 }
 
 /** Großbauten, die hier gezeichnet werden (die Universität hat ihr eigenes Bild, university.js). */
-export const BIG_KINDS = new Set(['barracks', 'factory', 'stand', 'atc', 'ktank', 'mdepot', 'station']); // seit v5.35 auch der Fliegerhorst (2 × 2), seit Paket „Import“ der Güterbahnhof (3 × 3)
+export const BIG_KINDS = new Set(['barracks', 'factory', 'stand', 'atc', 'ktank', 'mdepot', 'station', 'warehouse']); // seit v5.35 auch der Fliegerhorst (2 × 2), seit Paket „Import“ der Güterbahnhof (3 × 3)
 
 /** Bausteine des Fliegerhorsts (seit v5.42 gemalt, airbase.js). */
 const AIRBASE = new Set(['stand', 'atc', 'ktank', 'mdepot']);
@@ -84,6 +84,13 @@ function groundOf(k, lv, half, open = 0) {
     rect(-148, -26, 52, -8, '#9b988f'); // Vorplatz der Montagehalle
     for (let x = -126; x <= 30; x += 52) line(x, -24, x, -10, '#e3d46a', 1.4);
     if (lv >= 2) rect(96, 26, 152, 84, '#96938a'); // Containerlager
+  } else if (k === 'warehouse') {
+    // Lagerhalle (Paket „Lagerhalle“, 2 × 2, ±64): Betonhof, Ladezone mit gelben Linien vor den Toren, Palettenplatz
+    rect(-half + 3, -half + 3, half - 3, half - 3, '#a7a49b');
+    rect(-58, 24, 58, 58, '#8f8c84'); // Ladezone vor der Rampe
+    for (const x of [-38, -10, 18, 46]) line(x, 28, x, 56, '#e3d46a', 1.4);
+    line(-58, 24, 58, 24, '#e3d46a', 2);
+    if (lv >= 2) rect(34, -58, 58, -20, '#96938a'); // Containerplatz
   } else if (k === 'station') {
     return stationGround(lv, half, open);
   } else if (AIRBASE.has(k)) {
@@ -270,6 +277,20 @@ function bodiesOf(k, lv) {
       box(95, 52, 153, 59, 5, '#d9a21b', '#e8b52c', 44); // Brücke
       box(118, 50, 130, 61, 4, '#55585b', '#6d7174', 49); // Laufkatze
     }
+  } else if (k === 'warehouse') {
+    // Lagerhalle (Paket „Lagerhalle“): lange Halle mit Satteldach und Toren zur Ladezone, Rampe, Paletten; Stufe 2 Container,
+    // Stufe 3 zweite Halle
+    const WALL = '#c8c2b2';
+    box(-56, -50, 30, 18, 22, WALL, '#7d8287', 0, { gable: 9, gates: { e: [2], n: 3, w: 16, h: 14 }, ribs: true }); // Halle
+    box(-56, 18, 30, 24, 4, '#9a978f', '#b4b0a6'); // Laderampe
+    const PAL = '#b8925a';
+    for (const [x, y] of [[38, -8], [48, -8], [38, 4], [48, 4], [38, 16]]) box(x - 4, y - 4, x + 4, y + 4, 6, PAL, '#c9a46a'); // Paletten
+    show('truck', 0, 42, -Math.PI / 2);
+    if (lv >= 2) {
+      const CT = ['#b5523b', '#3c6e9e', '#5f7f4f'];
+      [[36, -56, 0], [36, -42, 0], [36, -56, 11]].forEach(([x, y, z], n) => box(x, y, x + 20, y + 11, 11, CT[n % 3], shade(CT[n % 3], 0.1), z)); // Container
+    }
+    if (lv >= 3) box(-56, -62, 26, -52, 14, WALL, '#6f7479', 0, { ribs: true }); // Anbau
   } else if (AIRBASE.has(k)) {
     return airbaseBodies(k, lv); // seit v5.42: gemalte Überdachung, Shelter, Tower, Tanks, Bunker (airbase.js)
   }

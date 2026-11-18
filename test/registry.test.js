@@ -22,7 +22,7 @@ const FIELDS = new Set(['key', 'id', 'name', 'short', 'icon', 'color', 'group', 
 test('KINDS: Reihenfolge festgeschrieben (Zell-IDs im Spielstand), neue Arten nur hinten', () => {
   assert.deepEqual(KINDS, [
     'road', 'res', 'com', 'bm', 'mun', 'fuel', 'steel', 'mine', 'market', 'power', 'uni', 'dc', 'barracks', 'factory', 'heliport',
-    'hospital', 'airport', 'smelter', 'kero', 'runway', 'stand', 'atc', 'ktank', 'mdepot', 'taxi', 'rail', 'station',
+    'hospital', 'airport', 'smelter', 'kero', 'runway', 'stand', 'atc', 'ktank', 'mdepot', 'taxi', 'rail', 'station', 'warehouse',
   ]);
   assert.equal(KIND_ID.airport, 17, 'Platzhalter Flughafen bleibt Nummer 17');
   assert.ok(KIND.airport.retired, 'Flughafen ist nicht mehr baubar');

@@ -2,7 +2,8 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
 
-## teams.js (Fortsetzung)
+## teams.js (1.0 KB)
+- hostile(a, b) – Sind die Teams a und b Gegner? (-1 = neutral: niemandes Gegner)
 - aliveTeams(game) – Teams, die noch spielen (in der Eroberung: nicht ausgeschieden)
 - enemiesOf(game, team) – Noch spielende Gegner von `team`
 - nearestOf(list, x, y) – Das Element der Liste, das (x, y) am nächsten liegt (bei Gleichstand das mit de…

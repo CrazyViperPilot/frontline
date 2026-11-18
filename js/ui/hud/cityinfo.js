@@ -118,6 +118,13 @@ export const cityInfoMethods = {
     } else if (k === 'ktank' || k === 'mdepot') {
       const A = k === 'ktank' ? CITY.air.tank : CITY.air.depot;
       h += line(`${k === 'ktank' ? 'Kerosin' : 'Munition'} ${Math.floor(b.stock ?? 0)} / ${A.cap[lv]} · befüllt bis ${A.fill[lv]}/s über die Straße · gibt bis ${A.rate[lv]}/s an Flugzeuge im Umkreis von ${CITY.air.supplyRadius} Feldern`);
+    } else if (k === 'warehouse') {
+      // Lagerhalle (Paket „Lagerhalle“): Lager je Sorte, Zulauf über die Straße, Nachfüllen im Umkreis
+      const W = CITY.warehouse;
+      const st = b.store ?? { bm: 0, mun: 0, fuel: 0 };
+      h += line(`Lager: BM ${Math.floor(st.bm)} · MUN ${Math.floor(st.mun)} · TS ${Math.floor(st.fuel)} (je Sorte bis ${W.cap[lv]})`);
+      h += line(`Zulauf bis ${W.fill[lv]}/s je Sorte über die Straße aus dem Lager der Hauptstadt (dort bleiben ${W.keep} je Sorte) · LKW laden hier, Einheiten im Umkreis von ${W.radius} px füllen nach`);
+      if (!transportOf(g, c).store?.get(b.cityCell)) h += '<div class="warn small">Kein Straßenweg zum Lager der Hauptstadt: die Lagerhalle füllt sich nicht</div>';
     }
     return h;
   },

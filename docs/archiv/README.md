@@ -9,6 +9,7 @@ noch auf den alten Ort unter `docs/`.
 |---|---|
 | `verlauf.md` | Ursprünglicher Umsetzungsplan v1 bis v4.23; Code-Kommentare verweisen noch auf seine Abschnitte |
 | `plan-v5.20.md` | Umsetzungsplan Straßentransport und Warenketten (v5.20) |
+| `plan-stadt-kern.md` | Plan „Stadt ist Kern“ S2a bis S2f: Modus ohne Stadt aus Tests, Simulation, KI, Oberfläche entfernt (v5.205 bis v5.211) |
 | `plan-ausbau.md` | Ausbau-Pakete A1 bis A7 (Statistik, Häuserkampf, Musik, Werkslager, Baugebiet …) |
 | `plan-einheiten.md` | Neue Einheiten, Pakete E1 bis E15 |
 | `plan-ki-einheiten.md` | KI nutzt die neuen Einheiten, Pakete K1 bis K4 |

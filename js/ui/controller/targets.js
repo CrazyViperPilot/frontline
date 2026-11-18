@@ -7,7 +7,7 @@ import { cityEntityAt } from '../../game/city/query.js';
 import { CITY } from '../../data/city.js';
 import { lineCells } from '../../game/grid.js';
 import { BUILDINGS } from '../../data/buildings.js';
-import { canSeat, ownWork } from '../../game/logistics.js';
+import { canSeat, ownWork, isWarehouse } from '../../game/logistics.js';
 import { canGarrison, canEnter } from '../../game/garrison.js';
 import { WALL_MAX, isCarrier } from './util.js';
 
@@ -73,10 +73,11 @@ export const targetMethods = {
       this.setMode('normal');
       return;
     }
-    const fob = this.pickB(wx, wy, (e) => e.team === this.team && e.type === 'fob' && e.built);
+    const hall = cityEntityAt(this.game, wx, wy);
+    const fob = this.pickB(wx, wy, (e) => e.team === this.team && e.type === 'fob' && e.built) ?? (hall?.team === this.team && isWarehouse(this.game, hall) ? hall : null);
     const work = fob ? null : this.pickWork(wx, wy);
     if (!fob && !work) {
-      this.message('Start: eigene FOB oder Werk anklicken');
+      this.message('Start: eigene FOB, Lagerhalle oder Werk anklicken');
       return;
     }
     this.routeFromId = fob ? fob.id : null; // setMode('routeTo') behält den Start

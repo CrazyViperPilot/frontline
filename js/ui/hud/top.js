@@ -34,12 +34,12 @@ export const topMethods = {
       el.rate.textContent = `${neg ? '−' : '+'}${fmtRate(Math.abs(v))}/s`;
       el.rate.style.color = neg ? NEG_COLOR : '';
       // Lagersorten: Summe aller fertigen FOB-Lager; Geld ist global
-      const lines = [k === 'money' ? `Geld (global): je Einheit in der Konfliktzone ${fmtDe(BALANCE.zone.unitIncome)}/s, in der Hot Zone ${fmtDe(BALANCE.hot.unitIncome)}/s, je eingelagerte Versorgungskiste ${fmtDe(BALANCE.crates.income)}/s; bleibt von Runde zu Runde` : 'Front-Lager: Summe der FOB-Lager ohne Hauptstadt (deren Lager füllen die Werke der Stadt)'];
+      const lines = [`Geld (global): je Einheit in der Konfliktzone ${fmtDe(BALANCE.zone.unitIncome)}/s, in der Hot Zone ${fmtDe(BALANCE.hot.unitIncome)}/s, je eingelagerte Versorgungskiste ${fmtDe(BALANCE.crates.income)}/s; bleibt von Runde zu Runde`];
       if (t.used[k] !== undefined) lines.push(`verbraucht: ${Math.floor(t.used[k])}`);
       if (k === 'money') {
-        // Einfuhr der Rohwaren (Paket „Import“): Geld je s für die Werke, siehe Ressourcenanzeige
+        // Einfuhr der Rohwaren (Paket „Import“): Geld je s für die Werke, siehe Wirtschaftsanzeige
         const ic = g.city[this.team]?.stats?.importCost ?? 0;
-        if (ic > 0.005) lines.push(`Einfuhr der Rohwaren: −${fmtDe(fmtRate(ic))} Geld/s (Werke, siehe Ressourcen)`);
+        if (ic > 0.005) lines.push(`Einfuhr der Rohwaren: −${fmtDe(fmtRate(ic))} Geld/s (Werke, siehe Wirtschaft)`);
         lines.push('Antippen: Marktmenü (mit fertigem Markt)');
       }
       const tip = lines.join('\n');

@@ -76,7 +76,7 @@
   Befehlskarte mit Spalten à 50 × 48 px (Touch-Ziele; Tastenkürzel ausgeblendet), wischbar (Wischleiste, seit v5.182): Ausbildung eines Gebäudes in der oberen
   Zeile, die übrigen Aktionen (Baumodus, Abreißen, Abbruch, Abwählen …) darunter; beide Zeilen wischen gemeinsam, Schatten am Rand zeigt Inhalt dahinter.
   Ein Wischen zählt nicht als Tippen (Klick nur ohne Bewegung).
-  Die Karte liegt links neben der rechten Knopfspalte (Stadt, Forschung, Ressourcen, Bauer, Luftschlag), die sich nicht überdeckt.
+  Die Karte liegt links neben der rechten Knopfspalte (Stadt, Forschung, Wirtschaft, Bauer, Luftschlag), die sich nicht überdeckt.
   Der Knopf „▾“ neben der Minimap klappt Auswahl und Befehle ein (nur die Minimap
   bleibt, Zustand wird gemerkt, `localStorage` `frontline-hud-fold`). Die Kamera zentriert Ziele (Spielstart, Minimap-Klick, Meldung antippen, Taste für Basis) in der
   vom HUD nicht verdeckten Mitte (`camera.insetTop/insetBottom`). Tooltips der Befehlstasten gibt es nur mit Maus (Hover), nicht auf Touch.

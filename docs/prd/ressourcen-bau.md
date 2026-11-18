@@ -37,7 +37,8 @@ Der Weg ab dem Lager der Hauptstadt (LKW, vordere FOBs, Nachfüllen) ist in beid
   **Raten:** LKW laden/entladen 100/s (400 Ladung in 4 s), Einheiten nachfüllen (Munition 60/s, Treibstoff 4/s, Baumaterial 20/s), Ausbildung in Kaserne,
   Fabrikhalle und Heliport der Stadt (§15, je eigener Fortschritt)
   (Schütze 5 s, PAK 8 s, Scharfschütze 10 s, LKW 6 s, Baufahrzeug 9 s, SPz 12 s, KPz 20 s, Little Bird 15 s, Transporter 20 s, AH-64 28 s; Warteschlange 5).
-- **Vordere FOBs:** eigenes endliches Lager (max. 3000 je Sorte), das nur **LKW oder Transporthubschrauber** füllen. Oben zeigt „Front BM/MUN/TS“ die Summe dieser Lager.
+- **Vordere FOBs:** eigenes endliches Lager (max. 3000 je Sorte), das nur **LKW oder Transporthubschrauber** füllen.
+  Die Summe dieser Lager („Front-Lager“) zeigt die Wirtschaftsanzeige (Knopf „📊 Wirtschaft“); oben steht nur noch das Geld.
 - **Bezahlen:** Gebäude zahlen aus einer FOB, deren Bauradius den Bauort enthält (Baufahrzeug).
   Einheiten kosten **Geld**, Fahrzeuge zusätzlich Stahl, und freie Einwohner (§15).
   Abbruch erstattet an dieses Lager.

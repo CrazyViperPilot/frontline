@@ -73,7 +73,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - hint() – Kurzer Hinweistext für den aktuellen Modus (leer im Normalbetrieb)
   - handleHotkey(key) – Taste (bereits groß geschrieben, "Entf" für Entf) auf die Befehlskarte anwenden
 
-## flowpanel.js (9.1 KB)
+## flowpanel.js (9.5 KB)
 - class FlowPanel
   - constructor(parent, game, team)
   - toggle(on)

@@ -20,11 +20,11 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - cmdHints() – Telefon quer: Schatten am linken/rechten Rand, wenn links bzw. rechts noch Knöp…
   - updateCommands() – Befehlskarte
 
-## common.js (3.7 KB)
+## common.js (3.8 KB)
 - WX_ICON – Wettersymbole (16 × 16, Strichfarbe = currentColor)
 - WX_COLOR
-- RES_KEYS
-- SHORT_RES – Front-Lager: Summe der FOB-Lager ohne Hauptstadt
+- RES_KEYS – Kopfleiste: nur Geld (Paket „Kopfleiste“; die Front-Lager stehen in der Wirtsch…
+- SHORT_RES – Kürzel der Lagersorten (Wirtschaftsanzeige: Front-Lager)
 - MSG_LIFE – ms
 - MSG_MAX
 - DOM_EVERY – ms
@@ -76,7 +76,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - renderMsgs()
   - expire(now)
 
-## top.js (8.2 KB)
+## top.js (8.1 KB)
 - topMethods
   - updateTop()
   - updateResources(g, t) – Ressourcenfelder (Wert, Rate, Tooltip), Markt- und Forschungsknopf

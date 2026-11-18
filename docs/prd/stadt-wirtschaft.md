@@ -138,8 +138,10 @@ Was daraus wird (Baumaterial, Stahl, Munition, Treibstoff, Kerosin), steht wie b
   Die Kasse bekommt also gedämpfte Werte, das Infofeld der Stadt zeigt „(gebremst, roh … /s)“ mit der Rohsumme.
   Regel in `brakeTax` (`js/game/city/economy.js`).
 
-- **Ressourcenanzeige:** Großer Knopf **📊 Ressourcen** rechts oben unter „🔬 Forschung“ („🚧 Bauer“ rückt eins nach unten)
-  öffnet ein Fenster mit dem **Fluss der Rohwaren durch die Werke bis zu den Lagern**, damit man sieht, wo der Engpass ist.
+- **Wirtschaftsanzeige (bis Paket „Kopfleiste“ „Ressourcenanzeige“):** Großer Knopf **📊 Wirtschaft** rechts oben unter „🔬 Forschung“ („🚧 Bauer“
+  rückt eins nach unten) öffnet ein Fenster mit dem **Fluss der Rohwaren durch die Werke bis zu den Lagern**, damit man sieht, wo der Engpass ist.
+  Oben stehen Geld je s (wie oben im Spiel), die **Front-Lager** (BM, MUN, TS: Summe der vorderen FOBs, seit dem Paket „Kopfleiste“ nicht mehr
+  in der Kopfleiste), Arbeiter, Strom, Zufriedenheit, Steuern und Einfuhr. Hier soll alles stehen, was zur Wirtschaft wissenswert ist.
   Das Spiel läuft weiter; ✕ oder Esc schließt.
   - **Spalten von links nach rechts:** **Einfuhr** (die vier Rohwaren: angekommene Menge je s und Geld je s; „keine Einfuhr“, wenn nichts ankommt),
     **Werke** (BM-Werk, Stahlwerk, Munitionswerk, Raffinerie, Kerosin-Raffinerie: Zahl, Leistung und Ausstoß je Sekunde, Auslastungsbalken),

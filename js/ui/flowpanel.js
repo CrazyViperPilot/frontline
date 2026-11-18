@@ -1,5 +1,5 @@
 // Ressourcenanzeige (PRD §15 „Ressourcenanzeige“, seit v5.07): Fenster mit dem Fluss der Rohstoffe durch die Kette, geöffnet
-// über den Knopf „Ressourcen“ rechts oben (unter „Forschung“). Links die Einfuhr (Rohwaren/s), dann die Werke, rechts
+// über den Knopf „Wirtschaft“ rechts oben (unter „Forschung“). Links die Einfuhr (Rohwaren/s), dann die Werke, rechts
 // die Lager mit Erzeugung und Verbrauch; Linienbreite = Menge je s. Rot = Engpass, gelb = Werk wartet oder Rohstoff verfällt.
 // Unten die Engpässe in Worten. Der Graph kommt aus js/game/flow.js (CITY.chain), hier wird er nur gezeichnet. Das Spiel läuft weiter.
 import { resourceFlow, FlowMeter, fmtFlow } from '../game/flow.js';
@@ -33,9 +33,9 @@ export class FlowPanel {
     root.className = 'flow';
     root.hidden = true;
     root.setAttribute('role', 'dialog');
-    root.setAttribute('aria-label', 'Ressourcen');
+    root.setAttribute('aria-label', 'Wirtschaft');
     root.innerHTML = `
-      <div class="fl-head"><b>📊 Ressourcen</b><div class="fl-chips" data-fl-chips></div>
+      <div class="fl-head"><b>📊 Wirtschaft</b><div class="fl-chips" data-fl-chips></div>
         <button type="button" class="btn-sm fl-close" data-fl-close title="Schließen (Esc)" aria-label="Schließen">✕</button></div>
       <svg class="fl-graph" data-fl-svg preserveAspectRatio="xMidYMin meet"></svg>
       <ul class="fl-issues" data-fl-issues></ul>`;
@@ -67,7 +67,12 @@ export class FlowPanel {
     const chip = (label, v, bad) => `<span class="fl-chip${bad ? ' bad' : ''}">${label} <b>${v}</b></span>`;
     // Einfuhr (Paket „Import“): Geld je s für alle Rohwaren; rot, wenn das Geld sie bremst (importScale < 1)
     const scale = this.game.city?.[this.team]?.stats?.importScale ?? 1;
+    // Paket „Kopfleiste“: Einnahmen gesamt (wie das Geld oben) und die Front-Lager (Summe der vorderen FOBs), die oben nicht mehr stehen
+    const team = this.game.teams[this.team];
+    const inc = team.income?.money ?? 0;
     this.root.querySelector('[data-fl-chips]').innerHTML =
+      chip('Geld', `${inc < 0 ? '−' : '+'}${fmtFlow(Math.abs(inc))} G/s`, inc < 0) +
+      chip('Front-Lager', `BM ${Math.floor(team.res.bm)} · MUN ${Math.floor(team.res.mun)} · TS ${Math.floor(team.res.fuel)}`, false) +
       chip('Arbeiter', `${Math.round(F.fill * 100)} %`, F.fill < 0.95) +
       chip('Strom', `${Math.round(F.power * 100)} %`, F.power < 0.999) +
       chip('Zufrieden', `${Math.round(F.happy * 100)} %`, F.happy < 0.5) +

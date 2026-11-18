@@ -2,7 +2,7 @@
 // (Object.assign, Muster wie js/render/layers/core.js): Kopfleiste (top.js), Infofeld (info.js), Stadt-Infofeld (cityinfo.js),
 // Befehlskarte (commands.js), Meldungen (messages.js). Schreibt das DOM nur, wenn sich der HTML-Text geändert hat.
 import { BALANCE } from '../../data/balance.js';
-import { RES_KEYS, SHORT_RES, DOM_EVERY } from './common.js';
+import { RES_KEYS, DOM_EVERY } from './common.js';
 import { topMethods } from './top.js';
 import { infoMethods } from './info.js';
 import { cityInfoMethods } from './cityinfo.js';
@@ -86,7 +86,7 @@ export class Hud {
     const g = this.game;
     const res = RES_KEYS.map(
       (k) =>
-        `<div class="res res-${k}" data-res="${k}"${k === 'money' ? ' data-act="market"' : ''}><i class="dot"></i><span class="lbl">${k === 'money' ? BALANCE.resNames[k] : `Front ${SHORT_RES[k]}`}</span>` +
+        `<div class="res res-${k}" data-res="${k}"${k === 'money' ? ' data-act="market"' : ''}><i class="dot"></i><span class="lbl">${BALANCE.resNames[k]}</span>` +
         `<b class="val">0</b><small class="rate">+0/s</small>${k === 'money' ? '<i class="mk-ico" aria-hidden="true">⚖</i>' : ''}</div>`,
     ).join('');
     const pts = g.teams
@@ -102,7 +102,7 @@ export class Hud {
       <div class="fabs">
         <button type="button" class="city-fab" data-act="city" title="Stadt verwalten (Y)">🏙 Stadt</button>
         ${g.research ? '<button type="button" class="city-fab research-fab" data-act="research" title="Forschungsmenü: Stufen und Forschungsbaum (U bei gewählter Hauptstadt)">🔬 Forschung</button>' : ''}
-        <button type="button" class="city-fab flow-fab" data-act="flow" title="Ressourcen: Einfuhr, Werke, Lager und Engpässe">📊 Ressourcen</button>
+        <button type="button" class="city-fab flow-fab" data-act="flow" title="Wirtschaft: Einnahmen, Front-Lager, Einfuhr, Werke, Lager und Engpässe">📊 Wirtschaft</button>
         <button type="button" class="city-fab builder-fab" data-act="builder" title="Nächstes Baufahrzeug (J)">🚧 Bauer</button>
         <button type="button" class="city-fab strike-fab" data-act="strike" title="Luftschlag (F4): startbereite Jets mit Bodenwaffen auf ein Ziel schicken">✈ Luftschlag</button>
       </div>

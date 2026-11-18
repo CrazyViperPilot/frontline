@@ -13,8 +13,8 @@ export const WX_ICON = {
   snow: '<path d="M8 1.8v12.4M2.6 4.9l10.8 6.2M2.6 11.1l10.8-6.2M6.6 2.6L8 4l1.4-1.4M6.6 13.4L8 12l1.4 1.4"/>',
 };
 export const WX_COLOR = { clear: '#f2c94c', rain: '#8fb3d9', fog: '#c8ccc4', snow: '#e8f1fb' };
-export const RES_KEYS = ['money', 'bm', 'mun', 'fuel'];
-export const SHORT_RES = { bm: 'BM', mun: 'MUN', fuel: 'TS' }; // Front-Lager: Summe der FOB-Lager ohne Hauptstadt
+export const RES_KEYS = ['money']; // Kopfleiste: nur Geld (Paket „Kopfleiste“; die Front-Lager stehen in der Wirtschaftsanzeige)
+export const SHORT_RES = { bm: 'BM', mun: 'MUN', fuel: 'TS' }; // Kürzel der Lagersorten (Wirtschaftsanzeige: Front-Lager)
 export const MSG_LIFE = 6000; // ms
 export const MSG_MAX = 5;
 export const DOM_EVERY = 200; // ms

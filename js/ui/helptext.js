@@ -164,7 +164,7 @@ export const KEYS = [
     `🚉 Güterbahnhof, ⚔ Kaserne, 🔧 Fabrikhalle, 🚁 Heliport, ✚ Krankenhaus …), grünes Haus = Wohnen (privat), blaues Bürohaus = Gewerbe (kommerziell)`],
   ['Straßen (Stadt)', `Alles fährt über Straßen: Rohwaren von der Einfuhr (Kartenrand oder Güterbahnhof) zum nächsten Werk, Produkte (BM, Stahl, Treibstoff, Kerosin, ` +
     `Munition) zum Lager der Hauptstadt · Grenzt ein Güterbahnhof direkt an ein Werk, kommen die Rohwaren ohne Straße an · ` +
-    `Ohne Weg geht die Ware verloren (Hinweis im Gebäude und in der Ressourcenanzeige) · Straßen tragen ${TR.cap} Waren je s, Stadtstraßen der Karte ${TR.mapCap} je s; ` +
+    `Ohne Weg geht die Ware verloren (Hinweis im Gebäude und in der Wirtschaftsanzeige) · Straßen tragen ${TR.cap} Waren je s, Stadtstraßen der Karte ${TR.mapCap} je s; ` +
     `Straßen direkt nebeneinander bilden eine mehrspurige Straße (2 nebeneinander = 2 Spuren je Richtung = doppelte Kapazität, bis ${TR.maxLanes}) · ` +
     `Im Baumodus färben sich die Straßen nach Auslastung: grün unter 60 %, gelb unter 100 %, rot ab 100 % (Stau: Waren kommen langsamer) · ` +
     `Pendler (Arbeiter) fahren über die Straße zur nächsten Wohnung, bei Stau kommen sie zu spät · Ein großes rotes X am Schild: Lieferweg oder Pendlerweg fehlt · ` +
@@ -190,7 +190,7 @@ export const KEYS = [
     `Jedes Werk holt sich seine Rohwaren beim nächsten Einfuhrpunkt auf dem kürzesten Straßenweg (bei Stau weicht es nicht aus; direkt am Güterbahnhof braucht es keine Straße); ` +
     `ohne Einfuhrpunkt erzeugt es nichts · Reicht das Geld nicht, sinkt die Einfuhr anteilig; die Kasse geht nie unter 0 · ` +
     `Der Markt bleibt für fertige Waren (Lose zu ${CITY.market.lot}; der Kaufpreis steigt mit jedem Los und fällt langsam wieder)`],
-  ['📊', 'Ressourcen: Knopf rechts oben unter „Forschung“ zeigt den Fluss von der Einfuhr (Rohware je s und Geld je s) über die Werke bis zu den Lagern und dem Verbrauch; ' +
+  ['📊', 'Wirtschaft: Knopf rechts oben unter „Forschung“ zeigt oben Geld je s, die Front-Lager (Summe der vorderen FOBs), Arbeiter, Strom, Zufriedenheit, Steuern und Einfuhr, darunter den Fluss von der Einfuhr (Rohware je s und Geld je s) über die Werke bis zu den Lagern und dem Verbrauch; ' +
     'Linienbreite = Menge je s, rot = Engpass, gelb = Werk wartet auf Rohwaren, unten die Engpässe mit Rat · Esc schließt'],
   ['F3', 'Messanzeige an/aus: Bilder je s, Bildzeit, Simulation, Zeichenzeit je Ebene und Verzögerung der Eingaben (auch mit ?perf=1 in der Adresse); hilft, ' +
     'Ruckler und träge Befehle auf dem eigenen Gerät zu finden'],

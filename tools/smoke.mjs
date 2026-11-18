@@ -201,16 +201,16 @@ export async function smoke(opts = {}) {
       await g.shot('05-baumodus');
       await viaKey('y', '.city-done'); // im Baumodus ist der Stadt-Knopf verborgen: „Fertig“
     });
-    await step('Ressourcenanzeige', async () => {
-      if (!(await page.$('[data-act=flow]'))) throw new Error('Knopf „Ressourcen“ fehlt');
+    await step('Wirtschaftsanzeige', async () => {
+      if (!(await page.$('[data-act=flow]'))) throw new Error('Knopf „Wirtschaft“ fehlt');
       await g.press('[data-act=flow]');
       await page.waitForTimeout(600);
-      if (!(await g.run(() => document.body.classList.contains('flow-open')))) throw new Error('Ressourcenanzeige nicht offen');
+      if (!(await g.run(() => document.body.classList.contains('flow-open')))) throw new Error('Wirtschaftsanzeige nicht offen');
       await g.shot('06-ressourcen');
       // schließen: über denselben Knopf, oder mit ✕, wenn die Anzeige ihn verdeckt (Telefon)
       await g.press((await g.reachable('[data-act=flow]')) ? '[data-act=flow]' : '[data-fl-close]');
       await page.waitForTimeout(300);
-      if (await g.run(() => document.body.classList.contains('flow-open'))) throw new Error('Ressourcenanzeige geht nicht zu');
+      if (await g.run(() => document.body.classList.contains('flow-open'))) throw new Error('Wirtschaftsanzeige geht nicht zu');
     });
     await step('Ausbildungsgebäude wählen', async () => {
       const n = await g.run(() => {

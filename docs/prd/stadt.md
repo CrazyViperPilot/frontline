@@ -12,7 +12,7 @@ Seit v4.82 deckt ihr Raster **die ganze Karte** (je Zelle 64 × 64 px); gebaut w
 Das Lager der Hauptstadt (im Gebäude Hauptstadt selbst) wird **endlich** (Start 1500 BM, 600 MUN, 1000 TS, höchstens 100 000 je Sorte;
 vordere FOBs weiter 3000) und nur noch von den **Werken** der Stadt gefüllt, die ihre Rohwaren über die **Einfuhr** holen und ihre Waren über **Straßen** liefern (§15 „Import“, „Straßentransport“).
 LKW und Transporthubschrauber fahren es wie bisher zu den vorderen FOBs; ist es leer, steht der Nachschub.
-„Front BM/MUN/TS“ oben zählt weiter nur die vorderen FOBs.
+„Front-Lager“ in der Wirtschaftsanzeige zählt weiter nur die vorderen FOBs.
 
 - **Startviertel:** Jede Seite beginnt mit einem fertigen kleinen Viertel nahe der Hauptstadt: seit v5.03 12 Zellen Straße, darunter Wohnen, Raffinerie (als 2 × 2-Werk) und Wohnen (Stufe 1),
   darüber nebeneinander die Großbauten **Kaserne** (4 × 4) und **Fabrikhalle** (5 × 5 seit v5.33, Stufe 1), die Raffinerie ist ein fertiges Werk, ohne Kosten an die Straße zum Lager angeschlossen.

@@ -3,7 +3,7 @@ import { BALANCE } from '../../data/balance.js';
 import { esc, fmtTime, show, hideOverlay } from './common.js';
 
 /**
- * Endbildschirm. info = { winner, team (eigenes Team), reason ('points' | 'eliminated' | 'radio'),
+ * Endbildschirm. info = { winner, team (eigenes Team), reason ('points' | 'eliminated' | 'tickets'),
  * stats: { time, points: [a, b], winPoints, teams? } }. `teams` (seit v5.65): je Team die Zähler aus game.js (newStats),
  * earned und used; fehlt es, bleiben nur Spielzeit und Siegpunkte.
  */
@@ -13,7 +13,6 @@ export function showEnd(root, { winner, team, reason, stats }, onRestart) {
   let why;
   if (reason === 'tickets') why = won ? 'Alle Gegner sind ausgeschieden.' : `Du bist ausgeschieden. ${who} liegt nach Tickets vorn.`;
   else if (reason === 'points') why = `${who} hat ${stats.winPoints} Siegpunkte erreicht.`;
-  else if (reason === 'radio') why = `${who} hat den Sendemast ${Math.round(BALANCE.radio.hold / 60)} Minuten gehalten.`;
   else if (won) why = 'Die Hauptstadt des Gegners ist zerstört.';
   else why = 'Deine Hauptstadt ist zerstört.';
   const rows = [

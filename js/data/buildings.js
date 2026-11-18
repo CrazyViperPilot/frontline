@@ -112,7 +112,7 @@ export const BUILDINGS = {
     hp: 900,
     sight: 300,
     cost: { money: 800, bm: 300, mun: 200 },
-    buildTime: 120, // lange Bauzeit (wie der Sendemast)
+    buildTime: 120, // lange Bauzeit
     hotkey: 'C', // C wie CIWS (P ist Pause)
     produces: [],
     // Abfangen: alle 0,2 s ein Versuch auf die nächste Granate in Reichweite, 95 % Treffer, je Versuch 15 Munition und 5 Geld
@@ -160,23 +160,6 @@ export const BUILDINGS = {
         weapon: { range: 560, minRange: 60, cooldown: 2.5, damage: { air: 160 }, splash: 0, shell: false, ammoPerShot: 1 },
       },
     },
-  },
-  // Sendemast (nach dem Wunder aus Age of Empires II): zweite Siegbedingung, nur wenn in der Partie eingeschaltet (Game radio).
-  // Einer je Team (unique). Fertig ist er für den Gegner immer sichtbar; hält er BALANCE.radio.hold Sekunden, gewinnt sein Team.
-  radio: {
-    name: 'Sendemast',
-    short: 'Sendemast', // Kurzname in der Befehlskarte
-    armor: 'struct',
-    w: 2,
-    h: 2,
-    hp: 3000,
-    sight: 350,
-    cost: { money: 2000, bm: 600 },
-    buildTime: 120,
-    hotkey: 'G',
-    produces: [],
-    radio: true,
-    unique: true,
   },
   drill: {
     name: 'Bohrer',

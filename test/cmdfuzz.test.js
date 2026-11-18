@@ -88,7 +88,7 @@ const TEMPLATES = {
 
 /** Spiel mit allen Schaltern, je einer Einheit jeder Sorte für Blau, etwas Vorlauf und einer fliegenden Granate. */
 function world() {
-  const g = new Game({ seed: 5, radio: true, weather: 'random', research: true, river: true, buildRules: true });
+  const g = new Game({ seed: 5, weather: 'random', research: true, river: true, buildRules: true });
   g.teams[0].res.money = 1e6;
   g.city[0].metal = 1e5;
   g.city[0].popF = 2000;

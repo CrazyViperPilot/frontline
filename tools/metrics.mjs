@@ -17,7 +17,7 @@ export const MINUTES = 15;
 const DT = 0.1;
 const REF = fileURLToPath(new URL('./metrics-ref.json', import.meta.url));
 // Schalter wie im Startmenü (BALANCE.menuDefaults): so spielt man das Spiel
-const OPTS = { radio: true, weather: 'random', research: true, river: true, buildRules: true };
+const OPTS = { weather: 'random', research: true, river: true, buildRules: true };
 // Kennzahlen: Kürzel für die Ausgabe. Zahlen unter MIN gelten beim Vergleich als „klein“ (keine Prozent-Warnung, Rauschen)
 export const KEYS = {
   steel: 'Stahl', mun: 'Mun', trained: 'Ausb', kills: 'Absch', fobs: 'FOB', cells: 'Stadt', houses: 'Häuser',

@@ -19,7 +19,7 @@ function howtoHtml() {
         <li>LKW (E) bringen Nachschub aus der Hauptstadt zu den vorderen FOBs und versorgen Einheiten in ihrer Nähe.</li>
         <li>FOB-Fahrzeug (B): fahr es an die Front und drück Aufbauen (D), dann steht sofort eine neue FOB mit 20 % Lager (bis zu 10 FOBs, ohne überlappende Bauradien).</li>
         <li>Baufahrzeug (R): Mörser, Flak, Phalanx (Nahbereichsschutz gegen Hubschrauber und Mörsergranaten, Reichweite halber FOB-Radius, 2 min Bauzeit, ` +
-        `frisst Munition und Geld), Bohrer und – falls oben an – einen Sendemast: steht er fertig 30 Minuten, ist die Partie gewonnen. ` +
+        `frisst Munition und Geld) und Bohrer. ` +
         `Soldaten bauen aus wenig getragenem Baumaterial Mauern und Tore (ein Tor ist 2 Felder breit).</li>
         <li>Ist oben Fluss an, liegt vor den Startecken von Blau und Rot ein Fluss: über drei Brücken oder langsam durch zwei Furten. Brücken lassen sich sprengen (A, ` +
         `dann Brücke anklicken) und von Baufahrzeugen wieder aufbauen.</li>
@@ -83,10 +83,6 @@ export function startHtml() {
       <div class="field" data-ptsfield>
         <span class="flabel">Siegpunkte</span>
         <div class="seg">${POINTS.map((p) => `<button type="button" data-pts="${p}">${p}</button>`).join('')}</div>
-      </div>
-      <div class="field">
-        <span class="flabel" title="Sendemast: bauen und ${Math.round(BALANCE.radio.hold / 60)} min halten gewinnt ebenfalls">Sendemast-Sieg</span>
-        <div class="seg"><button type="button" data-radio="1">An</button><button type="button" data-radio="0">Aus</button></div>
       </div>
       <div class="field">
         <span class="flabel" title="Jahreszeit und wechselndes Wetter: Regen, Nebel und Schnee senken die Sicht, Schnee bremst Fahrzeuge">Wetter</span>

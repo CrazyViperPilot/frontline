@@ -8,7 +8,7 @@
 // Wirkung fx: { Gruppe: { Wert: Faktor } }. Faktoren mehrerer Forschungen multiplizieren sich (regen addiert sich).
 //   Gruppen: inf Infanterie · tank Kampfpanzer · ifv Schützenpanzer · aa Flak und SAM · log LKW und Baufahrzeug · heli Hubschrauber ·
 //   jet Kampfflugzeuge · spaa Flakpanzer Gepard · art Panzerhaubitze · veh alle Bodenfahrzeuge · air Hubschrauber und Jets · all alle Einheiten · bld Militärgebäude (FOB, Mörser,
-//   Flugabwehr, Phalanx, Gefechtsturm, Mauern, Bohrer, Sendemast); Stadtgebäude zählen nicht.
+//   Flugabwehr, Phalanx, Gefechtsturm, Mauern, Bohrer); Stadtgebäude zählen nicht.
 //   Werte: range Waffenreichweite · sight Sicht · dmg Schaden · dmgInf / dmgVeh / dmgAir Schaden gegen Infanterie / Fahrzeuge
 //   (und Gebäude) / Luftziele · rof Nachladezeit (kleiner = schneller) · armor erlittener Schaden (kleiner = besser; ein Schuss, der das
 //   unverletzte Ziel sofort tötet, bleibt tödlich) · speed Tempo · fuel Treibstoffverbrauch (kleiner = größere Reichweite) · acc

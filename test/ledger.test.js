@@ -10,7 +10,7 @@ import { run, noCrew, trainer } from './util.js';
 const sum = (o) => Object.values(o ?? {}).reduce((s, v) => s + v, 0);
 
 test('Kassenbuch: Geld ändert sich genau um Einnahmen minus Ausgaben (KI gegen KI, alle Schalter, 6 min) [langsam]', () => {
-  const g = new Game({ seed: 7, radio: true, weather: 'random', research: true, river: true, buildRules: true });
+  const g = new Game({ seed: 7, weather: 'random', research: true, river: true, buildRules: true });
   const ais = [new AI(g, 0, 'normal'), new AI(g, 1, 'normal')];
   const m0 = g.teams.map((t) => t.res.money);
   run(g, 360, 0.05, ais);

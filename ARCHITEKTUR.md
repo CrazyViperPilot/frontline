@@ -25,13 +25,13 @@ Spielregeln: [PRD.md](PRD.md) (Einstieg) und die Themen-Dateien in [docs/prd/](d
 ## 2. Ablauf einer Partie
 
 1. `index.html` lädt `js/main.js`. Das Startmenü (`js/ui/menu/start.js` → `showStartMenu`, Einstieg `js/ui/menu.js`) liefert Modus, Schwierigkeit je Gegner, Siegpunkte bzw. Tickets, Karte und Schalter.
-2. `main.js` → `startGame` erzeugt `new Game({ seed, winPoints, startMoney, map, radio, weather, research, river, conquest, players, tickets, buildRules })` (jede Partie mit Stadt),
+2. `main.js` → `startGame` erzeugt `new Game({ seed, winPoints, startMoney, map, weather, research, river, conquest, players, tickets, buildRules })` (jede Partie mit Stadt),
    dazu je Computergegner eine `AI` (Team 1, in der Eroberung bis Team 3, jede mit eigener Schwierigkeit), `Camera`, `Renderer`, `Controller`, `Hud`,
    `Input` und `Minimap`. Ohne Angabe ist `new Game()` klassisch (`conquest: false`, zwei Teams, Tests verlassen sich darauf).
 3. `createLoop` (`js/core/loop.js`) ruft mit fester Schrittweite (`BALANCE.tickRate`) `ai.update(dt)` und `game.update(dt)`,
    und je Bildschirm-Frame einmal das Zeichnen. Pause und Tempo wirken nur auf die Schritte.
-4. Sieg: klassisch Siegpunkte (`zone.js`), Sendemast (`radio.js`) oder Fall der Hauptstadt; Eroberung: Tickets (`conquest.js`, der letzte
-   Spieler mit Tickets gewinnt), Sendemast wie gehabt. Die Prüfung je Schritt ist `checkElimination` (`game.js`), sie ruft den Modus-Haken
+4. Sieg: klassisch Siegpunkte (`zone.js`) oder Fall der Hauptstadt; Eroberung: Tickets (`conquest.js`, der letzte
+   Spieler mit Tickets gewinnt). Die Prüfung je Schritt ist `checkElimination` (`game.js`), sie ruft den Modus-Haken
    `checkEnd` auf (`js/game/modes.js`). Dann zeigt `menu/end.js` den Endbildschirm.
 
 ## 3. Ein Simulationsschritt (`Game.update(dt)` in `js/game/game.js`)
@@ -62,11 +62,10 @@ Die Reihenfolge ist Absicht; ein neues System kommt an die Stelle, deren Ergebni
 | 13 | `updateCombat` | `combat.js` | Zielsuche, Schüsse, Granaten, Flugabwehr, Schaden |
 | 14 | `mode.update`: `updateZone` (klassisch) / `updateConquest` | `zone.js` / `conquest.js` | klassisch: Zone, Zonengeld, Punkte; Eroberung: Flaggengebiete zählen, Flaggen einnehmen, Flaggengeld, Ticket-Takt, Viertel-Sperre |
 | 15 | `updateHot` | `hotzone.js` | Hot Zone wandern lassen, Bohrer |
-| 16 | `updateRadio` | `radio.js` | Haltezeit des Sendemasts, Sieg |
-| 17 | `smoothIncome` | `economy.js` | geglättete Einkommensanzeige |
-| 18 | Nebel je Team (alle `BALANCE.fogInterval` s, Team 1 einen halben Takt versetzt) | `fog.js` | Sicht je Team |
-| 19 | `updateAnimals`, `ageEffects`, `cleanup`, `updateScars` | `animals.js`, `game.js`, `scars.js` | Tiere, Effekte altern, Tote entfernen (Wracks, Ereignisse), Narben |
-| 20 | `checkElimination` | `game.js` (ruft `mode.checkEnd`) | klassisch: Fällt die Hauptstadt eines Teams, endet die Partie; Eroberung: Ausscheiden bei Fall der Hauptstadt oder 0 Tickets, Partie endet, wenn ein Team übrig bleibt |
+| 16 | `smoothIncome` | `economy.js` | geglättete Einkommensanzeige |
+| 17 | Nebel je Team (alle `BALANCE.fogInterval` s, Team 1 einen halben Takt versetzt) | `fog.js` | Sicht je Team |
+| 18 | `updateAnimals`, `ageEffects`, `cleanup`, `updateScars` | `animals.js`, `game.js`, `scars.js` | Tiere, Effekte altern, Tote entfernen (Wracks, Ereignisse), Narben |
+| 19 | `checkElimination` | `game.js` (ruft `mode.checkEnd`) | klassisch: Fällt die Hauptstadt eines Teams, endet die Partie; Eroberung: Ausscheiden bei Fall der Hauptstadt oder 0 Tickets, Partie endet, wenn ein Team übrig bleibt |
 
 Schritt 3a im Einzelnen (Phasen, Einfuhr, Ketten und Pendler über `transport.js`): `docs/architektur/stadt.md`.
 
@@ -88,7 +87,7 @@ Alle Objekte sind einfache JS-Objekte. IDs: fortlaufende Ganzzahlen ab 1 (`game.
 Häuser und Kisten haben negative IDs. Vollständige Felder: `createUnit` und `createBuilding` in `js/game/entities.js`.
 
 **Game** (`js/game/game.js`): `seed, rng, map, grid, relief, time, teams[2 bis 4], entities (Map id → Einheit/Gebäude), units[], buildings[],
-projectiles[], effects[], events[], zone, hot, fog[je Team], formations, winner (null | Team-Index), winReason, winPoints, radioWin`,
+projectiles[], effects[], events[], zone, hot, fog[je Team], formations, winner (null | Team-Index), winReason, winPoints`,
 dazu von den Systemen: `houses, crates, bridges, wrecks, animals, weather, research`.
 **Eroberung** (`game.conquest`, nur mit `conquest`), Flaggen, Wegraster-Sperre `grid.lock` und `game.mode`: Felder in `docs/architektur/eroberung.md`.
 
@@ -224,7 +223,6 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Fluss, Brücken, Furten | `zone-gelaende` | `game/river.js` | Bild `render/bridge.js` | `river` |
 | Natur: Bäume, Büsche, Felsen | `zone-gelaende` | `render/nature.js` | `render/layers/relief.js` | `nature` |
 | Versorgungskisten | `zone-gelaende` | `game/crates.js` | KI `ai/army/logistics.js`; Bild `render/props.js` | `crates` |
-| Sendemast | `zone-gelaende` | `game/radio.js` | Bild `render/milbuild.js` | `radio` |
 | Häuserkampf | `haeuserkampf` | `game/garrison.js` | KI `ai/army/combat.js`; Bild `render/layers/garrison.js` | `garrison`, `housefight` |
 | Festung: Gefechtsturm, Dachaufbau | `ressourcen-bau` | `game/tower.js` | KI `ai/army/build.js` | `tower`, `fortress-ai` |
 | Wetter und Jahreszeiten | `wetter-forschung` | `game/weather.js` | Bild `render/weatherfx.js` | `weather` |

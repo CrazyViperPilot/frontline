@@ -145,7 +145,7 @@ test('Laden mitten in einer langen Suche: Weiterspielen bleibt bitgleich', () =>
 // Geprüft wird (1) die Arbeit der Wegsuche je Schritt (untersuchte Zellen, fest je Seed, flackert nie) und (2) großzügig die Uhr:
 // kein Schritt nach dem Aufwärmen über 100 ms (gemessen ≈ 13 ms).
 test('Benchmark: kein Simulationsschritt sprengt das Wegbudget (Seed 3, 200 s KI gegen KI) [langsam]', () => {
-  const g = new Game({ seed: 3, radio: true, weather: 'random', research: true, river: true });
+  const g = new Game({ seed: 3, weather: 'random', research: true, river: true });
   const ais = [new AI(g, 0, 'normal'), new AI(g, 1, 'normal')];
   const bound = P.budget + 2 * P.slice + 6 * P.pocket;
   let maxNodes = 0;

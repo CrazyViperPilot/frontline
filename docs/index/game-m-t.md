@@ -1,4 +1,4 @@
-# Symbol-Index game (Teil 3 von 4, mapdata.js bis scars.js)
+# Symbol-Index game (Teil 3 von 4, mapdata.js bis teams.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
 
@@ -62,14 +62,6 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - planUnitPath(game, u, x, y) – Plant den Weg einer Bodeneinheit zu (x, y): sofort, wenn das Wegbudget reicht u…
 - pathPending(u) – Art des Wartens auf einen Weg ('queue': Wegbudget aufgebraucht, 'long': lange S…
 - planPending(game) – Plant zurückgestellte Wege: erst ein Stück der langen Suche (je Schritt BALANCE…
-
-## radio.js (2.3 KB)
-- radioLeft(b) – Restzeit (s) bis zum Sieg durch diesen fertigen Mast
-- radioEta(b) – Geschätzte Zeit (s) bis zum Sieg: fertig die Restzeit, als Baustelle dazu die r…
-- radios(game) – Fertige, lebende Sendemasten
-- radioStarted(game, b) – Eine Baustelle wurde gesetzt: der Gegner erfährt, dass gebaut wird (nicht wo)
-- updateRadio(game, dt) – Zeit der fertigen Masten; Meldungen bei Fertigstellung und kurz vor Ablauf; Sie…
-- radioLost(game, b) – Ein Mast ist gefallen (zerstört, nicht abgerissen): Meldung an den Gegner
 
 ## recovery.js (2.2 KB)
 - updateRecovery(game, dt) – Ein Schritt: jeder lebende Bergepanzer am Boden repariert eigene Fahrzeuge im U…
@@ -147,7 +139,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - cmdClearRubble(game, team, cmd) – Befehl `{ type: 'clearRubble', ids, c0, r0, c1?, r1? }`: gewählte Baufahrzeuge…
 - updateRoadWar(game, dt) – Ein Schritt: Einheiten beim Beschuss von Straßen und Baufahrzeuge beim Räumen (…
 
-## savegame.js (4.8 KB)
+## savegame.js (5.2 KB)
 - SAVE_FORMAT – 2 seit v5.14: größere Karte (11072 px)
 - snapshotGame(game, ai) – Spielstand als JSON-Abbild
 - restoreGame(data)
@@ -161,3 +153,12 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - updateScarIntel(game) – Sichtstand der Narben nach jeder Nebelrechnung
 - updateScars(game) – Abgelaufene Narben entfernen
 - scarAlpha(s, time, life, fade) – Deckkraft einer Narbe (1 → 0 in den letzten fade Sekunden ihres Lebens)
+
+## scramble.js (7.3 KB)
+- alertable(u) – Kann der Jet in Bereitschaft gehen (Luft-Luft-Waffe)? A-10, C-130 und U-2 nicht
+- alertOn(u) – Ist der Jet in Bereitschaft? Standard an (u.jet.alert fehlt), aus nur mit u.jet…
+- updateScramble(game) – Ein Simulationsschritt der Alarmrotte (vor updateAircraft)
+- cmdScramble(game, team, cmd) – Befehl `{ type: 'scramble', ids, on }`: Alarmbereitschaft der gewählten Jets mi…
+
+## teams.js (1.0 KB)
+- hostile(a, b) – Sind die Teams a und b Gegner? (-1 = neutral: niemandes Gegner)

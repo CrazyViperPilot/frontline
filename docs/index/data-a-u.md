@@ -63,13 +63,6 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - CMD_ARRIVED – Anteil von CMD_MOVE: steht der Kommandeur so nah am Wunschplatz, bekommt er kei…
 - CMD_RESERVE – Geld, das nach der Ausbildung eines neuen Kommandeurs übrig bleiben soll
 - CMD_FROM – s Spielzeit, ab der ein gefallener Kommandeur ersetzt wird
-- RADIO_SITE – Abstand des Masts von der Hauptstadt, zur Rückseite (weg von der Zone)
-- RADIO_NEAR – so nah am gegnerischen Mast greifen Einheiten ihn direkt an
-- RADIO_EVERY – s zwischen zwei Angriffsrunden auf den gegnerischen Mast
-- RADIO_GATHER – s höchstens sammelt sich die Armee vor dem Schlag gegen den Mast
-- RADIO_GATHER_R – Sammelradius; ab RADIO_GATHER_SHARE der Armee darin geht es los
-- RADIO_GATHER_SHARE
-- RADIO_MARCH_R – px: Einheiten, die schon näher als so weit auf den Sammelpunkt des Mast-Angriff…
 - UPGRADES – Forschung: Äste nach Vorliebe; die KI forscht Stufe für Stufe, in jeder Stufe i…
 - UPGRADE_RESERVE – Geld, das nach einer Verbesserung übrig bleiben soll (sie kommt nur aus Übersch…
 - UPGRADE_QUEUE – wartende Forschungen hinter der laufenden (mehr nimmt die KI nicht an)
@@ -104,13 +97,13 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - CQ_SPAWN_EVERY – s, so oft wählt die KI die Flagge, an der neue Einheiten erscheinen (nicht auf…
 - CQ_TAKEN_MALUS – Vielfaches der Zonengröße: eine Flagge, die eine andere Gruppe schon anfliegt,…
 - CQ_CONTACT – px: Kontaktradius; wer im Gebiet ohne Gegner in diesem Umkreis steht, rückt auf…
-- CQ_MAST_SHARE – Anteil der Zonengröße: wer weiter als das vom Sendemast der Flagge steht, rückt…
+- CQ_MAST_SHARE – Anteil der Zonengröße: wer weiter als das vom Fahnenmast der Flagge steht, rück…
 
 ## balance.js (37 KB)
 - QUICK – == SCHNELLEINSTELLUNGEN == Hier ändern; BALANCE unten liest diese Werte
 - BALANCE
 
-## buildings.js (6.7 KB)
+## buildings.js (6.1 KB)
 - BUILDINGS
 
 ## city.js (43 KB)

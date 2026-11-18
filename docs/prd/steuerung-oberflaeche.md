@@ -15,7 +15,7 @@
 | A + Linksklick | Angriffsbewegung; auf eine intakte Brücke = sie beschießen, bis sie einstürzt (§7, nur so greift jemand eine Brücke an) |
 | S | Stopp |
 | F (Einheiten gewählt) | **Formation** wechseln (seit v4.48, nach Age of Empires II): Locker → Linie → Keil → Kolonne; gilt für alle folgenden Marsch- und Angriffsbefehle (Rechtsklick/Tippen und A), ab zwei Bodeneinheiten. (weiter unten) |
-| B | Baumenü (Baufahrzeug: alles, Soldaten: nur Mauer/Tor); darin E Mauer, R Tor, T Mörser, Z Flugabwehr, C Phalanx, F Gefechtsturm, X Bohrer, G Sendemast (wenn eingeschaltet) · FOBs baut das FOB-Fahrzeug (D) |
+| B | Baumenü (Baufahrzeug: alles, Soldaten: nur Mauer/Tor); darin E Mauer, R Tor, T Mörser, Z Flugabwehr, C Phalanx, F Gefechtsturm, X Bohrer · FOBs baut das FOB-Fahrzeug (D) |
 | Mörser gewählt | G Ziel wählen (oder Rechtsklick auf die Karte) · C Ziel löschen |
 | Bohrer gewählt | G aktivieren |
 | Jets mit Luft-Luft-Waffe gewählt | **Q Bereitschaft** an/aus (Alarmrotte, §15): startbereite Jets starten von selbst gegen feindliche Luftfahrzeuge am Fliegerhorst |

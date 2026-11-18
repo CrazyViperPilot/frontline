@@ -74,7 +74,7 @@ hudRoot.addEventListener('click', (e) => {
 let session = null; // laufendes Spiel: { game, ai, camera, renderer, minimap, controller, hud, input, loop, … }
 // Nur mit ?debug=1: Zugriff für Browser-Prüfungen (tools/smoke.mjs, Playwright), z. B. window.__frontline.session().game (seit v5.81)
 if (DEBUG) window.__frontline = { session: () => session };
-let settings = { difficulty: 'normal', winPoints: BALANCE.winPoints, radio: true, weather: 'random', mood: 'random', research: true, river: true };
+let settings = { difficulty: 'normal', winPoints: BALANCE.winPoints, weather: 'random', mood: 'random', research: true, river: true };
 // Bildauflösung „Leistung“ (Start- und Pausenmenü, ?lowres=1): nur Darstellung, gehört nicht zur Partie und nicht in den Spielstand
 let lowRes = readLowRes();
 const pixelCap = () => (lowRes ? MAX_DPR_FAST : MAX_DPR_SHARP);
@@ -591,7 +591,7 @@ function startGame(start) {
   const conquest = opts.conquest !== false;
   const diffs = (opts.difficulties?.length ? opts.difficulties : [opts.difficulty ?? 'normal']).slice(0, conquest ? 3 : 1);
   if (map && map.spawns.length < diffs.length + 1) diffs.length = Math.max(1, map.spawns.length - 1);
-  const game = new Game({ conquest, tickets: opts.tickets, players: diffs.length + 1, seed, winPoints: opts.winPoints, startMoney: match ? match.w0 : BALANCE.startRes.money, map, radio: opts.radio !== false, weather, research: opts.research !== false, river, buildRules: opts.buildRules !== false, debug: DEBUG });
+  const game = new Game({ conquest, tickets: opts.tickets, players: diffs.length + 1, seed, winPoints: opts.winPoints, startMoney: match ? match.w0 : BALANCE.startRes.money, map, weather, research: opts.research !== false, river, buildRules: opts.buildRules !== false, debug: DEBUG });
   if (DEBUG && WEATHER_NAMES[params.get('wx')]) {
     const wx = params.get('wx');
     game.issue(HUMAN, { type: 'debug', weather: wx, season: wx === 'snow' ? 'winter' : game.weather.season, hold: true }); // Schnee nur im Winter; bleibt so (Grafik prüfen)

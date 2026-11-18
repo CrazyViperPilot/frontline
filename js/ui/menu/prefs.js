@@ -2,7 +2,6 @@
 // Schlüssel der Startmenü-Schalter und die Lese-/Schreibfunktionen (Ein/Aus, Auswahl, Karte, Bildauflösung „Leistung“).
 // Exporte: *_KEY, readLowRes, writeLowRes, readMapSel, writeMapSel, readFlag, writeFlag, readChoice, writeChoice.
 const MAPSEL_KEY = 'frontline-kartenwahl';
-export const RADIO_KEY = 'frontline-radio'; // Startmenü: Sendemast-Sieg an/aus
 export const MOOD_KEY = 'frontline-licht'; // Startmenü: Lichtstimmung (nur Optik)
 export const WEATHER_KEY = 'frontline-wetter'; // Startmenü: Wetter aus, Zufall oder feste Jahreszeit
 export const RESEARCH_KEY = 'frontline-forschung'; // Startmenü: Forschung an/aus

@@ -12,7 +12,6 @@ export const TOWN_H = { house: 46, hall: 60, tower: 118, factory: 92, station: 5
 const BUILD_H = {
   // Militärgebäude: Höhe des Hauptkörpers der Bilder aus milbuild.js (seit v5.21), für Lebensbalken, Rauch und Antippen
   fob: 40,
-  radio: 14, // Sockel des Sendemasts (der Mast selbst ist viel höher und dünn)
   drill: 66,
   mortar: 20,
   tower: 70, // Gefechtsturm (Festung)

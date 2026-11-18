@@ -76,14 +76,13 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - renderMsgs()
   - expire(now)
 
-## top.js (8.1 KB)
+## top.js (7.3 KB)
 - topMethods
   - updateTop()
   - updateResources(g, t) – Ressourcenfelder (Wert, Rate, Tooltip), Markt- und Forschungsknopf
   - updatePoints(g, cq) – Punktebalken je Team; Eroberung: verbliebene Tickets und gehaltene Flaggen
   - updateZone(g, t, cq) – Konfliktzone: Besitzer, Zahlen je Team, Flaggenleiste (Eroberung), Zonengeld un…
   - updateHot(g) – Hot Zone: Besitzer und Zahlen je Team
-  - updateRadio(g) – Sendemast: Restzeit je fertigem Mast (beide Seiten sehen sie)
   - updateClock(g) – Uhr und Beschriftung der Knöpfe (Tempo, Pause, Ton, Ansicht)
   - weatherText() – Wetter in Worten: „Winter, Nebel: Sicht −35 %, Fahrzeuge −10 %“
   - updateWeather() – Wetteranzeige oben (Symbol und Name; nur neu, wenn sich etwas ändert)

@@ -8,7 +8,7 @@ import { MOOD_SETTINGS } from '../../render/mood.js';
 import { SOUND_KEY } from '../../audio/sound.js';
 import { DIFFS, markFullscreen, setFullscreen } from './common.js';
 import {
-  BUILD_KEY, CONQUEST_KEY, MOOD_KEY, OPP_DIFF_KEY, OPP_KEY, RADIO_KEY, RESEARCH_KEY, RIVER_KEY, TICKETS_KEY, WEATHER_KEY,
+  BUILD_KEY, CONQUEST_KEY, MOOD_KEY, OPP_DIFF_KEY, OPP_KEY, RESEARCH_KEY, RIVER_KEY, TICKETS_KEY, WEATHER_KEY,
   readChoice, readFlag, readLowRes, readMapSel, writeChoice, writeFlag, writeLowRes,
 } from './prefs.js';
 
@@ -24,7 +24,6 @@ export function readStartState() {
   s.diffs = [1, 2, 3].map((i) => readChoice(OPP_DIFF_KEY + i, DIFFS.map(([k]) => k), D.difficulty));
   s.mapSel = readMapSel(); // 'random' | Karten-ID
   s.winPoints = BALANCE.winPoints;
-  s.radio = readFlag(RADIO_KEY, D.radio);
   s.weather = readChoice(WEATHER_KEY, WEATHER_SETTINGS, D.weather);
   s.mood = readChoice(MOOD_KEY, MOOD_SETTINGS, 'random');
   s.research = readFlag(RESEARCH_KEY, D.research);
@@ -51,7 +50,6 @@ export function markStart(root, s) {
   root.querySelector('[data-ptsfield]').hidden = s.conquest;
   root.querySelectorAll('[data-tix]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.tix) === s.tickets)));
   root.querySelectorAll('[data-pts]').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.pts) === s.winPoints)));
-  root.querySelectorAll('[data-radio]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.radio === '1') === s.radio)));
   root.querySelectorAll('[data-weather]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.weather === s.weather)));
   root.querySelectorAll('[data-mood]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mood === s.mood)));
   root.querySelectorAll('[data-research]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.research === '1') === s.research)));
@@ -78,10 +76,7 @@ export function applySetting(s, b) {
     s.diffs[i - 1] = k;
     writeChoice(OPP_DIFF_KEY + i, k);
   } else if (b.dataset.pts) s.winPoints = Number(b.dataset.pts);
-  else if (b.dataset.radio) {
-    s.radio = b.dataset.radio === '1';
-    writeFlag(RADIO_KEY, s.radio);
-  } else if (b.dataset.mood) {
+  else if (b.dataset.mood) {
     s.mood = b.dataset.mood;
     writeChoice(MOOD_KEY, s.mood);
   } else if (b.dataset.weather) {

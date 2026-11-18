@@ -38,7 +38,7 @@ test('Wert kurz verstellen: withValue stellt ihn danach zurück', () => {
 - Tests sind unabhängig; eine Partie für mehrere Tests: `once` (`docs/testen.md`).
 
 ## Wohin mit einem neuen Test
-- Meist nach Modul (`radio.test.js` …, `ls test/`). Stadt, Spielkern, Fliegerhorst sind nach Thema geteilt:
+- Meist nach Modul (`scramble.test.js` …). Stadt, Spielkern, Fliegerhorst sind nach Thema geteilt:
 - Stadt: Lager, Bauen, Zonen, Raster, Räumen, Strom, Steuer → `city-bau.test.js`
 - Großbauten, Straßenanschluss, Universität, Startviertel → `city-grossbau.test.js`
 - Markt, Stahl, Flucht, Beschuss der Stadt → `city-markt.test.js`

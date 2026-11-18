@@ -43,7 +43,6 @@ export class AI {
     this.hadZoneFob = false; // eine Zonen-FOB (auch Baustelle) existierte im letzten Denkschritt
     this.saveForScout = false; // produce bildet keine Kampfeinheiten aus, bis der Späher bezahlt ist
     this.saveForFob = false; // ebenso, bis das nächste FOB-Fahrzeug bezahlt ist
-    this.saveForRadio = false; // ebenso, bis der Sendemast bezahlt ist
     this.saveForResearch = false; // ebenso, bis die nächste Stufe bezahlt ist
     this.saveForJet = false; // ebenso, bis der nächste Jet bezahlt ist (CITY.ai.jetSave, combat.js jets)
     this.scoutHome = false; // Späher fliegt zum Auftanken heim
@@ -84,7 +83,6 @@ export class AI {
     this.fallBack(s);
     this.expand(s); // FOB-Fahrzeuge ausbilden, hinschicken und aufbauen
     this.scout(s); // vor produce: der Späher bekommt das Geld zuerst
-    this.buildRadio(s);
     this.replaceCommander(s);
     this.research(s); // vor produce: die nächste Stufe bekommt das Geld zuerst
     this.produce(s);
@@ -107,7 +105,7 @@ export class AI {
     this.garrisonZone(s);
     this.stormHouses(s); // Häuser stürmen (seit v5.67)
     this.fortifyHouses(); // eigene Besatzungshäuser ausbauen (seit v5.67)
-    if (!this.attackRadio(s)) this[this.game.mode.aiArmy](s); // Armee je Spielart (modes.js: army bzw. conquestArmy); // steht ein gegnerischer Sendemast, gilt ihm der ganze Angriff
+    this[this.game.mode.aiArmy](s); // Armee je Spielart (modes.js: army bzw. conquestArmy)
     this.guardCommander(s);
     this.collectCrates(s); // nach der Welle: Kisten holen nur, die zurückbleiben (Reserve, Nachschub)
   }

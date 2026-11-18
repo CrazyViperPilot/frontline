@@ -39,7 +39,6 @@ export class Hud {
     this.timeEl = q('[data-time]');
     this.zoneEl = q('[data-zone]');
     this.hotEl = q('[data-hot]');
-    this.radioEl = q('[data-radio]');
     this.wxEl = q('[data-wx]');
     this.wxKey = '';
     this.capFill = q('[data-cap]');
@@ -112,7 +111,6 @@ export class Hud {
         <div class="zone" data-zone>neutral</div>
         <div class="cap" title="${g.conquest ? 'Eroberung: kein Punktebalken; es zählen Flaggen und Tickets (links).' : 'Punktebalken: füllt sich für das Team mit mehr Spielern in der Konfliktzone (Hot Zone zählt doppelt). Voll = 1 Punkt.'}"><i data-cap></i></div>
         <div class="zone hotz" data-hot title="Hot Zone: kleiner Kreis in der Konfliktzone, zieht zu aktiven Bohrern. Einheiten darin bringen doppeltes Zonengeld${g.conquest ? '' : ' und zählen bei der Punktewertung doppelt'}.">HOT</div>
-        <div class="zone radioz" data-radio hidden title="Sendemast: steht er die volle Zeit, gewinnt sein Team. Zerstören setzt die Zeit zurück."></div>
         <div class="clock">
           ${this.app.debug ? '<span class="dbg">DEBUG</span>' : ''}
           ${g.weather?.on ? '<button type="button" class="wx" data-act="weather" data-wx></button>' : ''}

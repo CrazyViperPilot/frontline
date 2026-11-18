@@ -22,7 +22,6 @@ Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 | Siegpunkte (Standard) / Takt der Punkte | js/data/balance.js | `QUICK.winPoints` / `QUICK.pointEvery` (Auswahl 25/50/100: `POINTS` in `js/ui/menu/common.js`) |
 | Tickets der Eroberung (Auswahl, Standard, Takt, Verlust je Takt, Verlust ohne Flagge) | js/data/balance.js | `BALANCE.conquest.ticketChoices` / `ticketDefault` / `tickEvery` / `noFlagLoss` |
 | Kommandeur-Verlust (in der Eroberung Tickets) | js/data/balance.js | `BALANCE.commander.deathPoints` (in der Eroberung Tickets) |
-| Haltezeit des Sendemasts bis zum Sieg | js/data/balance.js | `QUICK.radioHold` |
 | Startarmee | js/data/balance.js | `QUICK.startUnits` |
 | Kostenloser Soldaten-Nachschub | js/data/balance.js | `QUICK.reinforceEvery`, weitere in `BALANCE.reinforce`; Eroberung aus: `BALANCE.conquest.reinforce` |
 | Zahl der FOBs / Bauradius, Mindestabstände | js/data/balance.js | `QUICK.maxFobs` / `BALANCE.fob` |
@@ -35,7 +34,7 @@ Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 | Forschungsbaum: Stufen, Regel „3 je Stufe“, Warteschlange, Preise und Zeiten je Stufe | js/data/research.js | `RESEARCH` (`tiers`, `perTier`, `queueMax`, `money`, `time`) |
 | Forschungsbaum: Forschungen je Ast und ihre Wirkung (fx je Gruppe), Gruppen der Einheiten | js/data/research.js | `RESEARCH` (`lanes.<ast>.items`, `groups`) |
 | Forschungstempo durch Rechenzentren | js/data/city.js | `CITY.research` |
-| Schwierigkeit der KI (Denktakt, Angriffsschwelle, Einkommen, Verhalten, FOB-Grenze, Sendemast ab, Kistenholer) | js/data/balance.js | `BALANCE.difficulty.<easy\|normal\|hard>` |
+| Schwierigkeit der KI (Denktakt, Angriffsschwelle, Einkommen, Verhalten, FOB-Grenze, Kistenholer) | js/data/balance.js | `BALANCE.difficulty.<easy\|normal\|hard>` |
 | Weitere KI-Werte (Wellen, Späher, Expansion, Kisten …) | js/data/ai.js | eine Konstante je Zeile mit Kommentar; Bedeutung: PRD §10 „KI-Konstanten“ |
 | Höhenvorteil, Tempo am Hang, Weitsicht von oben | js/data/balance.js | `BALANCE.height`, `BALANCE.slope`, `BALANCE.sightHeight` |
 | Festung (Mauerring, Zahl der Türme, Höhenvorteil, Fallschaden) / Turm (Plätze, Dachaufbauten, Preise) | js/data/balance.js / js/data/buildings.js | `BALANCE.fortress` / `BUILDINGS.tower` |

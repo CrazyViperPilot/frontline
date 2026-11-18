@@ -1,5 +1,5 @@
 // Militärgebäude in 2D und Iso (seit v5.21, PRD §9): FOB (Zentrale), Mauer, Tor, Mörser, Flugabwehr, Phalanx, Gefechtsturm
-// (mit Dachaufbau Mörser, Flak oder SAM), Sendemast, Bohrer und die Baustellen davon. Wie die Stadtgebäude wird jedes Bild über
+// (mit Dachaufbau Mörser, Flak oder SAM), Bohrer und die Baustellen davon. Wie die Stadtgebäude wird jedes Bild über
 // spritecache.js einmal je Maßstab gemalt und danach nur kopiert; isometrisch für jede Drehung dasselbe Bild (Daniel dreht nie),
 // nur Mauern und Tore richten sich nach ihren Nachbarn in Blickrichtung. Örtliche Koordinaten ab der Mitte des Gebäudes in
 // Weltpixeln (u = +x, v = +y), Bauteile aus isokit.js. Teamfarbe: Rand um den Platz, Dächer, Bänder und Fahnen.
@@ -9,7 +9,7 @@ import {
 } from './isokit.js';
 import { sprite, blit, spriteDpr } from './spritecache.js';
 
-const MIL_TYPES = new Set(['fob', 'wall', 'gate', 'mortar', 'aa', 'phalanx', 'tower', 'radio', 'drill']);
+const MIL_TYPES = new Set(['fob', 'wall', 'gate', 'mortar', 'aa', 'phalanx', 'tower', 'drill']);
 
 const TAU = Math.PI * 2;
 const SAND = '#c4b088'; // Sandsäcke
@@ -23,7 +23,6 @@ const PAD = '#b3b0a6'; // Betonplatte
 const CONC = '#b9bab2'; // Beton der Mauern
 const GUN = '#2c302b';
 const RED = '#c0392b';
-const MAST_H = 170; // Höhe des Sendemasts über dem Fundament (wie vorher)
 
 // ---------- Bauteile (Iso) ----------
 
@@ -384,72 +383,6 @@ function tower(g, T, roof) {
   flagpole(g, 16, 16, H, 15, T);
 }
 
-/** Sendemast (2 × 2): Fundament, rot-weißer Gittermast mit Abspannseilen, Schüsseln in Teamfarbe, Gerätehaus, Zaun. */
-function radio(g, T) {
-  flat(g, -30, 30, -30, 30, snowy(GRAVEL));
-  const { P, ctx, z } = g;
-  stroke(g, [P(-28.6, -28.6), P(28.6, -28.6), P(28.6, 28.6), P(-28.6, 28.6), P(-28.6, -28.6)], T, 1.1);
-  poly(g, [P(-7, 0), P(7, 0), P(1.2, 46), P(-1.2, 46)], 'rgba(0,0,0,0.16)', null); // langer Schatten des Masts
-  fence(g, -27, 27, -27, 27, 'back', 4.5);
-  // Gerätehaus und Kabelbrücke
-  box(g, -25, -9, 8, 22, 0, 8, '#cfd0c8', snowy('#d9dad2'));
-  wallBand(g, -25, -9, 8, 22, 6, 7, T);
-  door(g, 's', 22, -17, 2.6, 5.2, '#4f5a63');
-  acUnit(g, -13, 15, 7.6, 2.2);
-  box(g, -9, -4, 13, 15, 6, 7, '#8a8f94');
-  generator(g, 12, 21, 14, 21);
-  box(g, -9, 9, -9, 9, 0, 3, CONC, snowy(tint(CONC, 0.05)));
-  // Gittermast: vier Beine, Abschnitte rot-weiß, Kreuzstreben auf allen Seiten
-  const H0 = 3;
-  const n = 7;
-  const r0 = 7.5;
-  const r1 = 1.4;
-  const rad = (h) => r0 + ((r1 - r0) * (h - H0)) / MAST_H;
-  const leg = (su, sv, h) => P(su * rad(h), sv * rad(h), h);
-  const corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
-  // Abspannseile (hinten zuerst)
-  ctx.lineCap = 'round';
-  for (const f of [0.42, 0.8]) {
-    for (const [su, sv] of corners) {
-      const h = H0 + MAST_H * f;
-      stroke(g, [leg(su, sv, h), P(su * 26, sv * 26, 0)], 'rgba(215,218,210,0.7)', 0.35);
-    }
-  }
-  for (let k = 0; k < n; k++) {
-    const h0 = H0 + (MAST_H * k) / n;
-    const h1 = H0 + (MAST_H * (k + 1)) / n;
-    const col = k % 2 ? '#f2f0ea' : RED;
-    for (let i = 0; i < 4; i++) {
-      const [au, av] = corners[i];
-      const [bu, bv] = corners[(i + 1) % 4];
-      const back = au + av + bu + bv < 0; // hintere Seite dünner und dunkler
-      const w = back ? 0.3 : 0.4;
-      const c = back ? 'rgba(70,70,70,0.55)' : 'rgba(55,55,55,0.8)';
-      stroke(g, [leg(au, av, h0), leg(bu, bv, h1)], c, w);
-      stroke(g, [leg(bu, bv, h0), leg(au, av, h1)], c, w);
-    }
-    for (const [su, sv] of corners) stroke(g, [leg(su, sv, h0), leg(su, sv, h1)], su + sv < 0 ? shade(col, 0.25) : col, 1.1);
-  }
-  // Richtfunkschüsseln in Teamfarbe und Antennenfelder oben
-  for (const [h, su, sv] of [[H0 + MAST_H * 0.62, 1, 0], [H0 + MAST_H * 0.5, 0, 1]]) {
-    const [x, y] = P(su * (rad(h) + 2.6), sv * (rad(h) + 2.6), h);
-    ctx.fillStyle = T;
-    ctx.strokeStyle = OUTLINE;
-    ctx.lineWidth = Math.max(0.6, 0.8 * z);
-    ctx.beginPath();
-    ctx.ellipse(x, y, 3.6 * z, 4.8 * z, 0, 0, TAU);
-    ctx.fill();
-    ctx.stroke();
-  }
-  for (const [su, sv] of [[1, 0], [0, 1], [-1, 0]]) {
-    const h = H0 + MAST_H - 10;
-    const r = rad(h) + 0.9;
-    box(g, su * r - 0.7, su * r + 0.7, sv * r - 0.7, sv * r + 0.7, h - 4, h + 4, '#e3e4de');
-  }
-  stroke(g, [P(0, 0, H0 + MAST_H), P(0, 0, H0 + MAST_H + 16)], '#d9d9d2', 0.9);
-  fence(g, -27, 27, -27, 27, 'front', 4.5);
-}
-
 /** Bohrer (2 × 2): Unterbau mit Streben, gelber Bohrturm mit Flaschenzug, Fahrerkabine in Teamfarbe, Rohrlager, Spülungstanks. */
 function drill(g, T) {
   pad(g, 30, '#9b9178', T);
@@ -687,7 +620,7 @@ function site(g, T, type, w, p) {
 }
 
 /** Höhe des fertigen Rohbaus je Typ auf der Baustelle (Weltpixel). */
-const SITE_H = { fob: 14, wall: 20, gate: 20, mortar: 6, aa: 8, phalanx: 10, tower: 50, radio: 10, drill: 12 };
+const SITE_H = { fob: 14, wall: 20, gate: 20, mortar: 6, aa: 8, phalanx: 10, tower: 50, drill: 12 };
 
 // ---------- 2D von oben ----------
 // x = u, y = v; Licht von links oben, Schatten nach rechts unten (wie isokit.js).
@@ -909,48 +842,6 @@ function towerTop(c, T, roof) {
   flagTop(c, 16, 16, T);
 }
 
-function radioTop(c, T) {
-  rectF(c, -30, -30, 30, 30, GRAVEL);
-  c.strokeStyle = T;
-  c.lineWidth = 1.1;
-  c.strokeRect(-28.6, -28.6, 57.2, 57.2);
-  c.save();
-  c.setLineDash([1.6, 0.9]);
-  c.strokeStyle = 'rgba(55,60,66,0.75)';
-  c.lineWidth = 0.45;
-  c.strokeRect(-27, -27, 54, 54);
-  c.restore();
-  shadowTop(c, -25, 8, -9, 22, 8);
-  flatTop(c, -25, 8, -9, 22, '#cfd0c8', '#d9dad2');
-  rectF(c, -25, 21.2, -9, 22, T);
-  acTop(c, -13, 15, 2.2);
-  generatorTop(c, 12, 14, 21, 21);
-  rectS(c, -9, -9, 9, 9, CONC, 'rgba(0,0,0,0.35)', 0.4);
-  // Mast von oben: langer schmaler Schatten, Seile, vier Beine laufen rot-weiß zur Spitze zusammen, Schüsseln in Teamfarbe
-  polyF(c, [[-5, 5], [5, -5], [44.5, 43.5], [43.5, 44.5]], 'rgba(0,0,0,0.2)');
-  for (const [su, sv] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) lineT(c, [[su * 4, sv * 4], [su * 26, sv * 26]], 'rgba(225,228,220,0.75)', 0.35);
-  c.strokeStyle = 'rgba(60,60,60,0.45)';
-  c.lineWidth = 0.35;
-  for (let k = 1; k < 7; k += 2) {
-    const r = 7.5 - (6.1 * k) / 7;
-    c.strokeRect(-r, -r, 2 * r, 2 * r);
-  }
-  for (const [su, sv] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
-    for (let k = 0; k < 7; k++) {
-      const r0 = 7.5 - (6.1 * k) / 7;
-      const r1 = 7.5 - (6.1 * (k + 1)) / 7;
-      lineT(c, [[su * r0, sv * r0], [su * r1, sv * r1]], k % 2 ? '#f2f0ea' : RED, 0.9);
-    }
-  }
-  for (const [x, y] of [[6.4, 0], [0, 6.4]]) {
-    circle(c, x + 0.8, y + 0.8, 2.4, 'rgba(0,0,0,0.25)');
-    circle(c, x, y, 2.4, '#e8e9e4');
-    circle(c, x, y, 1.7, T);
-  }
-  rectS(c, -1.4, -1.4, 1.4, 1.4, RED, 'rgba(0,0,0,0.4)', 0.3);
-  circle(c, 0, 0, 0.8, '#ff4a3a');
-}
-
 function drillTop(c, T) {
   padTop(c, 30, '#9b9178', T);
   shadowTop(c, 10, -28, 28, -14, 7);
@@ -1144,7 +1035,7 @@ function variant(b, rot) {
 }
 
 /** Höhe des höchsten Punkts im Iso-Bild über der Gebäudemitte (Weltpixel; gemessen, mit Reserve). */
-const TALL = { fob: 50, wall: 28, gate: 40, mortar: 22, aa: 30, phalanx: 28, tower: 74, radio: 196, drill: 72 };
+const TALL = { fob: 50, wall: 28, gate: 40, mortar: 22, aa: 30, phalanx: 28, tower: 74, drill: 72 };
 const SITE_TALL = (b) => (b.w >= 3 ? 56 : (SITE_H[b.type] ?? 30) + 8);
 
 function paintIsoMil(ctx, s, b, color, v) {
@@ -1160,7 +1051,6 @@ function paintIsoMil(ctx, s, b, color, v) {
     case 'aa': return aa(g, T);
     case 'phalanx': return phalanx(g, T);
     case 'tower': return tower(g, T, v === '-' ? null : v);
-    case 'radio': return radio(g, T);
     case 'drill': return drill(g, T);
     case 'wall': return wall(g, T, v);
     case 'gate': return v[0] === 'L' ? gateLeaf(g, T, v[1], v[2] === '+' ? 1 : -1) : gate(g, T, v);
@@ -1180,7 +1070,6 @@ function paintTopMil(ctx, s, b, color, v) {
     case 'aa': return aaTop(ctx, T);
     case 'phalanx': return phalanxTop(ctx, T);
     case 'tower': return towerTop(ctx, T, v === '-' ? null : v);
-    case 'radio': return radioTop(ctx, T);
     case 'drill': return drillTop(ctx, T);
     case 'wall': return wallTop(ctx, T, v);
     case 'gate': return v[0] === 'L' ? gateLeafTop(ctx, T, v[1], v[2] === '+' ? 1 : -1) : gateTop(ctx, T, v);
@@ -1216,18 +1105,7 @@ export function drawMilIso(ctx, cam, b, color) {
     paintIsoMil(ctx, z * dpr, b, color, v);
     ctx.restore();
   }
-  if (b.type === 'radio' && b.built) {
-    // Flugwarnlicht oben blinkt (nicht im Bild, damit es blinken kann)
-    const now = typeof performance !== 'undefined' ? performance.now() : 0;
-    if (Math.floor(now / 600) % 2 === 0) {
-      const y = p.y - (3 + MAST_H + 1) * z;
-      const grad = ctx.createRadialGradient(p.x, y, 0, p.x, y, 7 * z);
-      grad.addColorStop(0, 'rgba(255,90,70,0.95)');
-      grad.addColorStop(1, 'rgba(255,60,40,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(p.x - 7 * z, y - 7 * z, 14 * z, 14 * z);
-    }
-  }
+
   return true;
 }
 

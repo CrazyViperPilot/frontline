@@ -36,7 +36,7 @@ test('BALANCE liest die Schnelleinstellungen', () => {
   const links = {
     unitLimit: BALANCE.slotCap, startMoney: BALANCE.startRes.money, walletMax: BALANCE.walletMax,
     moneyPerUnitZone: BALANCE.zone.unitIncome, moneyPerUnitHot: BALANCE.hot.unitIncome, moneyPerCrate: BALANCE.crates.income,
-    winPoints: BALANCE.winPoints, pointEvery: BALANCE.pointInterval, radioHold: BALANCE.radio.hold, maxFobs: BALANCE.fob.max,
+    winPoints: BALANCE.winPoints, pointEvery: BALANCE.pointInterval, maxFobs: BALANCE.fob.max,
     fobStartStock: BALANCE.fob.startStock, storeCap: BALANCE.logistics.storeCap, capitalCap: BALANCE.logistics.capitalCap, truckLoad: BALANCE.logistics.truckCapacity,
     trainSlots: BALANCE.trainSlots, queueMax: BALANCE.queueMax, reinforceEvery: BALANCE.reinforce.interval, startUnits: BALANCE.startUnits,
   };

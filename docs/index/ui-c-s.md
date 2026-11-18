@@ -87,7 +87,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## helptext.js (26 KB)
 - KEYS
 
-## hud.js (0.9 KB)
+## hud.js (0.8 KB)
 - Hud (aus core.js) – DOM-HUD (docs/archiv/verlauf.md §5 ui/hud.js, §11.4): Ressourcen, Punkte, Zone,…
 
 ## input.js (15 KB)

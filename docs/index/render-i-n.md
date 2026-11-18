@@ -145,7 +145,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawFootRing(ctx, x, y, r, color, px) – Ring am Boden um einen Punkt (Anfang einer Route, Fuß des Sammelpunkts): dunkle…
 - drawRallyFlag(ctx, x, y, f) – Sammelpunkt-Fahne (einmal gemalt, Bildschirmpixel): Mast mit Knauf und ein gold…
 
-## milbuild.js (54 KB)
+## milbuild.js (48 KB)
 - setMilWalls(list) – Mauern und Tore merken (je Bild, für die Verbindungen zu den Nachbarn)
 - drawMilIso(ctx, cam, b, color) – Iso-Bild eines Militärgebäudes (Ankerpunkt = Mitte des Grundrisses)
 - drawMilTop(ctx, b, color, zoom) – 2D von oben (Kamera-Transformation gesetzt, Weltkoordinaten)

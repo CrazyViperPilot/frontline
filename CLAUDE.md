@@ -18,7 +18,7 @@ Diese Datei ist der Kern: Regeln, Befehle, Wegweiser. Alles Weitere gezielt übe
 7. Regel- oder Feature-Änderung: Themen-Datei unter `docs/prd/` anpassen, Eintrag als eigene Datei nach `docs/changes/` (eine Zeile,
    ohne Versionsnummer; `docs/changelog.md` nicht bearbeiten). Hilfe (`js/ui/helptext.js`, `js/ui/menu/start-html.js`) mitpflegen.
 8. Ideen, die Daniel nur festhalten will: `docs/prd/ideen.md` (PRD §13), nicht bauen.
-9. Startmenü-Schalter (Eroberung, Sendemast, Wetter, Forschung, Fluss) sind im Menü an, in `new Game()` ohne Angabe aus;
+9. Startmenü-Schalter (Eroberung, Wetter, Forschung, Fluss) sind im Menü an, in `new Game()` ohne Angabe aus;
    Tests verlassen sich darauf. Jede Partie hat eine Stadt.
 10. Texte im Spiel, Kommentare und Doku deutsch, Bezeichner englisch. Nach Änderungen in `js/data/`: `npm run docs` und
     `npm run test:quick`. Vor dem Push `npm test` (alle grün).
@@ -32,7 +32,7 @@ python3 -m http.server 8765 # Spiel localhost:8765/, Editor /editor.html
 npm run test:quick          # Config und PRD-Tabellen, Sekunden
 npm run test:fast           # alle ohne „[langsam]“, zum Iterieren
 npm test                    # alle Tests, Minuten: vor dem Push
-node --test --test-reporter=dot test/radio.test.js # eine Datei
+node --test --test-reporter=dot test/scramble.test.js # eine Datei
 npm run docs                # Wertetabellen in docs/prd/ neu erzeugen
 npm run metrics             # KI-Kennzahlen (bei KI-, Stadt-, Kampf-Paketen)
 npm run econ                # Wirtschaft messen (tools/econ.mjs)

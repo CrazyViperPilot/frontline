@@ -12,7 +12,7 @@ Der Änderungsverlauf steht in [docs/changelog.md](docs/changelog.md) (nur bei B
 |---|---|---|---|
 | 3, 4, 5, 5a | Ressourcen, Logistik, FOB, Gebäude, Festung | [ressourcen-bau.md](docs/prd/ressourcen-bau.md) | Geld, Baumaterial, Munition, Treibstoff (auch Stahl, Kerosin); (weiter unten) |
 | 6 | Einheiten, Waffen, Schaden | [einheiten.md](docs/prd/einheiten.md) | Rollen aller Einheiten, Wertetabellen (erzeugt mit `npm run docs`), Waffen je Panzerklasse, Treffer bis zum Abschuss |
-| 7 | Konfliktzone, Gelände, Kisten, Hot Zone, Sendemast, Fluss, Bohrer | [zone-gelaende.md](docs/prd/zone-gelaende.md) | Zonenkontrolle, Punkte und Zonengeld; Hügel, Seen, Natur und Kleinkram der Karte; Versorgungskisten; wandernde Hot Zone; Sendemast-Sieg; Fluss mit Brücken und Furten; Bohrer |
+| 7 | Konfliktzone, Gelände, Kisten, Hot Zone, Fluss, Bohrer | [zone-gelaende.md](docs/prd/zone-gelaende.md) | Zonenkontrolle, Punkte und Zonengeld; Hügel, Seen, Natur und Kleinkram der Karte; Versorgungskisten; wandernde Hot Zone; Fluss mit Brücken und Furten; Bohrer |
 | 7 | Eroberung | [eroberung.md](docs/prd/eroberung.md) | Modus mit 2 bis 4 Spielern, jeder gegen jeden: quadratische Konfliktzone mit 16 Flaggen, Tickets, gesperrte Viertel, Einheiten an Flaggen erscheinen lassen, KI in der Eroberung |
 | 7 | Häuserkampf | [haeuserkampf.md](docs/prd/haeuserkampf.md) | Häuser besetzen, Stürmen, Ausbau zur Stellung, Zonengewicht, Ruinen als Deckung, Feuerbereich zur Straße, KI im Häuserkampf |
 | 7 | Wetter, Jahreszeiten, Forschung | [wetter-forschung.md](docs/prd/wetter-forschung.md) | Wetterlagen und ihre Wirkung, Jahreszeiten; Forschungsbaum mit 10 Stufen und 8 Ästen |
@@ -51,7 +51,7 @@ Nicht im Umfang: Netzwerk-Multiplayer, Kampagne. Speichern laufender Partien gib
 ## 2. Spielablauf
 
 1. Startmenü: **Modus** (Eroberung · Klassisch, gemerkt; Standard Eroberung, §7), in der Eroberung **Computergegner** (1 bis 3) mit Schwierigkeit je Gegner (Leicht/Normal/Schwer),
-   Siegpunkte (100 Standard; 25/50 für Schnellpartie; in der Eroberung stattdessen Tickets 75/150/300/1000), **Sendemast-Sieg** (An/Aus, gemerkt; Standard An, §7),
+   Siegpunkte (100 Standard; 25/50 für Schnellpartie; in der Eroberung stattdessen Tickets 75/150/300/1000),
    **Wetter** (Aus · Zufall · Sommer · Herbst · Winter, gemerkt; Standard Zufall, §7), **Forschung** (An/Aus, gemerkt; Standard An, §7),
    **Fluss** (An/Aus, gemerkt; Standard An, nur Zufallskarten, §7), **Baugebiet** der Stadt (An/Aus, gemerkt; Standard An, §15), **Ton** (An/Aus, gemerkt; Standard An, §14),
    **Karte** (Zufall · Gespeichert · Neue Karte, siehe Abschnitt 9a), Start.
@@ -70,7 +70,7 @@ Nicht im Umfang: Netzwerk-Multiplayer, Kampagne. Speichern laufender Partien gib
    In der Eroberung ist sie ein Quadrat aus 16 Flaggengebieten: Wer eine Flagge hält, bekommt Geld, und statt Punkten zählen Tickets (§7).
    In ihr wandert die **Hot Zone** (Abschnitt 7).
 5. **Eroberung (§7):** Statt des Punktebalkens gibt es 16 Flaggen und Tickets; der letzte Spieler mit Tickets gewinnt. Klassisch:
-   **Sieg:** zuerst die Siegpunktzahl (Standard 100) erreichen – oder der Gegner hat keine FOB und kein Baufahrzeug mehr – oder (wenn eingeschaltet) einen **Sendemast** 30 Minuten halten (§7).
+   **Sieg:** zuerst die Siegpunktzahl (Standard 100) erreichen – oder der Gegner hat keine FOB und kein Baufahrzeug mehr.
    Der Endbildschirm zeigt danach die Statistik aller Teams (§9).
 
 ## 11. Qualitätsanforderungen

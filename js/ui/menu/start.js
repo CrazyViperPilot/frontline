@@ -10,8 +10,8 @@ import { wireStartAccount } from './start-account.js';
 import { renderMapBox, mapChange, mapClick } from './start-maps.js';
 
 /**
- * Startmenü: onStart({conquest, difficulty, difficulties (je Computergegner), winPoints, mapId, radio, weather, mood, research, river, buildRules, lowres}) (city immer true) beim Klick auf Start (mapId 'random' oder Karten-ID, lowres = Bildauflösung „Leistung“,
- * radio = Sendemast-Sieg, weather = 'off' | 'random' | Jahreszeit, research = Forschungsbaum, river = Flüsse auf Zufallskarten).
+ * Startmenü: onStart({conquest, difficulty, difficulties (je Computergegner), winPoints, mapId, weather, mood, research, river, buildRules, lowres}) (city immer true) beim Klick auf Start (mapId 'random' oder Karten-ID, lowres = Bildauflösung „Leistung“,
+ * weather = 'off' | 'random' | Jahreszeit, research = Forschungsbaum, river = Flüsse auf Zufallskarten).
  * Die Kasse (Geld von Runde zu Runde) kommt aus dem Konto (ui/saves.js, accountWallet); Gäste sehen den Startbetrag und den Hinweis.
  * Gewertete Partien (Tokens, ui/match.js) zeigt die Kasszeile: wie viele bereit sind und ob ein Endstand noch auf Netz wartet.
  */
@@ -65,7 +65,7 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
       } else if (b.dataset.act === 'start') {
         hideOverlay(root);
         // difficulties: Schwierigkeit je Computergegner (Team 1, 2, 3); difficulty: die des ersten (Spielstand-Liste, Statistik)
-        onStart({ conquest: s.conquest, tickets: s.tickets, difficulty: s.diffs[0], difficulties: s.diffs.slice(0, s.conquest ? s.opponents : 1), winPoints: s.winPoints, mapId: s.mapSel, radio: s.radio, weather: s.weather, mood: s.mood, research: s.research, river: s.river, buildRules: s.buildRules, lowres: s.lowres });
+        onStart({ conquest: s.conquest, tickets: s.tickets, difficulty: s.diffs[0], difficulties: s.diffs.slice(0, s.conquest ? s.opponents : 1), winPoints: s.winPoints, mapId: s.mapSel, weather: s.weather, mood: s.mood, research: s.research, river: s.river, buildRules: s.buildRules, lowres: s.lowres });
         return;
       }
     }

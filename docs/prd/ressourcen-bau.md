@@ -14,7 +14,7 @@ Der Weg ab dem Lager der Hauptstadt (LKW, vordere FOBs, Nachfüllen) ist in beid
 
 | Ressource | Quelle | Lagerort | Verwendung |
 |---|---|---|---|
-| **Geld** | Einheiten in der Konfliktzone (je Einheit, Hot Zone doppelt; Eroberung: im Quadrat, dazu Flaggengeld, [eroberung.md](eroberung.md)), (weiter unten) | global, **bleibt von Runde zu Runde** | Einheiten (Ausbildung), Forschung, Sendemast, Stadtzellen und Marktkauf |
+| **Geld** | Einheiten in der Konfliktzone (je Einheit, Hot Zone doppelt; Eroberung: im Quadrat, dazu Flaggengeld, [eroberung.md](eroberung.md)), (weiter unten) | global, **bleibt von Runde zu Runde** | Einheiten (Ausbildung), Forschung, Stadtzellen und Marktkauf |
 | **Baumaterial** | BM-Werk aus eingeführtem Rohmaterial | FOB-Lager, LKW, Soldaten (wenig) | Gebäude, Mauern, Tore, Reparatur; auch Gewerbe und Markt (über die Straße) |
 | **Munition** | Munitionswerk aus eingeführtem Eisen und Sprengstoff | FOB-Lager, Einheiten, LKW | Mörser/Flak und **Nachladen der Einheiten** |
 | **Treibstoff** | Raffinerie aus eingeführtem Öl | FOB-Lager, Fahrzeuge, LKW | **Verbrauch beim Fahren/Fliegen** und Bohrer |
@@ -110,7 +110,6 @@ Der Weg ab dem Lager der Hauptstadt (LKW, vordere FOBs, Nachfüllen) ist in beid
 | Phalanx (seit v4.99) | Nahbereichsschutz nach dem CIWS-Geschütz: nur Baufahrzeug (Taste C), im Bauradius einer FOB (Militärgebäude), 2×2, 800 Geld, 300 Baumaterial, 200 Munition, **120 s Bauzeit**. (weiter unten) |
 | Gefechtsturm (seit v4.73) | 2×2, 220 Baumaterial, nur Baufahrzeug; 3 Soldaten besetzen ihn, Dach trägt einen Aufbau (§5a) |
 | Bohrer | Zieht die Hot Zone an (Abschnitt 7); 2×2, 150 Baumaterial, braucht beim Betrieb Treibstoff aus der FOB |
-| Sendemast (seit v4.50) | Zweite Siegbedingung (§7), nur wenn im Startmenü eingeschaltet; nur Baufahrzeug, einer je Team, 2×2 |
 
 - **Tor:** **2 Felder breit** (seit dem Paket „Tor 2 Felder“): ein Tor besteht aus zwei Hälften (je ein
   1×1-Gebäude `gate` mit `leaf` 0/1 und `axis` x/y) nebeneinander entlang der Mauer, beide werden zusammen
@@ -143,7 +142,6 @@ Nieten und gelb-schwarzen Warnstreifen unten, darüber ein Querträger mit Warnb
 **Flugabwehr** Zwillingsflak mit Schild in Teamfarbe auf dem Drehkranz im Sandsackring, Radaranhänger.
 **Phalanx** Sockel mit Teamband, weißer Radardom über dem Gatling-Rohr, Leitstand-Container, Generator.
 **Gefechtsturm** Betonschaft mit Schießscharten, auskragende Kanzel mit Sehschlitzen und Teamband, Dachluke, Dachaufbau sichtbar (Mörser im Sandsackring, Zwillingsflak, SAM-Werfer).
-**Sendemast** rot-weißer Gittermast mit Abspannseilen, Richtfunkschüsseln in Teamfarbe, blinkendem Warnlicht und langem Schatten, Gerätehaus und Zaun.
 **Bohrer** gelber Bohrturm auf dem Unterbau mit Flaschenzug, Bohrmeisterhaus in Teamfarbe, Rohrlager, Rampe, Spülungstanks.
 **Baustellen** Bauzaun mit Planen in Teamfarbe, Rohbau mit Bewehrung, der in acht Stufen wächst, Gerüst und Baustoffe, bei der FOB ein Kran.
 Unter halben Trefferpunkten dunkler mit Rußflecken; im Winter Schnee auf Dächern, Wällen und Plätzen (Iso).

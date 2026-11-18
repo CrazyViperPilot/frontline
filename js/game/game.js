@@ -26,7 +26,6 @@ import { createScars, updateScars, updateScarIntel, addUnitWreck, addBuildingWre
 import { createAnimals, updateAnimals } from './animals.js';
 import { updateFormations } from './formation.js';
 import { updateCommanders, commanderFallen } from './commander.js';
-import { updateRadio, radioLost } from './radio.js';
 import { createWeather, updateWeather } from './weather.js';
 import { updateAbilities } from './abilities.js';
 import { updateMedics } from './medic.js'; // Sanitäter heilen (Paket E1)
@@ -121,12 +120,11 @@ export function newStats() {
 
 export class Game {
   /** `map`: fertige Karte (Editor/gespeichert, siehe mapdata.js); ohne sie wird sie aus dem Seed erzeugt. */
-  /** radio: Sendemast als zweite Siegbedingung (Startmenü; ohne Angabe aus). */
   /** weather: 'off' | 'random' | 'summer' | 'autumn' | 'winter' (Wetter und Jahreszeit, weather.js; ohne Angabe aus). */
   /** research: Forschungsstufen (research.js; ohne Angabe aus: alle Einheiten frei, keine Verbesserungen). */
   /** buildRules: Baugebiet der Stadt (seit v5.78): Gebäude nur im eigenen Gebiet, auf erkundetem Gelände, nicht nahe dem Feind und nicht in der Konfliktzone (js/game/city/cells.js `buildWhy`). Ohne Angabe aus. */
   /** river: Zufallskarte mit Flüssen, Brücken und Furten (river.js; ohne Angabe aus). Fertige Karten bringen ihre eigenen mit. */
-  constructor({ seed = 1, winPoints = BALANCE.winPoints, startMoney = BALANCE.startRes.money, map = null, radio = false, weather = 'off', research = false, river = false, buildRules = false, debug = false, conquest = false, players = 2, tickets = null } = {}) {
+  constructor({ seed = 1, winPoints = BALANCE.winPoints, startMoney = BALANCE.startRes.money, map = null, weather = 'off', research = false, river = false, buildRules = false, debug = false, conquest = false, players = 2, tickets = null } = {}) {
     this.seed = seed;
     this.debug = !!debug; // ?debug=1: erlaubt den Befehl `debug` (Geld, festes Wetter), seit v5.58
     this.rng = makeRng(seed);
@@ -156,7 +154,6 @@ export class Game {
     this.hitBy = -1; // Team des Schützen des gerade abgewickelten Treffers (combat.hit), -1 = unbekannt
     this.winReason = null;
     this.winPoints = winPoints;
-    this.radioWin = !!radio;
     this.buildRules = !!buildRules; // Baugebiet der Stadt (seit v5.78; Spielstand: Feld wird mitgespeichert)
     this.fogTimers = Array.from({ length: teamCount }, (_, t) => (t * BALANCE.fogInterval) / teamCount); // Takt des Nebels je Team (Team 1 versetzt, seit v5.93)
     this.statTimer = 0; // Takt der Heeresgröße für die Statistik (sampleArmy, einmal je s)
@@ -321,9 +318,9 @@ export class Game {
     }
   }
 
-  /** Eigene Entity oder fertiger Sendemast (den sieht der Gegner überall, auch im Nebel). */
+  /** Eigene Entity (immer sichtbar, auch im Nebel). */
   alwaysVisible(team, e) {
-    return e.team === team || (e.kind === 'building' && e.built && !!e.def.radio);
+    return e.team === team;
   }
 
   isVisible(team, x, y) {
@@ -648,7 +645,7 @@ export class Game {
   endGame(winner, reason) {
     this.winner = winner;
     this.winReason = reason;
-    const how = reason === 'tickets' ? 'als letzter mit Tickets' : reason === 'points' ? 'nach Punkten' : reason === 'radio' ? 'durch den Sendemast' : 'durch Eliminierung';
+    const how = reason === 'tickets' ? 'als letzter mit Tickets' : reason === 'points' ? 'nach Punkten' : 'durch Eliminierung';
     this.message(-1, `${BALANCE.teamNames[winner]} gewinnt ${how}`);
   }
 
@@ -740,7 +737,6 @@ export class Game {
         this.addEffect('explosion', b.x, b.y, b.team, b.x, b.y, 'building');
         addBuildingWreck(this, b);
         this.message(b.team, `${b.def.name} zerstört`, b.x, b.y);
-        if (b.def.radio) radioLost(this, b);
       }
     }
     bs.length = k;
@@ -785,7 +781,6 @@ export class Game {
     updateCombat(this, dt);
     this.mode.update(this, dt); // klassisch updateZone, Eroberung updateConquest
     updateHot(this, dt);
-    updateRadio(this, dt);
     smoothIncome(this, dt);
 
     this.statTimer += dt;

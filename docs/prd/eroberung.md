@@ -39,7 +39,7 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
   kleiner Sockel in der Farbe des Besitzers; ein Bogen darum zeigt den Fortschritt der Einnahme.
   Die Leiste oben zeigt alle 16 Buchstaben in der Farbe ihres Besitzers.
 - **Geld:** Jede gehaltene Flagge bringt `flagIncome` 1,5 Geld/s. Das Zonengeld je Einheit (0,4/s, Hot Zone 0,8/s) bleibt, es gilt
-  im ganzen Quadrat. Hot Zone, Kisten, Häuserkampf, Bohrer und Sendemast bleiben unverändert.
+  im ganzen Quadrat. Hot Zone, Kisten, Häuserkampf und Bohrer bleiben unverändert.
 
 ### Tickets und Sieg
 
@@ -50,7 +50,7 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
 - **Ausscheiden:** Wer keine Tickets mehr hat oder dessen Hauptstadt fällt, scheidet aus: seine Einheiten und Gebäude verschwinden
   (ohne Prämie), seine Flaggen werden neutral, sein Viertel ist offen. Stadt, Forschung und Sicht dieses Teams stehen still.
 - **Sieg:** Der letzte Spieler mit Tickets gewinnt. Scheidet der Mensch aus, endet die Partie sofort als Niederlage (Sieger ist
-  dann, wer die meisten Tickets hat). Der Sendemast-Sieg gilt weiter, wenn eingeschaltet.
+  dann, wer die meisten Tickets hat).
 
 ### Viertel und Sperre
 

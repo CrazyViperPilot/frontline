@@ -72,7 +72,15 @@ export function snapshotGame(game, ai) {
 }
 
 export function restoreGame(data) {
-  const { game, ai } = decode(data, STATICS, CLASSES);
+  let dec;
+  try {
+    dec = decode(data, STATICS, CLASSES);
+  } catch (err) {
+    // Sendemast ausgebaut (Paket „Ohne Sendemast“): Stände mit gebautem Mast verweisen auf BUILDINGS.radio, das es nicht mehr gibt
+    if (/BUILDINGS.radio\b/.test(String(err?.message))) throw new Error('Spielstand mit Sendemast wird nicht mehr unterstützt'); // Pfad mit \u0001 getrennt
+    throw err;
+  }
+  const { game, ai } = dec;
   if (!game.city) throw new Error('Spielstand ohne Stadt wird nicht mehr unterstützt'); // Plan „Stadt ist Kern“ (S2f)
   for (const a of [ai].flat()) a?.restoreMemory?.(); // Stände vor dem KI-Gedächtnis (cooldown.js): fehlende Felder ergänzen
   game.sapperMines ??= []; // Stände vor Paket E8 haben keine Pionier-Minen

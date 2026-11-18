@@ -9,9 +9,8 @@ import { marketBuyPrice } from '../../game/city/query.js';
 import { BALANCE } from '../../data/balance.js';
 import { UNITS } from '../../data/units.js';
 import { canGarrison } from '../../game/garrison.js';
-import { radioEta } from '../../game/radio.js';
 import { weatherSight } from '../../game/weather.js';
-import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, RADIO_NEAR, RADIO_EVERY, RADIO_GATHER, RADIO_GATHER_R, RADIO_GATHER_SHARE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, RADIO_MARCH_R, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, JET_ARMOR_RANGE, FIELD_MUL, CMD_ARRIVED, ART_COLS } from '../../data/ai.js';
+import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, JET_ARMOR_RANGE, FIELD_MUL, CMD_ARRIVED, ART_COLS } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
 import { inZone as inZoneOf } from '../../game/zonegeo.js';
 import { nearestOf } from '../../game/teams.js';
@@ -632,56 +631,6 @@ export const combatMethods = {
       if (!work || money < BALANCE.garrison.works[work].cost.money + HOUSE_WORK_RESERVE) continue;
       if (g.issue(t, { type: 'fortifyHouse', houseId: h.id, work }).ok) return;
     }
-  },
-
-  /**
-   * Gegnerischer Sendemast (schon die Baustelle; ihr Baubeginn wird gemeldet, den Ort kennt die KI wie bei jeder Zielwahl): alle
-   * Kampfeinheiten greifen ihn an, nah direkt, sonst per Angriffsbewegung ohne Formation (jeder in seinem Tempo, die Zeit drängt).
-   * Liefert true, solange er steht (dann entfällt die übliche Zonenwelle).
-   */
-  attackRadio(s) {
-    const g = this.game;
-    const mast = nearestOf(g.buildings.filter((b) => b.alive && b.def.radio && b.team !== this.team), s.ax, s.ay); // mehrere Gegner: der nächste Mast
-    if (!mast) {
-      this.strike = null;
-      return false;
-    }
-    // Der eigene Mast siegt früher: verteidigen statt angreifen (die übliche Armeeführung und defend übernehmen)
-    const own = s.own.find((b) => b.def.radio);
-    if (own && radioEta(own) < radioEta(mast)) return false;
-    if (!this.once('radio-attack', RADIO_EVERY)) return true;
-    const army = s.combat.filter((u) => !u.house && !this.dryKind(u));
-    // Erst sammeln (am Schwerpunkt der Armee draußen, höchstens RADIO_GATHER s), dann geschlossen zuschlagen
-    if (!this.strike || this.strike.mast !== mast.id) {
-      const field = army.filter((u) => !u.def.air && dist(u.x, u.y, s.ax, s.ay) > GATHER_DIST * FIELD_MUL);
-      const pts = field.length ? field : army;
-      const cx = pts.reduce((a, u) => a + u.x, 0) / Math.max(1, pts.length);
-      const cy = pts.reduce((a, u) => a + u.y, 0) / Math.max(1, pts.length);
-      this.strike = { mast: mast.id, since: g.time, go: false, at: this.freeNear(cx, cy) };
-    }
-    const st = this.strike;
-    if (!st.go) {
-      const near = army.filter((u) => dist(u.x, u.y, st.at.x, st.at.y) <= RADIO_GATHER_R).length;
-      st.go = g.time - st.since >= RADIO_GATHER || near >= RADIO_GATHER_SHARE * army.length;
-      if (!st.go) {
-        const ids = army.filter((u) => dist(u.x, u.y, st.at.x, st.at.y) > RADIO_GATHER_R && !(u.order.type === 'attackMove' && dist(u.order.x, u.order.y, st.at.x, st.at.y) < RADIO_MARCH_R)).map((u) => u.id);
-        if (ids.length) g.issue(this.team, { type: 'attackMove', ids, x: st.at.x, y: st.at.y });
-        return true;
-      }
-    }
-    const near = [];
-    const far = [];
-    for (const u of army) {
-      const d = dist(u.x, u.y, mast.x, mast.y);
-      if (d <= RADIO_NEAR) {
-        if (u.order.type !== 'attack' || u.order.targetId !== mast.id) near.push(u.id);
-      } else if (u.order.type !== 'attackMove' || dist(u.order.x, u.order.y, mast.x, mast.y) > RADIO_NEAR) {
-        far.push(u.id);
-      }
-    }
-    if (near.length) g.issue(this.team, { type: 'attack', ids: near, targetId: mast.id });
-    if (far.length) g.issue(this.team, { type: 'attackMove', ids: far, x: mast.x, y: mast.y });
-    return true;
   },
 
   /**

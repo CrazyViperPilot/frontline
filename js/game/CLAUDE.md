@@ -14,7 +14,7 @@ Regeln: PRD.md und `docs/prd/`, Werte `js/data/`. Stadt: `city/CLAUDE.md`. Jede 
 - `movement.js`, `pathfinding.js`, `pathplan.js`, `grid.js`, `formation.js` – Bewegung, A*, Wegbudget, Raster, Formationen. `driveTo`, `findUnitPath`, `planUnitPath`
 - `combat.js` – Zielsuche, Direktfeuer, Mörser, Flugabwehr, Schaden. `hit`, `impact`, `updateCombat`
 - `logistics.js`, `construction.js` – LKW, Nachfüllen; Bauen, Reparieren. `updateLogistics`, `canBuild`
-- `garrison.js`, `tower.js`, `crates.js`, `commander.js`, `radio.js` – Häuserkampf, Festung, Kisten, Kommandeur, Sendemast
+- `garrison.js`, `tower.js`, `crates.js`, `commander.js` – Häuserkampf, Festung, Kisten, Kommandeur
 - `research.js`, `weather.js`, `river.js` – Forschung (`modOf`), Wetter, Fluss mit Brücken. `modOf`, `updateWeather`
 - `transport.js`, `flow.js` – Straßentransport der Stadt; Ressourcenanzeige (liest nur). `transportOf`, `resourceFlow`
 - `roads.js`, `roadwar.js`, `excavator.js` – Kartenstraßen, Straßen zerstören/räumen, Bagger. `updateRoadWar`, `cmdDig`

@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.223: **Ohne Sendemast** (§2, §7): Der Sendemast-Sieg ist ausgebaut: kein Schalter im Startmenü, kein Gebäude „Sendemast“, keine KI dafür, keine Anzeige in der Kopfleiste. Spielstände mit gebautem Mast lehnt das Laden mit Meldung ab. Cache v287.
 - v5.222: **Kleine Auswahl** (§9, nur Bild): Auf kleinen Bildschirmen (Handy quer) ist das Auswahlfeld 60 statt 108 px hoch; der Rest lässt sich wischen, eine dünne Bildlaufleiste zeigt es an. Cache v286.
 - v5.221: **Minimap isometrisch** (§9): In der Iso-Ansicht ist die Minimap wie das Spielfeld gedreht und gestaucht (Raute in einer flachen Box); rechts auf dem Bildschirm ist rechts auf der Minimap, auch nach dem Drehen, und Antippen trifft den Punkt unter dem Finger. Cache v285.
 - v5.220: **Wirtschaft: Reiter Ressourcen und Geld** (§15 „Wirtschaftsanzeige“): Die Wirtschaftsanzeige hat zwei Reiter; „Geld“ zeigt Einnahmen nach Quelle und Ausgaben nach Zweck (je s und seit Start) aus dem neuen Kassenbuch, „Ressourcen“ zusätzlich die Einwohner (gesamt, frei, im Dienst). Cache v284.

@@ -1,5 +1,5 @@
 // KI-Werte (Computergegner, js/ai/ai.js). Bedeutung und Wirkung: Kommentar je Zeile und PRD §10 „KI-Konstanten“.
-// Werte je Schwierigkeit (Denktakt, Angriffsschwelle, FOB-Grenze, Sendemast ab, Kistenholer …): BALANCE.difficulty in balance.js.
+// Werte je Schwierigkeit (Denktakt, Angriffsschwelle, FOB-Grenze, Kistenholer …): BALANCE.difficulty in balance.js.
 // Aus BALANCE oder UNITS abgeleitete KI-Werte stehen am Anfang von js/ai/ai.js.
 
 export const MAX_PLACE = 100; // canPlace-Aufrufe je Denkschritt (Budget für die Platzsuche)
@@ -8,7 +8,7 @@ export const THREAT_DANGER = 600; // Gegner in dieser Nähe machen ein FOB-Ziel 
 export const DEFEND_NEAR = 120; // px: ein Angriffsbefehl auf Gegner im FOB-Umkreis wird nicht neu gegeben, wenn der Zielpunkt schon so nah am Gegner liegt
 export const LONE_CONTACT = 300; // px: Einheit in der Zone ohne sichtbaren Gegner in diesem Umkreis rückt auf die Gegner zu
 export const GATHER_DIST = 300; // Sammelpunkt Richtung Zone, vom Zentrum der Hauptstadt
-export const FIELD_MUL = 2; // Vielfaches von GATHER_DIST: Einheiten weiter von der Hauptstadt gelten als draußen (Schwerpunkt für Kommandeur und Sendemast-Angriff)
+export const FIELD_MUL = 2; // Vielfaches von GATHER_DIST: Einheiten weiter von der Hauptstadt gelten als draußen (Schwerpunkt für den Kommandeur)
 export const ZONE_GATHER_DIST = 150; // Sammelpunkt an der Zonen-FOB, Richtung eigener Basis
 export const GATHER_HIGH_R = 120; // px: Suchradius für eine Kuppe am Sammelpunkt an der Zonen-FOB (Höhenvorteil)
 export const RALLY_MOVE = 150; // Sammelpunkt-Befehl nur neu setzen, wenn sich der Punkt so weit verschiebt
@@ -216,13 +216,6 @@ export const CMD_MOVE = 200; // neuer Marschbefehl erst, wenn der Wunschplatz so
 export const CMD_ARRIVED = 0.5; // Anteil von CMD_MOVE: steht der Kommandeur so nah am Wunschplatz, bekommt er keinen Befehl
 export const CMD_RESERVE = 300; // Geld, das nach der Ausbildung eines neuen Kommandeurs übrig bleiben soll
 export const CMD_FROM = 90; // s Spielzeit, ab der ein gefallener Kommandeur ersetzt wird
-export const RADIO_SITE = [220, 460]; // Abstand des Masts von der Hauptstadt, zur Rückseite (weg von der Zone)
-export const RADIO_NEAR = 500; // so nah am gegnerischen Mast greifen Einheiten ihn direkt an
-export const RADIO_EVERY = 5; // s zwischen zwei Angriffsrunden auf den gegnerischen Mast
-export const RADIO_GATHER = 40; // s höchstens sammelt sich die Armee vor dem Schlag gegen den Mast
-export const RADIO_GATHER_R = 600; // Sammelradius; ab RADIO_GATHER_SHARE der Armee darin geht es los
-export const RADIO_GATHER_SHARE = 0.7;
-export const RADIO_MARCH_R = 200; // px: Einheiten, die schon näher als so weit auf den Sammelpunkt des Mast-Angriffs zumarschieren, bekommen keinen neuen Befehl
 export const UPGRADES = ['tank', 'inf', 'mech', 'elec', 'def', 'air', 'log', 'art']; // Forschung (seit v5.04): Äste nach Vorliebe; die KI forscht Stufe für Stufe, in jeder Stufe in dieser Reihenfolge
 export const UPGRADE_RESERVE = 400; // Geld, das nach einer Verbesserung übrig bleiben soll (sie kommt nur aus Überschuss)
 export const UPGRADE_QUEUE = 1; // wartende Forschungen hinter der laufenden (mehr nimmt die KI nicht an)
@@ -258,4 +251,4 @@ export const CQ_GUARD = 220; // px Zuschlag je gegnerischer Einheit im Gebiet (s
 export const CQ_SPAWN_EVERY = 15; // s, so oft wählt die KI die Flagge, an der neue Einheiten erscheinen (nicht auf Leicht)
 export const CQ_TAKEN_MALUS = 2; // Vielfaches der Zonengröße: eine Flagge, die eine andere Gruppe schon anfliegt, wirkt so viel weiter weg (verteilen)
 export const CQ_CONTACT = 300; // px: Kontaktradius; wer im Gebiet ohne Gegner in diesem Umkreis steht, rückt auf sie zu
-export const CQ_MAST_SHARE = 0.35; // Anteil der Zonengröße: wer weiter als das vom Sendemast der Flagge steht, rückt zum Einnehmen heran
+export const CQ_MAST_SHARE = 0.35; // Anteil der Zonengröße: wer weiter als das vom Fahnenmast der Flagge steht, rückt zum Einnehmen heran

@@ -16,7 +16,7 @@ npm run docs                      # Wertetabellen in docs/prd/ (§6, Forschung) 
 npm run index                     # Symbol-Index docs/index/ (Exporte je Ordner) neu erzeugen; nach Änderungen an Exporten unter js/
 npm run test:fast                 # alle Tests ohne die langsamen „[langsam]“ (KI-gegen-KI-Läufe): zum Iterieren
 npm test                          # alle Tests (tools/runtests.mjs: node --test, ein Prozess je Kern, Node 22), gut 5 min: vor dem Push und in der CI
-node --test test/radio.test.js    # nur eine Datei
+node --test test/scramble.test.js # nur eine Datei
 npm run smoke                     # Browser-Rundgang (Playwright): Start, 2D, Iso, Hilfe, Pause, Baumodus, Ressourcen, Ausbildung, Bildrate; Fotos in .smoke/<gerät>/
 npm run smoke -- --device all     # dasselbe als desktop, tablet (iPad quer, Tippen) und phone (Android quer); einzeln: --device phone
 npm run smoke -- --long 30        # langer Lauf: 30 Spielminuten bei 10× Tempo, beide Seiten KI, Kamera über Basis/Front/Städte, 2D und Iso; meldet Browserfehler und Einfrieren

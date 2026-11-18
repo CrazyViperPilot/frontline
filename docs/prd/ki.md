@@ -90,12 +90,6 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   Danach läuft er mit der Armee mit.
   Brückenleger, C-130 und Fallschirmjäger baut die KI nicht.
 - **Formation:** Angriffswellen marschieren im **Keil** (§8): Panzer vorn, alle kommen zusammen an statt nacheinander.
-- **Sendemast:** Ab 12 min (Schwer 9 min, Leicht nie) spart die KI auf einen Sendemast (keine Kampfeinheiten,
-  außer bei Alarm an der Hauptstadt) und setzt ihn 220–460 px hinter die Hauptstadt (weg von der Zone).
-  Steht ein gegnerischer Mast (schon die Baustelle), greift sie ihn an:
-  erst sammelt sich die Armee (höchstens 40 s oder bis 70 % im Umkreis von 600 px), dann gehen alle ohne Formation auf den Mast los, nahe Einheiten greifen ihn direkt an;
-  die Zonenwelle entfällt so lange.
-  Siegt ihr eigener Mast voraussichtlich früher, verteidigt sie stattdessen.
 - **Kommandeur:** zieht nie mit der Welle, sondern steht 220 px hinter dem Schwerpunkt der Armee draußen (Richtung Hauptstadt), damit seine Aura wirkt; ohne Armee draußen wartet er am Sammelpunkt.
   Sind sichtbare bewaffnete Gegner näher als 450 px, weicht er zur Hauptstadt aus.
   Fällt er, bildet die KI ab 90 s Spielzeit einen neuen aus, sobald danach noch 300 Geld übrig bleiben.

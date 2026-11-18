@@ -30,7 +30,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - show(root, kind, html)
 - hideOverlay(root)
 
-## end.js (3.1 KB)
+## end.js (3.0 KB)
 - showEnd(root, { winner, team, reason, stats }, onRestart) – Endbildschirm
 
 ## help.js (0.7 KB)
@@ -39,8 +39,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## pause.js (7.4 KB)
 - showPause(root, onResume, onQuit, onSave, audio, saveAs, account, display) – Pausenmenü: onResume() bei „Weiter“, onQuit() bei „Zum Startmenü“
 
-## prefs.js (2.9 KB)
-- RADIO_KEY – Startmenü: Sendemast-Sieg an/aus
+## prefs.js (2.8 KB)
 - MOOD_KEY – Startmenü: Lichtstimmung (nur Optik)
 - WEATHER_KEY – Startmenü: Wetter aus, Zufall oder feste Jahreszeit
 - RESEARCH_KEY – Startmenü: Forschung an/aus
@@ -75,7 +74,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - createWallet(root) – Kasse (KA1): nur am Konto
 - createSaves(root, resume) – Schnellknopf „Fortsetzen“ (neuester nicht beendeter Stand) und die Liste der Sp…
 
-## start-state.js (6.0 KB)
+## start-state.js (5.8 KB)
 - readStartState() – Gemerkte Wahlen des Startmenüs als Zustandsobjekt (Standards: BALANCE.menuDefau…
 - markStart(root, s) – Knöpfe und Felder des Startmenüs an den Zustand `s` anpassen
 - applySetting(s, b) – Eine Schalter-Wahl nach einem Klick übernehmen und merken

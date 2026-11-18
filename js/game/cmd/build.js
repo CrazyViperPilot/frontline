@@ -4,7 +4,6 @@ import { BALANCE } from '../../data/balance.js';
 import { BUILDINGS } from '../../data/buildings.js';
 import { lineCells } from '../grid.js';
 import { canBuild, orderBuild, orderBuildSeq } from '../construction.js';
-import { radioStarted } from '../radio.js';
 
 const TILE = BALANCE.map.tile;
 export const STOCK_KEYS = ['bm', 'mun', 'fuel']; // Lagersorten (team.res.* sind Summen über FOB-Lager)
@@ -55,7 +54,6 @@ export function canPlace(game, team, type, x, y, { carried = false } = {}) {
   const mx = (cx + def.w / 2) * TILE;
   const my = (cy + def.h / 2) * TILE;
   const bad = (reason) => ({ ok: false, reason, cx, cy, x: mx, y: my, payer: null });
-  if (def.radio && !game.radioWin) return bad('Sendemast ist in dieser Partie ausgeschaltet');
   if (def.unique && game.buildings.some((b) => b.alive && b.team === team && b.type === type)) return bad(`Nur ein ${def.name} je Team`);
 
   for (let r = cy; r < cy + def.h; r++) {
@@ -167,7 +165,6 @@ export function cmdBuild(game, team, cmd) {
   if (payer) takeStock(payer, def.cost);
   else if (carried) takeCarried(pick.list, def.cost.bm || 0);
   const b = game.spawnBuilding(cmd.building, team, p.cx, p.cy, { built: false, payerId: payer ? payer.id : null });
-  if (def.radio) radioStarted(game, b);
   for (const u of pick.list) orderBuild(u, b);
   return { ok: true, id: b.id };
 }

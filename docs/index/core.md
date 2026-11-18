@@ -71,7 +71,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## editor/editor.js (57 KB)
 - (keine Exporte)
 
-## main.js (28 KB)
+## main.js (27 KB)
 - (keine Exporte)
 
 ## version.js (0.0 KB)

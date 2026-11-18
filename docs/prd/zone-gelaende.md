@@ -1,4 +1,4 @@
-# Frontline PRD – Konfliktzone, Gelände, Kisten, Hot Zone, Sendemast, Fluss, Bohrer
+# Frontline PRD – Konfliktzone, Gelände, Kisten, Hot Zone, Fluss, Bohrer
 
 > Teil des PRD, Abschnitte §7 ohne Häuserkampf, Wetter und Forschung. Einstieg und Übersicht aller Teile: [PRD.md](../../PRD.md).
 > Neue Regeln hier im passenden Abschnitt eintragen, die Version in [docs/changelog.md](../changelog.md).
@@ -57,7 +57,7 @@
   die Begradigung des Weges kürzt nur ab, wenn die gerade Strecke nicht teurer ist.
 - **Wegsuche ohne Ruckeln:** Einheiten planen ihre Wege mit einem festen Budget je Simulationsschritt (8000 untersuchte Zellen, `BALANCE.path`).
   Ist es aufgebraucht, warten weitere Einheiten in der Reihenfolge ihres Befehls einen oder wenige Schritte
-  (bei einem Massenbefehl wie dem Angriff auf den Sendemast höchstens etwa zwei Sekunden) und behalten dabei ihren Befehl.
+  (bei einem Massenbefehl höchstens etwa zwei Sekunden) und behalten dabei ihren Befehl.
   Ein sehr langer Weg (mehr als 8000 Zellen) wird über mehrere Schritte gerechnet (eine solche Suche zur Zeit, je Schritt 8000 Zellen).
   Ein Ziel in einem Gebäude, im Wasser oder hinter geschlossenen fremden Mauern kostet keine volle Suche mehr: der Weg führt zur nächsten erreichbaren freien Zelle davor.
   Einheiten, die nahe beieinander starten und nahe beieinander ankommen, übernehmen einen eben gefundenen Weg.
@@ -198,17 +198,9 @@
   Punkte gibt es nicht separat; die Einheiten darin zählen doppelt für den Punktebalken (klassisch; in der Eroberung bringt die Hot Zone nur das Geld, [eroberung.md](eroberung.md)).
 - Oben zeigt „HOT“ den Besitzer und die Einheitenzahl je Team, klassisch daneben der Punktebalken.
 
-### Sendemast
-- **Zweite Siegbedingung**, im Startmenü ein- und ausschaltbar („Sendemast-Sieg“, gemerkt, Standard An; `Game({ radio })`, ohne Angabe aus).
-- Bau wie jedes Gebäude im Bauradius einer eigenen FOB (nur Baufahrzeug, Taste **G** im Baumenü): **2000 Geld + 600 Baumaterial**, 120 s, 3000 HP. **Einer je Team** (auch als Baustelle).
-- Der Gegner erfährt den **Baubeginn** („Der Gegner baut einen Sendemast“, ohne Ort).
-  **Fertig** ist der Mast für den Gegner **überall sichtbar** (Karte, Minimap, auch im Nebel), beide bekommen eine Meldung mit Ort.
-- Hält der fertige Mast **30 Minuten** (`BALANCE.radio.hold`), gewinnt sein Team (`winReason 'radio'`).
-  Eine Minute vorher warnt eine Meldung beide.
-  Wird er zerstört, verfällt die Zeit; ein neuer Mast beginnt von vorn.
-- Oben zeigt ein roter Kasten die Restzeit je fertigem Mast (beide Seiten).
-  Iso: rot-weißer Gittermast (170 px) mit Abspannseilen, Antennen in Teamfarbe und blinkendem Licht; 2D: Sockel mit Gitter von oben.
-- `js/game/radio.js`, `BUILDINGS.radio`.
+### Sendemast (ausgebaut)
+- Den Sendemast-Sieg (zweite Siegbedingung, Gebäude „Sendemast“) gibt es seit dem Paket „Ohne Sendemast“ nicht mehr: kein Schalter im
+  Startmenü, kein Gebäude, keine KI dafür. Spielstände mit gebautem Mast lehnt das Laden mit Meldung ab.
 
 ## 7. Konfliktzone & Punkte (Teil)
 

@@ -2,7 +2,7 @@
 //
 // Inhalt (Suche nach dem Schlüssel):
 //   QUICK            Schnelleinstellungen: die Werte, die man am häufigsten ändert (gleich hier oben)
-//   Partie und Sieg  map, tickRate, winPoints, pointInterval, radio
+//   Partie und Sieg  map, tickRate, winPoints, pointInterval
 //   Geld             startRes, walletMax, bounty, zone, conquest, hot, crates
 //   Einheiten        slotCap, startUnits, reinforce, queueMax, trainSlots, fuelSlowMul, leash, scanInterval
 //   FOB und Bauen    fob, construction, demolishRefund
@@ -26,7 +26,6 @@ export const QUICK = {
   moneyPerCrate: 1, // Geld je Sekunde und eingelagerte Versorgungskiste
   winPoints: 100, // Siegpunkte (Standard; im Startmenü 25, 50 oder 100)
   pointEvery: 30, // Sekunden Zonenkontrolle je Siegpunkt
-  radioHold: 1800, // Sekunden, die ein fertiger Sendemast stehen muss, bis sein Team gewinnt (30 min)
   maxFobs: 10, // FOBs je Team, mit Hauptstadt
   fobStartStock: 0.2, // Anteil des Lagers je Sorte (storeCap), mit dem eine aufgebaute FOB startet (FOB-Fahrzeug, units.js fobTruck)
   storeCap: 3000, // Lager je Sorte (Baumaterial, Munition, Treibstoff) und vordere FOB
@@ -158,14 +157,14 @@ export const BALANCE = {
     // Schwierigkeit über Verhalten: ab normal Späher und Konter-Mix, ab schwer Überfälle und Gruppen-Rückzug; hart ohne Einkommensbonus.
     // weather: nutzt das Wetter (bei schlechter Sicht früher ein Späher, im Nebel greift die Welle schon mit weniger Stärke an)
     // research: [Spielzeit (s), ab der die KI forscht, (frei)]; upgrades: false = Forschung nur mit doppelter Reserve (Leicht)
-    // fobCap: FOBs mit Hauptstadt (höchstens fob.max); radioFrom: Spielzeit (s), ab der sie einen Sendemast baut (Infinity = nie);
+    // fobCap: FOBs mit Hauptstadt (höchstens fob.max);
     // cratePickers: so viele Soldaten holen oder tragen gleichzeitig Versorgungskisten;
     // fort: baut ab Spielzeit `from` (s) bis zu `fobs` FOBs zur Festung aus (Mauerring, Tore, `towers` Türme mit Besatzung und Dachaufbau). Weitere KI-Werte: js/data/ai.js
     // scramble: lässt ihre Jets mit Luft-Luft-Waffe in Alarmbereitschaft (Alarmrotte, CITY.air.scramble); false = schaltet sie ab
     // houseStorm: stürmt vom Gegner besetzte Häuser in der Konfliktzone, wenn genug freie Infanterie daneben steht; houseWorks: baut eigene Besatzungshäuser aus (Sandsäcke, MG-Nest, Stacheldraht), seit v5.67
-    easy: { think: 3.0, incomeMult: 0.8, attackStrength: 2500, scout: false, mines: false, counter: false, raid: false, fallback: false, weather: false, research: [240, 720], upgrades: false, fobCap: 3, radioFrom: Infinity, cratePickers: 1, fort: { from: Infinity, fobs: 0, towers: 0 }, houseStorm: false, houseWorks: false, scramble: false },
-    normal: { think: 2.0, incomeMult: 1.0, attackStrength: 2000, scout: true, mines: true, counter: true, raid: false, fallback: false, weather: true, research: [150, 540], upgrades: true, fobCap: 5, radioFrom: 720, cratePickers: 2, fort: { from: 600, fobs: 1, towers: 1 }, houseStorm: true, houseWorks: true, scramble: true },
-    hard: { think: 1.0, incomeMult: 1.0, attackStrength: 1600, scout: true, mines: true, counter: true, raid: true, fallback: true, weather: true, research: [90, 420], upgrades: true, fobCap: 7, radioFrom: 540, cratePickers: 3, fort: { from: 420, fobs: 2, towers: 2 }, houseStorm: true, houseWorks: true, scramble: true },
+    easy: { think: 3.0, incomeMult: 0.8, attackStrength: 2500, scout: false, mines: false, counter: false, raid: false, fallback: false, weather: false, research: [240, 720], upgrades: false, fobCap: 3, cratePickers: 1, fort: { from: Infinity, fobs: 0, towers: 0 }, houseStorm: false, houseWorks: false, scramble: false },
+    normal: { think: 2.0, incomeMult: 1.0, attackStrength: 2000, scout: true, mines: true, counter: true, raid: false, fallback: false, weather: true, research: [150, 540], upgrades: true, fobCap: 5, cratePickers: 2, fort: { from: 600, fobs: 1, towers: 1 }, houseStorm: true, houseWorks: true, scramble: true },
+    hard: { think: 1.0, incomeMult: 1.0, attackStrength: 1600, scout: true, mines: true, counter: true, raid: true, fallback: true, weather: true, research: [90, 420], upgrades: true, fobCap: 7, cratePickers: 3, fort: { from: 420, fobs: 2, towers: 2 }, houseStorm: true, houseWorks: true, scramble: true },
   },
   // Gelände (§7): wer höher steht, trifft härter (Direktfeuer, ab `dead` Höhenunterschied, voll ab `full`), tiefer stehend schwächer
   height: { bonus: 0.25, dead: 6, full: 36 },
@@ -277,8 +276,6 @@ export const BALANCE = {
   // Kommandeur (Held, einer je Team): Aura-Radius, Feuerrate darin (×), Heilung der Infanterie darin (HP/s, erst healDelay s nach dem
   // letzten Treffer); fällt er, bekommt der Gegner deathPoints Punkte
   commander: { aura: 300, fireRate: 1.1, heal: 1.5, healDelay: 6, deathPoints: 5 },
-  // Sendemast (zweite Siegbedingung): so lange halten (s) = Sieg; Warnung an beide, wenn noch warn s fehlen
-  radio: { hold: QUICK.radioHold, warn: 60 },
   // Wetter und Jahreszeiten (nach Empire Earth II, im Startmenü; ohne Angabe aus): Sichtweite × sight je Wetter; Bodenfahrzeuge
   // × vehicle bei Schneefall, × winter auf Winterboden. Ein Wetter hält phase s (Zufall je Art), Übergänge blenden über fade s.
   // Häufigkeit (Gewichte) des nächsten Wetters je Jahreszeit: odds (nie dasselbe Wetter zweimal hintereinander).
@@ -439,7 +436,7 @@ export const BALANCE = {
     noUni: 30, // „Forschung ruht: keine Universität“
   },
   // Standards im Startmenü (das Menü merkt sich die letzte Wahl je Gerät). new Game() ohne Angabe schaltet alles aus (Tests).
-  menuDefaults: { conquest: true, opponents: 1, difficulty: 'normal', radio: true, weather: 'random', research: true, river: true, buildRules: true }, // buildRules: Baugebiet der Stadt (seit v5.78)
+  menuDefaults: { conquest: true, opponents: 1, difficulty: 'normal', weather: 'random', research: true, river: true, buildRules: true }, // buildRules: Baugebiet der Stadt (seit v5.78)
   resNames: { money: 'Geld', bm: 'Baumaterial', mun: 'Munition', fuel: 'Treibstoff' },
   teamNames: ['Blau', 'Rot', 'Grün', 'Gelb'], // Team 2 und 3 nur im Modus Eroberung (bis zu 4 Spieler)
   teamColors: ['#3d8bfd', '#e5484d', '#3fb950', '#e3b341'],

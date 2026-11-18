@@ -36,7 +36,6 @@ const CARGO_KEYS = ['bm', 'mun', 'fuel']; // Lagersorten (FOB-Lager, LKW-Ladung)
 const SHORT = { money: 'G', bm: 'BM', mun: 'MUN', fuel: 'TS' };
 
 // Kurznamen für die Befehlskarte (der volle Name steht im Tooltip)
-const RADIO_TIP = `. Zweite Siegbedingung: steht er fertig ${Math.round(BALANCE.radio.hold / 60)} min, gewinnst du. Der Gegner sieht ihn dann überall. Nur einer je Team.`;
 const CMD = BALANCE.commander;
 const COMMANDER_TIP = `. Einmalig, belegt keinen Platz. Aura ${CMD.aura} px: eigene Einheiten schießen ${Math.round((CMD.fireRate - 1) * 100)} % schneller, verletzte Infanterie heilt. Fällt er, bekommt der Gegner ${CMD.deathPoints} Punkte (Eroberung: das eigene Team verliert ${CMD.deathPoints} Tickets).`;
 
@@ -152,12 +151,11 @@ export const cardMethods = {
       for (const key of BUILD_MENU) {
         if (perm.level === 'fort' && !canBuild({ builder: 'fort' }, key)) continue;
         const def = BUILDINGS[key];
-        if (def.radio && !this.game.radioWin) continue; // Sendemast nur, wenn in der Partie eingeschaltet
         const reason = this.buildReason(key);
         card.push(
           entry(def.short || def.name, def.hotkey, {
             cost: costText(def.cost),
-            tip: `${def.name}: ${longCost(def.cost)}${def.slots > 1 ? `, ${def.slots} Plätze` : ''}${def.radio ? RADIO_TIP : ''}`,
+            tip: `${def.name}: ${longCost(def.cost)}${def.slots > 1 ? `, ${def.slots} Plätze` : ''}`,
             enabled: !reason,
             reason,
             action: () => this.beginPlacement(key),

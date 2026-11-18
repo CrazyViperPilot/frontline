@@ -2,7 +2,7 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/data/`. Pfade relativ zu `js/data/`.
 
-## ai.js (28 KB)
+## ai.js (27 KB)
 - MAX_PLACE – canPlace-Aufrufe je Denkschritt (Budget für die Platzsuche)
 - THREAT_RANGE – Kampfeinheiten in dieser Nähe zur Bedrohung reagieren
 - THREAT_DANGER – Gegner in dieser Nähe machen ein FOB-Ziel unattraktiver

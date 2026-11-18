@@ -5,7 +5,7 @@
 // Was geprüft wird (je Seed in SEEDS):
 //   map    Karte ohne Fluss (generateMap(seed)): alle Felder des Kartenobjekts. Regel 4, ändert sich praktisch nie.
 //   river  Karte mit Fluss (generateMap(seed, { river: true })).
-//   start  Startzustand einer Partie mit allen Menü-Schaltern an (Stadt, Fluss, Wetter, Forschung, Sendemast).
+//   start  Startzustand einer Partie mit allen Menü-Schaltern an (Stadt, Fluss, Wetter, Forschung).
 //   play   KI gegen KI (normal) mit allen Schaltern, Prüfsumme alle 30 s bis PLAY_S. Eine Abweichung zeigt den Zeitpunkt.
 // Die Zustandssumme (stateDigest) liest nur sichtbare Spielgrößen (Einheiten, Gebäude, Kassen, Lager, Punkte, Zone, Stadtzellen,
 // Zufallszustände), nicht die Form der Objekte: Umbenennen innerer Felder oder ein anderes Speicherformat ändert sie nicht.
@@ -30,7 +30,7 @@ const SEEDS = [2, 3, 7];
 const DT = 0.05;
 const EVERY_S = 30; // Abstand der Prüfsummen im Lauf
 const PLAY_S = 120; // Länge des Laufs mit allen Schaltern (vorher sind beide Seiten noch symmetrisch)
-const FULL = { radio: true, weather: 'random', research: true, river: true }; // wie BALANCE.menuDefaults
+const FULL = { weather: 'random', research: true, river: true }; // wie BALANCE.menuDefaults
 
 // prettier-ignore
 // Läufe (play) neu gesetzt mit v5.61 (Review-Paket P8: Wegsuche mit Budget je Schritt, unerreichbare Ziele, lange Suchen); Paket K1: KI bildet Unterstützer aus; Paket K2: KI bildet Artillerie aus und lässt sie feuern; Start und Läufe: Paket „Startaufstellung mit Stadt“ (Einheiten nach dem Startviertel aufgestellt)

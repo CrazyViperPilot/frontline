@@ -1,8 +1,7 @@
-// HUD, Kopfleiste: Ressourcen, Punkte oder Tickets, Konfliktzone, Hot Zone, Sendemast, Wetter, Uhr und Knopfbeschriftungen.
+// HUD, Kopfleiste: Ressourcen, Punkte oder Tickets, Konfliktzone, Hot Zone, Wetter, Uhr und Knopfbeschriftungen.
 // Methoden der Klasse Hud (core.js), eingehängt über Object.assign (topMethods). updateTop ruft die Teile in fester Reihenfolge auf.
 import { BALANCE } from '../../data/balance.js';
 import { storedCrates } from '../../game/crates.js';
-import { radios, radioLeft } from '../../game/radio.js';
 import { SEASON_NAMES, WEATHER_NAMES, weatherEffect } from '../../game/weather.js';
 import { hasMarket } from '../../game/city/query.js';
 import { RES_KEYS, NEG_COLOR, WX_ICON, WX_COLOR, pct, fmtDe, fmtRate, fmtTime } from './common.js';
@@ -19,7 +18,6 @@ export const topMethods = {
     this.updatePoints(g, cq);
     this.updateZone(g, t, cq);
     this.updateHot(g);
-    this.updateRadio(g);
     this.updateWeather();
     this.updateClock(g);
   },
@@ -116,21 +114,6 @@ export const topMethods = {
     this.hotEl.innerHTML =
       `<span class="zone-state" style="color:${hc}">${hl}</span>` +
       `<span class="zone-cnt">${perTeam(hz.counts)}</span>`;
-  },
-
-  /** Sendemast: Restzeit je fertigem Mast (beide Seiten sehen sie). */
-  updateRadio(g) {
-    const masts = radios(g);
-    this.radioEl.hidden = !masts.length;
-    if (masts.length === 1) {
-      const b = masts[0];
-      this.radioEl.innerHTML = `<span class="zone-state" style="color:${BALANCE.teamColors[b.team]}">Sendemast ${BALANCE.teamNames[b.team]}</span><b class="zone-cnt">${fmtTime(radioLeft(b))}</b>`;
-    } else if (masts.length) {
-      // zwei Masten: je eine kompakte Zeile
-      this.radioEl.innerHTML = masts
-        .map((b) => `<span class="radio-row" style="color:${BALANCE.teamColors[b.team]}">Mast ${BALANCE.teamNames[b.team]} <b>${fmtTime(radioLeft(b))}</b></span>`)
-        .join('');
-    }
   },
 
   /** Uhr und Beschriftung der Knöpfe (Tempo, Pause, Ton, Ansicht). */

@@ -218,7 +218,6 @@ Ein Test meldet, wenn sie nicht mehr zur Config passen.
 | Flugabwehr | Z | 700 | 2×2 | 180 Baumaterial, 40 Munition | 18 s |
 | Phalanx | C | 900 | 2×2 | 800 Geld, 300 Baumaterial, 200 Munition | 120 s |
 | Gefechtsturm | F | 1500 | 2×2 | 220 Baumaterial | 25 s |
-| Sendemast | G | 3000 | 2×2 | 2000 Geld, 600 Baumaterial | 120 s |
 | Bohrer | X | 600 | 2×2 | 150 Baumaterial | 20 s |
 <!-- auto:buildings:end -->
 

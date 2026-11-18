@@ -6,7 +6,7 @@ import { UNITS } from '../../data/units.js';
 import { BUILDINGS } from '../../data/buildings.js';
 import { block } from '../cooldown.js';
 import { CITY } from '../../data/city.js';
-import { ZONE_REACH, WALL_RETRY, RELAY_STEP, FLANK_R, FOBV_MAX, DEPLOY_REACH, FOBV_RETRY, BAD_TIME, WALL_OFFSET, WALL_HALF, ENG_NEAR, RADIO_SITE, BRIDGE_EVERY, ROAD_REPAIR_EVERY, ROAD_REPAIR_SAFE, BRIDGE_RESERVE, FORT_EVERY, FORT_BM_MIN, FORT_CREW_RANGE, FORT_ROOFS, FORT_CLEAR, ZONE_CAND_STEP, ZONE_CAND_MARGIN, ZONE_CAND_RING_N, ZONE_HELD_MIN, RELAY_STOP, FRONT_SITE_R, FRONT_SITE_ANGLES, FLANK_ANGLES, SITE_ANGLES_DEG, SITE_RING_STEP, FREE_SEARCH_CELLS, BAD_SITE_R, CORRIDOR_FROM, CORRIDOR_TO, CORRIDOR_HALF, HIGH_CENTER_BONUS, HIGH_SAMPLES, DEF_FULL_FOBS, DEF_BUSY_MAX, DEF_PER_FOB, DEF_ZONE_MORTARS, DEF_RING_MIN, DEF_RING_MAX, WALL_EVERY, WALL_BUILDERS_R, WALL_BUILDERS, ENG_EVERY, ENG_GAP, ENG_TAKEN_PEN } from '../../data/ai.js';
+import { ZONE_REACH, WALL_RETRY, RELAY_STEP, FLANK_R, FOBV_MAX, DEPLOY_REACH, FOBV_RETRY, BAD_TIME, WALL_OFFSET, WALL_HALF, ENG_NEAR, BRIDGE_EVERY, ROAD_REPAIR_EVERY, ROAD_REPAIR_SAFE, BRIDGE_RESERVE, FORT_EVERY, FORT_BM_MIN, FORT_CREW_RANGE, FORT_ROOFS, FORT_CLEAR, ZONE_CAND_STEP, ZONE_CAND_MARGIN, ZONE_CAND_RING_N, ZONE_HELD_MIN, RELAY_STOP, FRONT_SITE_R, FRONT_SITE_ANGLES, FLANK_ANGLES, SITE_ANGLES_DEG, SITE_RING_STEP, FREE_SEARCH_CELLS, BAD_SITE_R, CORRIDOR_FROM, CORRIDOR_TO, CORRIDOR_HALF, HIGH_CENTER_BONUS, HIGH_SAMPLES, DEF_FULL_FOBS, DEF_BUSY_MAX, DEF_PER_FOB, DEF_ZONE_MORTARS, DEF_RING_MIN, DEF_RING_MAX, WALL_EVERY, WALL_BUILDERS_R, WALL_BUILDERS, ENG_EVERY, ENG_GAP, ENG_TAKEN_PEN } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
 
 const DEG = Math.PI / 180;
@@ -453,23 +453,4 @@ export const buildMethods = {
     g.issue(this.team, { type: 'clearRubble', ids: [eng.id], c0: q, r0: r, c1: q, r1: r });
   },
 
-  /**
-   * Sendemast (zweite Siegbedingung): ab difficulty.radioFrom spart die KI darauf (nicht bei Alarm an der Hauptstadt) und setzt ihn hinter die
-   * Hauptstadt, weg von der Zone. Das Baufahrzeug baut ihn wie jede Baustelle.
-   */
-  buildRadio(s) {
-    const g = this.game;
-    const t = this.team;
-    this.saveForRadio = false;
-    if (!g.radioWin || !s.home || g.time < this.cfg.radioFrom || s.alarm || !s.engineers.length) return;
-    if (s.own.some((b) => b.def.radio)) return;
-    const cost = BUILDINGS.radio.cost;
-    if (g.teams[t].res.money < cost.money) {
-      this.saveForRadio = true;
-      return;
-    }
-    const away = Math.atan2(-s.dir.y, -s.dir.x);
-    const p = this.findSite('radio', s.ax, s.ay, RADIO_SITE[0], RADIO_SITE[1], { angle: away, corridor: true });
-    if (p) g.issue(t, { type: 'build', building: 'radio', x: p.x, y: p.y });
-  },
 };

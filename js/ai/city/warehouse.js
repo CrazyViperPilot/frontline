@@ -5,8 +5,8 @@
 // Geld über dessen Schwelle (der Industriepark geht vor). Werte CITY.ai.hall*. Nur über game.issue.
 import { CITY } from '../../data/city.js';
 import { KIND_ID } from '../../data/citykinds.js';
-import { isPart, cellAt, cellFree, buildAllowed } from '../../game/city/cells.js';
-import { connectCells } from '../../game/city/roadnet.js';
+import { isPart, cellAt, cellFree, buildAllowed, buildWhy } from '../../game/city/cells.js';
+import { connectCells, connectPath } from '../../game/city/roadnet.js';
 import { block, ready } from '../cooldown.js';
 import { inDanger } from './common.js';
 
@@ -52,13 +52,26 @@ export function aiWarehouse(game, c, main, money, reserve, difficulty, mem) {
   }
   cand.sort((a, b) => a.d - b.d || a.r - b.r || a.q - b.q);
   let tries = 0;
+  let first = null; // Zellen des ersten freien Platzes (für die Erkundung, wenn kein Weg geht)
   for (const { q, r } of cand) {
     const cells = [r * c.cols + q, r * c.cols + q + 1, (r + 1) * c.cols + q, (r + 1) * c.cols + q + 1];
     if (!cells.every(free)) continue;
     if (++tries > A.hallTries) break;
+    first ??= cells;
+    const path = connectPath(game, c, cells, true, null, undefined, A.hallConnect);
+    if (path === null) continue;
+    // Baumaterial für die Straße (je Zelle CITY.costBm.road) und die Halle, dazu hallBm Polster (Paket „KI-Lagerhalle“: vorher prüfte sie nur
+    // die Halle, und die Straße von 60 bis 70 Zellen zur fernen FOB scheiterte an jedem Platz). Reicht es nicht: später, nicht woanders
+    const bm = path.length * CITY.costBm.road + CITY.costBm.warehouse + A.hallBm;
+    if (main.store.bm < bm || money < path.length * CITY.cost.road + keep + A.hallMoney + CITY.cost.warehouse) break;
     if (connectCells(game, c, cells, true, null, undefined, A.hallConnect) < 0) continue;
     if (game.issue(c.team, { type: 'city', kind: 'warehouse', c0: q, r0: r, c1: q + 1, r1: r + 1 }).ok) return true;
   }
   block(mem.wait, 'hall', A.hallRetry, game.time); // kein Platz oder kein Weg: nicht jeden Takt neu suchen
+  // Kein Weg im Baugebiet: oft liegt das Land zwischen Stadt und vorderer FOB noch unerkundet (Paket „KI-Lagerhalle“). Der Späher deckt die
+  // erste dunkle Zelle des Wegs ohne Baugebietsregeln auf (cityMem.exploreAt, combat.js scout)
+  const open = first && !mem.exploreAt ? connectPath(game, c, first, false, null, undefined, A.hallConnect) : null;
+  const dark = open?.find((j) => buildWhy(game, c, j, 'road') === 'unexplored');
+  if (dark != null) mem.exploreAt = { x: c.x0 + ((dark % c.cols) + 0.5) * c.cell, y: c.y0 + (Math.floor(dark / c.cols) + 0.5) * c.cell };
   return false;
 }

@@ -219,6 +219,10 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   Gemessen (20 min, alle Menü-Schalter, Seeds 3, 7, 11): 5 von 6 KI-Städten bauen eine (nach 790 bis 1010 s); der mittlere Bestand der
   vorderen FOBs (Munition + Treibstoff ab Minute 10) stieg bei vier Teams um 25 bis 120, bei Seed 11 blieb er gleich; Ausbildung und
   Abschüsse etwa gleich; der Industriepark kommt so früh wie ohne Hallen.
+  Paket „KI-Lagerhalle“: Sie plant den Weg zuerst und baut nur, wenn das Baumaterial für Straße (je Zelle `CITY.costBm.road`), Halle und
+  `hallBm` reicht (sonst später). Findet sie im Baugebiet keinen Weg, weil das Land zwischen Stadt und FOB unerkundet ist, schickt sie den
+  Späher zur ersten dunklen Zelle des Wegs (`exploreAt`, wie beim Fliegerhorst). Gemessen (20 min, Seeds 3, 5, 7, 9, 11, 13): Hallen bei 11
+  statt 10 von 12 Teams; Seed 11 Team 0 baut bei 600 statt 1030 s; mittlerer FOB-Bestand 821 statt 810.
 - **Sparen auf Kampfflugzeuge (Paket „Luftwaffe der KI“):** Hat die KI weniger als `CITY.ai.jetSave` Jets (Leicht 0, Normal 1, Schwer 2), einen
   freien versorgten Stellplatz und zu wenig Geld für den Jet mit `jetReserve`, bildet sie keine Bodentruppen aus, bis er bezahlt ist (`saveForJet`,
   wie beim Späher); die Stadt baut weiter. Weitere Jets nur aus Überschuss. Gemessen: Stadt nach 30 min gleich groß (−2 %),

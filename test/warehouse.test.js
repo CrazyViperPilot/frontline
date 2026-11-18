@@ -160,3 +160,25 @@ test('KI baut eine Lagerhalle in Reichweite ihrer knappen vorderen FOB, mit Stra
   assert.equal(call('normal'), false, 'höchstens eine je vordere FOB');
   assert.ok(cellsOf(c, a).length === 4);
 });
+
+test('KI-Lagerhalle: liegt der Weg zur vorderen FOB im Dunkeln, schickt sie den Späher dorthin; erkundet baut sie (Paket „KI-Lagerhalle“)', async () => {
+  const { aiWarehouse } = await import('../js/ai/city/warehouse.js');
+  const { cityAiMemory } = await import('../js/ai/city/common.js');
+  const g = new Game({ seed: 3, startMoney: 5000, buildRules: true });
+  const m = g.mainFob(0);
+  const f = fobAt(g, 0, m.x, m.y);
+  const c = g.city[0];
+  g.time = CITY.ai.hallFrom.normal + 1;
+  m.store.bm = 5000;
+  const fog = g.fog[0];
+  fog.explored.fill(0);
+  fog.mark(f.x, f.y, 400); // nur die Umgebung der FOB erkundet, der Weg zur Stadt dunkel
+  const mem = cityAiMemory();
+  const call = () => aiWarehouse(g, c, m, g.teams[0].res.money, CITY.ai.reserve.normal, 'normal', mem);
+  assert.equal(call(), false, 'kein Weg im Baugebiet');
+  assert.ok(mem.exploreAt && !fog.isExplored(mem.exploreAt.x, mem.exploreAt.y), 'Ziel für den Späher im Dunkeln');
+  fog.revealAll();
+  mem.wait = {};
+  assert.equal(call(), true, 'erkundet: Halle mit Straße');
+  assert.ok(c.list.some((i) => c.kind[i] === KIND_ID.warehouse));
+});

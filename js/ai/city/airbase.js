@@ -153,6 +153,6 @@ export function aiAirport(game, c, main, reserve, want = 2, difficulty = 'normal
   wait.airport = game.time + A.airportWait; // kein Platz: eine Weile nicht sparen
   // Kein Platz: oft liegt das freie Land hinter der Hauptstadt noch unerkundet. Der Späher deckt die nächste solche Zelle auf (combat.js scout)
   const dark = cand.find(({ q, r }) => buildWhy(game, c, r * c.cols + q, 'runway') === 'unexplored');
-  if (mem) mem.exploreAt = dark ? { x: c.x0 + (dark.q + 0.5) * c.cell, y: c.y0 + (dark.r + 0.5) * c.cell } : null;
+  if (mem && dark) mem.exploreAt = { x: c.x0 + (dark.q + 0.5) * c.cell, y: c.y0 + (dark.r + 0.5) * c.cell };
   return false;
 }

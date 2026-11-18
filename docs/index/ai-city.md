@@ -52,5 +52,5 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - importWatch(game, c, mem) – Einfuhr-Wächter (Paket „Import“, Stadt-KI): zählt die Zeit in mem.importBad (s)…
 - aiStation(game, c, main, money, reserve, difficulty, mem) – Industriepark der KI (Paket „Industriepark“, PRD §10 „Einfuhr“): ab stationFrom…
 
-## warehouse.js (4.0 KB)
+## warehouse.js (5.3 KB)
 - aiWarehouse(game, c, main, money, reserve, difficulty, mem) – Ein Ausbauschritt der KI für Lagerhallen; true, wenn sie eine gebaut hat

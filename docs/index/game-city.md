@@ -66,9 +66,10 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - ownCells(game, team, cols, rows) – Eroberung: je Team die Zellen, auf denen es Stadtgebäude setzen darf (1 = eigen…
 - createCity(game) – Stadt je Team anlegen (jede Partie hat eine Stadt)
 
-## economy.js (22 KB)
+## economy.js (24 KB)
 - updateCity(game, dt) – Ein Simulationsschritt der Stadt beider Teams
 - brakeTax(raw) – Steuerbremse (seit Paket Balance-Steuern): Steuer bis CITY.taxBrake.from Geld/s…
+- feedFactor(d) – Abgabefaktor der Lagerhalle an eine FOB im Abstand d (CITY.warehouse.feed): bis…
 
 ## gridbfs.js (4.2 KB)
 - gridBfs(c, starts, passable, maxDist, opts)

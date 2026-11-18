@@ -4,7 +4,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { CITY } from '../js/data/city.js';
+import { BALANCE } from '../js/data/balance.js';
 import { connectRoad } from '../js/game/city/roadnet.js';
+import { feedFactor } from '../js/game/city/economy.js';
 import { spot, run } from './cityhelp.js';
 import { fobAt } from './gamehelp.js';
 import { withValue } from './util.js';
@@ -63,6 +65,8 @@ test('Lagerhalle füllt sich über die Straße aus der Hauptstadt (je Sorte, bis
 
 test('LKW laden an der Lagerhalle, Einheiten im Umkreis füllen aus ihr nach', () => {
   const { g, hall } = scene();
+  // vordere FOBs voll: sonst gibt die Halle alles an sie weiter (Paket „Lagerhalle 2“)
+  for (const b of g.buildings) if (b.type === 'fob' && !b.main) b.store.bm = b.store.mun = b.store.fuel = BALANCE.logistics.storeCap;
   run(g, 30);
   for (const u of g.units) if (u.team === 0 && u.type !== 'truck') u.alive = false; // nur der Test handelt
   const truck = g.units.find((u) => u.alive && u.team === 0 && u.type === 'truck');
@@ -94,4 +98,31 @@ test('LKW laden an der Lagerhalle, Einheiten im Umkreis füllen aus ihr nach', (
   run(g, 3);
   assert.ok(rifle.ammo > 0, 'Schütze füllt aus der Lagerhalle nach');
   assert.ok(hall.store.mun < hallMun + CITY.warehouse.fill[1] * 3, 'Munition aus der Lagerhalle');
+});
+
+test('Lagerhalle füllt vordere FOBs bis feed.reach auf, nahe zuerst; weiter weg langsamer, außerhalb nichts (Paket „Lagerhalle 2“)', () => {
+  const { g, hall } = scene();
+  const F = CITY.warehouse.feed;
+  assert.equal(feedFactor(F.near), 1);
+  assert.ok(Math.abs(feedFactor(F.reach) - F.min) < 1e-9);
+  assert.equal(feedFactor(F.reach + 1), 0);
+  // drei vordere FOBs in festen Abständen zur Halle (leer), Halle voll
+  const at = (d) => {
+    const f = g.spawnBuilding('fob', 0, Math.round((hall.x + d) / 32), Math.round(hall.y / 32), { built: true });
+    f.store.bm = f.store.mun = f.store.fuel = 0;
+    return f;
+  };
+  for (const b of g.buildings) if (b.type === 'fob' && !b.main) b.store.bm = b.store.mun = b.store.fuel = BALANCE.logistics.storeCap; // alte FOB voll
+  const near = at(300);
+  const mid = at(1200);
+  const far = at(F.reach + 300);
+  hall.store.bm = hall.store.mun = hall.store.fuel = 1000;
+  run(g, 10);
+  assert.ok(near.store.mun > 0, `nahe FOB bekommt Munition (${near.store.mun})`);
+  assert.equal(far.store.mun, 0, 'außerhalb von reach nichts');
+  // je Sorte höchstens rate je s zusammen: in 10 s höchstens 10 × rate (Stufe 1) an alle FOBs
+  const lv = 1;
+  assert.ok(near.store.mun + mid.store.mun <= 10 * F.rate[lv] + 1e-6, `zusammen höchstens rate je s (${near.store.mun + mid.store.mun})`);
+  // weiter weg langsamer: die mittlere bekommt erst, was die nahe übrig lässt, höchstens rate × Faktor
+  assert.ok(mid.store.mun <= near.store.mun + 1e-6, 'nahe FOB zuerst');
 });

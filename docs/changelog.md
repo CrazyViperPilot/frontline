@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.216: **Lagerhalle füllt FOBs** (§15 „Straßentransport“, Plan `docs/plan-lagerhallen.md`, Paket 2): Die Lagerhalle gibt Baumaterial, Munition und Treibstoff selbst an vordere FOBs bis 1800 px ab, auch in die Konfliktzone, die nächste zuerst und weiter weg langsamer; die Ressourcenanzeige zeigt Inhalt der Hallen und Abgabe an die FOBs. Cache v280.
 - v5.215: **Lagerhalle** (§15 „Straßentransport“, Plan `docs/plan-lagerhallen.md`, Paket 1): Neuer Großbau der Stadt, höchstens einer je vordere FOB; füllt sich über die Straße aus dem Lager der Hauptstadt mit Baumaterial, Munition und Treibstoff, LKW laden dort, Einheiten im Umkreis füllen nach. Cache v279.
 - v5.214: **Straße zum Lager** (§15 „Straßentransport“): Stadtgebäude ohne Straße zum Lager haben in ihrer Befehlskarte den Knopf „Straße zum Lager“; er legt den kürzesten freien Weg (bis 160 Zellen) und bezahlt ihn wie Straßen, Länge und Kosten stehen im Tipp. Cache v278.
 - v5.213: **Luftschlag** (§8, §15 „Fliegerhorst“): Knopf „✈ Luftschlag“ und Taste F4 schicken bis zu vier startbereite Jets mit Bodenwaffen (F-16, Su-27, A-10) auf ein angeklicktes Ziel oder einen Punkt, ohne sie vorher zu wählen; nach dem Einsatz landen sie wieder. Cache v277.

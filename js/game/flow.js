@@ -58,6 +58,17 @@ export function flowLayout() {
   return LAYOUT;
 }
 
+/** Inhalt aller fertigen Lagerhallen der Stadt je Sorte (Paket „Lagerhalle“). */
+export function hallStock(c) {
+  const st = { bm: 0, mun: 0, fuel: 0 };
+  if (!c) return st;
+  for (const [i, e] of c.ents) {
+    if (!e?.alive || !e.store || KINDS[c.kind[i] - 1] !== 'warehouse') continue;
+    for (const k of ['bm', 'mun', 'fuel']) st[k] += e.store[k] ?? 0;
+  }
+  return st;
+}
+
 /** Bestand je Ware: alle eigenen Lager (ohne unendliche Hauptstadt), Ausgangslager der Werke (seit v5.69), Ladung der LKW, Stahl und Kerosin im Stadtlager. */
 export function teamStock(game, team) {
   const c = game.city?.[team];
@@ -72,6 +83,8 @@ export function teamStock(game, team) {
   }
   // Ausgangslager der Werke (CITY.pickup, seit v5.69) zählen wie das Lager, aus dem LKW holen (c.made zählt die Einlagerung mit)
   if (c?.out) for (const i of c.list) if (c.out[i]) st[CITY.chain[KINDS[c.kind[i] - 1]].to] += c.out[i];
+  // Lagerhallen (Paket „Lagerhalle“): ihr Inhalt ist Bestand, kein Verbrauch
+  for (const [k, n] of Object.entries(hallStock(c))) st[k] += n;
   return st;
 }
 
@@ -193,6 +206,7 @@ export function resourceFlow(game, team, rates = null) {
   const main = game.mainFob(team);
   const cap = BALANCE.logistics.storeCap;
   const stock = teamStock(game, team);
+  const halls = hallStock(c);
   // Ausgangslager der Werke je Ware (CITY.pickup, seit v5.70): „davon an Werken“ am Lagerknoten
   const atWorks = {};
   if (c.out) {
@@ -211,6 +225,8 @@ export function resourceFlow(game, team, rates = null) {
     n.where = inCity ? 'Stadtlager' : 'alle Lager';
     n.stock = stock[g];
     n.atWorks = atWorks[g] ?? 0;
+    n.atHalls = halls[g] ?? 0; // davon in Lagerhallen (Paket „Lagerhalle“)
+    n.toFobs = s.whOut?.[g] ?? 0; // je s von den Lagerhallen an vordere FOBs
     const here = inCity ? c[g] : main?.store?.[g] ?? 0;
     n.full = here >= (inCity ? cap : BALANCE.logistics.capitalCap ?? cap) - 1; // Stadtlager bzw. Lager der Hauptstadt (seit v5.06 größer)
     n.rate = s.gross?.[g] ?? 0;

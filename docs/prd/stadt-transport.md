@@ -88,7 +88,12 @@ Wege und Lasten liegen in einer WeakMap je Stadt und werden nicht gespeichert, d
   Die Hauptstadt behält mindestens **500** je Sorte (`keep`). Ohne Straßenweg füllt sie sich nicht (Warnung im Infofeld).
   **LKW** laden dort wie an einer FOB (Rechtsklick mit LKW auf die Lagerhalle, Pendeln mit der Lagerhalle als Start); abladen kann man dort nicht.
   **Einheiten** im Umkreis von **450 px** (`radius`) füllen aus ihr nach, wenn keine FOB sie versorgt.
-  Zerstört ist ihr Inhalt verloren. Später (Paket „Lagerhalle 2“): FOBs im Umkreis von etwa 1800 px selbst auffüllen.
+  Zerstört ist ihr Inhalt verloren.
+  **FOBs auffüllen (Paket „Lagerhalle 2“, `CITY.warehouse.feed`):** Sie gibt je Sorte zusammen bis **3 / 6 / 9 je s** (Stufe, `rate`) an eigene
+  fertige vordere FOBs bis **1800 px** (`reach`) ab, auch an FOBs in der Konfliktzone, in der sie selbst nicht stehen darf. Die nächste FOB
+  zuerst; jede bekommt höchstens rate × Faktor (bis 450 px `near` 1, dann linear bis 0,3 `min` bei 1800 px), bis zur Obergrenze ihres Lagers.
+  Die Ressourcenanzeige zeigt am Lagerknoten „davon … Hallen“ (Inhalt aller Lagerhallen) und „→ FOBs“ (Abgabe je s); der Inhalt der
+  Hallen zählt als Bestand, nicht als Verbrauch.
 - **Straße zum Lager (Paket „Straße zum Lager“, Befehl `cityConnect`, `js/game/city/commands.js`):** Hat ein eigenes fertiges Stadtgebäude
   (nicht Straße, Bahn, Rollfeld, Gleis, Stellplatz, Tower) keine Straße zum Lager, zeigt seine Befehlskarte den Knopf **Straße zum Lager**
   mit Länge und Kosten im Tipp. Er legt den kürzesten Weg aus neuen Straßenzellen bis zur Straße zum Lager der Hauptstadt (dieselbe

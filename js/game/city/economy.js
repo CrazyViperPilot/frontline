@@ -230,6 +230,7 @@ function produce(game, c, id, P, dt) {
   storeGoods(x);
   fillAirbase(x);
   fillWarehouses(x);
+  feedFobs(game, x);
   supplyTrainers(game, x);
   // Stau: kleinster Stau-Faktor auf den in diesem Schritt benutzten Straßen (1 ohne Stau), dann Glättung für den nächsten Schritt
   s.jam = minFactor(tr);
@@ -468,7 +469,54 @@ function fillWarehouses(x) {
       if (!(want > 0)) continue;
       addLoad(tr, p, want);
       main.store[g] = Math.max(0, main.store[g] - want * dt);
-      e.store[g] = Math.min(W.cap[lv], e.store[g] + want * pathEff(tr, p) * dt);
+      const got = want * pathEff(tr, p);
+      e.store[g] = Math.min(W.cap[lv], e.store[g] + got * dt);
+      (x.s.whIn ??= { bm: 0, mun: 0, fuel: 0 })[g] += got; // Zulauf je s (Ressourcenanzeige)
+    }
+  }
+}
+
+/** Abgabefaktor der Lagerhalle an eine FOB im Abstand d (CITY.warehouse.feed): bis near 1, dann linear bis min bei reach, darüber 0. */
+export function feedFactor(d) {
+  const F = CITY.warehouse.feed;
+  if (d > F.reach) return 0;
+  if (d <= F.near) return 1;
+  return 1 - ((1 - F.min) * (d - F.near)) / (F.reach - F.near);
+}
+
+/**
+ * Lagerhallen füllen vordere FOBs (Paket „Lagerhalle 2“): je Halle und Sorte zusammen höchstens feed.rate je s, die nächste FOB zuerst,
+ * jede höchstens rate × feedFactor(Abstand), bis BALANCE.logistics.storeCap. Auch FOBs in der Konfliktzone (die Halle steht davor).
+ */
+function feedFobs(game, x) {
+  const { c, dt, anchors, nA } = x;
+  if (!(dt > 0)) return;
+  const F = CITY.warehouse.feed;
+  const WH = KIND_ID.warehouse;
+  const cap = BALANCE.logistics.storeCap;
+  let fobs = null;
+  for (let m = 0; m < nA; m++) {
+    const i = anchors[m];
+    if (c.kind[i] !== WH) continue;
+    const e = c.ents.get(i);
+    if (!e?.alive || !e.store) continue;
+    fobs ??= game.buildings.filter((b) => b.alive && b.built && b.team === c.team && b.type === 'fob' && !b.main);
+    const near = fobs
+      .map((f) => ({ f, k: feedFactor(Math.hypot(f.x - e.x, f.y - e.y)) }))
+      .filter((o) => o.k > 0)
+      .sort((a, b) => b.k - a.k || a.f.id - b.f.id);
+    if (!near.length) continue;
+    const rate = F.rate[c.level[i]];
+    for (const g of ['bm', 'mun', 'fuel']) {
+      let budget = rate * dt;
+      for (const { f, k } of near) {
+        const give = Math.min(budget, rate * k * dt, Math.max(0, cap - f.store[g]), e.store[g]);
+        if (!(give > 0)) continue;
+        e.store[g] -= give;
+        f.store[g] += give;
+        budget -= give;
+        (x.s.whOut ??= { bm: 0, mun: 0, fuel: 0 })[g] += give / dt; // an FOBs je s (Ressourcenanzeige)
+      }
     }
   }
 }

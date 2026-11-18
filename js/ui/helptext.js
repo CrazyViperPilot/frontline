@@ -177,7 +177,7 @@ export const KEYS = [
     `ausgebildet über eine Straße zum Lager oder einen Kerosintank bzw. ein Munitionslager mit Straße im Umkreis`],
   ['Lagerhalle', `Großbau der Stadt (Baumenü, Ressourcen), höchstens ${CITY.warehouse.perFob} je vordere FOB: füllt sich über die Straße aus dem Lager der ` +
     `Hauptstadt mit Baumaterial, Munition und Treibstoff (bis ${CITY.warehouse.cap[1]} je Sorte in Stufe 1); LKW laden dort (Rechtsklick), ` +
-    `Einheiten im Umkreis von ${CITY.warehouse.radius} px füllen nach`],
+    `Einheiten im Umkreis von ${CITY.warehouse.radius} px füllen nach; sie füllt auch vordere FOBs bis ${CITY.warehouse.feed.reach} px selbst auf (nahe zuerst)`],
   ['Straße zum Lager', `Stadtgebäude ohne Straße zum Lager (Werk, Kaserne, Kerosintank …): Knopf „Straße zum Lager“ in seiner Befehlskarte legt ` +
     `den kürzesten freien Weg (höchstens ${CITY.playerConnect} Zellen) und bezahlt ihn wie Straßen; Länge und Kosten zeigt der Tipp`],
   ['Einfuhr (Stadt)', `Rohwaren kommen von außerhalb der Karte: Rohmaterial (${de(CITY.import.price.raw)} Geld je Einheit, fürs BM-Werk), Eisen (${de(CITY.import.price.ore)}, ` +

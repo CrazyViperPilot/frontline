@@ -140,7 +140,10 @@ export class FlowPanel {
         t2 = n.made === null ? int(n.stock) : `${int(n.stock)} · +${fmtFlow(n.made)} −${fmtFlow(n.use)}/s`;
       }
       // Lagerknoten mit Ausgangslager der Werke (seit v5.70): Zeile „davon an Werken: N“
-      const atWorks = n.type === 'store' && n.atWorks > 0.005 ? `<text class="fl-t4" x="11" y="61">${esc(fit(`davon an Werken: ${fmtFlow(n.atWorks)}`, 10))}</text>` : '';
+      // Lagerknoten: was davon an Werken (Ausgangslager) und in Lagerhallen liegt, und was die Hallen je s an vordere FOBs geben
+      const parts = n.type === 'store' ? [n.atWorks > 0.005 ? `Werke ${fmtFlow(n.atWorks)}` : '', n.atHalls > 0.005 ? `Hallen ${fmtFlow(n.atHalls)}` : '', n.toFobs > 0.005 ? `→ FOBs ${fmtFlow(n.toFobs)}/s` : ''].filter(Boolean) : [];
+      const full = parts.length ? `davon ${parts.join(' · ')}` : '';
+      const atWorks = full ? `<text class="fl-t4" x="11" y="61">${esc(fit(full, 10))}<title>${esc(full)}</title></text>` : '';
       h +=
         `<g class="fl-node ${n.status}" transform="translate(${x.toFixed(1)} ${y})"><rect class="fl-box" width="${NW}" height="${NH}" rx="7"/>` +
         `<rect x="0" y="0" width="5" height="${NH}" rx="2" fill="${COLOR[n.type === 'works' ? n.good : n.key] ?? '#9aa596'}"/>` +

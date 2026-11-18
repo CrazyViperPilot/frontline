@@ -223,6 +223,10 @@ export const CITY = {
     keep: 500, // so viel je Sorte bleibt mindestens im Lager der Hauptstadt (sie läuft nicht leer)
     radius: 450, // px: Einheiten in diesem Umkreis füllen aus der Lagerhalle nach (wie der Bauradius einer FOB)
     perFob: 1, // höchstens so viele Lagerhallen je eigene vordere FOB
+    // Paket „Lagerhalle 2“ (Variante 1): sie füllt eigene fertige vordere FOBs bis reach px selbst auf, auch in der Konfliktzone (dort darf sie
+    // nicht stehen). Je Sorte gibt sie zusammen höchstens rate je s ab, die nächste FOB zuerst; jede FOB bekommt höchstens rate × Faktor:
+    // bis near px 1, dann linear bis min bei reach (weiter weg nichts).
+    feed: { reach: 1800, near: 450, min: 0.3, rate: [0, 3, 6, 9] },
   },
   air: {
     runwayMin: 8,

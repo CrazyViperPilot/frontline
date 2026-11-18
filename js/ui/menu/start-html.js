@@ -2,6 +2,7 @@
 // howtoHtml() die Spielhinweise darin. Die Knöpfe (data-…) verdrahtet start.js; ihr Zustand kommt aus start-state.js.
 // Exporte: startHtml.
 import { BALANCE } from '../../data/balance.js';
+import { GAME_VERSION } from '../../version.js';
 import { WEATHER_SETTINGS } from '../../game/weather.js';
 import { MOOD_SETTINGS } from '../../render/mood.js';
 import { loadLevel } from '../../audio/sound.js';
@@ -142,5 +143,6 @@ export function startHtml() {
       <p class="muted small center" data-wallet></p>
       <button type="button" class="primary" data-act="start">Start</button>
       <p class="muted small center">Alle Tasten zeigt F1 im Spiel.</p>
+      <p class="muted small center menu-version" title="Ausgelieferte Version (steigt mit jedem Release; so sieht man, ob ein Deploy durch ist)">Version ${GAME_VERSION}</p>
     </section>`;
 }

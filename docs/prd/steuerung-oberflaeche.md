@@ -210,6 +210,8 @@
   Aktualisiert höchstens 4× je s. Aus heißt: keine Messung, keine Kosten.
   Der Zustand steht im Browser (`localStorage` `frontline-perf`).
   Zweck: Ruckeln und träge Befehle auf dem eigenen Gerät einordnen.
+- **Version im Startmenü** (Paket „Version anzeigen“): Ganz unten steht „Version v5.x“ (`GAME_VERSION` aus `js/version.js`, setzt
+  `npm run release`). So sieht man nach einem Push, ob der Deploy (GitHub Actions) durch ist; der Service Worker lädt online immer neu.
 - **Bildauflösung** (Startmenü und Pausenmenü, `?lowres=1`, gemerkt unter `frontline-lowres`, `js/ui/menu/prefs.js`, `start-html.js`, `pause.js`):
   „Scharf“ (Standard) zeichnet mit der Pixeldichte des Geräts, höchstens 2× (Spielfeld, Boden und Minimap); „Leistung“ mit 1× Pixel schont schwache Geräte auf Kosten der Schärfe.
   Im Pausenmenü wirkt der Schalter sofort (`setMaxDpr` in `js/render/layers/core.js` und `minimap.js`).

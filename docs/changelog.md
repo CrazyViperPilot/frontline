@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.227: **KI-Einheiten: Kampfhubschrauber und Su-27** (PRD `docs/prd/ki.md`): Die KI bildet ab einer Armee von 12 Kampfeinheiten aus Überschuss einen Kampfhubschrauber aus (Schwer zwei) und baut dafür später einen dritten Heliport; bei ihren Mehrzweckjets wechseln F-16 und Su-27, Rot beginnt mit der Su-27. Cache v291.
 - v5.226: **KI-Lagerhalle** (PRD `docs/prd/ki.md` „Lagerhalle“): Liegt der Weg von der Stadt zur vorderen FOB im Unerkundeten, deckt der Späher der KI ihn auf, statt dass die Halle ewig ausbleibt; die KI rechnet das Baumaterial der Straße mit ein. Cache v290.
 - v5.225: **KI-Fliegerhorst** (PRD `docs/prd/ki.md` „Sparen auf den Fliegerhorst“): Die KI spart auf die Bahn des Fliegerhorsts und auf ihren ersten Jet (Armee und Forschung warten), findet sie keinen Platz, erkundet ihr Späher das Umland der Hauptstadt; gemessen haben jetzt alle sechs KI-Teams einen Fliegerhorst und einen Jet (vorher zwei bzw. einer). Cache v289.
 - v5.224: **Version anzeigen** (§9): Ganz unten im Startmenü steht die ausgelieferte Version, damit man sieht, ob ein Deploy durch ist. Cache v288.

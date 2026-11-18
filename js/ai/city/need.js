@@ -34,7 +34,7 @@ export function aiNeed(game, c, add, skip = null) {
   for (const [k, n] of Object.entries(A.producers)) {
     if (k === 'heliport' && !work) continue;
     if (skip?.has(k)) continue; // Großbau ohne Platz in diesem Takt (seit v5.03 auch Kaserne und Fabrikhalle)
-    if (count[k] < n + (k === 'heliport' ? 0 : more)) return k;
+    if (count[k] < n + (k === 'heliport' ? +(work >= A.heliMoreFrom) : more)) return k; // ab moreFrom je einer mehr, Heliport ab heliMoreFrom
   }
   // Grundketten zuerst (seit v5.20), vor Krankenhaus und Universität (sonst spart die KI minutenlang für diese und kauft solange teuer
   // am Markt): ein BM-Werk; ein Stahlwerk, wenn Stahl knapp ist (seit Paket „Import“ kommen die Rohwaren von außerhalb der Karte)

@@ -349,8 +349,9 @@ export const CITY = {
     raidDist: 1000,
     targetValue: byKind('target'), // je Zellenart im Register js/data/citykinds.js (Feld target, fehlt = 1)
     // Ausbildungsgebäude (seit v4.96): so viele will sie haben; ab moreFrom Arbeitsstätten je eins mehr (Heliport erst, wenn Hubschrauber freigeschaltet sind)
-    producers: { barracks: 1, factory: 1, heliport: 2 }, // seit v5.51 zwei Heliports: einer je Hubschrauber (Späher und Transporter)
+    producers: { barracks: 1, factory: 1, heliport: 2 }, // seit v5.51 zwei Heliports: einer je Hubschrauber (Späher, Transporter bzw. Drohne); ab moreFrom je eine Kaserne und Fabrikhalle mehr
     moreFrom: 14,
+    heliMoreFrom: 20, // Arbeitsstätten, ab denen sie einen dritten Heliport baut (Paket „KI-Einheiten“: Platz für den Kampfhubschrauber; früher kostete er die Armee und den Festungsausbau)
     hospitalFrom: 10, // Arbeitsstätten, ab denen sie ein Krankenhaus baut (seit v5.01, eins reicht)
     airportFrom: 14, // Arbeitsstätten, ab denen sie einen Fliegerhorst baut (seit v5.35 aus Bahn, Stellplätzen, Tower, Kerosintank, Munitionslager; einer reicht)
     airportReach: 60, // so viele Zellen um die Hauptstadt sucht sie Platz für die Bahn mit ihren Bauten (runwayLen × 4 Zellen plus Rand)

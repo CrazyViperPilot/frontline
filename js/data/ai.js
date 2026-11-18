@@ -141,6 +141,12 @@ export const ESCORT_DIST = 250; // px: ein untätiger Begleiter, der weiter als 
 // sondern steht ART_BEHIND px hinter der Armee
 export const ART_SHARE = 0.06; // Zielanteil Panzerhaubitzen an den Kampfeinheiten
 export const ART_FROM = 15; // eigene Kampfeinheiten, ab denen sie Panzerhaubitzen ausbildet
+// Kampfhubschrauber (Paket „KI-Einheiten“): hält GUNSHIPS[Schwierigkeit] am Heliport ab GUN_FROM eigenen Kampfeinheiten (Geld danach
+// GUN_RESERVE), nur aus Überschuss (Sparen ließ die Armee minutenlang ohne Nachschub). Er fliegt mit den Wellen
+// und tankt wie die Bodentruppen an FOB und LKW.
+export const GUNSHIPS = { easy: 0, normal: 1, hard: 2 };
+export const GUN_FROM = 12;
+export const GUN_RESERVE = 200;
 export const ART_BEHIND = 450; // px hinter dem Schwerpunkt der Armee (Richtung nächste eigene FOB)
 export const ART_EVERY = 5; // s zwischen zwei Stellungswechseln einer Haubitze
 export const ART_SPACING = 40; // px: Abstand der Stellplätze der Panzerhaubitzen (Raster, je Reihe ART_COLS)

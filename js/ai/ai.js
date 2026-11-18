@@ -85,6 +85,7 @@ export class AI {
     this.scout(s); // vor produce: der Späher bekommt das Geld zuerst
     this.replaceCommander(s);
     this.research(s); // vor produce: die nächste Stufe bekommt das Geld zuerst
+    this.gunships(s); // vor produce: der erste Kampfhubschrauber bekommt das Geld zuerst (Paket „KI-Einheiten“)
     this.produce(s);
     this.jets(s); // Fliegerhorst: F-16 kaufen und losschicken (seit v5.03)
     this.recon(s); // Fliegerhorst: U-2 zur Aufklärung (seit v5.83)

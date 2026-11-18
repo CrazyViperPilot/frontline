@@ -191,3 +191,22 @@ test('Heimflug bei knappem Treibstoff', () => {
   assert.equal(u.order.type, 'land', 'kehrt heim');
   assert.equal(u.order.targetId, p.id);
 });
+
+test('KI bildet ab GUN_FROM Kampfeinheiten aus Überschuss einen Kampfhubschrauber aus, nicht auf Leicht (Paket „KI-Einheiten“)', async () => {
+  const { AI } = await import('../js/ai/ai.js');
+  const { GUN_FROM } = await import('../js/data/ai.js');
+  const g = new Game({ seed: 3 });
+  const { pads, m } = heliBase(g);
+  const queued = () => pads.some((p) => p.queue.some((e) => (e.unit ?? e) === 'gunship'));
+  for (const u of g.units) if (u.team === 0 && u.def.range > 0) u.alive = false; // ohne Startarmee
+  g.update(DT);
+  const easy = new AI(g, 0, 'easy');
+  const ai = new AI(g, 0, 'normal');
+  ai.gunships(ai.snapshot());
+  assert.ok(!queued(), 'zu kleine Armee: keiner');
+  for (let k = 0; k < GUN_FROM; k++) g.spawnUnit('rifleman', 0, m.x + 40 + k * 8, m.y + 60);
+  easy.gunships(easy.snapshot());
+  assert.ok(!queued(), 'Leicht: keiner');
+  ai.gunships(ai.snapshot());
+  assert.ok(queued(), 'Normal: Kampfhubschrauber in Ausbildung');
+});

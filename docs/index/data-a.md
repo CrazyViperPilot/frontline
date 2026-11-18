@@ -2,7 +2,7 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/data/`. Pfade relativ zu `js/data/`.
 
-## ai.js (27 KB)
+## ai.js (28 KB)
 - MAX_PLACE – canPlace-Aufrufe je Denkschritt (Budget für die Platzsuche)
 - THREAT_RANGE – Kampfeinheiten in dieser Nähe zur Bedrohung reagieren
 - THREAT_DANGER – Gegner in dieser Nähe machen ein FOB-Ziel unattraktiver
@@ -132,6 +132,9 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - ESCORT_DIST – px: ein untätiger Begleiter, der weiter als das vom Schwerpunkt der Armee steht…
 - ART_SHARE – Panzerhaubitze (nicht auf Leicht): Haubitze ab einer Armee von ART_FROM Kampfei…
 - ART_FROM – eigene Kampfeinheiten, ab denen sie Panzerhaubitzen ausbildet
+- GUNSHIPS – Kampfhubschrauber (Paket „KI-Einheiten“): hält GUNSHIPS[Schwierigkeit] am Helip…
+- GUN_FROM
+- GUN_RESERVE
 - ART_BEHIND – px hinter dem Schwerpunkt der Armee (Richtung nächste eigene FOB)
 - ART_EVERY – s zwischen zwei Stellungswechseln einer Haubitze
 - ART_SPACING – px: Abstand der Stellplätze der Panzerhaubitzen (Raster, je Reihe ART_COLS)
@@ -143,4 +146,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - ARTY_MONEY – Geld, das nach dem Kauf übrig bleiben muss, bevor die KI Artillerie (Mörsertrup…
 - ARTY_FIRE_TYPES – Einheiten, die die KI auf Ziele schießen lässt (Befehl mortarTarget)
 - ARTY_FIRE_EVERY – s zwischen zwei Zielwahlen je Artillerie-Einheit (sie wählt neu oder schweigt)
-- ARTY_GROUP – sichtbare gegnerische Einheiten innerhalb ARTY_GROUP_R, ab denen die Gruppe ein…

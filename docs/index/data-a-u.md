@@ -3,6 +3,7 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/data/`. Pfade relativ zu `js/data/`.
 
 ## ai.js (Fortsetzung)
+- ARTY_GROUP – sichtbare gegnerische Einheiten innerhalb ARTY_GROUP_R, ab denen die Gruppe ein…
 - ARTY_GROUP_R – px Umkreis, in dem Gegner als eine Gruppe zählen
 - DRONE_ARMY – Luft (Paket K3, nicht auf Leicht): Aufklärungsdrohne am Heliport, Kamikazedrohn…
 - DRONE_FROM – s Spielzeit, ab der die Aufklärungsdrohne kommt (nach dem Späher)

@@ -10,7 +10,7 @@ import { BALANCE } from '../../data/balance.js';
 import { UNITS } from '../../data/units.js';
 import { canGarrison } from '../../game/garrison.js';
 import { weatherSight } from '../../game/weather.js';
-import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, JET_ARMOR_RANGE, FIELD_MUL, CMD_ARRIVED, ART_COLS } from '../../data/ai.js';
+import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, JET_ARMOR_RANGE, FIELD_MUL, CMD_ARRIVED, ART_COLS, GUNSHIPS, GUN_FROM, GUN_RESERVE } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
 import { inZone as inZoneOf } from '../../game/zonegeo.js';
 import { nearestOf } from '../../game/teams.js';
@@ -62,6 +62,23 @@ const SCOUT_MONEY = UNITS.littlebird.cost.money; // Geld, ab dem ein Späher aus
 
 export const combatMethods = {
   /**
+   * Kampfhubschrauber (Paket „KI-Einheiten“): hält GUNSHIPS[Schwierigkeit] ab GUN_FROM Kampfeinheiten (Heliport der Stadt), nur aus
+   * Überschuss (Sparen ließ die Armee minutenlang ohne Nachschub). Einsatz: er zählt zu den Kampfeinheiten und fliegt mit den Wellen.
+   */
+  gunships(s) {
+    const g = this.game;
+    const want = GUNSHIPS[this.difficulty] ?? 0;
+    if (!want || (s.combat?.length ?? 0) < GUN_FROM) return;
+    const have = s.units.filter((u) => u.type === 'gunship').length + this.queued(s, 'gunship');
+    if (have >= want) return;
+    // Der Festungs-Hubschrauber geht vor (wie bei der Drohne): steht ein Turm und fehlt er, wartet der Kampfhubschrauber
+    if (s.own.some((b) => b.type === 'tower' && b.built) && !s.helis.length && !this.queued(s, 'transporter')) return;
+    const b = this.pickProducer(s, 'gunship', BALANCE.queueMax, false);
+    if (!b) return;
+    if (g.teams[this.team].res.money >= UNITS.gunship.cost.money + GUN_RESERVE) this.trainOrWant(b, 'gunship');
+  },
+
+  /**
    * Kampfflugzeuge (seit v5.03): hält CITY.ai.jets[Schwierigkeit] Kampfflugzeuge an ihren Flughäfen (Geld über jetReserve). Seit v5.83
    * ist davon CITY.ai.f22Share eine F-22 (nur Luftziele). Startbereite F-16 fliegen paarweise los: zuerst gegen gesehene Hubschrauber
    * und Flugzeuge, sonst gegen gepanzerte Fahrzeuge in der Konfliktzone oder nahe der eigenen Basis, sonst auf Patrouille über die Zone.
@@ -92,7 +109,11 @@ export const combatMethods = {
       // Ist eine F-22 fällig, spart die KI auf sie, sobald sie schon einen Jet hat (sonst käme sie nie zur teureren F-22)
       const due = f22Have < CITY.ai.f22Share * total;
       const a10Due = needA10(heavy, a10Have, total);
-      const type = due && total > 0 ? 'f22' : a10Due ? 'a10' : 'f16';
+      let type = due && total > 0 ? 'f22' : a10Due ? 'a10' : 'f16';
+      // Su-27 (Paket „KI-Einheiten“): F-16 und Su-27 im Wechsel; Teams mit ungerader Nummer (Rot, Gelb) beginnen mit der Su-27, die
+      // anderen mit der F-16 (die KI kauft oft nur einen Jet: so fliegen beide Mehrzweckjets)
+      const multi = fighters.concat(queuedFighters.map((ty) => ({ type: ty }))).filter((u) => u.type === 'f16' || u.type === 'su27').length;
+      if (type === 'f16' && (multi + t) % 2 === 1) type = 'su27';
       // Für die U-2 bleibt ein ganz freier Stellplatz frei, solange sie noch fehlt und fliegen darf (recon)
       const from = CITY.ai.reconFrom[this.difficulty];
       const keep = from != null && !jets.some((u) => u.def.highAlt) ? CITY.ai.reconMax : 0;

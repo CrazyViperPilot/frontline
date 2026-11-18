@@ -541,7 +541,10 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .bottom { height: auto; justify-content: flex-start; align-items: flex-end; gap: 6px; padding: 4px 6px calc(4px + env(safe-area-inset-bottom)); background: linear-gradient(#0000, #0c0f0ca0 60%); }
   .mm { width: 100px; height: 100px; }
   .mm canvas { width: 98px; height: 98px; }
-  .sel { flex: 0 1 300px; margin-left: auto; min-width: 150px; height: 108px; box-sizing: border-box; padding: 5px 8px; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; background: #1d231dd9; }
+  /* Auswahl (Paket „Kleine Auswahl“): 60 statt 108 px hoch, der Rest wird gewischt (Handy quer: mehr Spielfeld) */
+  .sel { flex: 0 1 300px; margin-left: auto; min-width: 150px; height: 60px; box-sizing: border-box; padding: 4px 8px; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; background: #1d231dd9; scrollbar-width: thin; scrollbar-color: #d9a86599 transparent; }
+  .sel::-webkit-scrollbar { width: 4px; }
+  .sel::-webkit-scrollbar-thumb { background: #d9a86599; border-radius: 2px; }
   .sel .title { font-size: 13px; margin-bottom: 3px; }
   .sel .hint { font-size: 11px; margin-bottom: 3px; }
   .sel .small, .sel .gauge .gl, .sel .srow { font-size: 10.5px; }

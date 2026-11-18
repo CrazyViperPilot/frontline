@@ -75,7 +75,7 @@
   rechts Befehlskarte mit Kosten und Tastenkürzeln (nicht bezahlbare Buttons ausgegraut mit Grund).
 - **Eroberung** ([eroberung.md](eroberung.md)): Die Minimap zeigt die Flaggengebiete in der Farbe ihres Besitzers und die Viertelgrenzen, in Rot, solange das Viertel für das eigene Team gesperrt ist.
 - **Telefon quer** (Bildschirmhöhe ≤ 520 px, z. B. Pixel 8a mit 915 × 412 CSS-px): kompakte Oberfläche, damit das Spielfeld sichtbar bleibt.
-  Kopfleiste 36 px (statt 44–68 px, Wertungszeile der Zone entfällt), unten nur ≈ 110 px statt 190 px: Minimap 100 px, Auswahl (scrollbar, 108 px hoch),
+  Kopfleiste 36 px (statt 44–68 px, Wertungszeile der Zone entfällt), unten nur ≈ 110 px statt 190 px: Minimap 100 px, Auswahl (scrollbar, 60 px hoch; vorher 108 px),
   Befehlskarte mit Spalten à 50 × 48 px (Touch-Ziele; Tastenkürzel ausgeblendet), wischbar (Wischleiste, seit v5.182): Ausbildung eines Gebäudes in der oberen
   Zeile, die übrigen Aktionen (Baumodus, Abreißen, Abbruch, Abwählen …) darunter; beide Zeilen wischen gemeinsam, Schatten am Rand zeigt Inhalt dahinter.
   Ein Wischen zählt nicht als Tippen (Klick nur ohne Bewegung).

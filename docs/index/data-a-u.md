@@ -113,7 +113,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## buildings.js (6.7 KB)
 - BUILDINGS
 
-## city.js (41 KB)
+## city.js (42 KB)
 - CITY
 
 ## citykinds.js (15 KB)

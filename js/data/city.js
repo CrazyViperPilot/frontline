@@ -401,6 +401,16 @@ export const CITY = {
     stationBm: 200, // Baumaterial, das im Lager der Hauptstadt nach dem Bau bleibt
     railMax: 40, // längste Gleiskette (Zellen) bis zum Kartenrand
     stationNear: 1, // Gewicht der Entfernung zum nächsten Werk gegen die Gleislänge bei der Wahl des Platzes (je Zelle; Paket „Industriepark“ 1, vorher 3)
+    // Lagerhalle (Paket „Lagerhalle 3“, Logik js/ai/city/warehouse.js): ab hallFrom s (null = nie) baut sie eine Lagerhalle in Reichweite
+    // (CITY.warehouse.feed.reach) ihrer zur Zone nächsten vorderen FOB, deren Lager bei einer Sorte unter hallLow liegt und die noch keine
+    // Halle in Reichweite hat; Geld hallMoney über Preis und Reserve, Baumaterial hallBm über dem Preis; höchstens hallTries Plätze je Versuch
+    hallFrom: { easy: null, normal: 360, hard: 300 },
+    hallLow: 1000,
+    hallMoney: 100,
+    hallBm: 300,
+    hallTries: 6,
+    hallConnect: 80, // so viele neue Straßenzellen legt sie höchstens bis zur Lagerhalle (die FOB-Viertel liegen weit vom Straßennetz; sonst connectMax)
+    hallRetry: 60, // s bis zum nächsten Versuch nach einem Fehlschlag (kein Platz, kein Weg)
     stationRetry: 120, // s: eine Stelle, an der der Bau scheiterte, und eine Suche ohne Platz werden so lange nicht wiederholt
     stationWait: 20, // s: Platz gefunden, aber Geld oder Baumaterial reichen noch nicht für Park, Zufahrt und Gleis: so lange keine neue Suche
     // Industriepark (Paket „Industriepark“, Logik aiStation in js/ai/city/station.js, parkSite in js/ai/city/park.js): statt eines einzelnen Bahnhofs legt die KI einen

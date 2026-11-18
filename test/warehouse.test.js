@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { CITY } from '../js/data/city.js';
+import { KIND_ID } from '../js/data/citykinds.js';
 import { BALANCE } from '../js/data/balance.js';
 import { connectRoad } from '../js/game/city/roadnet.js';
 import { feedFactor } from '../js/game/city/economy.js';
@@ -125,4 +126,28 @@ test('Lagerhalle füllt vordere FOBs bis feed.reach auf, nahe zuerst; weiter weg
   assert.ok(near.store.mun + mid.store.mun <= 10 * F.rate[lv] + 1e-6, `zusammen höchstens rate je s (${near.store.mun + mid.store.mun})`);
   // weiter weg langsamer: die mittlere bekommt erst, was die nahe übrig lässt, höchstens rate × Faktor
   assert.ok(mid.store.mun <= near.store.mun + 1e-6, 'nahe FOB zuerst');
+});
+
+test('KI baut eine Lagerhalle in Reichweite ihrer knappen vorderen FOB, mit Straße zum Lager; nicht vor hallFrom, nicht auf Leicht (Paket „Lagerhalle 3“)', async () => {
+  const { aiWarehouse } = await import('../js/ai/city/warehouse.js');
+  const { cityAiMemory } = await import('../js/ai/city/common.js');
+  const { cellsOf } = await import('../js/game/city/cells.js');
+  const { mainRoadPlan } = await import('../js/game/city/commands.js');
+  const g = new Game({ seed: 3, startMoney: 5000 });
+  const m = g.mainFob(0);
+  const f = fobAt(g, 0, m.x, m.y); // Lager 0: knapp
+  const c = g.city[0];
+  const mem = cityAiMemory();
+  const call = (diff) => aiWarehouse(g, c, m, g.teams[0].res.money, CITY.ai.reserve[diff], diff, mem);
+  assert.equal(call('normal'), false, 'vor hallFrom nicht');
+  g.time = CITY.ai.hallFrom.normal + 1;
+  assert.equal(call('easy'), false, 'Leicht baut keine');
+  assert.equal(call('normal'), true, 'Normal baut eine');
+  const a = c.list.find((i) => c.kind[i] === KIND_ID.warehouse);
+  assert.ok(a != null, 'Lagerhalle ausgewiesen');
+  const [x, y] = [(a % c.cols + 1) * c.cell, (Math.floor(a / c.cols) + 1) * c.cell];
+  assert.ok(Math.hypot(x - f.x, y - f.y) <= CITY.warehouse.feed.reach, 'in Reichweite der FOB');
+  assert.deepEqual(mainRoadPlan(g, c, a), [], 'Straße zum Lager liegt');
+  assert.equal(call('normal'), false, 'höchstens eine je vordere FOB');
+  assert.ok(cellsOf(c, a).length === 4);
 });

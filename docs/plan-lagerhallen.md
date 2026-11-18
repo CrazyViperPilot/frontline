@@ -19,5 +19,5 @@ Daniel, 2026-11-18: Entwurf angenommen, Variante 1 (großer Versorgungsumkreis s
 |---|---|---|
 | Lagerhalle 1 | Zellenart, Bau, Füllen über die Straße, Infofeld, LKW laden dort, Einheiten im Umkreis nachfüllen | gebaut |
 | Lagerhalle 2 | FOBs im Umkreis (etwa 1800 px) automatisch auffüllen, Ressourcenanzeige | gebaut |
-| Lagerhalle 3 | KI baut und nutzt sie; Messung mit `npm run metrics` und `npm run econ` | offen |
+| Lagerhalle 3 | KI baut und nutzt sie; Messung mit `npm run metrics` und `npm run econ` | gebaut (5 von 6 KI-Städten, siehe PRD §10) |
 | Lagerhalle 4 | Ausbildung misst bis zur nächsten Lagerhalle | geparkt |

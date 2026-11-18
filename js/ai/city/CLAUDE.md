@@ -9,6 +9,7 @@ Einstieg `js/ai/cityai.js` (Re-Exporte). Werte `CITY.ai` in `js/data/city.js`. B
 - `station.js` – Güterbahnhof: Einfuhr-Wächter und Anlage eines Industrieparks. `importWatch`, `aiStation`
 - `park.js` – Grundriss des Industrieparks (vier Drehungen), Platzsuche und Werksplätze am Bahnhof. `parkSite`, `parkSlots`, `parkSpot`
 - `roads.js` – Straße zum Kartenrand, Anschluss, Netz verlängern, Spuren überlasteter Straßen. `aiEdge`, `extendNet`, `aiConnect`, `aiLanes`
+- `warehouse.js` – Lagerhalle nahe der vordersten knappen FOB, mit Straße zum Lager. `aiWarehouse`
 - `airbase.js` – Fliegerhorst: Bahn, Stellplätze, Tower, Kerosintank, Munitionslager, Gebietsprüfung. `aiAirport`
 - `market.js` – Markt: Überschuss verkaufen, Metall und Baumaterial zukaufen, wenn knapp. `aiMarket`
 - `raid.js` – Überfälle auf die gegnerische Stadt und Schutz der eigenen. `aiRaid`, `aiDefend`

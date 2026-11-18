@@ -5,6 +5,7 @@ import { CITY } from '../../data/city.js';
 import { prune } from '../cooldown.js';
 import { cityAiMemory } from './common.js';
 import { importWatch, aiStation } from './station.js';
+import { aiWarehouse } from './warehouse.js';
 import { aiEdge, linkNeeded, linkSpare, extendNet, aiConnect, aiLanes } from './roads.js';
 import { aiAirport } from './airbase.js';
 import { aiMarket } from './market.js';
@@ -44,6 +45,7 @@ export function aiCity(game, team, difficulty, mem = cityAiMemory()) {
   }
   if (aiAirport(game, city, main, reserve, CITY.ai.jets[difficulty] ?? CITY.ai.jets.normal, difficulty)) n++;
   if (n < CITY.ai.perStep && aiStation(game, city, main, money(), reserve, difficulty, mem)) n++;
+  if (n < CITY.ai.perStep && aiWarehouse(game, city, main, money(), reserve, difficulty, mem)) n++;
   if (n < CITY.ai.perStep && aiConnect(game, city, mem.turn)) n++;
   // Spuren (Paket „Straßennetz der KI“): dauerhaft überlastete Straßen verbreitern; kostet nur Baumaterial, zählt nicht zu perStep
   const hot = aiLanes(game, city, main, mem);

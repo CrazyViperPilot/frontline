@@ -65,8 +65,8 @@ export function connectRoad(game, c, a, pay, goal = null) {
  * an die Straße legt, bevor sie gebaut werden: das Baugebiet verlangt den Anschluss). `have` = Straßen, die die Zellen schon berühren
  * (Vorgabe: die des Gebäudes). Der Weg führt nie über die Zellen selbst.
  */
-export function connectCells(game, c, cells, pay, goal = null, have = roadsAround(c, cells, [])) {
-  const path = connectPath(game, c, cells, pay, goal, have, CITY.transport.connectMax);
+export function connectCells(game, c, cells, pay, goal = null, have = roadsAround(c, cells, []), max = CITY.transport.connectMax) {
+  const path = connectPath(game, c, cells, pay, goal, have, max);
   if (path === null) return -1;
   if (!path.length) return 0;
   if (pay) {

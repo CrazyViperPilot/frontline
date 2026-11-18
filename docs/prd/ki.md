@@ -206,6 +206,16 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   Gemessen im Paket „Luftwaffe der KI“ (30 min, alle Menü-Schalter, Seeds 3, 7, 11): vorher bestellte keine KI ein Flugzeug (die F-16 kostet 2600,
   ihr Geld blieb unter 2000) und die KI oben rechts baute nie eine Bahn; jetzt haben 5 von 6 einen versorgten Fliegerhorst (ab 710 bis 1150 s),
   3 bis 4 von 6 ihren ersten Jet (ab 1280 s). Offen: in Seed 3 findet die KI oben rechts keine freie Fläche für Bahn und Stellplätze.
+- **Lagerhalle (Paket „Lagerhalle 3“, `js/ai/city/warehouse.js`, Werte `CITY.ai.hall*`):** Ab `hallFrom` (Leicht nie, Normal 360 s,
+  Schwer 300 s) baut die KI eine Lagerhalle in Reichweite (`CITY.warehouse.feed.reach`, 1800 px) ihrer zur Zone nächsten vorderen FOB,
+  deren Lager bei einer Sorte unter `hallLow` (1000) liegt und die noch keine Halle in Reichweite hat; höchstens eine je vordere FOB.
+  Platz: der nächste freie, im Baugebiet erlaubte 2 × 2-Platz zur FOB; zuerst die Straße zum Lager (bis `hallConnect` 80 neue Zellen,
+  bezahlt), dann der Bau; höchstens `hallTries` Plätze je Versuch, nach einem Fehlschlag `hallRetry` s Pause.
+  Bis ihr erster Güterbahnhof steht, baut sie die Halle nur aus Geld über dessen Schwelle (Reserve + `stationMoney` + Preis), sonst verzögerte
+  die billigere Halle den Industriepark (gemessen: von 385 auf 849 s).
+  Gemessen (20 min, alle Menü-Schalter, Seeds 3, 7, 11): 5 von 6 KI-Städten bauen eine (nach 790 bis 1010 s); der mittlere Bestand der
+  vorderen FOBs (Munition + Treibstoff ab Minute 10) stieg bei vier Teams um 25 bis 120, bei Seed 11 blieb er gleich; Ausbildung und
+  Abschüsse etwa gleich; der Industriepark kommt so früh wie ohne Hallen.
 - **Sparen auf Kampfflugzeuge (Paket „Luftwaffe der KI“):** Hat die KI weniger als `CITY.ai.jetSave` Jets (Leicht 0, Normal 1, Schwer 2), einen
   freien versorgten Stellplatz und zu wenig Geld für den Jet mit `jetReserve`, bildet sie keine Bodentruppen aus, bis er bezahlt ist (`saveForJet`,
   wie beim Späher); die Stadt baut weiter. Weitere Jets nur aus Überschuss. Gemessen: Stadt nach 30 min gleich groß (−2 %),

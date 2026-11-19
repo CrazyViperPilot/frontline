@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.232: **Editor: Wege sofort sichtbar** (Karteneditor, nur Bild): Gezogene Straßen erscheinen in der Iso-Ansicht sofort, und neue Feldwege und Gleise werden nicht mehr vom zuvor gebauten Wegebild verdeckt. Cache v296.
 - v5.231: **Feste Karten: East Europe Railway** (§7 „Feste Karten“, docs/prd/feste-karten.md): Im Startmenü „Feste Karten“ mit Vorschau; erste Karte „East Europe Railway“ mit 7 Flaggen, bis zu 4 Spielern (je einer an jeder Kartenseite), Bahnlinie mit Eisenbahnbrücke über den Fluss, großer Fabrikhalle und Hochspannungsleitungen. Karten können 2 bis 4 Startpunkte, eigene Flaggen mit rundem Gebiet und Baugebiete an den Seiten haben; der Editor hat dafür Werkzeuge (Start Grün/Gelb, Flagge, Fabrikhalle, Strommast) und „Als feste Karte“. Cache v295.
 - v5.230: **Kontoschutz** (§Konto, Sicherheit): Erneute Registrierung setzt das Passwort unbestätigter Konten, die Bestätigung beendet alte Sitzungen, die Anmeldebremse zählt auch je E-Mail-Adresse, auf dem Server höchstens 100 Stände und 4 MB je Stand. Cache v294.
 - v5.229: **KI-Munition** (PRD `docs/prd/stadt.md` „KI“): Die Stadt-KI baut mehr Munitionswerke und Raffinerien statt BM-Werke und mehr Wohnungen für Arbeiter; ihre Hauptstadt hat im Mittel doppelt so viel Munition, ihre Armee bildet rund 12 % mehr aus. Cache v293.

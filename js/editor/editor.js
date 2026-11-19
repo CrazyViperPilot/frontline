@@ -13,6 +13,8 @@ import { Game } from '../game/game.js';
 import { createEmptyMap, normalizeMap, checkMap, accessRoutes, describeMap, loadMap, saveMap, isFixedMap, MAX_SPAWNS, MAX_FLAGS, PYLON_LINES, MAX_CRATES, MAX_FIELDS, FIELD_CROPS, MAX_FORDS, MAX_BRIDGES, BRIDGE_LEN } from '../game/mapdata.js';
 import { RIVER_SIZE, riverHeight } from '../game/landscape.js';
 import { bridgeShape } from '../game/river.js';
+import { createRoads } from '../game/roads.js';
+import { invalidateWays } from '../render/ways.js';
 import { drawBridgeTop, fordPosts, drawFordPostTop } from '../render/bridge.js';
 import { drawCrate } from '../render/sprites.js';
 import { drawPowerLines } from '../render/mappreview.js';
@@ -557,6 +559,10 @@ function syncGhost() {
   // Boden (Straßen, Parks, Bahn, Hindernisse) neu backen, aber nicht während des Ziehens
   if (st.groundDirty && !st.gesture) {
     invalidateTerrain(m);
+    invalidateWays(); // Feldwege und Gleise neu bauen (Zwischenspeicher hängt an der Karte, die beim Zeichnen gleich bleibt)
+    const ver = (g.roads?.ver ?? 0) + 1;
+    createRoads(g); // Straßen der Iso-Ansicht: Zellen im Stadtraster aus den Kartenstraßen
+    g.roads.ver = ver; // neue Version, damit das Straßenbild neu entsteht
     r.terrainIso = null;
     r.terrainGL = null;
     r.terrain = null;

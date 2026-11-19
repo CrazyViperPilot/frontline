@@ -507,6 +507,11 @@ function buildWays(map, relief, u) {
 
 const cache = { key: '', map: null, relief: null, chunks: null, fields: null };
 
+/** Karte wurde an Ort und Stelle verändert (Editor): Feldwege, Gleise und Felder beim nächsten Bild neu bauen. */
+export function invalidateWays() {
+  cache.map = null;
+}
+
 /** Füllfarbe einer Ebene: Muster (an die Bodenebene angepasst) oder einfache Farbe. */
 function fillOf(ctx, layer, season, mat, z) {
   const P = PAL[season] ?? PAL.summer;

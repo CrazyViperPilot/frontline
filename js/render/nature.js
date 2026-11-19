@@ -248,12 +248,13 @@ function limb(out, r, x, y, a, len, w, depth, droop = 0) {
 
 /** Kahle Krone (Winter): Astwerk mit feinem Zweigschleier, Schnee auf den flachen Ästen. */
 function bareCrown(c, r, x, y, rx, ry, col, snow, fine, droop = 0) {
-  const g = c.createRadialGradient(x, y - ry * 0.75, ry * 0.15, x, y - ry * 0.7, Math.max(rx, ry) * 1.05);
-  g.addColorStop(0, 'rgba(86,72,62,0.34)');
+  // Zweigschleier schwach und eng an der Krone (seit Paket „Wohnhaus“; vorher wirkte er auf Schnee wie ein grauer Hof)
+  const g = c.createRadialGradient(x, y - ry * 0.75, ry * 0.15, x, y - ry * 0.7, Math.max(rx, ry) * 0.75);
+  g.addColorStop(0, 'rgba(86,72,62,0.12)');
   g.addColorStop(1, 'rgba(86,72,62,0)');
   c.fillStyle = g;
   c.beginPath();
-  c.ellipse(x, y - ry * 0.7, rx * 1.05, ry * 1.05, 0, 0, TAU);
+  c.ellipse(x, y - ry * 0.7, rx * 0.75, ry * 0.75, 0, 0, TAU);
   c.fill();
   const segs = [];
   const main = 3 + (r() < 0.5 ? 1 : 0);

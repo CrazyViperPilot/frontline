@@ -142,14 +142,14 @@ const ALT_EDGE = 'rgba(30,22,16,0.72)'; // Kantenlinien wie bei den Einheiten
 const SNOW_W = '#f5f7fa';
 const ALT_H = 34; // Traufhöhe
 const ALT_RH = 13; // Dachhöhe
-const YARD_M = 4; // Hof ragt so weit über den Grundriss der Karte hinaus
+const YARD_M = 0; // Hofmauer auf dem gerundeten Grundriss (q8): liegt immer innerhalb der Sperrfläche b.w × b.h
 
 /** Plan eines Altbaus im Rahmen f: Hof (y…), Hauskörper (h…), Tür dA, Gauben, Fenster-Variante wv (fest je Gebäude). */
 function altPlan(o) {
   const { a0, a1, b0, b1 } = o;
   const p = {
     ya0: a0 - YARD_M, ya1: a1 + YARD_M, yb0: b0 - YARD_M, yb1: b1 + YARD_M,
-    ha0: a0 + 3, ha1: a1 - 5, hb0: b0 + 3, hb1: b1 - 9,
+    ha0: a0 + 3, ha1: a1 - 7, hb0: b0 + 3, hb1: b1 - 10,
   };
   p.side = spots(p.ha0, p.ha1, 9.5, 6);
   p.end = spots(p.hb0, p.hb1, 9.5, 6);
@@ -418,7 +418,11 @@ function altGround(c, o, season) {
   }
   // Schlagschatten des Hauses (Licht von links oben) und dunkler Kontaktschatten rund um den Wandfuß
   const [u0, u1, v0, v1] = f.R(p.ha0, p.ha1, p.hb0, p.hb1);
-  rectF(c, u0 - 0.5, v0, u1, v1 + 11.6, 'rgba(0,0,0,0.2)');
+  // Schlagschatten nach links unten (+v, wie die übrigen Häuser und die Bäume): Wände, dazu der Walm als Spitze
+  const L = ALT_H * 0.42;
+  const tip = (ALT_H + ALT_RH) * 0.42;
+  const um = (u0 + u1) / 2;
+  polyF(c, [[u0 - 0.5, v0], [u1, v0], [u1, v1 + L], [Math.min(u1, um + (u1 - u0) * 0.3), v1 + tip], [Math.max(u0, um - (u1 - u0) * 0.3), v1 + tip], [u0 - 0.5, v1 + L]], 'rgba(18,24,34,0.26)');
   rectF(c, u0 - 1.4, v0 - 1.4, u1 + 1.4, v1 + 1.4, 'rgba(20,16,12,0.35)');
   rectF(c, u0 - 0.6, v0 - 0.6, u1 + 0.6, v1 + 0.6, 'rgba(20,16,12,0.45)');
 }
@@ -1687,15 +1691,15 @@ export function drawHouseYard(ctx, b, zoom, season, rot = 0) {
  * sichtbaren Wänden. front = steht vor dem Haus (der Renderer sortiert sie hinter das Haus). Leer für andere Häuser.
  */
 /**
- * Eingerückter Hauskörper eines Altbaus mit Hof in der Drehung rot (für Sandsäcke und Fahne, stronghold.js): Mitte (cu, cv) im
- * Bildrahmen ab der Grundrissmitte, Maße W × D entlang u und v; null für andere Häuser.
+ * Hofmauer eines Altbaus in der Drehung rot (für Sandsäcke und Fahne, stronghold.js: außen vor der Mauer, Lücke am Tor): Mitte
+ * (cu, cv) im Bildrahmen ab der Grundrissmitte, Maße W × D entlang u und v; null für andere Häuser.
  */
-export function houseBodyIso(b, rot = 0) {
+export function houseYardIso(b, rot = 0) {
   if (b?.kind !== 'house' || infoOf(b).style !== 'alt') return null;
   const o = houseFrame(b, rot);
   const f = frameOf(o.long);
   const p = altPlan(o);
-  const [u0, u1, v0, v1] = f.R(p.ha0, p.ha1, p.hb0, p.hb1);
+  const [u0, u1, v0, v1] = f.R(p.ya0, p.ya1, p.yb0, p.yb1);
   return { cu: (u0 + u1) / 2, cv: (v0 + v1) / 2, W: u1 - u0, D: v1 - v0 };
 }
 
@@ -1713,8 +1717,9 @@ function yardTreesOf(b, rot) {
   const o = houseFrame(b, rot);
   const f = frameOf(o.long);
   const p = altPlan(o);
-  const at = [[p.ha0 + 3.5, p.hb1 + 7, 11], [p.ha1 + 5, p.hb0 + 4, 12]];
-  if (p.ha1 - p.ha0 >= 70) at.push([p.ha1 - 3, p.hb1 + 7.5, 9]);
+  // links vorn, rechts an der Stirnseite hinten, bei langen Häusern ein kleiner dritter mitten an der Stirnseite (nicht vor Eingang oder Ecke)
+  const at = [[p.ha0 + 3.5, p.hb1 + 6, 11], [p.ha1 + 3.5, p.hb0 + 4, 12]];
+  if (p.ha1 - p.ha0 >= 70) at.push([p.ha1 + 3.5, (p.hb0 + p.hb1) / 2 + 2, 7]);
   return at.map(([a, bb, r]) => {
     const [dx, dy] = viewToWorld(rot, ...f.at(a, bb));
     return { x: b.x + dx, y: b.y + dy, r, front: true };

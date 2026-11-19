@@ -164,7 +164,7 @@ function boundsIso(W, D) {
   return [(-u - v) * K - 4, (-u - v) * K * 0.5 - 10, (u + v) * K + 4, (u + v) * K * 0.5 + 4];
 }
 
-/** Bildschirmpunkt der Hausmitte; body (Altbau mit Hof, maptown.houseBodyIso): Mitte des eingerückten Hauskörpers. */
+/** Bildschirmpunkt der Hausmitte; body (Altbau mit Hof, maptown.houseYardIso): Mitte der Hofmauer. */
 function at(cam, h, body) {
   const q = cam.worldToScreen(h.x, h.y);
   if (!body) return q;
@@ -174,8 +174,8 @@ function at(cam, h, body) {
 
 /**
  * Ausbauten eines Hauses isometrisch (Ankerpunkt = Hausmitte am Boden, Kamera mit Geländehöhe gesetzt): part 'back' vor dem Haus
- * zeichnen, 'front' danach. h: Haus aus garrison.js (pw, ph, works); body: eingerückter Hauskörper eines Altbaus mit Hof (Säcke an
- * dessen Wänden, innerhalb der Hofmauer), sonst null.
+ * zeichnen, 'front' danach. h: Haus aus garrison.js (pw, ph, works); body: Hofmauer eines Altbaus (Säcke außen davor, Lücke am Tor),
+ * sonst null.
  */
 export function drawHouseWorksIso(ctx, cam, h, part, body = null) {
   const mask = worksMask(h);
@@ -253,7 +253,7 @@ function flag(ctx, x, y, top, k, color, t, seed) {
 
 const POLE = { house: 40, hall: 50, factory: 58, station: 46 };
 
-/** Fahne am besetzten Haus (Iso): Mast an der linken Ecke des Hauses (außen; Altbau: im Hof, body), jede Drehung. */
+/** Fahne am besetzten Haus (Iso): Mast an der linken Ecke des Hauses (außen; Altbau: an der Hofmauer, body), jede Drehung. */
 export function drawHouseFlagIso(ctx, cam, h, color, t, body = null) {
   const odd = cam.rot % 2 === 1;
   const U = (body ? body.W : odd ? h.ph : h.pw) / 2;

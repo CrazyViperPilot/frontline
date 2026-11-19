@@ -6,7 +6,7 @@ import { setIsoAt, setUprightAt, drawTree, drawRock, unitLift, flying } from '..
 import { isCapital, quarterItems, drawQuarterIso } from '../govquarter.js';
 import { drawTownBuilding, drawTeamBuilding, drawCar, drawBench, drawRubble, drawCrate, drawWreckBox } from '../isobuild.js';
 import { parkDeco } from '../terrain.js';
-import { houseYardTrees, houseBodyIso } from '../maptown.js';
+import { houseYardTrees, houseYardIso } from '../maptown.js';
 import { drawUnitSprite, drawWreckSprite } from '../isosprites.js';
 import { drawMapCarIso, drawMapCarShadowIso, drawBenchIso, drawBenchShadowIso, drawCrateIso, drawBaleIso, drawBaleShadowIso } from '../props.js';
 import { fieldBales } from '../fields.js';
@@ -178,7 +178,7 @@ export const isoItemMethods = {
     }
     setRoofSnow(this.season === 'winter'); // Winter: Schnee auf den Dächern der Stadt
     const fort = hs && this.fortShown(hs, known) ? hs : null; // besetztes oder ausgebautes Haus (seit v5.48, stronghold.js)
-    const body = fort ? houseBodyIso(o, cam.rot | 0) : null; // Altbau mit Hof: Säcke und Fahne am eingerückten Hauskörper
+    const body = fort ? houseYardIso(o, cam.rot | 0) : null; // Altbau mit Hof: Säcke vor der Hofmauer, Fahne an ihrer Ecke
     if (fort) drawHouseWorksIso(ctx, cam, fort, 'back', body); // Draht hinter dem Haus
     if (o.part?.t !== 'tree' || !drawTreeIso(ctx, cam, o.part, this.season)) drawTownBuilding(ctx, cam, o, this.season); // Bäume der Großbauten gemalt (nature.js)
     if (fort) {

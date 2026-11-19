@@ -33,6 +33,7 @@ const FL_VERIFY_HOURS = 48;     // Bestätigungslink, einmal gültig
 const FL_RESET_HOURS = 1;       // Link „Passwort zurücksetzen“, einmal gültig
 const FL_LOGIN_MAX = 10;        // Anmeldeversuche je IP …
 const FL_LOGIN_WINDOW = 900;    // … in Sekunden (15 min)
+const FL_LOGIN_MAX_EMAIL = 20;  // Anmeldeversuche je E-Mail-Adresse im selben Fenster (von allen IPs zusammen)
 const FL_MAIL_MAX_EMAIL = 5;    // Mails je E-Mail-Adresse …
 const FL_MAIL_MAX_IP = 20;      // Mails je IP (gegen Massenversand an fremde Adressen) …
 const FL_MAIL_WINDOW = 3600;    // … in Sekunden (1 h)
@@ -94,7 +95,11 @@ function fl_register(array $body) {
     $user = fl_user_by_email($pdo, $email);
     if ($user === null) $user = fl_create_user($pdo, $email, $pass);
     if ($user !== null && $user['verified_at'] === null) {
-        // Das bestehende Passwort bleibt: wer die Adresse kennt, kann es nicht über dieses Formular ändern.
+        // Unbestätigt: das neue Passwort gilt (sonst könnte jemand eine fremde Adresse vorab mit seinem Passwort belegen
+        // und das Konto nach der Bestätigung durch den Inhaber übernehmen). Offene Sitzungen gibt es hier noch keine.
+        $pdo->prepare('UPDATE users SET pass_hash = :h WHERE id = :id AND verified_at IS NULL')->execute([
+            ':h' => password_hash($pass, PASSWORD_DEFAULT), ':id' => (int) $user['id'],
+        ]);
         $token = fl_issue_token($pdo, (int) $user['id'], 'verify', FL_VERIFY_HOURS * 3600);
         $link = FL_SITE . '/api/auth.php?verify=' . $token;
         fl_send_mail($email, 'Frontline: Konto bestätigen',
@@ -113,6 +118,10 @@ function fl_login(array $body) {
     $pdo = fl_db(FL_SCHEMA);
     fl_konto_upgrade($pdo);
     if (fl_attempt($pdo, 'login', fl_who_ip(), FL_LOGIN_WINDOW) > FL_LOGIN_MAX) {
+        fail(429, 'Zu viele Anmeldeversuche. Bitte in 15 Minuten erneut versuchen.');
+    }
+    // Zusätzlich je Adresse: gegen verteiltes Durchprobieren eines Kontos von vielen IPs.
+    if (fl_attempt($pdo, 'loginmail', fl_who('login:' . $email), FL_LOGIN_WINDOW) > FL_LOGIN_MAX_EMAIL) {
         fail(429, 'Zu viele Anmeldeversuche. Bitte in 15 Minuten erneut versuchen.');
     }
     $user = fl_user_by_email($pdo, $email);
@@ -270,6 +279,8 @@ function fl_deactivate_link($raw) {
                     $pdo->prepare('UPDATE users SET active = 0 WHERE id = :id')->execute([':id' => $uid]);
                     $pdo->prepare('DELETE FROM sessions WHERE user_id = :id')->execute([':id' => $uid]);
                     $pdo->prepare('DELETE FROM tokens WHERE hash = :h')->execute([':h' => hash('sha256', $raw)]);
+                    // Sitzungen aus der Zeit vor der Bestätigung gelten nicht (Schutz vor vorab angelegten Konten).
+                    $pdo->prepare('DELETE FROM sessions WHERE user_id = :id')->execute([':id' => $uid]);
                     $ok = true;
                 }
             } catch (PDOException $e) {

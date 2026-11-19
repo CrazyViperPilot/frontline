@@ -1,0 +1,1 @@
+Kontoschutz: erneute Registrierung setzt das Passwort unbestätigter Konten, Bestätigung beendet alte Sitzungen, Anmeldebremse auch je E-Mail-Adresse, höchstens 100 Stände und 4 MB je Stand auf dem Server.

@@ -22,7 +22,8 @@ require_once __DIR__ . '/lib/http.php';
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/konto.php';
 
-const FL_MAX_BYTES = 12 * 1024 * 1024; // gepackter Stand, normal < 1 MB
+const FL_MAX_BYTES = 4 * 1024 * 1024;  // gepackter Stand, normal < 1 MB
+const FL_MAX_SAVES = 100;              // Stände je Konto (gegen Volllaufen der Datenbank)
 const FL_UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i';
 // Spalten der Liste (ohne data); Reihenfolge wie in meta_out()
 const FL_META_COLS = 'id, name, version, format, created_at, updated_at, game_time, points_blue, points_red, win_points, difficulty, ended, size';
@@ -190,6 +191,12 @@ if ($foreign) {
 }
 try {
     if ($owner === false) {
+        $st = $pdo->prepare('SELECT COUNT(*) FROM saves WHERE user_id = :u');
+        $st->execute([':u' => $uid]);
+        if ((int) $st->fetchColumn() >= FL_MAX_SAVES) {
+            $pdo->rollBack();
+            fail(413, 'Zu viele Spielstände auf dem Server (höchstens ' . FL_MAX_SAVES . '). Bitte alte Stände löschen.');
+        }
         $st = $pdo->prepare(
             'INSERT INTO saves (id, user_id, name, version, format, created_at, updated_at, game_time, points_blue, points_red,
                                 win_points, difficulty, ended, size, data)

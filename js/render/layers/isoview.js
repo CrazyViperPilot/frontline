@@ -7,7 +7,7 @@ import { setIsoGround, setUprightAt, unitLift, buildingHeight, TOWN_H } from '..
 import { scarAlpha } from '../../game/scars.js';
 import { seasonal } from '../season.js';
 import { drawBridgeIso, drawBridgeBar, bridgeBar } from '../bridge.js';
-import { drawPark } from '../maptown.js';
+import { drawPark, drawHouseYard } from '../maptown.js';
 import { drawPaving } from '../paving.js';
 import {
   drawShellIso,
@@ -81,6 +81,13 @@ export const isoViewMethods = {
     // Plätze und Bürgersteige der Karte scharf auf dem Boden (paving.js)
     setIsoGround(ctx, cam, dpr);
     drawPaving(ctx, g.map.town, 1, inRect, relief ? (x, y) => this.groundAt(ctx, x, y) : null);
+    // Höfe der Altbauten (Paket „Wohnhaus“, maptown.js): Hof, Weg und Schatten unter den Einheiten
+    for (const b of g.map.town?.buildings ?? []) {
+      if (b.kind !== 'house' || !inRect(b.x, b.y, ISO_PAD)) continue;
+      if (relief) this.groundAt(ctx, b.x, b.y);
+      else setIsoGround(ctx, cam, dpr);
+      drawHouseYard(ctx, b, z, this.season, cam.rot | 0);
+    }
     setIsoGround(ctx, cam, dpr);
     drawWays(this, ctx, this.season); // Feldwege und Gleise scharf auf dem Boden (seit v5.31, ways.js)
     this.drawQuarterGrounds(f, true); // Regierungsviertel: Rasen, Wege, Platz (govquarter.js), unter Kratern und Einheiten

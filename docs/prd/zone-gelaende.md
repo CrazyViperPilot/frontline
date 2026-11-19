@@ -94,7 +94,12 @@
   Punktsymmetrisch, mit eigenem Zufall (die übrige Karte bleibt je Seed gleich), außerhalb der Zone, frei von Gebäuden, Wald, Straßen und Wasser.
   Seit v5.44 werden Äcker und Weiden in 2D und Iso scharf über dem Boden gemalt (unten „Felder und Weiden (Aussehen)“); das Bodenbild trägt sie weiter unscharf für Minimap, WebGL-Gelände und Editor.
 - **Aussehen der Kartenstadt:** Alle Gebäude der Karte sind in 2D und Iso gemalt.
-  **Wohnhäuser** in fünf Stilen: Altbau (Walmdach, Zwerchgiebel über der Tür, Gesimse, Sockel), Klinker (Fugen, Balkone, Giebel mit Rundfenster, Dachfenster),
+  **Wohnhäuser** in fünf Stilen: Altbau auf eigenem Grundstück (Hof mit niedriger Mauer und Gitter innerhalb des Grundrisses,
+  Vorplatz, Weg zum Tor, zwei bis drei Hofbäume; dunkles Schiefer- oder Ziegel-Walmdach mit Ziegelreihen und zwei Gauben,
+  im Winter Schneedecke mit freier Traufe und Dachrinne; Steinsockel, Gesimse, Eckquader, Fensterbänke, Eingang mit Stufen
+  und Vordach, Fenster je Haus fest unregelmäßig beleuchtet; Schlagschatten nach links unten, Schneeverwehung und Kontaktschatten
+  am Wandfuß; besetzt: Fahne in Teamfarbe an der Hofecke, Sandsäcke außen vor der Mauer mit Lücke am Tor),
+  Klinker (Fugen, Balkone, Giebel mit Rundfenster, Dachfenster),
   Fachwerk (Balken, Überstand, steiles Satteldach, Fensterläden, Blumenkästen), Neubau (Flachdach mit Attika, Treppenhaus aus Glas, Balkone, Solar, Gründach oder Klimageräte); in der Stadt gemischt,
   draußen Fachwerk und Klinker, an Feldern **Gehöfte** mit Wohnhaus, Scheune, Silo und Heuballen.
   **Hallen** mit Rolltoren, Rampen, Oberlichtern, Firmenschild und Bürokopf (Sattel- oder Tonnendach), **Fabriken** mit Shedhalle, Bürotrakt, Schornstein, Silos, Rohrbrücke,

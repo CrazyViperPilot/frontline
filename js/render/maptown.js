@@ -1,5 +1,5 @@
 // Kartenstadt (seit v5.23, PRD §15): Gebäude der Karte, gemalt wie die Stadtgebäude, in 2D (von oben) und isometrisch.
-//   Häuser in der Stadt: Altbau mit Walmdach und Zwerchgiebel, Klinkerhaus mit Balkonen, Fachwerkhaus, Neubau mit Flachdach
+//   Häuser in der Stadt: Altbau auf Grundstück (Hof, Mauer, Weg, Hofbäume; Walmdach mit Gauben), Klinkerhaus mit Balkonen, Fachwerkhaus, Neubau mit Flachdach
 //   Gehöft (Haus mit Äckern daneben): Wohnhaus, Scheune und Silo; einzelne Häuser auf dem Land: Fachwerk- oder Klinkerhaus
 //   Halle: Lagerhalle aus Wellblech mit Rolltoren, Rampen, Oberlichtern und Büro; Fabrik: Shedhalle, Bürobau, Schornstein, Silos, Hof
 //   Mauern ums Fabrikgelände, der stehende Zug (Lok, Containerwagen, Kesselwagen), Bahnhof und Bahnsteig (Karteneditor)
@@ -17,7 +17,7 @@ import { parkDeco, railList } from './terrain.js';
 import {
   acTop, acUnit, archWins, band, box, bush, cap, circle, cyl, disc, door, FACE, flat, frustum, G, gable, gableTop, GLASS, hip,
   hipTop, ledge, lit, OUTLINE, onFace, parapet, plinth, poly, rectF, rectS, ribs, roofSnowOn, shade, shadow, shadowTop, snowy,
-  stroke, tint, carTop, LEAF, LEAF_SNOW, vault, vaultTop, wallBand, winsAt, balcony, crate, fan, flatTop, k3, lineT, polyF,
+  stroke, tint, carTop, LEAF, LEAF_SNOW, vault, vaultTop, wallBand, winsAt, balcony, crate, fan, flatTop, k3, lineT, polyF, rnd,
 } from './isokit.js';
 import { gate, lorry, lorryTop, pipe } from './works.js';
 import { drawBenchTop, drawMapCarTop } from './props.js';
@@ -128,44 +128,303 @@ function roofWin(g, f, a, ww, bA, bB, bm, w, H, rh) {
 
 // ---------- Häuser ----------
 
-/** Altbau (drei Geschosse): Putz, rustiziertes Erdgeschoss, Gesimse, hohe Fenster mit Verdachung, Walmdach mit Zwerchgiebel. */
+// ---------- Altbau mit Grundstück (Paket „Wohnhaus“) ----------
+// Das Haus steht eingerückt im Grundriss der Karte; ringsum ein Hof mit niedriger Mauer und Gittern, vorn Vorplatz, Stufen und Weg.
+// Boden (Hof, Vorplatz, Weg, Schatten) malt drawHouseYard im Bodendurchgang unter den Einheiten, die Bäume sind eigene Objekte
+// (houseYardTrees), Mauer und Haus stehen im Hausbild. Kräftigere Kanten und sattere Farben als die übrigen Kartenhäuser, damit
+// das Haus neben den Einheiten nicht blass wirkt.
+
+const ALT_WALL = ['#f0dcb2', '#ecc983', '#e8b9a2', '#c6d5dc', '#d5dca9', '#f2e7d2'];
+const ALT_ROOF = ['#3a4250', '#8f3c2a', '#384049', '#a24a2e', '#3f4752', '#7c3628']; // dunkler Schiefer oder Ziegel
+const ALT_STONE = '#8f897c'; // Sockel, Mauer
+const ALT_QUOIN = '#f4efe4'; // Eckquader
+const ALT_EDGE = 'rgba(30,22,16,0.72)'; // Kantenlinien wie bei den Einheiten
+const SNOW_W = '#f5f7fa';
+const ALT_H = 34; // Traufhöhe
+const ALT_RH = 13; // Dachhöhe
+const YARD_M = 0; // Hofmauer auf dem gerundeten Grundriss (q8): liegt immer innerhalb der Sperrfläche b.w × b.h
+
+/** Plan eines Altbaus im Rahmen f: Hof (y…), Hauskörper (h…), Tür dA, Gauben, Fenster-Variante wv (fest je Gebäude). */
+function altPlan(o) {
+  const { a0, a1, b0, b1 } = o;
+  const p = {
+    ya0: a0 - YARD_M, ya1: a1 + YARD_M, yb0: b0 - YARD_M, yb1: b1 + YARD_M,
+    ha0: a0 + 3, ha1: a1 - 7, hb0: b0 + 3, hb1: b1 - 10,
+  };
+  p.side = spots(p.ha0, p.ha1, 9.5, 6);
+  p.end = spots(p.hb0, p.hb1, 9.5, 6);
+  p.mid = Math.floor(p.side.length / 2);
+  p.dA = p.side[p.mid];
+  const near = (t) => p.side.reduce((m, s, i) => (i !== p.mid && Math.abs(s - t) < Math.abs(p.side[m] - t) ? i : m), p.mid === 0 ? 1 : 0);
+  const L = p.ha1 - p.ha0;
+  p.dormers = [...new Set([near(p.ha0 + L * 0.28), near(p.ha0 + L * 0.72)])].map((i) => p.side[i]);
+  p.wv = (o.seed >>> 3) % 8;
+  return p;
+}
+
+/** Punkt (a, b, h) im Rahmen f, als Zahlentripel (u, v, h). */
+const uvh = (f, a, b, h) => [...f.at(a, b), h];
+const lerp3 = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, p[2] + (q[2] - p[2]) * t];
+
+/** Gesims: umlaufendes, leicht vorstehendes Band (Oberseite hell, darunter eine Schattenkante). */
+function cornice(g, f, p, h, t, out, color) {
+  const [u0, u1, v0, v1] = f.R(p.ha0 - out, p.ha1 + out, p.hb0 - out, p.hb1 + out);
+  const [i0, i1, j0, j1] = f.R(p.ha0, p.ha1, p.hb0, p.hb1);
+  const { P } = g;
+  ledge(g, i0, i1, j0, j1, h - 0.25, 'rgba(0,0,0,0.32)', 1);
+  // nur die beiden sichtbaren Stirnseiten und ein schmaler Deckstreifen (eine volle Oberseite läge über den Geschossen darüber)
+  poly(g, [P(u0, v1, h), P(u1, v1, h), P(u1, v1, h + t), P(u0, v1, h + t)], lit(color, ...FACE.s), ALT_EDGE);
+  poly(g, [P(u1, v0, h), P(u1, v1, h), P(u1, v1, h + t), P(u1, v0, h + t)], lit(color, ...FACE.e), ALT_EDGE);
+  const top = roofSnowOn() ? SNOW_W : tint(color, 0.25);
+  poly(g, [P(u0, v1, h + t), P(u1, v1, h + t), P(u1, v0, h + t), P(i1, v0, h + t), P(i1, j1, h + t), P(u0, j1, h + t)], lit(top, ...FACE.top), null);
+}
+
+/** Eckquader: abwechselnd lange und kurze Steine an den sichtbaren Hausecken. */
+function quoins(g, f, p, h0, h1) {
+  const st = 2.3;
+  const line = 'rgba(70,58,44,0.45)';
+  for (let h = h0, i = 0; h < h1 - 0.4; h += st, i++) {
+    const t = Math.min(h1, h + st - 0.35);
+    const w = i % 2 ? 2.2 : 3.6;
+    const ws = onFace(g, f.side, p.hb1);
+    const we = onFace(g, f.end, p.ha1);
+    for (const [pt, a, dir, face] of [[ws, p.ha0, 1, f.side], [ws, p.ha1, -1, f.side], [we, p.hb1, -1, f.end], [we, p.hb0, 1, f.end]]) {
+      poly(g, [pt(a, h), pt(a + dir * w, h), pt(a + dir * w, t), pt(a, t)], lit(ALT_QUOIN, ...FACE[face]), g.fine ? line : null);
+    }
+  }
+}
+
+/** Fensterbänke (Stein) unter den Fenstern einer Wand, im Winter mit Schnee obenauf. */
+function sills(g, f, face, plane, at, h, ww) {
+  const top = roofSnowOn() ? SNOW_W : '#d9d3c6';
+  for (const a of at) {
+    const R = face === f.side ? f.R(a - ww / 2 - 0.8, a + ww / 2 + 0.8, plane, plane + 0.9) : f.R(plane, plane + 0.9, a - ww / 2 - 0.8, a + ww / 2 + 0.8);
+    box(g, ...R, h - 1.05, h - 0.45, '#cfc8b8', top, g.fine ? 'rgba(40,32,24,0.5)' : null);
+  }
+}
+
+/** Schneeverwehung am Wandfuß einer sichtbaren Wand (Winter): unregelmäßiger Wulst, Lücke an der Tür. */
+function drift(g, face, plane, a0, a1, seed, gap = null) {
+  if (!roofSnowOn()) return;
+  const pt = onFace(g, face, plane);
+  const n = Math.max(4, Math.round((a1 - a0) / 3));
+  const top = [];
+  const foot = [];
+  for (let i = 0; i <= n; i++) {
+    const a = a0 + ((a1 - a0) * i) / n;
+    const r = rnd(seed + i * 13);
+    let k = 0.55 + 0.45 * r;
+    if (gap && Math.abs(a - gap[0]) < gap[1]) k = 0.12;
+    if (i === 0 || i === n) k *= 0.5;
+    top.push(pt(a, 0.35 + 1.6 * k, 0.05));
+    foot.push(pt(a, 0, 0.6 + 2.6 * k));
+  }
+  poly(g, [...top, ...foot.reverse()], lit(SNOW_W, ...FACE[face]), null);
+  stroke(g, top, 'rgba(150,165,185,0.55)', 0.5);
+}
+
+/** Niedrige Hofmauer mit Gitter von (a0, b0) nach (a1, b1) im Rahmen f (gerade entlang a oder b), Pfeiler an den Enden. */
+function yardWall(g, f, a0, b0, a1, b1) {
+  const alongA = b0 === b1;
+  const t = 0.6;
+  const R = alongA ? f.R(Math.min(a0, a1), Math.max(a0, a1), b0 - t, b0 + t) : f.R(a0 - t, a0 + t, Math.min(b0, b1), Math.max(b0, b1));
+  const top = roofSnowOn() ? SNOW_W : tint(ALT_STONE, 0.3);
+  box(g, ...R, 0, 1.7, ALT_STONE, top, ALT_EDGE);
+  if (g.fine) {
+    // Gitter: Stäbe und Handlauf
+    const len = Math.hypot(a1 - a0, b1 - b0);
+    const n = Math.max(1, Math.round(len / 1.6));
+    for (let i = 1; i < n; i++) {
+      const a = a0 + ((a1 - a0) * i) / n;
+      const b = b0 + ((b1 - b0) * i) / n;
+      stroke(g, [pf(g, f, a, b, 1.7), pf(g, f, a, b, 4.1)], 'rgba(38,40,44,0.85)', 0.35);
+    }
+    stroke(g, [pf(g, f, a0, b0, 4.1), pf(g, f, a1, b1, 4.1)], 'rgba(38,40,44,0.9)', 0.5);
+  }
+  for (const [a, b] of [[a0, b0], [a1, b1]]) box(g, ...f.R(a - 1, a + 1, b - 1, b + 1), 0, 4.8, ALT_STONE, top, ALT_EDGE);
+}
+
+/** Walmdach mit Schneedecke (Winter: unten ein dunkler Streifen an der Traufe), Ziegelreihen (fein), Dachrinne und Gauben. */
+function altRoof(g, f, p, roof, wall, extra) {
+  const o = 1.4;
+  const H = ALT_H;
+  const rh = ALT_RH;
+  const a0 = p.ha0 - o;
+  const a1 = p.ha1 + o;
+  const b0 = p.hb0 - o;
+  const b1 = p.hb1 + o;
+  const he = H - 0.7;
+  const w = (b1 - b0) / 2;
+  const bm = (b0 + b1) / 2;
+  const snow = roofSnowOn();
+  const P3 = (q) => g.P(q[0], q[1], q[2]);
+  const r1 = uvh(f, a0 + w, bm, H + rh);
+  const r2 = uvh(f, a1 - w, bm, H + rh);
+  const E = (a, b) => uvh(f, a, b, he);
+  // Flächen: Eckpunkte an der Traufe (e0, e1) und oben (t0, t1), Normale im Rahmen
+  const face = (e0, e1, t0, t1, n) => ({ e0, e1, t0, t1, n: f.n(...n) });
+  const back = face(E(a0, b0), E(a1, b0), r1, r2, [0, -rh, w]);
+  const left = face(E(a0, b1), E(a0, b0), r1, r1, [-rh, 0, w]);
+  const right = face(E(a1, b0), E(a1, b1), r2, r2, [rh, 0, w]);
+  const front = face(E(a0, b1), E(a1, b1), r1, r2, [0, rh, w]);
+  const paintFace = (F) => {
+    const pts = F.t0 === F.t1 ? [F.e0, F.t0, F.e1] : [F.e0, F.e1, F.t1, F.t0];
+    poly(g, pts.map(P3), lit(roof, ...F.n), ALT_EDGE);
+    const eave = snow ? 0.2 : 1;
+    if (g.fine) {
+      // Ziegel- bzw. Schieferreihen parallel zur Traufe
+      for (let t = 0.07; t < 0.97; t += 0.075) {
+        const line = [P3(lerp3(F.e0, F.t0, t)), P3(lerp3(F.e1, F.t1, t))];
+        stroke(g, line, t < eave ? 'rgba(0,0,0,0.3)' : 'rgba(110,125,145,0.16)', 0.4);
+      }
+    }
+    if (snow) {
+      // Schneedecke: oben geschlossen, unten unregelmäßig (Rinne frei)
+      const n = 7;
+      const lo = [];
+      for (let i = 0; i <= n; i++) {
+        const s = i / n;
+        const t = eave + 0.06 * rnd(p.wv * 7 + i * 5 + Math.round(F.n[0] * 3 + F.n[1] * 5));
+        const ea = lerp3(F.e0, F.e1, s);
+        const ta = lerp3(F.t0, F.t1, s);
+        lo.push(P3(lerp3(ea, ta, t)));
+      }
+      const top = F.t0 === F.t1 ? [P3(F.t0)] : [P3(F.t1), P3(F.t0)];
+      poly(g, [...lo, ...top], lit(SNOW_W, ...F.n), null);
+      stroke(g, lo, 'rgba(120,135,155,0.5)', 0.5);
+    }
+  };
+  paintFace(back);
+  paintFace(left);
+  extra?.();
+  paintFace(right);
+  paintFace(front);
+  // Dachrinne an den sichtbaren Traufen, Grate und First
+  for (const [q0, q1] of [[E(a0, b1), E(a1, b1)], [E(a1, b1), E(a1, b0)]]) stroke(g, [P3(q0), P3(q1)], '#23272c', 1.3);
+  const ridge = shade(roof, 0.45);
+  stroke(g, [P3(E(a0, b1)), P3(r1), P3(r2), P3(E(a1, b1))], ridge, 1);
+  stroke(g, [P3(r2), P3(E(a1, b0))], ridge, 1);
+  if (snow) stroke(g, [P3(r1), P3(r2)], SNOW_W, 1);
+  // Gauben auf der vorderen Dachfläche
+  const slope = (b) => H + rh - (Math.abs(b - bm) * rh) / w;
+  const bf = p.hb1 - 2.5;
+  for (const a of p.dormers) {
+    const hf = slope(bf);
+    const R = f.R(a - 3.2, a + 3.2, bf - 6.5, bf);
+    box(g, ...R, hf - 1.2, hf + 5.8, wall, wall, ALT_EDGE);
+    winsAt(g, f.side, bf, [a], [[hf + 0.6, hf + 4.8]], 3.4, { seed: p.wv * 31 + 5, lit: 0.5, cross: true });
+    if (snow) sills(g, f, f.side, bf, [a], hf + 0.6, 3.4);
+    gable(g, f.cross, ...f.R(a - 3.2, a + 3.2, bf - 6.5, bf), hf + 5.8, 2.8, roof, wall, null, 0.9);
+    stroke(g, [pf(g, f, a - 4.1, bf + 0.9, hf + 5.8 - 0.4), pf(g, f, a, bf + 0.9, hf + 8.6), pf(g, f, a + 4.1, bf + 0.9, hf + 5.8 - 0.4)], ALT_EDGE, 0.8);
+  }
+}
+
+/** Altbau (drei Geschosse) auf seinem Grundstück: Steinsockel, Gesimse, Eckquader, Fensterbänke, Eingang mit Stufen und Vordach. */
 function altbau(g, o) {
   const f = frameOf(o.long);
-  const { a0, a1, b0, b1 } = o;
-  const wall = PLASTER[o.c % PLASTER.length];
-  const roof = o.c % 2 ? SLATE : TILES[o.c % 3];
-  const H = 34;
+  const p = altPlan(o);
+  const { ha0, ha1, hb0, hb1 } = p;
+  const wall = ALT_WALL[o.c % ALT_WALL.length];
+  const roof = ALT_ROOF[o.c % ALT_ROOF.length];
+  const H = ALT_H;
+  const snow = roofSnowOn();
   const R = (x0, x1, y0, y1) => f.R(x0, x1, y0, y1);
-  shadow(g, ...R(a0, a1, b0, b1), H + 14);
-  box(g, ...R(a0, a1, b0, b1), 0, H, wall);
-  wallBand(g, ...R(a0, a1, b0, b1), 0, 10.4, shade(wall, 0.09));
-  courses(g, f, a0, a1, b0, b1, 0, 10.4, 2.6, 'rgba(0,0,0,0.1)');
-  plinth(g, ...R(a0, a1, b0, b1), wall, 1.4);
-  wallBand(g, ...R(a0, a1, b0, b1), 10.4, 11.6, tint(wall, 0.3));
-  ledge(g, ...R(a0, a1, b0, b1), 22.6, 'rgba(0,0,0,0.16)');
-  const side = spots(a0, a1, 9.5, 6);
-  const end = spots(b0, b1, 9.5, 6);
-  const mid = Math.floor(side.length / 2);
-  const dA = side[mid];
-  winsAt(g, f.side, b1, side, [[2.8, 8.2]], 4, { seed: o.seed, skip: (i) => i === mid, cross: true });
-  winsAt(g, f.side, b1, side, [[13.6, 20.2], [24.4, 30.8]], 4, { seed: o.seed + 1, cross: true });
-  winsAt(g, f.end, a1, end, [[2.8, 8.2], [13.6, 20.2], [24.4, 30.8]], 4, { seed: o.seed + 2, cross: true });
-  lintels(g, f.side, b1, side, 20.6, 4, tint(wall, 0.3));
-  lintels(g, f.end, a1, end, 20.6, 4, tint(wall, 0.3));
-  door(g, f.side, b1, dA, 5, 9, '#5b3a28');
-  if (g.fine) disc(g, f.side, b1, dA, 9.6, 2.5, lit('#3d566d', ...FACE[f.side]), null, 0, 10);
-  box(g, ...R(dA - 4.2, dA + 4.2, b1, b1 + 1.7), 0, 1.1, '#cbc4b4');
-  box(g, ...R(a0 - 0.9, a1 + 0.9, b0 - 0.9, b1 + 0.9), H - 1.4, H, tint(wall, 0.24));
-  const bm = (b0 + b1) / 2;
-  hip(g, ...R(a0, a1, b0, b1), H, 13, roof, () => {
-    chimney(g, f, a0 + (a1 - a0) * 0.26, bm - 3, H + 3, H + 17);
-    chimney(g, f, a0 + (a1 - a0) * 0.74, bm - 3, H + 3, H + 17);
+  // Hofmauer hinten (vor dem Haus gemalt, das sie verdeckt)
+  yardWall(g, f, p.ya0, p.yb0, p.ya1, p.yb0);
+  yardWall(g, f, p.ya0, p.yb0, p.ya0, p.yb1);
+  // Hauskörper
+  box(g, ...R(ha0, ha1, hb0, hb1), 0, H, wall, wall, ALT_EDGE);
+  wallBand(g, ...R(ha0, ha1, hb0, hb1), 3, 11, shade(wall, 0.07));
+  courses(g, f, ha0, ha1, hb0, hb1, 3, 11, 2, 'rgba(0,0,0,0.13)'); // Rustika im Erdgeschoss
+  // Steinsockel mit Fugen
+  wallBand(g, ...R(ha0, ha1, hb0, hb1), 0, 3, ALT_STONE);
+  if (g.fine) {
+    stroke(g, [pf(g, f, ha0, hb1, 1.5), pf(g, f, ha1, hb1, 1.5), pf(g, f, ha1, hb0, 1.5)], 'rgba(0,0,0,0.25)', 0.35);
+    for (let i = 1, a = ha0 + 2.6; a < ha1; a += 2.6, i++) stroke(g, [pf(g, f, a, hb1, i % 2 ? 0 : 1.5), pf(g, f, a, hb1, i % 2 ? 1.5 : 3)], 'rgba(0,0,0,0.22)', 0.35);
+  }
+  // Kontaktschatten am Wandfuß
+  ledge(g, ...R(ha0, ha1, hb0, hb1), 0.2, 'rgba(20,16,12,0.6)', 1.4);
+  stroke(g, [pf(g, f, ha0, hb1, 3), pf(g, f, ha1, hb1, 3), pf(g, f, ha1, hb0, 3)], 'rgba(30,24,18,0.55)', 0.7);
+  quoins(g, f, p, 3, H - 2.2);
+  // Fenster: beleuchtet nach der Variante wv des Gebäudes (fest je Lage), unregelmäßig
+  const ws = { cross: true, lit: 0.34, frame: '#f4f0e6' };
+  const seed = p.wv * 977 + 13;
+  winsAt(g, f.side, hb1, p.side, [[4.2, 8.8]], 4, { ...ws, seed, skip: (i) => i === p.mid });
+  winsAt(g, f.side, hb1, p.side, [[13.8, 20.2], [24.6, 30.6]], 4, { ...ws, seed: seed + 1 });
+  winsAt(g, f.end, ha1, p.end, [[4.2, 8.8], [13.8, 20.2], [24.6, 30.6]], 4, { ...ws, seed: seed + 2 });
+  lintels(g, f.side, hb1, p.side, 20.6, 4, tint(wall, 0.35));
+  lintels(g, f.end, ha1, p.end, 20.6, 4, tint(wall, 0.35));
+  for (const h of [4.2, 13.8, 24.6]) {
+    sills(g, f, f.side, hb1, h === 4.2 ? p.side.filter((_, i) => i !== p.mid) : p.side, h, 4);
+    sills(g, f, f.end, ha1, p.end, h, 4);
+  }
+  // Gesimse: Gurtgesims über dem Erdgeschoss, Stockwerksband, Traufgesims
+  cornice(g, f, p, 11, 1, 0.6, tint(wall, 0.3));
+  cornice(g, f, p, 22.4, 0.6, 0.35, tint(wall, 0.3));
+  cornice(g, f, p, H - 2.2, 0.9, 0.5, tint(wall, 0.3));
+  cornice(g, f, p, H - 1.3, 1.3, 1.1, tint(wall, 0.4));
+  // Eingang: Tür mit Oberlicht, Leuchten, Stufen, Vordach
+  const dA = p.dA;
+  door(g, f.side, hb1, dA, 4.6, 9.6, '#4a2c1e');
+  if (g.fine) {
+    stroke(g, [pf(g, f, dA, hb1, 2.4), pf(g, f, dA, hb1, 9.6)], 'rgba(0,0,0,0.45)', 0.4);
+    disc(g, f.side, hb1, dA, 9.9, 2.3, '#f3d885', ALT_EDGE, 0, 10);
+  }
+  for (const s of [-1, 1]) {
+    const [lx, ly] = pf(g, f, dA + s * 4.3, hb1 + 0.6, 8);
+    circle(g.ctx, lx, ly, Math.max(0.8, 0.9 * g.z), '#ffd27a');
+  }
+  const stepTop = snow ? SNOW_W : '#d8d2c4';
+  box(g, ...R(dA - 4.4, dA + 4.4, hb1, hb1 + 3.4), 0, 0.8, '#b8b1a2', stepTop, ALT_EDGE);
+  box(g, ...R(dA - 3.8, dA + 3.8, hb1, hb1 + 2.3), 0.8, 1.6, '#b8b1a2', stepTop, ALT_EDGE);
+  box(g, ...R(dA - 3.2, dA + 3.2, hb1, hb1 + 1.2), 1.6, 2.4, '#b8b1a2', stepTop, ALT_EDGE);
+  for (const s of [-1, 1]) stroke(g, [pf(g, f, dA + s * 3.9, hb1, 8.6), pf(g, f, dA + s * 3.9, hb1 + 3.3, 11)], '#2c3036', 0.6);
+  box(g, ...R(dA - 4.6, dA + 4.6, hb1, hb1 + 3.8), 11, 11.7, '#3b4048', snow ? SNOW_W : '#5a616b', ALT_EDGE);
+  drift(g, f.side, hb1, ha0, ha1, o.seed, [dA, 4.8]);
+  drift(g, f.end, ha1, hb0, hb1, o.seed + 50);
+  // Dach mit Schornsteinen (hinten) und Gauben
+  const bm = (hb0 + hb1) / 2;
+  altRoof(g, f, p, roof, wall, () => {
+    for (const t of [0.24, 0.76]) {
+      const a = ha0 + (ha1 - ha0) * t;
+      box(g, ...R(a - 1.9, a + 1.9, bm - 4.9, bm - 1.1), H + 3, H + 18, '#8a4a38', '#8a4a38', ALT_EDGE);
+      box(g, ...R(a - 2.3, a + 2.3, bm - 5.3, bm - 0.7), H + 18, H + 19, '#5b5753', snow ? SNOW_W : '#6f6a66', ALT_EDGE);
+    }
   });
-  // Zwerchgiebel über dem Eingang
-  const dw = 7;
-  box(g, ...R(dA - dw, dA + dw, b1 - 7, b1), H - 0.5, H + 9, wall);
-  winsAt(g, f.side, b1, [dA], [[H + 1.6, H + 7]], 4.4, { seed: o.seed + 3, cross: true });
-  gable(g, f.cross, ...R(dA - dw, dA + dw, b1 - 7, b1), H + 9, 5, roof, wall);
+  // Hofmauer vorn mit Tor am Weg
+  yardWall(g, f, p.ya1, p.yb0, p.ya1, p.yb1);
+  yardWall(g, f, p.ya0, p.yb1, dA - 3.2, p.yb1);
+  yardWall(g, f, dA + 3.2, p.yb1, p.ya1, p.yb1);
+}
+
+/** Boden des Altbaus im Rahmen des Hausbilds (Iso, örtlich): Hof, Vorplatz, Weg, Schlagschatten, Kontaktschatten. */
+function altGround(c, o, season) {
+  const f = frameOf(o.long);
+  const p = altPlan(o);
+  const rect = (a0, a1, b0, b1, fill) => {
+    const [u0, u1, v0, v1] = f.R(a0, a1, b0, b1);
+    rectF(c, u0, v0, u1, v1, fill);
+  };
+  const winter = season === 'winter';
+  const yard = winter ? '#eef1f4' : season === 'autumn' ? '#a7a467' : '#93b466';
+  const pave = winter ? '#cdd2d6' : '#cbc3b1';
+  rect(p.ya0, p.ya1, p.yb0, p.yb1, yard);
+  // Vorplatz vor der Tür und Weg zum Tor und hinaus
+  rect(p.dA - 9, p.dA + 9, p.hb1, p.hb1 + 6, pave);
+  rect(p.dA - 2.6, p.dA + 2.6, p.hb1, p.yb1 + 7, winter ? '#c3c8cc' : '#d6c9a8');
+  if (winter) {
+    // Fußspuren im Schnee
+    for (let i = 0; i < 6; i++) rect(p.dA - 1.4 + (i % 2) * 1.6, p.dA - 0.4 + (i % 2) * 1.6, p.hb1 + 6 + i * 2, p.hb1 + 6.8 + i * 2, 'rgba(120,130,140,0.35)');
+  }
+  // Schlagschatten des Hauses (Licht von links oben) und dunkler Kontaktschatten rund um den Wandfuß
+  const [u0, u1, v0, v1] = f.R(p.ha0, p.ha1, p.hb0, p.hb1);
+  // Schlagschatten nach links unten (+v, wie die übrigen Häuser und die Bäume): Wände, dazu der Walm als Spitze
+  const L = ALT_H * 0.42;
+  const tip = (ALT_H + ALT_RH) * 0.42;
+  const um = (u0 + u1) / 2;
+  polyF(c, [[u0 - 0.5, v0], [u1, v0], [u1, v1 + L], [Math.min(u1, um + (u1 - u0) * 0.3), v1 + tip], [Math.max(u0, um - (u1 - u0) * 0.3), v1 + tip], [u0 - 0.5, v1 + L]], 'rgba(18,24,34,0.26)');
+  rectF(c, u0 - 1.4, v0 - 1.4, u1 + 1.4, v1 + 1.4, 'rgba(20,16,12,0.35)');
+  rectF(c, u0 - 0.6, v0 - 0.6, u1 + 0.6, v1 + 0.6, 'rgba(20,16,12,0.45)');
 }
 
 /** Klinkerhaus (drei Geschosse): Ziegel mit weißen Fensterrahmen, Balkone, Satteldach mit Dachfenstern, Rundfenster im Giebel. */
@@ -1391,6 +1650,82 @@ function pylonAng(b) {
   return (((Math.round(a / st) % 8) + 8) % 8) * st; // Traversen sind symmetrisch: 0 … 180°
 }
 
+/** Örtlicher Rahmen eines Hauses der Karte in der Drehung rot: Maße W × D (8-px-Raster), Längsachse und Grundriss a0 … b1. */
+function houseFrame(b, rot, info = infoOf(b)) {
+  const odd = rot % 2 === 1;
+  const W = q8(odd ? b.h : b.w);
+  const D = q8(odd ? b.w : b.h);
+  const A = Math.max(W, D);
+  const B = Math.min(W, D);
+  return { ...info, W, D, long: W >= D ? 'u' : 'v', a0: -A / 2, a1: A / 2, b0: -B / 2, b1: B / 2 };
+}
+
+/** Welt-Versatz (x, y) eines Punkts (u, v) im Bildrahmen der Drehung rot (Umkehrung von VROT). */
+function viewToWorld(rot, u, v) {
+  const [ra, rb, rc, rd] = VROT[rot & 3];
+  return [ra * u + rc * v, rb * u + rd * v];
+}
+
+/**
+ * Iso, Bodendurchgang (seit Paket „Wohnhaus“): Hof, Vorplatz, Weg und Schatten eines Altbaus unter den Einheiten. Weltkoordinaten
+ * auf dem Iso-Boden (setIsoGround bzw. groundAt gesetzt), wie drawPark. false = kein Altbau.
+ */
+export function drawHouseYard(ctx, b, zoom, season, rot = 0) {
+  if (b.kind !== 'house') return false;
+  const info = infoOf(b);
+  if (info.style !== 'alt') return false;
+  const o = houseFrame(b, rot, info);
+  const s = season === 'winter' || season === 'autumn' ? season : 'summer';
+  const r = Math.max(o.W, o.D) / 2 + YARD_M + 14;
+  const [ra, rb, rc, rd] = VROT[rot & 3];
+  const key = `mhy|${info.c}|${(info.seed >>> 3) % 8}|${o.W}|${o.D}|${rot & 3}|${s}`;
+  putTop(ctx, b.x, b.y, zoom, key, [-r, -r, r, r], (c) => {
+    c.transform(ra, rb, rc, rd, 0, 0);
+    altGround(c, o, s);
+  });
+  return true;
+}
+
+/**
+ * Bäume im Hof eines Altbaus (Weltkoordinaten, je Drehung fest): zwei, bei langen Häusern drei, an den Ecken des Hofs vor den
+ * sichtbaren Wänden. front = steht vor dem Haus (der Renderer sortiert sie hinter das Haus). Leer für andere Häuser.
+ */
+/**
+ * Hofmauer eines Altbaus in der Drehung rot (für Sandsäcke und Fahne, stronghold.js: außen vor der Mauer, Lücke am Tor): Mitte
+ * (cu, cv) im Bildrahmen ab der Grundrissmitte, Maße W × D entlang u und v; null für andere Häuser.
+ */
+export function houseYardIso(b, rot = 0) {
+  if (b?.kind !== 'house' || infoOf(b).style !== 'alt') return null;
+  const o = houseFrame(b, rot);
+  const f = frameOf(o.long);
+  const p = altPlan(o);
+  const [u0, u1, v0, v1] = f.R(p.ya0, p.ya1, p.yb0, p.yb1);
+  return { cu: (u0 + u1) / 2, cv: (v0 + v1) / 2, W: u1 - u0, D: v1 - v0 };
+}
+
+const yardTrees = new WeakMap(); // Gebäude → [Bäume je Drehung]
+
+export function houseYardTrees(b, rot = 0) {
+  if (b.kind !== 'house') return [];
+  let e = yardTrees.get(b);
+  if (!e) yardTrees.set(b, (e = []));
+  return (e[rot & 3] ??= yardTreesOf(b, rot & 3));
+}
+
+function yardTreesOf(b, rot) {
+  if (infoOf(b).style !== 'alt') return [];
+  const o = houseFrame(b, rot);
+  const f = frameOf(o.long);
+  const p = altPlan(o);
+  // links vorn, rechts an der Stirnseite hinten, bei langen Häusern ein kleiner dritter mitten an der Stirnseite (nicht vor Eingang oder Ecke)
+  const at = [[p.ha0 + 3.5, p.hb1 + 6, 11], [p.ha1 + 3.5, p.hb0 + 4, 12]];
+  if (p.ha1 - p.ha0 >= 70) at.push([p.ha1 + 3.5, (p.hb0 + p.hb1) / 2 + 2, 7]);
+  return at.map(([a, bb, r]) => {
+    const [dx, dy] = viewToWorld(rot, ...f.at(a, bb));
+    return { x: b.x + dx, y: b.y + dy, r, front: true };
+  });
+}
+
 /** Iso: Gebäude b der Karte gemalt; false = nicht hier (schräger Zug oder Bahnsteig). */
 export function drawMapIso(ctx, cam, b) {
   if ((b.kind === 'train' || b.kind === 'platform') && b.angle) return false;
@@ -1421,12 +1756,16 @@ export function drawMapIso(ctx, cam, b) {
     return put(ctx, cam, b, `mz|${b.part}|${info.c}|${long}|${snow}`, isoBounds(-50, 50, -50, 50, 36), (g) => zugteil(g, o));
   }
   if (b.kind === 'house') {
-    const W = q8(odd ? b.h : b.w);
-    const D = q8(odd ? b.w : b.h);
-    const A = Math.max(W, D);
-    const B = Math.min(W, D);
-    const o = { ...info, long: W >= D ? 'u' : 'v', a0: -A / 2, a1: A / 2, b0: -B / 2, b1: B / 2 };
+    const o = houseFrame(b, cam.rot, info);
+    const { W, D } = o;
     const paint = HOUSE_STYLES[info.style];
+    if (info.style === 'alt') {
+      // Altbau mit Grundstück: Bild reicht über den Grundriss (Hofmauer), Fenster-Variante wv im Schlüssel
+      const m = W / 2 + YARD_M + 2;
+      const n = D / 2 + YARD_M + 2;
+      const key = `mh|alt|${info.c}|${(info.seed >>> 3) % 8}|${W}|${D}|${snow}`;
+      return put(ctx, cam, b, key, isoBounds(-m, m, -n, n, ALT_H + ALT_RH + 10), (g) => paint(g, o));
+    }
     return put(ctx, cam, b, `mh|${info.style}|${info.c}|${W}|${D}|${snow}`, isoBounds(-W / 2 - 2, W / 2 + 2, -D / 2 - 2, D / 2 + 2, HOUSE_TALL[info.style] + 4), (g) => paint(g, o));
   }
   const paint = PAINTERS[b.kind];

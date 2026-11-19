@@ -1,1 +1,0 @@
-**Bauvorschau, Plätze und Bürgersteige** (§9a Editor, §15 Baumodus): Editor und Stadt-Baumodus zeigen mit der Maus vor dem Klick, wo der Bau landet (rot, wo die Stadt nicht bauen darf); der Editor hat neu „Platz“ (graue Pflasterfläche, ein Feld groß, lückenlos malbar) und „Bürgersteig“ (rastet an der Straßenkante ein), beides nur Boden.

@@ -6,6 +6,7 @@ import { setIsoAt, setUprightAt, drawTree, drawRock, unitLift, flying } from '..
 import { isCapital, quarterItems, drawQuarterIso } from '../govquarter.js';
 import { drawTownBuilding, drawTeamBuilding, drawCar, drawBench, drawRubble, drawCrate, drawWreckBox } from '../isobuild.js';
 import { parkDeco } from '../terrain.js';
+import { houseYardTrees, houseBodyIso } from '../maptown.js';
 import { drawUnitSprite, drawWreckSprite } from '../isosprites.js';
 import { drawMapCarIso, drawMapCarShadowIso, drawBenchIso, drawBenchShadowIso, drawCrateIso, drawBaleIso, drawBaleShadowIso } from '../props.js';
 import { fieldBales } from '../fields.js';
@@ -30,7 +31,13 @@ export const isoItemMethods = {
     const PAD = ISO_PAD;
     const items = [];
     const town = g.map.town;
-    for (const b of town?.buildings ?? []) if (inRect(b.x, b.y, PAD)) items.push({ k: cam.depth(b.x, b.y), t: 0, o: b });
+    for (const b of town?.buildings ?? []) {
+      if (!inRect(b.x, b.y, PAD)) continue;
+      const k = cam.depth(b.x, b.y);
+      items.push({ k, t: 0, o: b });
+      // Hofbäume der Altbauten (maptown.js): vor den Wänden, also nach dem Haus malen
+      for (const t of houseYardTrees(b, cam.rot | 0)) items.push({ k: Math.max(cam.depth(t.x, t.y), k + 0.5), t: 1, o: t });
+    }
     for (const b of cityBuildings(g, team, known, (x, y) => inRect(x, y, PAD))) {
       // Dach über einem abgestellten Flugzeug (Stellplatz, seit v5.39): hinter allem darunter, nach der vordersten Ecke einsortiert
       const p = b.part;
@@ -171,11 +178,12 @@ export const isoItemMethods = {
     }
     setRoofSnow(this.season === 'winter'); // Winter: Schnee auf den Dächern der Stadt
     const fort = hs && this.fortShown(hs, known) ? hs : null; // besetztes oder ausgebautes Haus (seit v5.48, stronghold.js)
-    if (fort) drawHouseWorksIso(ctx, cam, fort, 'back'); // Draht hinter dem Haus
+    const body = fort ? houseBodyIso(o, cam.rot | 0) : null; // Altbau mit Hof: Säcke und Fahne am eingerückten Hauskörper
+    if (fort) drawHouseWorksIso(ctx, cam, fort, 'back', body); // Draht hinter dem Haus
     if (o.part?.t !== 'tree' || !drawTreeIso(ctx, cam, o.part, this.season)) drawTownBuilding(ctx, cam, o, this.season); // Bäume der Großbauten gemalt (nature.js)
     if (fort) {
-      drawHouseWorksIso(ctx, cam, fort, 'front'); // Sandsäcke, MG-Nest, Draht davor
-      if (fort.occupants.length && fort.team >= 0) drawHouseFlagIso(ctx, cam, fort, g.teams[fort.team]?.color ?? '#888', f.now / 1000);
+      drawHouseWorksIso(ctx, cam, fort, 'front', body); // Sandsäcke, MG-Nest, Draht davor
+      if (fort.occupants.length && fort.team >= 0) drawHouseFlagIso(ctx, cam, fort, g.teams[fort.team]?.color ?? '#888', f.now / 1000, body);
     }
     setRoofSnow(false);
     if (o.damage > 0.25) {

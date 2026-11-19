@@ -7,7 +7,7 @@ import { setIsoGround, setUprightAt, unitLift, buildingHeight, TOWN_H } from '..
 import { scarAlpha } from '../../game/scars.js';
 import { seasonal } from '../season.js';
 import { drawBridgeIso, drawBridgeBar, bridgeBar } from '../bridge.js';
-import { drawPark } from '../maptown.js';
+import { drawPark, drawHouseYard } from '../maptown.js';
 import {
   drawShellIso,
   drawShellTarget,
@@ -76,6 +76,13 @@ export const isoViewMethods = {
         else setIsoGround(ctx, cam, dpr);
         drawPark(ctx, p, z, this.season, rails);
       }
+    }
+    // Höfe der Altbauten (Paket „Wohnhaus“, maptown.js): Hof, Weg und Schatten unter den Einheiten
+    for (const b of g.map.town?.buildings ?? []) {
+      if (b.kind !== 'house' || !inRect(b.x, b.y, ISO_PAD)) continue;
+      if (relief) this.groundAt(ctx, b.x, b.y);
+      else setIsoGround(ctx, cam, dpr);
+      drawHouseYard(ctx, b, z, this.season, cam.rot | 0);
     }
     setIsoGround(ctx, cam, dpr);
     drawWays(this, ctx, this.season); // Feldwege und Gleise scharf auf dem Boden (seit v5.31, ways.js)

@@ -164,18 +164,27 @@ function boundsIso(W, D) {
   return [(-u - v) * K - 4, (-u - v) * K * 0.5 - 10, (u + v) * K + 4, (u + v) * K * 0.5 + 4];
 }
 
+/** Bildschirmpunkt der Hausmitte; body (Altbau mit Hof, maptown.houseBodyIso): Mitte des eingerückten Hauskörpers. */
+function at(cam, h, body) {
+  const q = cam.worldToScreen(h.x, h.y);
+  if (!body) return q;
+  const [dx, dy] = G(null, cam.zoom).P(body.cu, body.cv, 0);
+  return { x: q.x + dx, y: q.y + dy };
+}
+
 /**
  * Ausbauten eines Hauses isometrisch (Ankerpunkt = Hausmitte am Boden, Kamera mit Geländehöhe gesetzt): part 'back' vor dem Haus
- * zeichnen, 'front' danach. h: Haus aus garrison.js (pw, ph, works).
+ * zeichnen, 'front' danach. h: Haus aus garrison.js (pw, ph, works); body: eingerückter Hauskörper eines Altbaus mit Hof (Säcke an
+ * dessen Wänden, innerhalb der Hofmauer), sonst null.
  */
-export function drawHouseWorksIso(ctx, cam, h, part) {
+export function drawHouseWorksIso(ctx, cam, h, part, body = null) {
   const mask = worksMask(h);
   if (!mask || (part === 'back' && !(mask & 4))) return false;
   const odd = cam.rot % 2 === 1;
-  const W = q8(odd ? h.ph : h.pw);
-  const D = q8(odd ? h.pw : h.ph);
+  const W = body ? body.W : q8(odd ? h.ph : h.pw);
+  const D = body ? body.D : q8(odd ? h.pw : h.ph);
   const snow = roofSnowOn() ? 1 : 0;
-  const q = cam.worldToScreen(h.x, h.y);
+  const q = at(cam, h, body);
   const z = cam.zoom;
   const dpr = spriteDpr();
   const e = sprite(`hw|${part}|${W}|${D}|${mask}|${snow}`, z * dpr, boundsIso(W, D), (c, s) => paintIso(c, s, W, D, mask, part));
@@ -244,12 +253,12 @@ function flag(ctx, x, y, top, k, color, t, seed) {
 
 const POLE = { house: 40, hall: 50, factory: 58, station: 46 };
 
-/** Fahne am besetzten Haus (Iso): Mast an der linken Ecke des Hauses (außen), jede Drehung. */
-export function drawHouseFlagIso(ctx, cam, h, color, t) {
+/** Fahne am besetzten Haus (Iso): Mast an der linken Ecke des Hauses (außen; Altbau: im Hof, body), jede Drehung. */
+export function drawHouseFlagIso(ctx, cam, h, color, t, body = null) {
   const odd = cam.rot % 2 === 1;
-  const U = (odd ? h.ph : h.pw) / 2;
-  const V = (odd ? h.pw : h.ph) / 2;
-  const q = cam.worldToScreen(h.x, h.y);
+  const U = (body ? body.W : odd ? h.ph : h.pw) / 2;
+  const V = (body ? body.D : odd ? h.pw : h.ph) / 2;
+  const q = at(cam, h, body);
   const z = cam.zoom;
   const [px, py] = G(ctx, z).P(-U - 4, V + 4, 0);
   flag(ctx, q.x + px, q.y + py, (POLE[h.type] ?? 44) * z, z, color, t, -h.id * 0.7);

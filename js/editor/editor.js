@@ -10,7 +10,8 @@ import { Renderer } from '../render/renderer.js';
 import { setIsoGround, TOWN_H } from '../render/iso.js';
 import { ISO_K } from '../render/camera.js';
 import { Game } from '../game/game.js';
-import { createEmptyMap, normalizeMap, checkMap, accessRoutes, describeMap, loadMap, saveMap, isFixedMap, MAX_SPAWNS, MAX_FLAGS, PYLON_LINES, MAX_CRATES, MAX_FIELDS, FIELD_CROPS, MAX_FORDS, MAX_BRIDGES, BRIDGE_LEN } from '../game/mapdata.js';
+import { createEmptyMap, normalizeMap, checkMap, accessRoutes, describeMap, loadMap, saveMap, isFixedMap, MAX_SPAWNS, MAX_FLAGS, PYLON_LINES, MAX_CRATES, MAX_FIELDS, FIELD_CROPS, MAX_FORDS, MAX_BRIDGES, BRIDGE_LEN, MAX_PAVING, PLAZA_SIZE, WALK_W } from '../game/mapdata.js';
+import { drawMapIso } from '../render/maptown.js';
 import { RIVER_SIZE, riverHeight } from '../game/landscape.js';
 import { bridgeShape } from '../game/river.js';
 import { createRoads } from '../game/roads.js';
@@ -48,6 +49,8 @@ const TOOLS = [
   ['rail', 'Gleis', 'Zug', '═', 'Von Start- zu Endpunkt ziehen; Gleise rasten aneinander ein, Kreuzungen und Weichen entstehen von selbst'],
   ['road', 'Straße', 'Wege', '▬', 'Von Start- zu Endpunkt ziehen'],
   ['dirt', 'Feldweg', 'Wege', '┅', 'Von Start- zu Endpunkt ziehen'],
+  ['walk', 'Bürgersteig', 'Wege', '┄', 'Von Start- zu Endpunkt ziehen; rastet neben Straßen und an anderen Bürgersteigen ein (nur Boden, blockiert nichts)'],
+  ['plaza', 'Platz', 'Wege', '▪', `Tippen setzt eine graue Pflasterfläche (${PLAZA_SIZE} × ${PLAZA_SIZE} px, ein Feld), Ziehen malt mehrere; sie rastet im ${PLAZA_SIZE / 2}-px-Raster ein, etwa vor Gebäuden (nur Boden, blockiert nichts)`],
   ['park', 'Park', 'Natur', '◌', 'Tippen setzt eine Grünfläche (nur Dekoration)'],
   ['field', 'Feld', 'Natur', '▤', 'Tippen setzt einen Acker; rechts Frucht oder Weide wählen, Größe und Drehung ändern (nur Boden, blockiert nichts)'],
   ['tree', 'Baum', 'Natur', '♣', 'Tippen setzt einen Baum, Ziehen malt eine Baumreihe (Bäume blockieren)'],
@@ -83,6 +86,11 @@ const BUILD_DEF = {
   pylon: { w: 44, h: 44, kind: 'pylon' },
 };
 
+// Werkzeuge, die von A nach B gezogen werden: Breite und Farbe der Vorschau
+const LINE_TOOLS = new Set(['road', 'dirt', 'rail', 'river', 'bridge', 'walk']);
+const lineWidth = (t) => ({ dirt: 52, rail: 40, river: RIVER_SIZE.halfW * 2, bridge: BALANCE.river.deck, walk: WALK_W })[t] ?? 64;
+const LINE_COLOR = (t) => ({ river: 'rgba(70,130,170,0.6)', bridge: 'rgba(150,145,135,0.85)', rail: '#6b665c', dirt: '#7b6a48', walk: '#a9a9a3' })[t] ?? '#4d504c';
+
 // Geländepinsel: Radius (px) und Stärke; Heben/Senken in Höhe je Sekunde in der Pinselmitte
 const TERRAIN_TOOLS = new Set(['raise', 'lower', 'smooth', 'flatten']);
 const BRUSH_SIZES = [128, 192, 256, 384, 512, 768];
@@ -112,6 +120,7 @@ const st = {
   dirty: false,
   needDraw: true,
   pointer: null, // Weltposition des Zeigers
+  hover: false, // Maus über der Karte ohne Druck: Vorschau des Werkzeugs zeichnen (drawGhost)
   gesture: null, // laufende Einzelgeste
   touches: new Map(),
   pinch: null,
@@ -248,9 +257,22 @@ function listOf(k) {
     case 'ford': return (m.fords ??= []);
     case 'bridge': return (m.bridges ??= []);
     case 'flag': return (m.flags ??= []);
+    case 'plaza': return (m.town.plazas ??= []);
+    case 'walk': return (m.town.walks ??= []);
     default: return null;
   }
 }
+
+/** Liegt der Weltpunkt im (evtl. gedrehten) Rechteck o (Mitte x/y, Größe w × h), mit Rand pad? */
+function inRot(o, px, py, pad = 0) {
+  const c = Math.cos(o.angle || 0);
+  const sn = Math.sin(o.angle || 0);
+  const lx = (px - o.x) * c + (py - o.y) * sn;
+  const ly = -(px - o.x) * sn + (py - o.y) * c;
+  return Math.abs(lx) <= o.w / 2 + pad && Math.abs(ly) <= o.h / 2 + pad;
+}
+
+const SEG_KINDS = new Set(['road', 'rail', 'bridge', 'walk']); // Objekte als Strecke x1/y1 → x2/y2
 
 function distToSeg(px, py, r) {
   const dx = r.x2 - r.x1;
@@ -315,6 +337,10 @@ function pickAt(wx, wy, sx = null, sy = null) {
     return null;
   })();
   if (road) return road;
+  const walks = m.town.walks ?? [];
+  for (let i = walks.length - 1; i >= 0; i--) if (distToSeg(wx, wy, walks[i]) <= walks[i].w / 2 + tol) return { k: 'walk', o: walks[i] };
+  const plazas = m.town.plazas ?? [];
+  for (let i = plazas.length - 1; i >= 0; i--) if (inRot(plazas[i], wx, wy, tol * 0.4)) return { k: 'plaza', o: plazas[i] };
   if (pk) return pk;
   for (let i = m.town.fields.length - 1; i >= 0; i--) {
     const f = m.town.fields[i];
@@ -354,45 +380,35 @@ function place(tool, x, y) {
   const px = clamp(snap(x), 0, W);
   const py = clamp(snap(y), 0, H);
   if (BUILD_DEF[tool]) {
-    const o = { x: px, y: py, ...BUILD_DEF[tool] };
-    if (tool === 'pylon') o.line = st.pylonLine ?? 0;
-    placeAlongRail(o, x, y);
+    const { o } = ghostOf(tool, x, y);
     m.town.buildings.push(o);
     return { k: 'building', o };
   }
   switch (tool) {
-    case 'park': {
-      const o = { x: px, y: py, r: 150 };
-      m.town.parks.push(o);
-      return { k: 'park', o };
+    case 'plaza': {
+      const { o } = ghostOf(tool, x, y);
+      return addPlaza(o.x, o.y);
+    }
+    case 'park':
+    case 'forest':
+    case 'rock': {
+      const sel = ghostOf(tool, x, y);
+      listOf(sel.k).push(sel.o);
+      return sel;
     }
     case 'field': {
       if (m.town.fields.length >= MAX_FIELDS) {
         say(`Höchstens ${MAX_FIELDS} Felder je Karte`, true);
         return null;
       }
-      const o = { x: px, y: py, w: 300, h: 220, kind: 'field', crop: st.fieldCrop };
-      if (o.crop === 'pasture') {
-        o.kind = 'pasture';
-        delete o.crop;
-      }
-      m.town.fields.push(o);
-      return { k: 'field', o };
+      const sel = ghostOf(tool, x, y);
+      m.town.fields.push(sel.o);
+      return sel;
     }
     case 'tree': {
       const o = { x: Math.round(x), y: Math.round(y), r: 12 + Math.floor(Math.random() * 9) };
       m.trees.push(o);
       return { k: 'tree', o };
-    }
-    case 'forest': {
-      const o = { x: px, y: py, r: 120 };
-      m.obstacles.push(o);
-      return { k: 'obstacle', o };
-    }
-    case 'rock': {
-      const o = { x: px, y: py, r: 91 };
-      m.obstacles.push(o);
-      return { k: 'obstacle', o };
     }
     case 'car': {
       const o = { x: px, y: py, vertical: st.carVertical, color: CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)] };
@@ -452,6 +468,58 @@ function place(tool, x, y) {
     }
     default:
       return null;
+  }
+}
+
+/** Neuer Platz mit Mitte (x, y); liegt dort schon einer (Ziehen überstreicht Felder mehrfach), passiert nichts. */
+function addPlaza(x, y) {
+  const list = listOf('plaza');
+  if (x < 0 || y < 0 || x > W || y > H || list.some((p) => p.x === x && p.y === y)) return null;
+  if (list.length >= MAX_PAVING) {
+    say(`Höchstens ${MAX_PAVING} Plätze je Karte`, true);
+    return null;
+  }
+  const o = { x, y, w: PLAZA_SIZE, h: PLAZA_SIZE };
+  list.push(o);
+  return { k: 'plaza', o };
+}
+
+/** Platz am Weltpunkt: Kanten im Raster der halben Platzgröße, damit Plätze nahtlos aneinander und an Gebäude passen. */
+function plazaAt(x, y, w = PLAZA_SIZE, h = PLAZA_SIZE) {
+  const g = PLAZA_SIZE / 2;
+  return { x: clamp(Math.round((x - w / 2) / g) * g + w / 2, 0, W), y: clamp(Math.round((y - h / 2) / g) * g + h / 2, 0, H), w, h };
+}
+
+/**
+ * Objekt, das das Werkzeug am Weltpunkt setzen würde, ohne es in die Karte zu legen (Vorschau unter dem Mauszeiger und place):
+ * {k, o} oder null für Werkzeuge ohne Vorschau.
+ */
+function ghostOf(tool, x, y) {
+  const px = clamp(snap(x), 0, W);
+  const py = clamp(snap(y), 0, H);
+  if (BUILD_DEF[tool]) {
+    const o = { x: px, y: py, ...BUILD_DEF[tool] };
+    if (tool === 'pylon') o.line = st.pylonLine ?? 0;
+    placeAlongRail(o, x, y);
+    return { k: 'building', o };
+  }
+  switch (tool) {
+    case 'plaza': return { k: 'plaza', o: plazaAt(x, y) };
+    case 'park': return { k: 'park', o: { x: px, y: py, r: 150 } };
+    case 'forest': return { k: 'obstacle', o: { x: px, y: py, r: 120 } };
+    case 'rock': return { k: 'obstacle', o: { x: px, y: py, r: 91 } };
+    case 'car': return { k: 'car', o: { x: px, y: py, vertical: st.carVertical, color: CAR_COLORS[0] } };
+    case 'field': {
+      const o = { x: px, y: py, w: 300, h: 220, kind: 'field', crop: st.fieldCrop };
+      if (o.crop === 'pasture') {
+        o.kind = 'pasture';
+        delete o.crop;
+      }
+      return { k: 'field', o };
+    }
+    case 'tree': return { k: 'tree', o: { x: Math.round(x), y: Math.round(y), r: 16 } };
+    case 'crate': return { k: 'crate', o: { x: px, y: py } };
+    default: return null;
   }
 }
 
@@ -519,7 +587,7 @@ function placeAlongRail(o, x, y) {
 
 function moveObj(sel, dx, dy) {
   const o = sel.o;
-  if (sel.k === 'road' || sel.k === 'rail' || sel.k === 'bridge') {
+  if (SEG_KINDS.has(sel.k)) {
     o.x1 += dx; o.y1 += dy; o.x2 += dx; o.y2 += dy;
   } else {
     o.x = clamp(o.x + dx, 0, W);
@@ -683,11 +751,12 @@ function draw() {
     else world(o.x, o.y);
     drawSelection(st.sel, px);
   }
+  drawGhost(world, px);
   // Vorschau eines Linien-Ziehens
   const g = st.gesture;
   if (g && g.type === 'line') {
     world((g.x1 + g.x2) / 2, (g.y1 + g.y2) / 2);
-    ctx.strokeStyle = g.kind === 'river' ? 'rgba(70,130,170,0.6)' : g.kind === 'bridge' ? 'rgba(150,145,135,0.85)' : g.kind === 'rail' ? '#6b665c' : g.dirt ? '#7b6a48' : '#4d504c';
+    ctx.strokeStyle = LINE_COLOR(g.kind);
     ctx.lineWidth = g.w;
     ctx.lineCap = g.kind === 'river' ? 'round' : 'butt';
     ctx.beginPath();
@@ -731,6 +800,83 @@ function draw() {
     ctx.fillStyle = '#fff';
     ctx.fillText(`Start ${BALANCE.teamNames[i]}`, p.x, p.y - Math.max(14, 44 * z));
   });
+}
+
+/**
+ * Vorschau unter dem Mauszeiger (Paket „Pflaster“): das Objekt, das ein Klick setzen würde, halb durchsichtig an genau der Stelle,
+ * an der es landet (Raster, Gleise). 2D wie im Editor gezeichnet, isometrisch mit dem gemalten Gebäude; Ziehwerkzeuge zeigen den
+ * eingerasteten Startpunkt. Nur mit Maus (Finger haben keinen Zeiger ohne Druck) und ohne laufende Geste.
+ */
+function drawGhost(world, px) {
+  if (!st.hover || st.gesture || !st.pointer) return;
+  const cam = st.cam;
+  const z = cam.zoom;
+  const d = st.renderer.dpr;
+  const t = st.tool;
+  const { x, y } = st.pointer;
+  if (LINE_TOOLS.has(t)) {
+    const a = t === 'river' ? { x: Math.round(x), y: Math.round(y) } : snapRoad(x, y, t);
+    world(a.x, a.y);
+    ctx.fillStyle = LINE_COLOR(t);
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, Math.max(5 * px, lineWidth(t) / 2), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    return;
+  }
+  const gh = ghostOf(t, x, y);
+  if (!gh) return;
+  const o = gh.o;
+  // Hilfskarte nur mit diesem Objekt: dieselben Zeichenfunktionen wie für die Karte
+  const tmp = { obstacles: [], trees: [], town: { roads: [], rails: [], buildings: [], parks: [], fields: [], cars: [], trees: [], plazas: [], walks: [] } };
+  ({ building: tmp.town.buildings, plaza: tmp.town.plazas, park: tmp.town.parks, field: tmp.town.fields, car: tmp.town.cars, obstacle: tmp.obstacles, tree: tmp.trees })[gh.k]?.push(o);
+  ctx.save();
+  ctx.globalAlpha = 0.6;
+  if (!cam.iso) {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    ctx.setTransform(d, 0, 0, d, d * (vw / 2 - cam.x * z), d * (vh / 2 - cam.y * z));
+    drawMapObjects(ctx, tmp, z, false, makeRng(77));
+    if (gh.k === 'crate') {
+      world(o.x, o.y);
+      drawCrate(ctx, o.x, o.y, Math.max(12 * px, 18), z, 1);
+    }
+  } else {
+    world(o.x, o.y);
+    drawMapObjects(ctx, tmp, 1, true, makeRng(77)); // Bodenteil (Plätze, Felder, Parks, Wald- und Felsfläche)
+    if (gh.k === 'building') {
+      ctx.setTransform(d, 0, 0, d, 0, 0);
+      cam.pinAt(o.x, o.y);
+      drawMapIso(ctx, cam, o);
+      cam.unpin();
+      const key = `${o.kind}|${o.x}|${o.y}|${o.w}|${o.h}|${cam.rot}`;
+      if (st.ghostKey !== key) {
+        st.ghostKey = key;
+        st.needDraw = true; // ein Bild später nochmal: neue Gebäudebilder entstehen erst im nächsten Bild (spritecache)
+      }
+    }
+  }
+  // Fußabdruck gestrichelt: genau die Fläche, die das Objekt belegt
+  world(o.x, o.y);
+  ctx.globalAlpha = 0.9;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.5 * px;
+  ctx.setLineDash([6 * px, 4 * px]);
+  if (o.w !== undefined && o.h !== undefined) {
+    ctx.translate(o.x, o.y);
+    ctx.rotate(o.angle || 0);
+    ctx.strokeRect(-o.w / 2, -o.h / 2, o.w, o.h);
+  } else if (gh.k === 'car') {
+    const hw = o.vertical ? 9 : 18;
+    const hh = o.vertical ? 18 : 9;
+    ctx.strokeRect(o.x - hw, o.y - hh, hw * 2, hh * 2);
+  } else {
+    ctx.beginPath();
+    ctx.arc(o.x, o.y, o.r ?? Math.max(12 * px, 20), 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 /**
@@ -948,13 +1094,13 @@ function drawSelection(sel, px) {
   ctx.lineWidth = 2 * px;
   ctx.setLineDash([6 * px, 4 * px]);
   const pad = 3 * px;
-  if (sel.k === 'building' || sel.k === 'field') {
+  if (sel.k === 'building' || sel.k === 'field' || sel.k === 'plaza') {
     ctx.save();
     ctx.translate(o.x, o.y);
     ctx.rotate(o.angle || 0);
     ctx.strokeRect(-o.w / 2 - pad, -o.h / 2 - pad, o.w + pad * 2, o.h + pad * 2);
     ctx.restore();
-  } else if (sel.k === 'road' || sel.k === 'rail' || sel.k === 'bridge') {
+  } else if (SEG_KINDS.has(sel.k)) {
     ctx.setLineDash([]);
     for (const [x, y] of [[o.x1, o.y1], [o.x2, o.y2]]) {
       ctx.beginPath();
@@ -1010,7 +1156,7 @@ function snapRoad(x, y, kind = 'road') {
   const tolEnd = 40 / z;
   let best = null;
   let bd = Infinity;
-  const list = kind === 'rail' ? st.map.town.rails : st.map.town.roads;
+  const list = kind === 'rail' ? st.map.town.rails : kind === 'walk' ? (st.map.town.walks ?? []) : st.map.town.roads;
   for (const r of list) {
     for (const [ex, ey] of [[r.x1, r.y1], [r.x2, r.y2]]) {
       const d = Math.hypot(ex - x, ey - y);
@@ -1021,6 +1167,30 @@ function snapRoad(x, y, kind = 'road') {
     }
   }
   if (best) return best;
+  if (kind === 'walk') {
+    // Bürgersteig: rastet an der Straßenkante ein (Mittellinie des Steigs eine halbe Straßen- plus halbe Steigbreite neben der Straße)
+    for (const r of st.map.town.roads) {
+      if (r.dirt) continue;
+      const dx = r.x2 - r.x1;
+      const dy = r.y2 - r.y1;
+      const len = Math.hypot(dx, dy) || 1;
+      const t = clamp(((x - r.x1) * dx + (y - r.y1) * dy) / (len * len), 0, 1);
+      const qx = r.x1 + t * dx;
+      const qy = r.y1 + t * dy;
+      const nx = -dy / len;
+      const ny = dx / len;
+      const side = (x - qx) * nx + (y - qy) * ny >= 0 ? 1 : -1;
+      const off = r.w / 2 + WALK_W / 2;
+      const sx = qx + nx * off * side;
+      const sy = qy + ny * off * side;
+      const d = Math.hypot(sx - x, sy - y);
+      if (d < 24 / z + WALK_W / 2 && d < bd) {
+        bd = d;
+        best = { x: Math.round(sx), y: Math.round(sy) };
+      }
+    }
+    if (best) return best;
+  }
   for (const r of list) {
     const dx = r.x2 - r.x1;
     const dy = r.y2 - r.y1;
@@ -1038,7 +1208,7 @@ function snapRoad(x, y, kind = 'road') {
 }
 
 function endpointHit(sel, wx, wy) {
-  if (!sel || (sel.k !== 'road' && sel.k !== 'rail' && sel.k !== 'bridge')) return 0;
+  if (!sel || !SEG_KINDS.has(sel.k)) return 0;
   const tol = 22 / st.cam.zoom + (sel.o.w ?? 40) / 2;
   if (Math.hypot(sel.o.x1 - wx, sel.o.y1 - wy) < tol) return 1;
   if (Math.hypot(sel.o.x2 - wx, sel.o.y2 - wy) < tol) return 2;
@@ -1106,19 +1276,28 @@ canvas.addEventListener('pointerdown', (e) => {
         updateInfo();
       }
     }
-  } else if (t === 'road' || t === 'dirt' || t === 'rail' || t === 'river' || t === 'bridge') {
+  } else if (LINE_TOOLS.has(t)) {
     const a = t === 'river' ? { x: Math.round(w.x), y: Math.round(w.y) } : snapRoad(w.x, w.y, t);
-    const lw = { dirt: 52, rail: 40, river: RIVER_SIZE.halfW * 2, bridge: BALANCE.river.deck }[t] ?? 64;
+    const lw = lineWidth(t);
     st.gesture = { type: 'line', kind: t, dirt: t === 'dirt', w: lw, x1: a.x, y1: a.y, x2: a.x, y2: a.y };
   } else if (TERRAIN_TOOLS.has(t)) {
     pushHistory();
     const relief = ensureRelief();
     st.gesture = { type: 'terrain', tool: t, x: w.x, y: w.y, target: relief.heightAt(w.x, w.y), last: performance.now() };
     applyBrush(st.gesture, 1 / 20);
+  } else if (t === 'plaza') {
+    // Plätze malen: der erste liegt im Raster, weitere lückenlos daneben (ganze Felder ab dem ersten)
+    pushHistory();
+    st.sel = place(t, w.x, w.y);
+    const o = st.sel?.o ?? plazaAt(w.x, w.y);
+    st.gesture = { type: 'plazas', ax: o.x, ay: o.y, x: w.x, y: w.y };
+    showInspector();
+    st.needDraw = true;
+    updateInfo();
   } else if (t === 'tree') {
     pushHistory();
     place(t, w.x, w.y);
-    st.gesture = { type: 'brush', x: w.x, y: w.y };
+    st.gesture = { type: 'brush', tool: t, x: w.x, y: w.y };
     st.needDraw = true;
     updateInfo();
   } else {
@@ -1132,6 +1311,10 @@ canvas.addEventListener('pointerdown', (e) => {
 });
 
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+canvas.addEventListener('pointerleave', () => {
+  st.hover = false;
+  st.needDraw = true;
+});
 
 window.addEventListener('pointermove', (e) => {
   const p = pos(e);
@@ -1145,6 +1328,9 @@ window.addEventListener('pointermove', (e) => {
   }
   const w = toWorld(p.x, p.y);
   st.pointer = w;
+  const hover = e.pointerType === 'mouse' && e.target === canvas;
+  if (hover || st.hover) st.needDraw = true; // Vorschau folgt dem Zeiger
+  st.hover = hover;
   $('[data-info]').textContent = `x ${Math.round(w.x)} · y ${Math.round(w.y)}${heightInfo(w.x, w.y)} · Zoom ${Math.round(st.cam.zoom * 100)} %`;
   if (TERRAIN_TOOLS.has(st.tool)) st.needDraw = true; // Pinselkreis folgt dem Zeiger
   const g = st.gesture;
@@ -1182,9 +1368,21 @@ window.addEventListener('pointermove', (e) => {
     // Weltpunkt nur bei Bewegung neu: beim Heben wandert sonst der Punkt unter dem stehenden Finger mit
     g.x = w.x;
     g.y = w.y;
+  } else if (g.type === 'plazas') {
+    // Strecke seit dem letzten Ereignis in kleinen Schritten abgehen, damit bei schneller Maus keine Lücken bleiben
+    const n = Math.ceil(Math.hypot(w.x - g.x, w.y - g.y) / (PLAZA_SIZE / 4));
+    for (let k = 1; k <= n; k++) {
+      const x = g.x + ((w.x - g.x) * k) / n;
+      const y = g.y + ((w.y - g.y) * k) / n;
+      addPlaza(g.ax + Math.round((x - g.ax) / PLAZA_SIZE) * PLAZA_SIZE, g.ay + Math.round((y - g.ay) / PLAZA_SIZE) * PLAZA_SIZE);
+    }
+    g.x = w.x;
+    g.y = w.y;
+    st.needDraw = true;
+    updateInfo();
   } else if (g.type === 'brush') {
     if (Math.hypot(w.x - g.x, w.y - g.y) >= 34) {
-      place('tree', w.x, w.y);
+      place(g.tool, w.x, w.y);
       g.x = w.x;
       g.y = w.y;
       st.needDraw = true;
@@ -1226,8 +1424,13 @@ function endPointer(e) {
     if (Math.hypot(g.x2 - g.x1, g.y2 - g.y1) >= 32) {
       pushHistory();
       const o = g.kind === 'rail' ? { x1: g.x1, y1: g.y1, x2: g.x2, y2: g.y2 } : { x1: g.x1, y1: g.y1, x2: g.x2, y2: g.y2, w: g.w, ...(g.dirt ? { dirt: true } : {}) };
-      (g.kind === 'rail' ? st.map.town.rails : st.map.town.roads).push(o);
-      st.sel = { k: g.kind === 'rail' ? 'rail' : 'road', o };
+      const k = g.kind === 'rail' || g.kind === 'walk' ? g.kind : 'road';
+      const list = listOf(k);
+      if (k === 'walk' && list.length >= MAX_PAVING) say(`Höchstens ${MAX_PAVING} Bürgersteige je Karte`, true);
+      else {
+        list.push(o);
+        st.sel = { k, o };
+      }
       showInspector();
       updateInfo();
     }
@@ -1313,6 +1516,8 @@ const SEL_NAMES = {
   field: 'Feld',
   bridge: 'Brücke',
   ford: 'Furt',
+  plaza: 'Platz',
+  walk: 'Bürgersteig',
 };
 const FIELD_NAMES = { wheat: 'Weizenfeld', green: 'Junge Saat', soil: 'Acker (gepflügt)', rape: 'Rapsfeld', pasture: 'Weide' };
 const FIELD_ORDER = [...FIELD_CROPS, 'pasture']; // „Frucht“ schaltet der Reihe nach weiter
@@ -1370,6 +1575,14 @@ function showInspector() {
     rows.push('<div class="row"><button data-i="rw-">Schmaler</button><button data-i="rw+">Breiter</button></div>');
     rows.push('<div class="row"><button data-i="dirt">' + (s.o.dirt ? 'Zur Straße' : 'Zum Feldweg') + '</button></div>');
     rows.push('<div class="muted small">Enden ziehen, um die Straße zu ändern.</div>');
+  } else if (s.k === 'plaza') {
+    rows.push('<div class="row"><button data-i="w-">Breite −</button><button data-i="w+">Breite +</button></div>');
+    rows.push('<div class="row"><button data-i="h-">Höhe −</button><button data-i="h+">Höhe +</button></div>');
+    rows.push('<div class="row"><button data-i="rot-">↺ 15°</button><button data-i="rot+">↻ 15°</button></div>');
+    rows.push(`<div class="muted small">${s.o.w} × ${s.o.h} px. Nur Boden: Einheiten fahren darüber, die Stadt baut darüber.</div>`);
+  } else if (s.k === 'walk') {
+    rows.push('<div class="row"><button data-i="ww-">Schmaler</button><button data-i="ww+">Breiter</button></div>');
+    rows.push(`<div class="muted small">Breite ${s.o.w} px. Enden ziehen, um den Bürgersteig zu ändern. Nur Boden, blockiert nichts.</div>`);
   } else if (s.k === 'car') {
     rows.push('<div class="row"><button data-i="turn">Drehen</button><button data-i="color">Farbe</button></div>');
   } else if (s.k === 'zone') {
@@ -1416,7 +1629,11 @@ function inspectorAction(a) {
   const o = s.o;
   if (a === 'del') return deleteSelected();
   pushHistory();
-  if (a === 'w+') o.w = Math.min(600, o.w + 16);
+  if (s.k === 'plaza' && /^[wh][+-]$/.test(a)) {
+    const key = a[0];
+    o[key] = clamp(o[key] + (a[1] === '+' ? PLAZA_SIZE / 2 : -PLAZA_SIZE / 2), PLAZA_SIZE / 2, 600); // in halben Feldern: bleibt im Raster
+  } else if (a === 'ww+' || a === 'ww-') o.w = clamp(o.w + (a === 'ww+' ? 4 : -4), 8, 64);
+  else if (a === 'w+') o.w = Math.min(600, o.w + 16);
   else if (a === 'w-') o.w = Math.max(24, o.w - 16);
   else if (a === 'h+') o.h = Math.min(600, o.h + 16);
   else if (a === 'h-') o.h = Math.max(24, o.h - 16);
@@ -1472,7 +1689,7 @@ function inspectorAction(a) {
     o.r = clamp(o.r + (a === 'r+' ? step : -step), lim[0], lim[1]);
   } else if (a === 'dup') {
     const copy = JSON.parse(JSON.stringify(o));
-    if (s.k === 'road' || s.k === 'rail' || s.k === 'bridge') { copy.x1 += 48; copy.y1 += 48; copy.x2 += 48; copy.y2 += 48; }
+    if (SEG_KINDS.has(s.k)) { copy.x1 += 48; copy.y1 += 48; copy.x2 += 48; copy.y2 += 48; }
     else { copy.x += 48; copy.y += 48; }
     listOf(s.k).push(copy);
     st.sel = { k: s.k, o: copy };

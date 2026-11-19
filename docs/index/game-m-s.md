@@ -3,6 +3,8 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
 
 ## mapdata.js (Fortsetzung)
+- MAX_SPAWNS – Startpunkte je Karte (2 bis 4; Team i startet am Startpunkt i)
+- MAX_FLAGS – eigene Flaggen je Karte (Eroberung)
 - PYLON_LINES – Leitungen je Karte: Strommasten mit gleicher `line` sind in Listenreihenfolge v…
 - createEmptyMap(name) – Leere Karte: nur Startpunkte in den Ecken und die Konfliktzone in der Mitte
 - normalizeMap(raw) – Beliebiges Kartenobjekt (generiert oder aus JSON) → vollständige, bereinigte Ka…
@@ -157,4 +159,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - clearWrecksUnder(game, b) – Ein neues Gebäude räumt die Trümmer auf seiner Fläche weg
 - updateScarIntel(game) – Sichtstand der Narben nach jeder Nebelrechnung
 - updateScars(game) – Abgelaufene Narben entfernen
-- scarAlpha(s, time, life, fade) – Deckkraft einer Narbe (1 → 0 in den letzten fade Sekunden ihres Lebens)

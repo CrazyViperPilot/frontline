@@ -128,7 +128,7 @@ export const KEYS = [
   [', / .', 'Isometrische Ansicht um 90° nach links / rechts drehen (auch Knöpfe ⟲ ⟳ oben)'],
   ['P', 'Pause · im Pausenmenü legt „Speichern unter …“ eine Kopie der Partie als neuen Stand mit eigenem Namen an; die Partie spielt darin weiter'],
   ['Y', `Baumodus der Stadt an/aus: Werkzeug rechts wählen (gruppiert: Grundlagen, Wohnen & Gewerbe, Ressourcen, Einheiten, Stadt, Fliegerhorst), ` +
-    `auf der Karte ein Rechteck ziehen (wo nichts im Weg steht; mit Baugebiet im Startmenü (Standard an) nur im eigenen Gebiet (in der Eroberung immer nur im eigenen Viertel, ` +
+    `auf der Karte ein Rechteck ziehen (mit der Maus zeigt die Vorschau unter dem Zeiger schon vorher, wo gebaut würde, rot = hier nicht) (wo nichts im Weg steht; mit Baugebiet im Startmenü (Standard an) nur im eigenen Gebiet (in der Eroberung immer nur im eigenen Viertel, ` +
     `auch ohne Baugebiet), dort mit dünner Linie in Teamfarbe markiert: um die Hauptstadt, um FOBs (${CITY.build.fobClaim} Felder) und um fertige Gebäude; ` +
     `nur auf erkundetem Gelände, nicht näher als ${CITY.build.enemyR} px an sichtbaren Feinden oder gegnerischen Gebäuden, nicht in der Konfliktzone; Gebäude nur an einer Straße, ` +
     `die mit dem Lager der Hauptstadt verbunden ist (Großbau: eine Randzelle genügt; Gleise, Bahn und Rollfeld zählen dafür nicht, Waren fahren nur auf Straßen; Stellplatz: ` +

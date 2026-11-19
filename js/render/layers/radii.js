@@ -146,8 +146,8 @@ export const radiiMethods = {
     for (const [i, e] of c.ents) {
       if (e.alive && ['ktank', 'mdepot', 'atc'].includes(CITY_KINDS[c.kind[i] - 1])) this.drawAirRadius(ctx, e, 0.55);
     }
-    // Vorschau: Umkreis des Baus, der gerade gezogen wird (Mitte des 2 × 2-Quadrats am Finger)
-    const d = ui.drag;
+    // Vorschau: Umkreis des Baus, der gerade gezogen wird oder unter dem Mauszeiger liegt (Mitte des 2 × 2-Quadrats am Finger)
+    const d = ui.drag ?? ui.hover;
     const R = ui.tool === 'atc' ? CITY.air.atcRadius : ['ktank', 'mdepot'].includes(ui.tool) ? CITY.air.supplyRadius : 0;
     if (d && R) {
       const p = bigCenter(c, d.r1 * c.cols + d.c1, CITY.size[ui.tool]);

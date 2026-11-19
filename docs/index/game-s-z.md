@@ -1,6 +1,9 @@
-# Symbol-Index game (Teil 4 von 4, scramble.js bis zonegeo.js)
+# Symbol-Index game (Teil 4 von 4, scars.js bis zonegeo.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
+
+## scars.js (Fortsetzung)
+- scarAlpha(s, time, life, fade) – Deckkraft einer Narbe (1 → 0 in den letzten fade Sekunden ihres Lebens)
 
 ## scramble.js (7.3 KB)
 - alertable(u) – Kann der Jet in Bereitschaft gehen (Luft-Luft-Waffe)? A-10, C-130 und U-2 nicht

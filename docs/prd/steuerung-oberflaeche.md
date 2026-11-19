@@ -244,11 +244,16 @@
   Gleise und Wege, die am alten Rand endeten, laufen bis zum neuen Rand, das Gelände setzt den alten Rand fort).
   Erneut gespeichert hat die Karte die neue Größe.
 - **Editor** (`editor.html`, 2D, Maus und Touch): Werkzeuge Hand, Wählen, Löschen; Haus, Fabrik, Halle, Wachturm; Lok, Waggon, Kesselwagen, Bahnsteig, Bahnhof, Gleis (ziehen wie eine Straße);
-  Straße und Feldweg (ziehen), Park, **Feld** (Acker oder Weide; Inspektor: Breite, Höhe, Drehen in 15°-Schritten,
+  Straße und Feldweg (ziehen), **Bürgersteig** (ziehen; rastet an der Kante von Straßen und an anderen Bürgersteigen ein, Inspektor: Breite),
+  **Platz** (graue Pflasterfläche 64 × 64 px = ein Feld, im 32-px-Raster; Ziehen malt lückenlos weitere; Inspektor: Breite, Höhe in halben Feldern, Drehen in 15°-Schritten),
+  Park, **Feld** (Acker oder Weide; Inspektor: Breite, Höhe, Drehen in 15°-Schritten,
   „Frucht“ schaltet Weizen → junge Saat → gepflügt → Raps → Weide weiter, neue Felder übernehmen die zuletzt gewählte),
   Baum (ziehen malt eine Reihe), Wald, Fels, Auto; **Gelände: Heben, Senken, Glätten, Ebnen** (Pinsel); **Fluss: Fluss** (ziehen gräbt ein Flussbett mit Ufern wie der Generator),
   **Furt** (auf den Fluss tippen, hebt das Bett auf seichtes Wasser), **Brücke** (von Ufer zu Ufer ziehen, Enden rasten an Straßen ein; Inspektor zeigt Länge);
   Startpunkt Blau/Rot und Konfliktzone verschieben; **Kiste** (Versorgungskiste setzen, der Inspektor zeigt den Abstand zu beiden Starts).
+  **Vorschau:** Mit der Maus zeigt der Editor vor dem Klick halb durchsichtig, was das Werkzeug setzen würde, genau dort, wo es landet
+  (Raster, an Gleisen ausgerichtet), mit gestricheltem Fußabdruck; isometrisch als gemaltes Gebäude. Ziehwerkzeuge zeigen den eingerasteten Startpunkt.
+  Bürgersteige und Plätze sind nur Boden (`town.walks`, `town.plazas`, je höchstens 2000; ältere Karten haben keine): Einheiten fahren darüber, die Stadt baut darüber.
   Gewähltes Objekt: verschieben, Größe/Breite/Höhe, drehen, Art/Farbe, Kopie, Löschen; Straßenenden ziehbar.
   Rückgängig/Wiederholen (60 Schritte, Strg+Z/Y), Zoom (Rad, Zwei-Finger), Verschieben (Hand, rechte Maustaste, ein Finger auf leerem Grund), Zufallskarte als Ausgangspunkt, Leer,
   Import/Export als Datei, Speichern, **Spielen**.

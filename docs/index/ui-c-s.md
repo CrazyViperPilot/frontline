@@ -13,6 +13,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - fold(on) – Menü einklappen (Baumodus bleibt, mehr Platz auf dem Bildschirm) oder wieder au…
   - toggle(on)
   - cell(wx, wy) – Zelle unter einem Weltpunkt, auf die Karte begrenzt
+  - hoverAt(wx, wy) – Vorschau (Paket „Pflaster“): Zelle bzw. Großbau-Quadrat unter dem Mauszeiger, n…
   - begin(wx, wy)
   - move(wx, wy)
   - cancel()

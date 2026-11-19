@@ -34,6 +34,7 @@ export class CityPanel {
     this.onMessage = onMessage;
     this.tool = 'road';
     this.drag = null; // { c0, r0, c1, r1 } in Kartenzellen, während ein Rechteck gezogen wird
+    this.hover = null; // dieselbe Form unter dem Mauszeiger vor dem Klick (Vorschau)
     this.open = false;
     const strip = document.createElement('div');
     strip.className = 'city-strip';
@@ -90,6 +91,7 @@ export class CityPanel {
     this.root.hidden = !on;
     this.strip.hidden = !on;
     this.drag = null;
+    this.hover = null;
     document.body.classList.toggle('city-mode', on);
     if (on) this.update(true);
   }
@@ -101,7 +103,18 @@ export class CityPanel {
     return [Math.min(c.cols - 1, Math.max(0, col)), Math.min(c.rows - 1, Math.max(0, row))];
   }
 
+  /** Vorschau (Paket „Pflaster“): Zelle bzw. Großbau-Quadrat unter dem Mauszeiger, noch ohne Klick; null = Zeiger nicht auf der Karte. */
+  hoverAt(wx, wy) {
+    if (wx === null) {
+      this.hover = null;
+      return;
+    }
+    const [c, r] = sizeOf(this.tool) > 1 ? bigAnchorAt(this.game.city[this.team], this.tool, wx, wy) : this.cell(wx, wy);
+    this.hover = { c0: c, r0: r, c1: c, r1: r };
+  }
+
   begin(wx, wy) {
+    this.hover = null;
     const [c, r] = this.cell(wx, wy);
     this.drag = { c0: c, r0: r, c1: c, r1: r };
     if (sizeOf(this.tool) > 1) this.move(wx, wy);

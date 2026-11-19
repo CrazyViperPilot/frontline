@@ -18,6 +18,7 @@ Gemalte Bilder laufen über `spritecache.js`, Bauteile aus `isokit.js`. Ebenen d
 - `govquarter.js` – Regierungsviertel um die Hauptstadt als Bodenbild und Iso-Gruppen. `quarterRect`, `quarterItems`
 - `citylayer.js` – Stadt auf der Karte: Straßen, Zonen, Gebäudeliste, Schilder. `cityBuildings`, `drawCityGround`, `drawCityTop`
 - `landmarks.js`, `mappreview.js` – große Fabrikhalle, Strommast und Leitungen fester Karten; Kartenvorschau fürs Startmenü. `pylonNet`, `drawMapPreview`
+- `paving.js` – Pflaster der Karte: graue Plätze und Bürgersteige (nur Boden). `drawPaving`, `drawPlaza`, `drawWalk`
 - `maptown.js`, `props.js`, `stronghold.js` – Kartenstadt, Kleinkram (Autos, Bänke, Kisten, Ballen), Besatzungsfahnen und Ausbauten
 - `nature.js` – Bäume, Büsche, Felsen, Tiere. `drawTreeIso`, `drawRockIso`, `forestKind`
 - `ground.js`, `reliefimg.js`, `terrain.js` – WebGL-Boden samt Nebel, Geländebild, Kartenbild. `getGround`, `buildTerrain`

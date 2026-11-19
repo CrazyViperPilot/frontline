@@ -154,6 +154,7 @@ const ASSETS = [
   './js/render/milbuild.js',
   './js/render/airbase.js',
   './js/render/maptown.js',
+  './js/render/paving.js',
   './js/render/landmarks.js',
   './js/render/mappreview.js',
   './js/render/props.js',

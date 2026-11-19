@@ -8,6 +8,7 @@ import { scarAlpha } from '../../game/scars.js';
 import { seasonal } from '../season.js';
 import { drawBridgeIso, drawBridgeBar, bridgeBar } from '../bridge.js';
 import { drawPark } from '../maptown.js';
+import { drawPaving } from '../paving.js';
 import {
   drawShellIso,
   drawShellTarget,
@@ -77,6 +78,9 @@ export const isoViewMethods = {
         drawPark(ctx, p, z, this.season, rails);
       }
     }
+    // Plätze und Bürgersteige der Karte scharf auf dem Boden (paving.js)
+    setIsoGround(ctx, cam, dpr);
+    drawPaving(ctx, g.map.town, 1, inRect, relief ? (x, y) => this.groundAt(ctx, x, y) : null);
     setIsoGround(ctx, cam, dpr);
     drawWays(this, ctx, this.season); // Feldwege und Gleise scharf auf dem Boden (seit v5.31, ways.js)
     this.drawQuarterGrounds(f, true); // Regierungsviertel: Rasen, Wege, Platz (govquarter.js), unter Kratern und Einheiten

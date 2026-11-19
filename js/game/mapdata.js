@@ -19,6 +19,9 @@ const SPAWN_CLEAR = CHECK.spawnClear; // freier Platz um einen Startpunkt (Haupt
 export const MAX_CRATES = 24; // Versorgungskisten je Karte
 export const FIELD_CROPS = ['wheat', 'green', 'soil', 'rape']; // Ackerarten: Weizen, junge Saat, gepflügt, Raps
 export const MAX_FIELDS = 300; // Felder und Weiden je Karte
+export const MAX_PAVING = 2000; // Plätze und Bürgersteige je Karte (je Liste)
+export const PLAZA_SIZE = 64; // Kantenlänge eines neuen Platzes (px, eine Stadtzelle)
+export const WALK_W = 20; // Breite eines neuen Bürgersteigs (px)
 export const MAX_FORDS = 24; // Furten je Karte (Fluss, river.js)
 export const MAX_BRIDGES = 24; // Brücken je Karte
 export const BRIDGE_LEN = [96, 900]; // kürzeste und längste Brücke (px)
@@ -87,6 +90,8 @@ function fitSize(src) {
       trees: pts(town.trees),
       rails: segs([...arr(town.rails), ...(rail ? [rail] : [])], true),
       fields: pts(town.fields),
+      ...(town.plazas ? { plazas: pts(town.plazas) } : {}),
+      ...(town.walks ? { walks: segs(town.walks, false) } : {}),
     },
     ...(src.fords ? { fords: pts(src.fords) } : {}),
     ...(src.bridges ? { bridges: segs(src.bridges, false) } : {}),
@@ -135,6 +140,22 @@ export function normalizeMap(raw) {
     }))
     .filter((b) => Math.hypot(b.x2 - b.x1, b.y2 - b.y1) >= BRIDGE_LEN[0])
     .slice(0, MAX_BRIDGES);
+  const plazas = arr(town.plazas).slice(0, MAX_PAVING).map((p) => ({
+    ...pt(p),
+    w: clamp(num(p.w, PLAZA_SIZE), 16, 600),
+    h: clamp(num(p.h, PLAZA_SIZE), 16, 600),
+    ...(Number.isFinite(p.angle) && Math.abs(p.angle) > 1e-3 ? { angle: clamp(p.angle, -Math.PI, Math.PI) } : {}),
+  }));
+  const walks = arr(town.walks)
+    .slice(0, MAX_PAVING)
+    .map((r) => ({
+      x1: clamp(num(r.x1, 0), 0, W),
+      y1: clamp(num(r.y1, 0), 0, H),
+      x2: clamp(num(r.x2, 0), 0, W),
+      y2: clamp(num(r.y2, 0), 0, H),
+      w: clamp(num(r.w, WALK_W), 8, 64),
+    }))
+    .filter((r) => Math.hypot(r.x2 - r.x1, r.y2 - r.y1) >= 1);
   return {
     name: String(src.name ?? 'Karte').slice(0, 40),
     width: W,
@@ -172,6 +193,9 @@ export function normalizeMap(raw) {
         kind: f.kind === 'pasture' ? 'pasture' : 'field',
         ...(f.kind === 'pasture' ? {} : { crop: FIELD_CROPS.includes(f.crop) ? f.crop : 'wheat' }),
       })),
+      // Pflaster (nur Boden, blockiert nichts): graue Plätze und Bürgersteige; nur Karten mit Pflaster haben die Felder
+      ...(plazas.length ? { plazas } : {}),
+      ...(walks.length ? { walks } : {}),
     },
     trees: arr(src.trees).map((t) => circ(t, 6, 40)),
     spawns,

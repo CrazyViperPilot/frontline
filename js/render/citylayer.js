@@ -1214,8 +1214,21 @@ function drawTerritory(ren, ctx, team) {
       }
     }
   }
-  const d = ui?.drag;
-  if (d && sizeOf(ui.tool) > 1) {
+  const d = ui?.drag ?? ui?.hover; // ohne Ziehen: Vorschau unter dem Mauszeiger (Paket „Pflaster“), dort landet der Bau beim Klick
+  if (d && !ui.drag && sizeOf(ui.tool) <= 1) {
+    // 1 × 1 unter dem Zeiger: Farbe des Werkzeugs, rot wenn die Zelle belegt oder gesperrt ist (Abriss: nur belegte Zellen)
+    const c = g.city[team];
+    const S = c.cell;
+    const i = d.r1 * c.cols + d.c1;
+    const ok = ui.tool === 'erase' ? !!c.kind[i] : !c.kind[i] && !c.mapRoads?.[i] && buildAllowed(g, c, i, ui.tool === 'road' ? 'road' : ui.tool);
+    const col = ok ? CITY_COLORS[ui.tool] ?? '#ffffff' : '#e0553a';
+    groundRect(ren, ctx, d.c1 * S, d.r1 * S, (d.c1 + 1) * S, (d.r1 + 1) * S);
+    ctx.fillStyle = col + '66';
+    ctx.fill();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2 * z;
+    ctx.stroke();
+  } else if (d && sizeOf(ui.tool) > 1) {
     // Großbau: Quadrat dort, wo der Befehl es hinsetzen würde (rot, wenn nichts passt)
     const c = g.city[team];
     const S = c.cell;

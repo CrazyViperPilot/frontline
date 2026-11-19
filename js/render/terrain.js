@@ -3,6 +3,7 @@ import { makeRng } from '../core/rng.js';
 import { BALANCE } from '../data/balance.js';
 import { reliefOf } from '../game/relief.js';
 import { reliefLayers } from './reliefimg.js';
+import { drawPaving } from './paving.js';
 
 const TERRAIN_SCALE = 0.25;
 // Je Ansicht ein Bild: '2d' mit Gebäuden und Bäumen, 'iso' ohne (die zeichnet die isometrische Ansicht als Körper),
@@ -138,6 +139,7 @@ export function buildTerrain(map, mode = '2d') {
  */
 export function drawMapObjects(ctx, map, S, iso, rng, paved = true, town = true, nature = true) {
   drawFields(ctx, map, S);
+  drawPaving(ctx, map.town, S); // Plätze und Bürgersteige unter den Straßen (paving.js)
   drawRoads(ctx, map, S, paved);
   drawRail(ctx, map, S);
   if (town) drawTown(ctx, map, S, iso); // im Spiel malt die Kartenstadt seit v5.23 maptown.js (scharf, je Bild)

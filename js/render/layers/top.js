@@ -14,6 +14,7 @@ import { drawWeather } from '../weatherfx.js';
 import { drawMood } from '../mood.js';
 import { drawBridgeTop, drawBridgeBar, bridgeBar, fordPosts, drawFordPostTop } from '../bridge.js';
 import { drawMapTown2D, drawMapCars2D } from '../maptown.js';
+import { drawPaving } from '../paving.js';
 import { drawHouseWorksTop, drawHouseFlagTop } from '../stronghold.js';
 import { drawUnitTop } from '../unitpaint.js';
 import { drawShell, drawEffect, drawSmoke, drawSmokeScreen, drawDust, drawFire, drawMine } from '../fx.js';
@@ -45,6 +46,7 @@ export const topMethods = {
   topGround(f) {
     const { ctx, g, team, z, now, inRect, known } = f;
     this.drawTerrain(ctx, f.R);
+    drawPaving(ctx, g.map.town, 1, inRect); // Plätze und Bürgersteige scharf über dem Geländebild (paving.js)
     drawWays(this, ctx, this.season); // Feldwege und Gleise scharf über dem Geländebild (seit v5.31, ways.js)
     // Kartenstadt (seit v5.23 gemalt, nicht mehr im Geländebild): Parks, Gebäude, Bänke, Stadtbäume, Autos (maptown.js)
     setRoofSnow(this.season === 'winter');

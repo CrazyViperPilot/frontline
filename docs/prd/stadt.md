@@ -124,6 +124,8 @@ LKW und Transporthubschrauber fahren es wie bisher zu den vorderen FOBs; ist es 
   **Tower**, **Kerosintank**, **Munitionslager**, **Räumen** (kostenlos, keine Erstattung; fällt auch Bäume, siehe unten), dazu **Handel** (öffnet das Marktmenü), „Zur Stadt“ (Kamera zur Hauptstadt),
   „▴ Einklappen“ (Menü ausblenden, der Stadt-Knopf holt es zurück) und „Fertig (Y)“ (auch Esc).
   Mit einem Finger oder der linken Maustaste zieht man auf der Karte ein Rechteck, zwei Finger schieben und zoomen weiter.
+  Mit der Maus zeigt das Spiel schon vor dem Klick unter dem Zeiger, wo gebaut würde: die Zelle bzw. das Quadrat des Großbaus in der Farbe des Werkzeugs,
+  rot, wenn dort nicht gebaut werden darf (Räumen: rot auf leerer Zelle); bei Tower, Kerosintank und Munitionslager auch der Umkreis.
   Im Baumodus sind gesperrte Zellen dunkel.
   Reicht das Geld nicht für alle Zellen, werden die ersten bezahlt.
   **Nichts überbauen:** Gebaut wird nur auf leeren Zellen; liegt im Rechteck schon etwas (auch eine eigene Straße oder ein anderes Stadtgebäude),

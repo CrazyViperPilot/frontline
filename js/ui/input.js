@@ -209,6 +209,12 @@ export class Input {
     }
     if (this.mmDrag !== null) this.minimapGo(e);
     const d = this.down;
+    const cityHover = !d && e.pointerType !== 'touch' ? this.app.cityBuild?.() : null;
+    if (cityHover) {
+      // Baumodus: Vorschau unter dem Mauszeiger, bevor man klickt (nicht bei Fingern: dort gibt es keinen Zeiger ohne Druck)
+      const w = this.inCanvas ? this.camera.screenToWorld(p.x, p.y) : null;
+      cityHover.hoverAt(w ? w.x : null, w ? w.y : null);
+    }
     if (d && d.mode === 'city') {
       const w = this.camera.screenToWorld(p.x, p.y);
       this.app.cityBuild?.()?.move(w.x, w.y);

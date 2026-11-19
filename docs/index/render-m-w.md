@@ -33,6 +33,11 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawAnimalTopP(ctx, a, zoom, now) – Tier von oben (2D), gedreht nach a.angle, mit Schatten
 - natureModels() – Für Tests: alle Felsen- und Tiermodelle (Körper) bauen, ohne zu malen
 
+## paving.js (3.0 KB)
+- drawPlaza(ctx, p, S) – Platz p (Rechteck, evtl. gedreht) mit Plattenfugen und dunklerer Kante
+- drawWalk(ctx, r, S) – Bürgersteig r (Strecke x1/y1 → x2/y2, Breite w) mit Bordstein an beiden Kanten…
+- drawPaving(ctx, town, S, inRect, at) – Alle Plätze und Bürgersteige einer Kartenstadt
+
 ## props.js (28 KB)
 - drawMapCarIso(ctx, cam, c, season) – Geparktes Auto der Karte in Iso (Fuß am Weltpunkt)
 - drawMapCarShadowIso(ctx, cam, c, dpr) – Iso: Schatten eines Autos (Umriss von oben am Boden)
@@ -161,7 +166,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - tank(g, u, v, r, H, o) – Lagertank: Mantel mit Nähten, Band in Teamfarbe, Treppe außen, Kegeldach oder (…
 - bund(g, u0, u1, v0, v1, part, h) – Auffangwanne (niedrige Betonmauer) um [u0,u1]×[v0,v1]: part 'back' hintere Seit…
 - pipe(g, pts, d, col) – Rohr als Linienzug durch Punkte [u, v, h] mit Glanzlinie (d = Durchmesser)
-- lorry(g, u, v, along, cabCol, load, o) – LKW entlang u oder v (Fahrerhaus vorn bei +u bzw. +v); load: 'bricks', 'tank',…
-- pallet(g, u, v, s, h, col) – Palette mit Ziegeln (oder anderer Ware), Kantenlänge 2s, Höhe h
-- forklift(g, u, v, col) – Gabelstapler (orange) mit Palette auf der Gabel nach +u.
-- ringTop(c, x, y, r, color, w)

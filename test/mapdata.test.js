@@ -154,3 +154,18 @@ test('ältere Karte (9024 px, bis v5.11) wird mittig in die größere Karte gese
   for (let i = 0; i < 40; i++) g.update(DT);
   assert.ok(g.buildings.some((b) => b.main && Math.hypot(b.x - m.spawns[0].x, b.y - m.spawns[0].y) < 100), 'Hauptstadt am verschobenen Startpunkt');
 });
+
+test('Pflaster: Plätze und Bürgersteige bleiben erhalten, Karten ohne Pflaster bekommen keine Felder', () => {
+  const m = createEmptyMap();
+  assert.equal('plazas' in m.town, false);
+  assert.equal('walks' in m.town, false);
+  m.town.plazas = [{ x: 96, y: 96 }, { x: 160, y: 96, w: 9999, h: 64, angle: 0.5 }];
+  m.town.walks = [{ x1: 0, y1: 0, x2: 200, y2: 0 }, { x1: 5, y1: 5, x2: 5, y2: 5 }];
+  const n = cloneMap(normalizeMap(m));
+  assert.deepEqual(n.town.plazas[0], { x: 96, y: 96, w: 64, h: 64 });
+  assert.equal(n.town.plazas[1].w, 600);
+  assert.equal(n.town.plazas[1].angle, 0.5);
+  assert.equal(n.town.walks.length, 1, 'Bürgersteig ohne Länge fällt weg');
+  assert.equal(n.town.walks[0].w, 20);
+  assert.deepEqual(checkMap(n), checkMap(normalizeMap(createEmptyMap())), 'Pflaster blockiert nichts');
+});

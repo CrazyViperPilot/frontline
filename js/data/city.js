@@ -310,12 +310,12 @@ export const CITY = {
     roadEvery: 3, // jede so vielte Zeile (vom Anker aus) wird Straße, dazu eine Straßenspalte durch den Anker
     quarter: 3, // Radius (Zellen) der kleinen Viertel an vorderen FOBs
     quarterEvery: 3, // jeder so vielte Takt baut an einer vorderen FOB statt an der Hauptstadt
-    mix: { com: 2, bm: 3, mun: 2, fuel: 2, kero: 1, steel: 2, market: 0.3 }, // Verhältnis der Arbeitsstätten (Kraftwerk, Uni, Rechenzentrum nach Bedarf)
+    mix: { com: 2, bm: 2, mun: 3, fuel: 3, kero: 1, steel: 2, market: 0.3 }, // Verhältnis der Arbeitsstätten (Kraftwerk, Uni, Rechenzentrum nach Bedarf); Paket „KI-Munition“: BM 3 → 2, MUN und TS 2 → 3 (BM lag im Überfluss, MUN und TS an keep)
     powerMargin: 1.15, // baut ein Kraftwerk, wenn das Stromangebot unter Bedarf × powerMargin + powerSpare fällt
     powerSpare: 10, // fester Strompuffer dazu
     // Wohnen: weist Wohnzellen aus, solange es weniger als resPerWork je Arbeitsstätte gibt, oder (bis höchstens resMax je Arbeitsstätte),
     // wenn Wohnplätze für die eingezogenen Soldaten + draftSpare fehlen oder freie Einwohner knapp sind (lowFree, lowFill)
-    resPerWork: 1.2,
+    resPerWork: 1.5, // Paket „KI-Munition“ 1.2 → 1.5: die Werke liefen mit zu wenig Arbeitern nur zu 50 bis 70 %
     resMax: 2,
     draftSpare: 20,
     uniFrom: 6, // Arbeitsstätten, ab denen sie eine Universität baut

@@ -175,8 +175,11 @@ LKW und Transporthubschrauber fahren es wie bisher zu den vorderen FOBs; ist es 
 - **KI:** baut in Ringen von der Hauptstadt nach außen (jede dritte Zeile und die Spalte durch die FOB werden Straße,
   dazwischen Zonen) und jeden dritten Takt ein kleines Viertel (Radius 3 Zellen) an einer vorderen FOB.
   Welche Zone sie ausweist, richtet sich nach Bedarf: Wohnen, wenn Wohnraum fehlt oder ihre Truppen ihn aufbrauchen,
-  sonst Gewerbe, BM-Werk, Munitionswerk, Raffinerie, Kerosin-Raffinerie, Stahlwerk und Markt im Verhältnis 2 : 3 : 2 : 2 : 1 : 2 :
-  0,3 (`CITY.ai.mix`).
+  sonst Gewerbe, BM-Werk, Munitionswerk, Raffinerie, Kerosin-Raffinerie, Stahlwerk und Markt im Verhältnis 2 : 2 : 3 : 3 : 1 : 2 :
+  0,3 (`CITY.ai.mix`), dazu 1,5 Wohnzellen je Arbeitsstätte (`resPerWork`).
+  Paket „KI-Munition“ (vorher 2 : 3 : 2 : 2 und 1,2): Baumaterial lag im Überfluss, Munition und Treibstoff der Hauptstadt an `keep`, die Werke
+  liefen mit zu wenig Arbeitern zu 50 bis 70 %. Gemessen (20 min, Seeds 3, 5, 7, 11): Munition der Hauptstadt im Mittel 1382 statt 679
+  (bei allen 8 Teams mehr), Treibstoff 1926 statt 1472, FOB-Lager 860 statt 792, Ausbildung 43 statt 38,5, Abschüsse gleich.
   Takt 12 / 8 / 5 s (Leicht / Normal / Schwer), 4 Zellen je Takt, solange danach 500 / 300 / 200 Geld für die Armee übrig bleiben.
   Sie verkauft Sorten über 2700 am Markt, kauft Stahl nur, wenn eine Ausbildung daran scheiterte (`steelWait`),
   und Baumaterial unter 120. Seit v5.20 verbindet sie bis zu 4 Gebäude je Takt ohne Lieferweg oder Pendlerweg per `connectRoad` mit dem Lager (oder dem Netz des Ziels), bezahlt mit Baumaterial,

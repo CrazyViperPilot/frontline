@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.229: **KI-Munition** (PRD `docs/prd/stadt.md` „KI“): Die Stadt-KI baut mehr Munitionswerke und Raffinerien statt BM-Werke und mehr Wohnungen für Arbeiter; ihre Hauptstadt hat im Mittel doppelt so viel Munition, ihre Armee bildet rund 12 % mehr aus. Cache v293.
 - v5.228: **Ausbildung an der Lagerhalle** (PRD `docs/prd/stadt-transport.md` „Versorgung der Ausbildung“, `docs/prd/ki.md`): Kaserne, Fabrikhalle und Heliport messen ihre Versorgung auch bis zu einer angeschlossenen Lagerhalle, wenn der Weg kürzer ist; die KI baut eine Kaserne neben ihre Lagerhalle an der Front. Cache v292.
 - v5.227: **KI-Einheiten: Kampfhubschrauber und Su-27** (PRD `docs/prd/ki.md`): Die KI bildet ab einer Armee von 12 Kampfeinheiten aus Überschuss einen Kampfhubschrauber aus (Schwer zwei) und baut dafür später einen dritten Heliport; bei ihren Mehrzweckjets wechseln F-16 und Su-27, Rot beginnt mit der Su-27. Cache v291.
 - v5.226: **KI-Lagerhalle** (PRD `docs/prd/ki.md` „Lagerhalle“): Liegt der Weg von der Stadt zur vorderen FOB im Unerkundeten, deckt der Späher der KI ihn auf, statt dass die Halle ewig ausbleibt; die KI rechnet das Baumaterial der Straße mit ein. Cache v290.

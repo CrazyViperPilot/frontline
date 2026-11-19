@@ -10,6 +10,7 @@ import { drawCityBadges } from '../citylayer.js';
 export const TOP_PASSES = [
   { name: 'Boden', run: (r, f) => r.topGround(f) },
   { name: 'Objekte', run: (r, f) => r.topObjects(f) },
+  { name: 'Leitungen', run: (r, f) => r.drawPowerWires(f) },
   { name: 'Effekte', run: (r, f) => r.topEffects(f) },
   { name: 'Nebel', run: (r, f) => r.topFog(f) },
   { name: 'Wetter', run: (r, f) => r.drawSky(f) }, // Regen, Schnee und Nebel über der Welt, in Bildschirmkoordinaten
@@ -37,6 +38,7 @@ export const ISO_PASSES = [
   },
   { name: 'Schatten', run: (r, f) => r.isoShadows(f, f.items) },
   { name: 'Objekte', run: (r, f) => r.isoObjects(f, f.items) },
+  { name: 'Leitungen', run: (r, f) => r.drawPowerWires(f) }, // Hochspannungsleitungen über allen Objekten (feste Karten)
   {
     name: 'Schilder', // Stadt: Schilder über den Dächern (über allen Gebäuden)
     run: (r, f) => {

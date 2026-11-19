@@ -65,7 +65,7 @@ export const zoneMethods = {
     const { cq, C, h, k, lw } = s;
     // Gitter der Gebiete (dünn) und Rand der Zone (kräftig)
     ctx.beginPath();
-    for (let i = 1; i < C.grid; i++) {
+    for (let i = 1; i < (cq.round ? 0 : C.grid); i++) {
       this.groundLine(ctx, cq.x0 + i * cq.size, cq.y0, cq.x0 + i * cq.size, cq.y0 + 2 * h);
       this.groundLine(ctx, cq.x0, cq.y0 + i * cq.size, cq.x0 + 2 * h, cq.y0 + i * cq.size);
     }
@@ -88,12 +88,20 @@ export const zoneMethods = {
   conquestRays(ctx, s) {
     const { cq, zn, h, k, lw } = s;
     // Viertelgrenzen außerhalb der Zone: vier Strahlen von den Kantenmitten zum Kartenrand
-    const rays = [
-      [zn.x, cq.y0, zn.x, 0, 0, 1],
-      [zn.x, cq.y0 + 2 * h, zn.x, H, 2, 3],
-      [cq.x0, zn.y, 0, zn.y, 0, 2],
-      [cq.x0 + 2 * h, zn.y, W, zn.y, 1, 3],
-    ];
+    // Seitenlayout (feste Karten): Strahlen von den Ecken der Zone zu den Kartenecken; Index = Kartenseite (0 oben, 1 rechts, 2 unten, 3 links)
+    const rays = cq.sides
+      ? [
+          [cq.x0, cq.y0, 0, 0, 0, 3],
+          [cq.x0 + 2 * h, cq.y0, W, 0, 0, 1],
+          [cq.x0 + 2 * h, cq.y0 + 2 * h, W, H, 1, 2],
+          [cq.x0, cq.y0 + 2 * h, 0, H, 2, 3],
+        ]
+      : [
+          [zn.x, cq.y0, zn.x, 0, 0, 1],
+          [zn.x, cq.y0 + 2 * h, zn.x, H, 2, 3],
+          [cq.x0, zn.y, 0, zn.y, 0, 2],
+          [cq.x0 + 2 * h, zn.y, W, zn.y, 1, 3],
+        ];
     for (const [x1, y1, x2, y2, qa, qb] of rays) {
       const locked = [qa, qb].some((q) => cq.quad[q] !== this.team && !cq.open[cq.quad[q]]);
       ctx.beginPath();
@@ -113,11 +121,17 @@ export const zoneMethods = {
     for (let q = 0; q < 4; q++) {
       const own = cq.quad[q];
       if (own === this.team || cq.open[own]) continue;
-      const sx = q & 1 ? 1 : -1;
-      const sy = q & 2 ? 1 : -1;
       ctx.beginPath();
-      this.groundLine(ctx, zn.x, zn.y + sy * h, zn.x + sx * h, zn.y + sy * h);
-      this.groundLine(ctx, zn.x + sx * h, zn.y + sy * h, zn.x + sx * h, zn.y);
+      if (cq.sides) {
+        // ganze Kante der Zone zur Seite q (0 oben, 1 rechts, 2 unten, 3 links)
+        const [ax, ay, bx, by] = [[-1, -1, 1, -1], [1, -1, 1, 1], [-1, 1, 1, 1], [-1, -1, -1, 1]][q];
+        this.groundLine(ctx, zn.x + ax * h, zn.y + ay * h, zn.x + bx * h, zn.y + by * h);
+      } else {
+        const sx = q & 1 ? 1 : -1;
+        const sy = q & 2 ? 1 : -1;
+        this.groundLine(ctx, zn.x, zn.y + sy * h, zn.x + sx * h, zn.y + sy * h);
+        this.groundLine(ctx, zn.x + sx * h, zn.y + sy * h, zn.x + sx * h, zn.y);
+      }
       ctx.strokeStyle = hexA(own < g.teams.length ? g.teams[own].color : '#e5484d', 0.9);
       ctx.lineWidth = lw(5);
       ctx.stroke();
@@ -135,12 +149,18 @@ export const zoneMethods = {
     const areaW = drape ? Math.max(3, 6 * z) : Math.max(6, 3 / (this.camera.zoom || 1));
     for (const f of cq.flags) {
       const col = colOf(f.owner);
-      const x0 = f.x - cq.size / 2 + inset;
-      const y0 = f.y - cq.size / 2 + inset;
-      const x1 = f.x + cq.size / 2 - inset;
-      const y1 = f.y + cq.size / 2 - inset;
       ctx.beginPath();
-      this.groundPoly(ctx, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]);
+      if (f.r) {
+        // eigene Flaggen der Karte (Paket „Feste Karten“): rundes Gebiet
+        const r = f.r - inset / 2;
+        this.groundPoly(ctx, Array.from({ length: 56 }, (_, i) => [f.x + Math.cos((i / 56) * Math.PI * 2) * r, f.y + Math.sin((i / 56) * Math.PI * 2) * r]));
+      } else {
+        const x0 = f.x - cq.size / 2 + inset;
+        const y0 = f.y - cq.size / 2 + inset;
+        const x1 = f.x + cq.size / 2 - inset;
+        const y1 = f.y + cq.size / 2 - inset;
+        this.groundPoly(ctx, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]);
+      }
       if (f.owner >= 0) {
         ctx.fillStyle = hexA(col, 0.07);
         ctx.fill();

@@ -100,7 +100,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - CQ_CONTACT – px: Kontaktradius; wer im Gebiet ohne Gegner in diesem Umkreis steht, rückt auf…
 - CQ_MAST_SHARE – Anteil der Zonengröße: wer weiter als das vom Fahnenmast der Flagge steht, rück…
 
-## balance.js (37 KB)
+## balance.js (38 KB)
 - QUICK – == SCHNELLEINSTELLUNGEN == Hier ändern; BALANCE unten liest diese Werte
 - BALANCE
 

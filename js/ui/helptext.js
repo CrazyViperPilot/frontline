@@ -54,7 +54,9 @@ export const KEYS = [
   ['Fluss', `Falls im Startmenü an: auf Zufallskarten trennt je ein Fluss die Startecken von Blau und Rot von der Zone (mit 3 oder 4 Spielern in der Eroberung nur diese beiden) · ` +
     `drei Brücken und zwei Furten führen hinüber (in der Furt halbes Tempo) · Brücken greift nur an, wer es befiehlt (A + Klick); eingestürzt sperren sie, ` +
     `bis ein Baufahrzeug sie wieder aufbaut (Rechtsklick oder Tippen auf die Trümmer, ${BALANCE.river.rebuildCost} Geld, ${BALANCE.river.rebuild} s)`],
-  ['Eroberung', `Falls im Startmenü gewählt (Standard): 16 Flaggen A bis P in der Konfliktzone. Wer im Gebiet einer Flagge die meisten Einheiten hat, nimmt sie ein; ` +
+  ['Feste Karten', `Startmenü, Karte „Feste Karten“: Karten, die mit dem Spiel kommen, z. B. East Europe Railway (7 Flaggen, bis zu 4 Spieler, Bahn mit Brücke, Fabrik). ` +
+    `Eigene Flaggen haben ein rundes Gebiet um den Mast; Baugebiete können an den Kartenseiten liegen statt in den Ecken (Grenzen gestrichelt)`],
+  ['Eroberung', `Falls im Startmenü gewählt (Standard): 16 Flaggen A bis P in der Konfliktzone (feste Karten: eigene Flaggen). Wer im Gebiet einer Flagge die meisten Einheiten hat, nimmt sie ein; ` +
     `je Phase ${CQ.capTime} s bei einer Einheit Vorsprung, mit mehr Vorsprung schneller (höchstens ${CQ.capMaxMul}-fach) · jede Flagge bringt ${de(CQ.flagIncome)} Geld/s · ` +
     `Tickets nach Wahl im Startmenü (${CQ.ticketChoices.join(', ')}; Standard ${CQ.ticketDefault}): wer weniger Flaggen hält als der Führende, ` +
     `verliert alle ${CQ.tickEvery} s 1 Ticket, ohne Flagge ${CQ.noFlagLoss} mehr · Kommandeur gefallen: −${BALANCE.commander.deathPoints} Tickets · ohne Tickets scheidet man aus, ` +

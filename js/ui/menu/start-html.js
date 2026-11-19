@@ -40,7 +40,7 @@ function howtoHtml() {
         `Eine Partie zählt für die Kasse, wenn der Server sie begonnen hat: Er gibt bis zu 3 Tokens auf Vorrat aus, auch für Partien ohne Netz. ` +
         `Ohne Token läuft die Partie ungewertet. Ein Token wird erst mit dem Endstand verbraucht: Eine abgebrochene Partie kostet keins. ` +
         `Ein gespeicherter Stand bleibt auf diesem Gerät gewertet, solange sein Token im Vorrat ist.</li>
-        <li>Eroberung: 16 Flaggen (A bis P) in der Konfliktzone. Wer im Gebiet einer Flagge die meisten Einheiten hat, nimmt sie ein. Wer weniger Flaggen hält als der Führende, ` +
+        <li>Eroberung: 16 Flaggen (A bis P) in der Konfliktzone (feste Karten wie East Europe Railway: eigene Flaggen, Baugebiete an den Kartenseiten). Wer im Gebiet einer Flagge die meisten Einheiten hat, nimmt sie ein. Wer weniger Flaggen hält als der Führende, ` +
         `verliert Tickets; ohne Tickets scheidet man aus. Fremde Viertel sind gesperrt. Hält ein Team ${Math.round(BALANCE.conquest.lockGrace / 60)} min lang keine Flagge, ` +
         `während ein anderes eine hält, ist sein Viertel für den Rest der Partie offen. Kein kostenloser Nachschub: Truppen kosten Geld. Kaserne und Fabrikhalle: ` +
         `im Infofeld wählen, ob neue Einheiten am Gebäude oder an einer eigenen Flagge erscheinen.</li>
@@ -134,6 +134,7 @@ export function startHtml() {
         <span class="flabel">Karte</span>
         <div class="seg">
           <button type="button" data-mapmode="random">Zufall</button>
+          <button type="button" data-mapmode="fixed">Feste Karten</button>
           <button type="button" data-mapmode="saved">Gespeichert</button>
           <button type="button" data-mapmode="new">Neue Karte</button>
         </div>

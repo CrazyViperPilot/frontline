@@ -6,6 +6,8 @@ Regeln: `docs/prd/eroberung.md`. Logik: `js/game/conquest.js`, Geometrie `js/gam
 ## Datenmodell Eroberung (`game.conquest`)
 **Eroberung** (nur mit `conquest`, sonst `null`): `game.conquest = { startTickets, half, x0, y0, size, flags[16], quad[4], open[], held[], noFlag[], timer }`.
 Je Flagge `{ id, letter, x, y, owner (−1 = neutral), capTeam, p (Balken 0 bis 1), counts[] (Einheiten je Team im Gebiet), contested }`.
+Karten mit eigenen Flaggen (`map.flags`, feste Karten): `round: true`, je Flagge zusätzlich `r` (Kreisgebiet) und evtl. `name`; `size` ist dann der
+größte Durchmesser (Maßstab der KI). `sides: true` (`map.layout === 'sides'`): `quad` ist nach Kartenseite indiziert (0 oben, 1 rechts, 2 unten, 3 links, `sideOf` in `zonegeo.js`).
 `quad` nennt das Team je Viertel (9 = kein Spieler), `open` die gefallenen Sperren; `zone` bekommt `half` (die Zone ist dann ein Quadrat).
 Im Wegraster: `grid.lock` je Zelle das Viertel (Team, 9 = ohne Spieler, −1 = Zone) und `grid.lockOpen` (dasselbe Array wie `conquest.open`),
 gebunden von `bindLock` in `conquest.js`, auch nach dem Laden. `game.mode` (Getter) liefert den Modus-Eintrag aus `js/game/modes.js`.

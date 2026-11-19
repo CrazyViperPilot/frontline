@@ -1,7 +1,8 @@
 // Eroberung (docs/prd/eroberung.md): 2 bis 4 Teams, jeder gegen jeden. Quadratische Konfliktzone mit 4 × 4 Flaggengebieten,
-// Tickets statt Punktebalken, gesperrte Viertel außerhalb der Zone, Ausscheiden. Kein DOM.
+// Tickets statt Punktebalken, gesperrte Viertel außerhalb der Zone, Ausscheiden. Karten mit eigenen Flaggen (map.flags) haben
+// runde Flaggengebiete; mit map.layout 'sides' liegen die Viertel (Baugebiete) an den Kartenseiten statt in den Ecken. Kein DOM.
 import { BALANCE } from '../data/balance.js';
-import { inZone } from './zonegeo.js';
+import { inZone, sideOf } from './zonegeo.js';
 import { aliveTeams } from './teams.js';
 import { nearestPassable } from './movement.js';
 import { earn } from './ledger.js';
@@ -20,22 +21,28 @@ function createConquest(game, on, tickets = null) {
   const x0 = z.x - Q.half;
   const y0 = z.y - Q.half;
   const flags = [];
-  for (let r = 0; r < Q.grid; r++) {
+  const own = game.map.flags ?? [];
+  // eigene Flaggen der Karte: Gebiet ein Kreis mit f.r um den Mast (round), sonst das Raster
+  for (const [id, f] of own.entries()) flags.push({ id, letter: Q.names[id] ?? String(id + 1), x: f.x, y: f.y, r: f.r, ...(f.name ? { name: f.name } : {}), owner: -1, capTeam: -1, p: 0, counts: game.teams.map(() => 0), contested: false });
+  for (let r = 0; r < (own.length ? 0 : Q.grid); r++) {
     for (let c = 0; c < Q.grid; c++) {
       const id = r * Q.grid + c;
       // owner: Besitzer oder -1 (grau); capTeam/p: wessen Balken gerade steht (0..1); counts: Einheiten je Team im Gebiet
       flags.push({ id, letter: Q.names[id] ?? String(id + 1), x: x0 + (c + 0.5) * size, y: y0 + (r + 0.5) * size, owner: -1, capTeam: -1, p: 0, counts: game.teams.map(() => 0), contested: false });
     }
   }
-  // Viertel je Kartenquadrant: Index des Teams, dessen Startpunkt dort liegt, sonst CLOSED
+  // Viertel je Kartenquadrant (bzw. Kartenseite im Seitenlayout): Index des Teams, dessen Startpunkt dort liegt, sonst CLOSED
+  const sides = game.map.layout === 'sides';
   const quad = [CLOSED, CLOSED, CLOSED, CLOSED];
   game.teams.forEach((t) => {
     const sp = game.map.spawns[t.id];
-    quad[(sp.x >= z.x ? 1 : 0) + (sp.y >= z.y ? 2 : 0)] = t.id;
+    quad[sides ? sideOf(z, sp.x, sp.y) : quadIndex(z, sp.x, sp.y)] = t.id;
   });
   const open = new Array(CLOSED + 1).fill(false); // true = Sperre des Viertels gefallen
   const startTickets = Number.isFinite(tickets) && tickets > 0 ? Math.round(tickets) : Math.round(game.winPoints * Q.ticketMul);
-  game.conquest = { startTickets, half: Q.half, x0, y0, size, flags, quad, open, timer: 0, noFlag: game.teams.map(() => 0), held: game.teams.map(() => 0) };
+  // round: runde Flaggengebiete (eigene Flaggen); size dann der größte Durchmesser (Maßstab der KI); sides: Viertel an den Seiten
+  const round = own.length > 0;
+  game.conquest = { startTickets, half: Q.half, x0, y0, size: round ? 2 * Math.max(...own.map((f) => f.r)) : size, round, sides, flags, quad, open, timer: 0, noFlag: game.teams.map(() => 0), held: game.teams.map(() => 0) };
   for (const t of game.teams) {
     t.tickets = startTickets;
     t.out = false;
@@ -60,11 +67,15 @@ export function inSquare(game, x, y) {
   return inZone(game.zone, x, y);
 }
 
-/** Viertel des Punkts: Team-Index, CLOSED (Viertel ohne Spieler) oder -1 (Konfliktzone). */
+/** Index des Kartenquadranten um die Zonenmitte: 0 links oben, 1 rechts oben, 2 links unten, 3 rechts unten. */
+const quadIndex = (z, x, y) => (x >= z.x ? 1 : 0) + (y >= z.y ? 2 : 0);
+
+/** Viertel des Punkts: Team-Index, CLOSED (Viertel ohne Spieler) oder -1 (Konfliktzone). Seitenlayout: Index = Kartenseite (sideOf). */
 export function quarterAt(game, x, y) {
   if (inSquare(game, x, y)) return -1;
   const z = game.map.zone;
-  return game.conquest.quad[(x >= z.x ? 1 : 0) + (y >= z.y ? 2 : 0)];
+  const cq = game.conquest;
+  return cq.quad[cq.sides ? sideOf(z, x, y) : quadIndex(z, x, y)];
 }
 
 /** Darf `team` an diesem Punkt weder stehen noch hinschießen? (fremdes Viertel, dessen Sperre noch steht) */
@@ -79,11 +90,18 @@ export function lockedFor(game, team, x, y) {
 export function flagAt(game, x, y) {
   const cq = game.conquest;
   if (!cq) return null;
+  if (cq.round) {
+    for (const f of cq.flags) if ((x - f.x) ** 2 + (y - f.y) ** 2 <= f.r * f.r) return f;
+    return null;
+  }
   const c = Math.floor((x - cq.x0) / cq.size);
   const r = Math.floor((y - cq.y0) / cq.size);
   if (c < 0 || r < 0 || c >= Q.grid || r >= Q.grid) return null;
   return cq.flags[r * Q.grid + c];
 }
+
+/** Buchstabe der Flagge, bei Karten mit Namen dazu der Name: „A (Gehöft)“. */
+export const flagLabel = (f) => (f.name ? `${f.letter} (${f.name})` : f.letter);
 
 /** Eigene Flaggen, an denen gerade Einheiten erscheinen dürfen (gehalten und kein Gegner im Gebiet). */
 export function spawnFlags(game, team) {
@@ -153,9 +171,9 @@ function updateConquest(game, dt) {
   for (const u of game.units) {
     if (!u.alive || game.teams[u.team].out) continue;
     const f = flagAt(game, u.x, u.y);
-    if (!f) continue;
+    if (cq.round ? !inSquare(game, u.x, u.y) : !f) continue; // Raster: die Gebiete füllen das Quadrat; runde Gebiete nicht
     counts[u.team]++;
-    if (!u.def.jet) f.counts[u.team]++; // Flugzeuge im Überflug erobern nicht, Hubschrauber schon
+    if (f && !u.def.jet) f.counts[u.team]++; // Flugzeuge im Überflug erobern nicht, Hubschrauber schon
     const inHot = !!hot && Math.hypot(u.x - hot.x, u.y - hot.y) <= hot.r;
     money[u.team] += inHot ? H.unitIncome : BALANCE.zone.unitIncome;
   }
@@ -188,13 +206,13 @@ function updateConquest(game, dt) {
         f.p = Math.min(1, f.p + step);
         if (f.p >= 1 && f.owner !== lead) {
           f.owner = lead;
-          game.message(-1, `${game.teams[lead].name} nimmt Flagge ${f.letter} ein`, f.x, f.y);
+          game.message(-1, `${game.teams[lead].name} nimmt Flagge ${flagLabel(f)} ein`, f.x, f.y);
         }
       } else {
         f.p -= step;
         if (f.p <= 0) {
           f.p = 0;
-          if (f.owner >= 0) game.message(f.owner, `Flagge ${f.letter} verloren`, f.x, f.y);
+          if (f.owner >= 0) game.message(f.owner, `Flagge ${flagLabel(f)} verloren`, f.x, f.y);
           f.owner = -1;
           f.capTeam = lead;
         }

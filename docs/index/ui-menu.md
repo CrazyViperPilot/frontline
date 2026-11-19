@@ -65,7 +65,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## start-html.js (12 KB)
 - startHtml() – Das ganze Startmenü (Abschnitt „menu start“)
 
-## start-maps.js (4.3 KB)
+## start-maps.js (6.0 KB)
 - renderMapBox(root, s) – Bereich unter „Karte“ neu zeichnen (Zufall: Hinweis, gespeichert: Auswahl, Bear…
 - mapChange(root, s) – change-Handler des Startmenüs: Kartenauswahl und Import einer Karten-Datei
 - mapClick(root, s, b) – Knöpfe der Kartenwahl (Zufall, Gespeichert, Neue Karte, Editor, Bearbeiten, Lös…

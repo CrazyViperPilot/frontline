@@ -6,11 +6,13 @@ import { findPath } from './pathfinding.js';
 import { Relief, reliefOf, reliefSize, shiftRelief } from './relief.js';
 import { countRoutes } from './landscape.js';
 import { openBridges } from './river.js';
+import { sideOf } from './zonegeo.js';
+import { FIXED_MAPS } from '../data/maps/index.js';
 
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;
 const TILE = BALANCE.map.tile;
-const BUILDING_KINDS = ['house', 'factory', 'hall', 'tower', 'train', 'station', 'platform', 'wall']; // wall: Mauer um Fabrikgelände
+const BUILDING_KINDS = ['house', 'factory', 'hall', 'tower', 'train', 'station', 'platform', 'wall', 'plant', 'pylon']; // wall: Mauer um Fabrikgelände; plant: große Fabrikhalle; pylon: Strommast (Paket „Feste Karten“)
 const TURNABLE = ['train', 'platform']; // dürfen beliebig gedreht sein (`angle`, Bogenmaß)
 const CHECK = MAPGEN.check;
 const SPAWN_CLEAR = CHECK.spawnClear; // freier Platz um einen Startpunkt (Hauptstadt und Startunits)
@@ -20,6 +22,9 @@ export const MAX_FIELDS = 300; // Felder und Weiden je Karte
 export const MAX_FORDS = 24; // Furten je Karte (Fluss, river.js)
 export const MAX_BRIDGES = 24; // Brücken je Karte
 export const BRIDGE_LEN = [96, 900]; // kürzeste und längste Brücke (px)
+export const MAX_SPAWNS = 4; // Startpunkte je Karte (2 bis 4; Team i startet am Startpunkt i)
+export const MAX_FLAGS = BALANCE.conquest.names.length; // eigene Flaggen je Karte (Eroberung)
+export const PYLON_LINES = 32; // Leitungen je Karte: Strommasten mit gleicher `line` sind in Listenreihenfolge verbunden
 
 /** Leere Karte: nur Startpunkte in den Ecken und die Konfliktzone in der Mitte. */
 export function createEmptyMap(name = 'Neue Karte') {
@@ -70,6 +75,7 @@ function fitSize(src) {
     obstacles: pts(src.obstacles),
     trees: pts(src.trees),
     spawns: pts(src.spawns),
+    ...(src.flags ? { flags: pts(src.flags) } : {}),
     zone: src.zone && typeof src.zone === 'object' ? { ...src.zone, x: mx(src.zone.x), y: my(src.zone.y) } : { x: w0 / 2 + dx, y: h0 / 2 + dy, r: BALANCE.zone.r },
     crates: pts(src.crates),
     town: {
@@ -103,7 +109,11 @@ export function normalizeMap(raw) {
   const circ = (o, lo, hi) => ({ ...pt(o), r: clamp(num(o.r, lo), lo, hi) });
   const arr = (a) => (Array.isArray(a) ? a : []);
   const spawns = arr(src.spawns).map(pt);
-  if (spawns.length !== 2) throw new Error('Eine Karte braucht genau zwei Startpunkte');
+  if (spawns.length < 2 || spawns.length > MAX_SPAWNS) throw new Error(`Eine Karte braucht zwei bis ${MAX_SPAWNS} Startpunkte`);
+  // Eroberung (Paket „Feste Karten“): eigene Flaggen statt des 4 × 4-Rasters, Gebiet ein Kreis; layout 'sides': Baugebiete an den
+  // Kartenseiten (Teilung entlang der Diagonalen) statt in den Ecken
+  const [fr0, fr1] = BALANCE.conquest.mapFlagRange;
+  const flags = arr(src.flags).slice(0, MAX_FLAGS).map((f) => ({ ...pt(f), r: Math.round(clamp(num(f.r, BALANCE.conquest.mapFlagR), fr0, fr1)), ...(typeof f.name === 'string' && f.name ? { name: f.name.slice(0, 24) } : {}) }));
   const zone = circ(src.zone ?? { x: W / 2, y: H / 2, r: BALANCE.zone.r }, 200, 4000);
   // Gleise: freie Strecken; die ältere Form (eine Bahnlinie quer über die Karte, `rail: {y}`) wird übernommen
   const railSrc = arr(town.rails).slice();
@@ -121,6 +131,7 @@ export function normalizeMap(raw) {
       y1: Math.round(clamp(num(b.y1, 0), 0, H)),
       x2: Math.round(clamp(num(b.x2, 0), 0, W)),
       y2: Math.round(clamp(num(b.y2, 0), 0, H)),
+      ...(b.rail ? { rail: true } : {}), // Eisenbahnbrücke: Gleis statt Fahrbahn (nur Optik; Fahrzeuge kommen trotzdem hinüber)
     }))
     .filter((b) => Math.hypot(b.x2 - b.x1, b.y2 - b.y1) >= BRIDGE_LEN[0])
     .slice(0, MAX_BRIDGES);
@@ -145,6 +156,7 @@ export function normalizeMap(raw) {
         h: clamp(num(b.h, 70), 24, 600),
         kind: BUILDING_KINDS.includes(b.kind) ? b.kind : 'house',
         ...(TURNABLE.includes(b.kind) && Number.isFinite(b.angle) && Math.abs(b.angle) > 1e-3 ? { angle: clamp(b.angle, -Math.PI * 2, Math.PI * 2) } : {}),
+        ...(b.kind === 'pylon' ? { line: Math.round(clamp(num(b.line, 0), 0, PYLON_LINES - 1)) } : {}),
         ...(b.kind === 'train' ? { part: ['loco', 'container', 'tank'].includes(b.part) ? b.part : 'container' } : {}),
       })),
       parks: arr(town.parks).map((p) => circ(p, 40, 400)),
@@ -164,6 +176,8 @@ export function normalizeMap(raw) {
     trees: arr(src.trees).map((t) => circ(t, 6, 40)),
     spawns,
     zone,
+    ...(flags.length ? { flags } : {}),
+    ...(src.layout === 'sides' ? { layout: 'sides' } : {}),
     crates: arr(src.crates).slice(0, MAX_CRATES).map(pt), // Versorgungskisten (crates.js); ältere Karten haben keine
     // Furten und Brücken über Flüsse (river.js); Karten ohne Fluss haben die Felder nicht
     ...(fords.length ? { fords } : {}),
@@ -210,7 +224,13 @@ export function checkMap(map) {
     if (s.x < CHECK.spawnEdgeMin || s.y < CHECK.spawnEdgeMin || s.x > W - CHECK.spawnEdgeMin || s.y > H - CHECK.spawnEdgeMin) problems.push(`Startpunkt ${i + 1} liegt zu nah am Kartenrand`);
     if (hit(s.x, s.y, SPAWN_CLEAR)) problems.push(`Startpunkt ${i + 1}: Gebäude, Bäume oder Hindernisse im Umkreis von ${SPAWN_CLEAR} px`);
   });
-  if (Math.hypot(map.spawns[0].x - map.spawns[1].x, map.spawns[0].y - map.spawns[1].y) < CHECK.spawnDistMin) problems.push('Die Startpunkte liegen zu nah beieinander');
+  map.spawns.forEach((a, i) => {
+    for (let j = i + 1; j < map.spawns.length; j++) {
+      const b = map.spawns[j];
+      if (Math.hypot(a.x - b.x, a.y - b.y) < CHECK.spawnDistMin) problems.push(`Startpunkte ${i + 1} und ${j + 1} liegen zu nah beieinander`);
+    }
+  });
+  problems.push(...checkFlags(map));
   const relief = reliefOf(map);
   if (relief) {
     map.spawns.forEach((s, i) => {
@@ -242,10 +262,42 @@ export function checkMap(map) {
   } else if (!reaches(findPath(grid, a.x, a.y, map.zone.x, map.zone.y, 0), map.zone.x, map.zone.y)) {
     problems.push('Die Konfliktzone ist von Startpunkt 1 nicht erreichbar');
   }
-  if (!reaches(findPath(grid, a.x, a.y, b.x, b.y, 0), b.x, b.y)) problems.push('Startpunkt 2 ist von Startpunkt 1 nicht erreichbar');
+  map.spawns.forEach((s, i) => {
+    if (i > 0 && !reaches(findPath(grid, a.x, a.y, s.x, s.y, 0), s.x, s.y)) problems.push(`Startpunkt ${i + 1} ist von Startpunkt 1 nicht erreichbar`);
+  });
   if (!reaches(findPath(grid, b.x, b.y, map.zone.x, map.zone.y, 0), map.zone.x, map.zone.y) && !problems.length) problems.push('Die Konfliktzone ist von Startpunkt 2 nicht erreichbar');
+  for (const f of map.flags ?? []) {
+    if (!problems.length && !reaches(findPath(grid, a.x, a.y, f.x, f.y, 0), f.x, f.y)) problems.push(`Flagge ${flagLetter(map, f)} ist von Startpunkt 1 nicht erreichbar (Mast verstellt?)`);
+  }
   return problems;
 }
+
+const flagLetter = (map, f) => BALANCE.conquest.names[map.flags.indexOf(f)] ?? '?';
+
+/**
+ * Eigene Flaggen (Eroberung): Gebiet ganz im Quadrat der Konfliktzone (halbe Kante BALANCE.conquest.half um die Zonenmitte),
+ * Gebiete überlappen nicht (Abstand mapFlagGap), am Mast frei. Seitenlayout: jeder Startpunkt an einer anderen Kartenseite.
+ */
+export function checkFlags(map) {
+  const problems = [];
+  const Q = BALANCE.conquest;
+  const z = map.zone;
+  const flags = map.flags ?? [];
+  flags.forEach((f, i) => {
+    const L = flagLetter(map, f);
+    if (Math.abs(f.x - z.x) + f.r > Q.half || Math.abs(f.y - z.y) + f.r > Q.half) problems.push(`Flagge ${L}: Gebiet ragt aus der Konfliktzone`);
+    for (let j = i + 1; j < flags.length; j++) {
+      const g = flags[j];
+      if (Math.hypot(f.x - g.x, f.y - g.y) < f.r + g.r + Q.mapFlagGap) problems.push(`Flaggen ${L} und ${flagLetter(map, g)}: Gebiete zu nah beieinander`);
+    }
+  });
+  if (map.layout === 'sides') {
+    const sides = map.spawns.map((s) => sideOf(z, s.x, s.y));
+    if (new Set(sides).size < sides.length) problems.push('Seitenlayout: jeder Startpunkt braucht eine eigene Kartenseite');
+  }
+  return problems;
+}
+
 
 /**
  * Raster einer Karte vor jedem Spielgeschehen: Hindernisse, Stadthäuser, Bäume, Gelände (Hänge, Seen, Furten). Damit beginnt jede
@@ -330,7 +382,17 @@ export function listMaps() {
     .sort((a, b) => (b.saved || 0) - (a.saved || 0));
 }
 
+/** Feste Karten (js/data/maps/): [{ id, name, info, map }] in Menüreihenfolge. */
+export function listFixedMaps() {
+  return FIXED_MAPS;
+}
+
+/** Ist die ID eine feste Karte (nicht im Browser gespeichert)? */
+export const isFixedMap = (id) => FIXED_MAPS.some((m) => m.id === id);
+
 export function loadMap(id) {
+  const fixed = FIXED_MAPS.find((m) => m.id === id);
+  if (fixed) return normalizeMap({ ...JSON.parse(JSON.stringify(fixed.map)), name: fixed.name });
   const e = readAll().find((x) => x.id === id);
   if (!e) return null;
   try {

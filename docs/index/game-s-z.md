@@ -1,8 +1,15 @@
-# Symbol-Index game (Teil 4 von 4, teams.js bis zonegeo.js)
+# Symbol-Index game (Teil 4 von 4, scramble.js bis zonegeo.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
 
-## teams.js (Fortsetzung)
+## scramble.js (7.3 KB)
+- alertable(u) – Kann der Jet in Bereitschaft gehen (Luft-Luft-Waffe)? A-10, C-130 und U-2 nicht
+- alertOn(u) – Ist der Jet in Bereitschaft? Standard an (u.jet.alert fehlt), aus nur mit u.jet…
+- updateScramble(game) – Ein Simulationsschritt der Alarmrotte (vor updateAircraft)
+- cmdScramble(game, team, cmd) – Befehl `{ type: 'scramble', ids, on }`: Alarmbereitschaft der gewählten Jets mi…
+
+## teams.js (1.0 KB)
+- hostile(a, b) – Sind die Teams a und b Gegner? (-1 = neutral: niemandes Gegner)
 - aliveTeams(game) – Teams, die noch spielen (in der Eroberung: nicht ausgeschieden)
 - enemiesOf(game, team) – Noch spielende Gegner von `team`
 - nearestOf(list, x, y) – Das Element der Liste, das (x, y) am nächsten liegt (bei Gleichstand das mit de…
@@ -40,6 +47,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## zone.js (3.3 KB)
 - updateZone(game, dt) – Ein Schritt: Zählung der Einheiten in der Zone, Kontrolle, Zonengeld und Punkte
 
-## zonegeo.js (0.9 KB)
+## zonegeo.js (1.2 KB)
 - inZone(zone, x, y, pad) – Liegt (x, y) in der Zone? `pad` vergrößert (positiv) oder verkleinert (negativ)…
 - zoneDist(zone, x, y) – „Abstand zur Zonenmitte“ in der Form der Zone: im Kreis der Abstand, im Quadrat…
+- sideOf(zone, x, y) – Kartenseite eines Punkts um die Zonenmitte (Teilung entlang der Diagonalen): 0…

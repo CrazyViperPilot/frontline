@@ -98,6 +98,10 @@ export const BALANCE = {
     slotCap: { 2: 500, 3: 500, 4: 500 }, // Einheitenlimit je Team nach Spielerzahl (klassisch QUICK.unitLimit); viele Einheiten kosten Bildrate
     reinforce: false, // kostenloser Soldaten-Nachschub der Hauptstadt (BALANCE.reinforce): in der Eroberung aus, Truppen kosten immer Geld
     names: 'ABCDEFGHIJKLMNOP', // Buchstaben der Flaggen, zeilenweise von links oben
+    // Feste und eigene Karten (Paket „Feste Karten“): Flaggen frei gesetzt, Gebiet ein Kreis um den Mast statt des 4 × 4-Rasters
+    mapFlagR: 520, // Halbmesser des Flaggengebiets (px), wenn die Karte keinen eigenen angibt
+    mapFlagRange: [250, 1000], // kleinster und größter erlaubter Halbmesser eines Flaggengebiets (px)
+    mapFlagGap: 120, // so viel Abstand (px) halten zwei Flaggengebiete mindestens voneinander (Prüfung im Editor)
   },
   // Hot Zone: kleiner Kreis in der Konfliktzone, wandert zufällig oder zu aktiven Bohrern.
   // Einheiten darin bringen statt unitIncome das Doppelte (unitIncome = 2 × zone.unitIncome, nicht zusätzlich).
@@ -202,6 +206,7 @@ export const BALANCE = {
       hall: { cap: 8, hp: 1200, name: 'Halle' },
       factory: { cap: 10, hp: 1800, name: 'Fabrik' },
       station: { cap: 8, hp: 1200, name: 'Bahnhof' },
+      plant: { cap: 16, hp: 3000, name: 'Große Fabrikhalle' }, // feste Karten (East Europe Railway): Festung an Flagge F
     },
     minSize: 40,
     floor: 24,

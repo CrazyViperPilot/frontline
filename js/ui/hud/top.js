@@ -87,7 +87,7 @@ export const topMethods = {
     }
     const cols = BALANCE.teamColors;
     // Eroberung: Buchstaben aller Flaggen in der Farbe des Besitzers (grau = neutral)
-    const strip = cq ? `<span class="flag-strip" title="Flaggen: Farbe des Besitzers, grau = neutral">${cq.flags.map((f) => `<b style="color:${f.owner >= 0 ? cols[f.owner] : '#9aa596'}">${f.letter}</b>`).join('')}</span>` : '';
+    const strip = cq ? `<span class="flag-strip" title="Flaggen: Farbe des Besitzers, grau = neutral">${cq.flags.map((f) => `<b style="color:${f.owner >= 0 ? cols[f.owner] : '#9aa596'}"${f.name ? ` title="${f.name}"` : ''}>${f.letter}</b>`).join('')}</span>` : '';
     // Geld des eigenen Teams aus der Zone: je Einheit in der Zone, in der Hot Zone das Doppelte
     const me = this.team;
     const hzCount = g.hot ? g.hot.counts[me] : 0;

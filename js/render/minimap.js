@@ -113,20 +113,35 @@ export class Minimap {
       // Eroberung: Gebiete in der Farbe des Besitzers (grau = neutral), Zonenrand, Viertelgrenzen
       for (const f of cq.flags) {
         ctx.fillStyle = hexA(f.owner >= 0 ? g.teams[f.owner].color : '#e8ece8', f.owner >= 0 ? 0.4 : 0.1);
-        ctx.fillRect(f.x - cq.size / 2 + 12 * px, f.y - cq.size / 2 + 12 * px, cq.size - 24 * px, cq.size - 24 * px);
+        if (f.r) {
+          // rundes Gebiet (eigene Flaggen der Karte)
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+          ctx.fill();
+        } else ctx.fillRect(f.x - cq.size / 2 + 12 * px, f.y - cq.size / 2 + 12 * px, cq.size - 24 * px, cq.size - 24 * px);
       }
       ctx.strokeStyle = hexA('#e8ece8', 0.9);
       ctx.lineWidth = 1.5 * px;
       ctx.strokeRect(cq.x0, cq.y0, 2 * cq.half, 2 * cq.half);
       ctx.beginPath();
-      ctx.moveTo(zn.x, 0);
-      ctx.lineTo(zn.x, cq.y0);
-      ctx.moveTo(zn.x, cq.y0 + 2 * cq.half);
-      ctx.lineTo(zn.x, H);
-      ctx.moveTo(0, zn.y);
-      ctx.lineTo(cq.x0, zn.y);
-      ctx.moveTo(cq.x0 + 2 * cq.half, zn.y);
-      ctx.lineTo(W, zn.y);
+      if (cq.sides) {
+        // Seitenlayout: Grenzen von den Ecken der Zone zu den Kartenecken
+        const x1 = cq.x0 + 2 * cq.half;
+        const y1 = cq.y0 + 2 * cq.half;
+        for (const [ax, ay, bx, by] of [[cq.x0, cq.y0, 0, 0], [x1, cq.y0, W, 0], [x1, y1, W, H], [cq.x0, y1, 0, H]]) {
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(bx, by);
+        }
+      } else {
+        ctx.moveTo(zn.x, 0);
+        ctx.lineTo(zn.x, cq.y0);
+        ctx.moveTo(zn.x, cq.y0 + 2 * cq.half);
+        ctx.lineTo(zn.x, H);
+        ctx.moveTo(0, zn.y);
+        ctx.lineTo(cq.x0, zn.y);
+        ctx.moveTo(cq.x0 + 2 * cq.half, zn.y);
+        ctx.lineTo(W, zn.y);
+      }
       ctx.strokeStyle = hexA('#e8ece8', 0.55);
       ctx.lineWidth = 1 * px;
       ctx.stroke();

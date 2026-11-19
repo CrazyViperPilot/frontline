@@ -1,4 +1,4 @@
-# Symbol-Index render (Teil 1 von 3, airbase.js bis isobuild.js)
+# Symbol-Index render (Teil 1 von 4, airbase.js bis isobuild.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
@@ -21,7 +21,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawBigPart(ctx, cam, p, color) – Ein Körper einer Anlage isometrisch (Transformation: Bildschirm, dpr gesetzt; H…
 - partFoot(p) – Mittelpunkt und Fußabdruck eines Körpers (für Tiefenordnung und Geländehöhe im…
 
-## bridge.js (26 KB)
+## bridge.js (27 KB)
 - drawBridgeTop(ctx, b, season) – Brücke von oben; Weltkoordinaten (Transformation der Kamera gesetzt)
 - drawBridgeIso(ctx, cam, dpr, b, season) – Brücke isometrisch
 - fordPosts(map, relief) – Furtstangen der Karte (fest je Karte): Punkte auf dem Rand jeder Furt, die im W…

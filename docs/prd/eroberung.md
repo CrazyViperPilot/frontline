@@ -21,7 +21,8 @@ Modus des Startmenüs (Standard **An**; `new Game()` ohne Angabe: aus, dann gilt
   Bauland, flaches Gelände und eine Zufahrt; die Karte bleibt **punktsymmetrisch** (Blau/Rot und Grün/Gelb spiegeln sich, die beiden
   Paare haben verschiedenes Gelände). Das ganze Quadrat der Zone bleibt frei von Wald, Felsen, steilen Hängen und Versorgungskisten
   (die Stadt liegt wie bisher darin). Flüsse liegen nur vor den Ecken von Blau und Rot; mit Fluss schneiden sie dort die Spitzen der
-  Quadrat-Ecken ab. Gespeicherte Karten aus dem Editor haben zwei Startpunkte: dort spielt nur ein Gegner.
+  Quadrat-Ecken ab. Gespeicherte und feste Karten haben 2 bis 4 Startpunkte: dort spielen höchstens so viele Spieler; feste Karten können eigene Flaggen
+  und Baugebiete an den Seiten haben ([feste-karten.md](feste-karten.md)).
 
 ### Konfliktzone und Flaggen
 

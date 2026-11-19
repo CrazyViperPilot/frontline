@@ -143,11 +143,12 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - generateMap(seed, { river = false, players = 2 }) – Erzeugt eine Karte
 - townBigBlocks() – Innenflächen der großen Blöcke der Zonenstadt in px {x0, y0, x1, y1, empty} (Te…
 
-## mapdata.js (16 KB)
+## mapdata.js (19 KB)
 - MAX_CRATES – Versorgungskisten je Karte
 - FIELD_CROPS – Ackerarten: Weizen, junge Saat, gepflügt, Raps
 - MAX_FIELDS – Felder und Weiden je Karte
 - MAX_FORDS – Furten je Karte (Fluss, river.js)
 - MAX_BRIDGES – Brücken je Karte
 - BRIDGE_LEN – kürzeste und längste Brücke (px)
-- createEmptyMap(name) – Leere Karte: nur Startpunkte in den Ecken und die Konfliktzone in der Mitte
+- MAX_SPAWNS – Startpunkte je Karte (2 bis 4; Team i startet am Startpunkt i)
+- MAX_FLAGS – eigene Flaggen je Karte (Eroberung)

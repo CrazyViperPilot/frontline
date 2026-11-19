@@ -10,11 +10,12 @@ import { Renderer } from '../render/renderer.js';
 import { setIsoGround, TOWN_H } from '../render/iso.js';
 import { ISO_K } from '../render/camera.js';
 import { Game } from '../game/game.js';
-import { createEmptyMap, normalizeMap, checkMap, accessRoutes, describeMap, loadMap, saveMap, MAX_CRATES, MAX_FIELDS, FIELD_CROPS, MAX_FORDS, MAX_BRIDGES, BRIDGE_LEN } from '../game/mapdata.js';
+import { createEmptyMap, normalizeMap, checkMap, accessRoutes, describeMap, loadMap, saveMap, isFixedMap, MAX_SPAWNS, MAX_FLAGS, PYLON_LINES, MAX_CRATES, MAX_FIELDS, FIELD_CROPS, MAX_FORDS, MAX_BRIDGES, BRIDGE_LEN } from '../game/mapdata.js';
 import { RIVER_SIZE, riverHeight } from '../game/landscape.js';
 import { bridgeShape } from '../game/river.js';
 import { drawBridgeTop, fordPosts, drawFordPostTop } from '../render/bridge.js';
 import { drawCrate } from '../render/sprites.js';
+import { drawPowerLines } from '../render/mappreview.js';
 import { Relief, RELIEF, COARSE_N, reliefOf, setRelief } from '../game/relief.js';
 import { reliefTiles, updateReliefTiles, drawReliefTiles } from '../render/reliefimg.js';
 
@@ -35,6 +36,8 @@ const TOOLS = [
   ['factory', 'Fabrik', 'Gebäude', '▣', 'Tippen setzt eine Fabrik mit Schornstein'],
   ['hall', 'Halle', 'Gebäude', '▭', 'Tippen setzt eine Halle'],
   ['tower', 'Wachturm', 'Gebäude', '⍋', 'Tippen setzt einen Wachturm auf Stahlgerüst (blockiert)'],
+  ['plant', 'Fabrikhalle', 'Gebäude', '▙', 'Tippen setzt eine große Fabrikhalle mit Schornsteinen und Silos (blockiert)'],
+  ['pylon', 'Strommast', 'Gebäude', 'ᛉ', 'Tippen setzt einen Strommast; Masten derselben Leitung werden der Reihe nach mit Seilen verbunden. Neue Leitung: Mast wählen, „Neue Leitung“'],
   ['loco', 'Lok', 'Zug', '◧', 'Tippen auf ein Gleis setzt eine Lok in Gleisrichtung (blockiert wie ein Gebäude)'],
   ['container', 'Waggon', 'Zug', '◨', 'Tippen auf ein Gleis setzt einen Waggon, neben einem Zugteil schließt er an'],
   ['tank', 'Kesselwagen', 'Zug', '◩', 'Tippen setzt einen Kesselwagen'],
@@ -58,6 +61,9 @@ const TOOLS = [
   ['bridge', 'Brücke', 'Fluss', '⊟', `Von Ufer zu Ufer über das Wasser ziehen (${BRIDGE_LEN[0]}–${BRIDGE_LEN[1]} px, beide Enden auf festem Grund): zerstörbar, Baufahrzeuge bauen sie wieder auf`],
   ['spawn0', 'Start Blau', 'Spiel', '①', 'Tippen setzt den Startpunkt von Blau (Hauptstadt)'],
   ['spawn1', 'Start Rot', 'Spiel', '②', 'Tippen setzt den Startpunkt von Rot (Hauptstadt)'],
+  ['spawn2', 'Start Grün', 'Spiel', '③', 'Tippen setzt den Startpunkt von Grün (dritter Spieler, nur Eroberung); löschen geht über die Auswahl'],
+  ['spawn3', 'Start Gelb', 'Spiel', '④', 'Tippen setzt den Startpunkt von Gelb (vierter Spieler, nur Eroberung; erst nach Grün)'],
+  ['flag', 'Flagge', 'Spiel', '⚑', `Tippen setzt eine Flagge der Eroberung (höchstens ${MAX_FLAGS}, Buchstaben in Setzreihenfolge). Mit eigenen Flaggen entfällt das 4 × 4-Raster; Gebiet ganz in die Zone (gestricheltes Quadrat)`],
   ['zone', 'Zone', 'Spiel', '◎', 'Tippen setzt die Mitte der Konfliktzone'],
   ['crate', 'Kiste', 'Spiel', '⊠', `Tippen setzt eine Versorgungskiste (Soldaten bringen sie zur FOB, +1 Geld/s; höchstens ${MAX_CRATES}). Für eine faire Karte gleich weit von beiden Starts setzen`],
 ];
@@ -71,6 +77,8 @@ const BUILD_DEF = {
   tank: { w: 96, h: 46, kind: 'train', part: 'tank' },
   platform: { w: 300, h: 30, kind: 'platform' },
   station: { w: 280, h: 110, kind: 'station' },
+  plant: { w: 560, h: 240, kind: 'plant' },
+  pylon: { w: 44, h: 44, kind: 'pylon' },
 };
 
 // Geländepinsel: Radius (px) und Stärke; Heben/Senken in Höhe je Sekunde in der Pinselmitte
@@ -237,6 +245,7 @@ function listOf(k) {
     case 'crate': return m.crates;
     case 'ford': return (m.fords ??= []);
     case 'bridge': return (m.bridges ??= []);
+    case 'flag': return (m.flags ??= []);
     default: return null;
   }
 }
@@ -253,9 +262,10 @@ function distToSeg(px, py, r) {
 function pickAt(wx, wy, sx = null, sy = null) {
   const tol = 14 / st.cam.zoom;
   const m = st.map;
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < m.spawns.length; i++) {
     if (Math.hypot(m.spawns[i].x - wx, m.spawns[i].y - wy) < 70 + tol) return { k: 'spawn', i, o: m.spawns[i] };
   }
+  for (const f of m.flags ?? []) if (Math.hypot(f.x - wx, f.y - wy) < 60 + tol) return { k: 'flag', o: f }; // am Mast (das Gebiet ist zu groß zum Wählen)
   for (let i = m.crates.length - 1; i >= 0; i--) {
     if (Math.hypot(m.crates[i].x - wx, m.crates[i].y - wy) < 18 + tol) return { k: 'crate', o: m.crates[i] };
   }
@@ -317,8 +327,15 @@ function pickAt(wx, wy, sx = null, sy = null) {
   return null;
 }
 
+/** Startpunkte 3 und 4 lassen sich löschen, aber nur der letzte (Team i startet an Startpunkt i). */
+const spawnRemovable = (sel) => sel.k === 'spawn' && sel.i >= 2 && sel.i === st.map.spawns.length - 1;
+
 function removeSel(sel) {
   if (!sel) return false;
+  if (spawnRemovable(sel)) {
+    st.map.spawns.splice(sel.i, 1);
+    return true;
+  }
   if (sel.k === 'spawn' || sel.k === 'zone') return false;
   else {
     const list = listOf(sel.k);
@@ -336,6 +353,7 @@ function place(tool, x, y) {
   const py = clamp(snap(y), 0, H);
   if (BUILD_DEF[tool]) {
     const o = { x: px, y: py, ...BUILD_DEF[tool] };
+    if (tool === 'pylon') o.line = st.pylonLine ?? 0;
     placeAlongRail(o, x, y);
     m.town.buildings.push(o);
     return { k: 'building', o };
@@ -380,11 +398,27 @@ function place(tool, x, y) {
       return { k: 'car', o };
     }
     case 'spawn0':
-    case 'spawn1': {
-      const i = tool === 'spawn0' ? 0 : 1;
+    case 'spawn1':
+    case 'spawn2':
+    case 'spawn3': {
+      const i = Number(tool.slice(5));
+      if (i > m.spawns.length) {
+        say(`Erst den Startpunkt von ${BALANCE.teamNames[i - 1]} setzen`, true);
+        return null;
+      }
+      if (i === m.spawns.length) m.spawns.push({ x: px, y: py });
       m.spawns[i].x = px;
       m.spawns[i].y = py;
       return { k: 'spawn', i, o: m.spawns[i] };
+    }
+    case 'flag': {
+      if ((m.flags ?? []).length >= MAX_FLAGS) {
+        say(`Höchstens ${MAX_FLAGS} Flaggen je Karte`, true);
+        return null;
+      }
+      const o = { x: px, y: py, r: BALANCE.conquest.mapFlagR };
+      (m.flags ??= []).push(o);
+      return { k: 'flag', o };
     }
     case 'zone':
       m.zone.x = px;
@@ -617,6 +651,11 @@ function draw() {
     drawCrate(ctx, c.x, c.y, Math.max(12 * px, 18), z, 1);
   }
   if (!iso) {
+    world();
+    drawPowerLines(ctx, m.town.buildings, Math.max(1.2, 1.2 * px)); // Leitungen zwischen den Strommasten
+  }
+  drawConquestMarks(m, px);
+  if (!iso) {
     // Brücken und Furten (isometrisch zeichnet sie der Spiel-Renderer)
     world();
     const relief = reliefOf(m);
@@ -671,11 +710,71 @@ function draw() {
   ctx.fillStyle = '#ffd24a';
   const zp = cam.worldToScreen(m.zone.x, m.zone.y);
   ctx.fillText('Konfliktzone', zp.x, zp.y - 12);
+  (m.flags ?? []).forEach((f, i) => {
+    const p = cam.worldToScreen(f.x, f.y);
+    ctx.fillStyle = '#1b1f24';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.fillText(BALANCE.conquest.names[i], p.x, p.y + 4.5);
+    if (f.name) ctx.fillText(f.name, p.x, p.y - 16);
+  });
   m.spawns.forEach((sp, i) => {
     const p = cam.worldToScreen(sp.x, sp.y);
     ctx.fillStyle = '#fff';
     ctx.fillText(`Start ${BALANCE.teamNames[i]}`, p.x, p.y - Math.max(14, 44 * z));
   });
+}
+
+/**
+ * Eroberung: Quadrat der Konfliktzone (dort müssen eigene Flaggen liegen), Grenzen der Baugebiete (Ecken oder Seiten) und die Gebiete
+ * der eigenen Flaggen als Kreise auf dem Boden.
+ */
+function drawConquestMarks(m, px) {
+  const d = st.renderer.dpr;
+  const Q = BALANCE.conquest;
+  const z = m.zone;
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  const line = (x1, y1, x2, y2) => {
+    const n = Math.max(2, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 128));
+    for (let i = 0; i <= n; i++) {
+      const p = st.cam.worldToScreen(x1 + ((x2 - x1) * i) / n, y1 + ((y2 - y1) * i) / n);
+      if (i) ctx.lineTo(p.x, p.y);
+      else ctx.moveTo(p.x, p.y);
+    }
+  };
+  const h = Q.half;
+  ctx.beginPath();
+  line(z.x - h, z.y - h, z.x + h, z.y - h);
+  line(z.x + h, z.y - h, z.x + h, z.y + h);
+  line(z.x + h, z.y + h, z.x - h, z.y + h);
+  line(z.x - h, z.y + h, z.x - h, z.y - h);
+  if (m.layout === 'sides') {
+    line(z.x - h, z.y - h, 0, 0);
+    line(z.x + h, z.y - h, W, 0);
+    line(z.x + h, z.y + h, W, H);
+    line(z.x - h, z.y + h, 0, H);
+  } else {
+    line(z.x, z.y - h, z.x, 0);
+    line(z.x, z.y + h, z.x, H);
+    line(z.x - h, z.y, 0, z.y);
+    line(z.x + h, z.y, W, z.y);
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([12, 8]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  for (const f of m.flags ?? []) {
+    groundCircle(f.x, f.y, f.r);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fill();
+    ctx.strokeStyle = '#e8ece8';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  void px;
 }
 
 /** Kreis auf dem Boden als Pfad in Bildschirmkoordinaten (folgt isometrisch dem Gelände). */
@@ -1203,6 +1302,7 @@ const SEL_NAMES = {
   rail: 'Gleis',
   spawn: 'Startpunkt',
   zone: 'Konfliktzone',
+  flag: 'Flagge',
   crate: 'Versorgungskiste',
   field: 'Feld',
   bridge: 'Brücke',
@@ -1210,7 +1310,7 @@ const SEL_NAMES = {
 };
 const FIELD_NAMES = { wheat: 'Weizenfeld', green: 'Junge Saat', soil: 'Acker (gepflügt)', rape: 'Rapsfeld', pasture: 'Weide' };
 const FIELD_ORDER = [...FIELD_CROPS, 'pasture']; // „Frucht“ schaltet der Reihe nach weiter
-const KIND_NAMES = { house: 'Haus', factory: 'Fabrik', hall: 'Halle', tower: 'Wachturm', train: 'Zugteil', station: 'Bahnhof', platform: 'Bahnsteig' };
+const KIND_NAMES = { house: 'Haus', factory: 'Fabrik', hall: 'Halle', tower: 'Wachturm', train: 'Zugteil', station: 'Bahnhof', platform: 'Bahnsteig', plant: 'Große Fabrikhalle', pylon: 'Strommast' };
 
 function showInspector() {
   const el = $('[data-insp]');
@@ -1237,8 +1337,16 @@ function showInspector() {
   if (s.k === 'obstacle') title = Math.round(s.o.r) % 2 === 0 ? 'Wald' : 'Fels';
   if (s.k === 'spawn') title = `Start ${BALANCE.teamNames[s.i]}`;
   if (s.k === 'field') title = FIELD_NAMES[s.o.kind === 'pasture' ? 'pasture' : s.o.crop] || title;
+  if (s.k === 'flag') title = `Flagge ${BALANCE.conquest.names[(st.map.flags ?? []).indexOf(s.o)] ?? ''}${s.o.name ? ` – ${s.o.name}` : ''}`;
   const rows = [];
-  if (s.k === 'building') {
+  if (s.k === 'building' && s.o.kind === 'pylon') {
+    st.pylonLine = s.o.line ?? 0; // weitere Masten setzen diese Leitung fort
+    rows.push(`<div class="muted small">Leitung ${s.o.line ?? 0}: Masten derselben Leitung sind in Setzreihenfolge verbunden.</div>`);
+    rows.push('<div class="row"><button data-i="line">Neue Leitung</button></div>');
+  } else if (s.k === 'flag') {
+    rows.push('<div class="row"><button data-i="r-">Kleiner</button><button data-i="r+">Größer</button><button data-i="name">Name</button></div>');
+    rows.push(`<div class="muted small">Gebiet: Kreis mit ${s.o.r} px um den Mast. Wer darin mehr Einheiten hat, nimmt die Flagge ein.</div>`);
+  } else if (s.k === 'building') {
     rows.push('<div class="row"><button data-i="w-">Breite −</button><button data-i="w+">Breite +</button></div>');
     rows.push('<div class="row"><button data-i="h-">Höhe −</button><button data-i="h+">Höhe +</button></div>');
     const turnable = s.o.kind === 'train' || s.o.kind === 'platform';
@@ -1260,7 +1368,10 @@ function showInspector() {
     rows.push('<div class="row"><button data-i="turn">Drehen</button><button data-i="color">Farbe</button></div>');
   } else if (s.k === 'zone') {
     rows.push('<div class="row"><button data-i="r-">Kleiner</button><button data-i="r+">Größer</button></div>');
-    rows.push(`<div class="muted small">Radius ${Math.round(s.o.r)} px</div>`);
+    rows.push(`<div class="muted small">Radius ${Math.round(s.o.r)} px (klassisch)</div>`);
+    const sides = st.map.layout === 'sides';
+    rows.push(`<div class="row"><button data-i="layout">Baugebiete: ${sides ? 'an den Seiten' : 'in den Ecken'}</button></div>`);
+    rows.push('<div class="muted small">Eroberung: Außerhalb der Zone gehört jedem Spieler das Gebiet um seinen Startpunkt, in den Ecken (Kreuz) oder an den Kartenseiten (Diagonalen).</div>');
   } else if (s.k === 'obstacle' || s.k === 'park' || s.k === 'tree' || s.k === 'townTree') {
     rows.push('<div class="row"><button data-i="r-">Kleiner</button><button data-i="r+">Größer</button></div>');
   } else if (s.k === 'rail') {
@@ -1278,13 +1389,13 @@ function showInspector() {
   }
   if (s.k !== 'spawn' && s.k !== 'zone') {
     rows.push(`<div class="row"><button data-i="dup">Kopie</button><button data-i="del" class="danger">Löschen</button></div>`);
-  }
+  } else if (spawnRemovable(s)) rows.push('<div class="row"><button data-i="del" class="danger">Löschen</button></div>');
   el.innerHTML = `<h3>${title}</h3>${rows.join('')}`;
   el.hidden = false;
 }
 
 function deleteSelected() {
-  if (!st.sel || st.sel.k === 'spawn' || st.sel.k === 'zone') return;
+  if (!st.sel || ((st.sel.k === 'spawn' || st.sel.k === 'zone') && !spawnRemovable(st.sel))) return;
   pushHistory();
   removeSel(st.sel);
   st.sel = null;
@@ -1333,6 +1444,22 @@ function inspectorAction(a) {
   else if (a === 'dirt') {
     if (o.dirt) delete o.dirt;
     else o.dirt = true;
+  } else if (a === 'line') {
+    const lines = st.map.town.buildings.filter((b) => b.kind === 'pylon').map((b) => b.line ?? 0);
+    st.pylonLine = Math.min(PYLON_LINES - 1, Math.max(-1, ...lines) + 1);
+    say(`Neue Strommasten gehören jetzt zu Leitung ${st.pylonLine}.`);
+  } else if (a === 'layout') {
+    if (st.map.layout === 'sides') delete st.map.layout;
+    else st.map.layout = 'sides';
+  } else if (a === 'name') {
+    const n = window.prompt('Name der Flagge (leer = nur Buchstabe)', o.name ?? '');
+    if (n !== null) {
+      if (n.trim()) o.name = n.trim().slice(0, 24);
+      else delete o.name;
+    }
+  } else if (s.k === 'flag' && (a === 'r+' || a === 'r-')) {
+    const [lo, hi] = BALANCE.conquest.mapFlagRange;
+    o.r = clamp(o.r + (a === 'r+' ? 20 : -20), lo, hi);
   } else if (a === 'r+' || a === 'r-') {
     const step = s.k === 'zone' ? 100 : s.k === 'obstacle' ? 10 : s.k === 'park' ? 20 : 2; // Wald/Fels: gerade Schritte behalten die Art
     const lim = s.k === 'zone' ? [200, 4000] : s.k === 'obstacle' ? [21, 400] : s.k === 'park' ? [40, 400] : [6, 40];
@@ -1421,18 +1548,19 @@ function check(announce = true) {
     if (p.length) say(`Nicht spielbar: ${p.join(' · ')}`, true);
     else {
       const routes = accessRoutes(st.map, 4);
-      const n = routes.map((v) => (v >= 4 ? '4+' : String(v)));
+      const n = routes.map((v, i) => `${BALANCE.teamNames[i]} ${v >= 4 ? '4+' : String(v)}`);
       const few = Math.min(...routes) < 2 ? ' Wenige Wege: die Zone ist leicht abzuriegeln.' : '';
-      say(`Karte ist spielbar. Getrennte Zugänge zur Zone: ${BALANCE.teamNames[0]} ${n[0]}, ${BALANCE.teamNames[1]} ${n[1]}.${few}`);
+      const fl = st.map.flags?.length ? ` ${st.map.flags.length} eigene Flaggen.` : '';
+      say(`Karte ist spielbar. Getrennte Zugänge zur Zone: ${n.join(', ')}.${fl}${few}`);
     }
   }
   return p;
 }
 
-function download(name, text) {
+function download(name, text, ext = 'json', type = 'application/json') {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  a.download = `${name.replace(/[^\w\-äöüÄÖÜß ]+/g, '_') || 'karte'}.json`;
+  a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = `${name.replace(/[^\w\-äöüÄÖÜß ]+/g, '_') || 'karte'}.${ext}`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -1466,6 +1594,13 @@ document.querySelector('.edtop').addEventListener('click', (e) => {
   } else if (a === 'export') {
     st.map.name = $('[data-name]').value.trim() || 'Karte';
     download(st.map.name, JSON.stringify({ format: 1, ...st.map }));
+  } else if (a === 'fixed') {
+    // feste Karte: JS-Modul für js/data/maps/ (dort in index.js eintragen und in sw.js unter ASSETS, siehe docs/rezepte/feste-karte.md)
+    st.map.name = $('[data-name]').value.trim() || 'Karte';
+    const file = st.map.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'karte';
+    const head = `// Feste Karte „${st.map.name}“ (Karteneditor, „Als feste Karte“). Format: js/game/mapdata.js.\n`;
+    download(file, `${head}export default ${JSON.stringify(normalizeMap(JSON.parse(JSON.stringify(st.map))))};\n`, 'js', 'text/javascript');
+    say(`Exportiert als ${file}.js: nach js/data/maps/ legen und in js/data/maps/index.js eintragen.`);
   } else if (a === 'check') check();
   else if (a === 'save') {
     const p = problems();
@@ -1516,14 +1651,15 @@ setTool('select');
   let map = null;
   if (params.has('map')) {
     map = loadMap(params.get('map'));
-    if (map) st.id = params.get('map');
+    if (map && !isFixedMap(params.get('map'))) st.id = params.get('map'); // feste Karten: Speichern legt eine eigene Kopie an
   }
   if (!map && params.has('seed')) {
     const seed = Number.parseInt(params.get('seed'), 10) || 1;
     map = normalizeMap({ ...generateMap(seed, { river: params.get('river') === '1' }), name: `Zufallskarte ${seed}` });
   }
   setMap(map || createEmptyMap(), { keepId: !!map && !!st.id });
-  if (params.has('map') && !st.id) say('Karte nicht gefunden, neue Karte begonnen.', true);
+  if (params.has('map') && isFixedMap(params.get('map')) && map) say('Feste Karte geöffnet: Speichern legt eine eigene Kopie an.');
+  else if (params.has('map') && !st.id) say('Karte nicht gefunden, neue Karte begonnen.', true);
 })();
 st.renderer = makeRenderer();
 resize();

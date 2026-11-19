@@ -7,6 +7,8 @@ import { drawWreckTop } from '../unitpaint.js';
 import { drawCrater, drawWreck, drawWreckRubble } from '../fx.js';
 import { mineVisible } from '../../game/mines.js';
 import { TILE, W, H, SC } from './consts.js';
+import { mapPylons } from '../maptown.js';
+import { drawWires } from '../landmarks.js';
 
 const SMOKE_AT = 0.6; // Gebäude und Häuser rauchen unter diesem Lebensanteil, Fahrzeuge unter VEHICLE_SMOKE
 const VEHICLE_SMOKE = 0.5;
@@ -15,6 +17,24 @@ const WRECK_SMOKE = 60; // s: so lange raucht ein Wrack, die ersten WRECK_FIRE s
 const WRECK_FIRE = 20;
 
 export const worldMethods = {
+  /** Hochspannungsleitungen zwischen den Strommasten der Karte (über allen Objekten; feste Karten, landmarks.js). */
+  drawPowerWires(f) {
+    const net = mapPylons(this.game.map);
+    if (!net.size) return;
+    const { ctx, cam, inRect, dpr } = f;
+    const z = cam.zoom;
+    const inView = (x, y) => inRect(x, y, 700);
+    ctx.save();
+    if (cam.iso) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawWires(ctx, net, (x, y, h) => {
+        const p = cam.worldToScreen(x, y);
+        return { x: p.x, y: p.y - h * z };
+      }, Math.max(0.5, 0.9 * z), inView);
+    } else drawWires(ctx, net, (x, y) => ({ x, y }), Math.max(1.2, 1 / z), inView);
+    ctx.restore();
+  },
+
   /**
    * Kisten zum Zeichnen: am Boden, wie das Team sie zuletzt gesehen hat (nur in erkundeten Zellen; Debug: alle), und eingelagerte bei
    * eigenen FOBs oder in Sicht. Getragene zeichnet die Einheit. → [{ x, y, ground }]

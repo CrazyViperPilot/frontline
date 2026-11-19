@@ -22,6 +22,7 @@ import {
 import { gate, lorry, lorryTop, pipe } from './works.js';
 import { drawBenchTop, drawMapCarTop } from './props.js';
 import { hashXY } from './color.js';
+import { paintPlant, plantTop, PLANT_TALL, paintPylon, pylonTop, PYLON_TALL, pylonNet } from './landmarks.js';
 
 const K = ISO_K;
 
@@ -1370,8 +1371,25 @@ function putTop(ctx, x, y, zoom, key, bounds, paint) {
   return true;
 }
 
-const PAINTERS = { hall: paintHall, factory: paintFactory, wall: paintWall, station: paintStation, platform: paintPlatform };
-const TALL = { hall: 44, factory: 122, wall: 22, station: 60, platform: 34 };
+const PAINTERS = { hall: paintHall, factory: paintFactory, wall: paintWall, station: paintStation, platform: paintPlatform, plant: paintPlant };
+const TALL = { hall: 44, factory: 122, wall: 22, station: 60, platform: 34, plant: PLANT_TALL };
+
+const nets = new WeakMap(); // Gebäudeliste der Karte → { n (Länge), net } (Strommasten und Leitungen, landmarks.js)
+
+/** Strommasten der Karte mit Richtung und Nachfolger (pylonNet), neu berechnet, wenn sich die Liste ändert (Editor). */
+export function mapPylons(map) {
+  const list = map?.town?.buildings ?? [];
+  let e = nets.get(list);
+  if (!e || e.n !== list.length) nets.set(list, (e = { n: list.length, net: pylonNet(list) }));
+  return e.net;
+}
+
+/** Richtung der Traversen eines Masts (Bogenmaß, Welt), auf 16 Stufen gerundet (Bildvarianten). */
+function pylonAng(b) {
+  const a = mapPylons(fieldMap).get(b)?.ang ?? 0;
+  const st = Math.PI / 8;
+  return (((Math.round(a / st) % 8) + 8) % 8) * st; // Traversen sind symmetrisch: 0 … 180°
+}
 
 /** Iso: Gebäude b der Karte gemalt; false = nicht hier (schräger Zug oder Bahnsteig). */
 export function drawMapIso(ctx, cam, b) {
@@ -1386,6 +1404,16 @@ export function drawMapIso(ctx, cam, b) {
     const side = towerSide(b);
     const R = 43 * k;
     return put(ctx, cam, b, `mtw|${rot}|${side}|${k}|${snow}`, isoBounds(-R, R, -R, R, 115 * k), (g) => wachturm(k === 1 ? g : sub(g, 0, 0, k), { rot, side }));
+  }
+  if (b.kind === 'pylon') {
+    // Strommast: Traversen quer zur Leitung, im Bildrahmen der Drehung (VROT wie camera.js)
+    const ang = pylonAng(b);
+    const [ra, rb, rc, rd] = VROT[cam.rot | 0];
+    const wx = Math.cos(ang);
+    const wy = Math.sin(ang);
+    const arm = [ra * wx + rb * wy, rc * wx + rd * wy];
+    const R = 34;
+    return put(ctx, cam, b, `mpy|${cam.rot | 0}|${ang.toFixed(3)}|${snow}`, isoBounds(-R, R, -R, R, PYLON_TALL), (g) => paintPylon(g, { arm }));
   }
   if (b.kind === 'train') {
     const long = odd ? 'v' : 'u';
@@ -1428,14 +1456,18 @@ export function drawMapTop(ctx, b, zoom) {
       towerTop(c, side);
     });
   }
+  if (b.kind === 'pylon') {
+    const ang = pylonAng(b);
+    return putTop(ctx, b.x, b.y, zoom, `mtpy|${ang.toFixed(3)}`, [-48, -48, 60, 60], (c) => pylonTop(c, ang));
+  }
   if (b.kind === 'house') {
     W = q8(b.w);
     D = q8(b.h);
     paint = (c, o) => houseTop(c, o);
   } else if (b.kind === 'train') paint = (c, o) => trainTop(c, { ...o, part: b.part, long: 'u' });
-  else paint = { hall: hallTop, factory: factoryTop, wall: wallTop, station: stationTop, platform: platformTop }[b.kind];
+  else paint = { hall: hallTop, factory: factoryTop, wall: wallTop, station: stationTop, platform: platformTop, plant: plantTop }[b.kind];
   if (!paint) return false;
-  const m = b.kind === 'hall' || b.kind === 'factory' || b.kind === 'station' ? 2 : 0;
+  const m = b.kind === 'hall' || b.kind === 'factory' || b.kind === 'station' || b.kind === 'plant' ? 2 : 0;
   const o = { ...info, long: W >= D ? 'u' : 'v', x0: -W / 2 + m, x1: W / 2 - m, y0: -D / 2 + m, y1: D / 2 - m };
   const key = `mt${b.kind}|${b.part ?? ''}|${info.style ?? ''}|${info.c}|${info.c2}|${info.vault ? 1 : 0}|${W}|${D}|${snow}`;
   const bounds = [-W / 2 - 3, -D / 2 - 3, W / 2 + 18, D / 2 + 18];
@@ -1713,7 +1745,7 @@ function townTree(c, t, season) {
 
 // ---------- Minimap ----------
 
-const MINI = { house: '#a4604a', hall: '#8d949a', factory: '#6d7277', tower: '#4d565a', wall: '#a29f94', train: '#b3423a', station: '#c4b28f', platform: '#a7a8a2' };
+const MINI = { house: '#a4604a', hall: '#8d949a', factory: '#6d7277', plant: '#7d6f66', tower: '#4d565a', wall: '#a29f94', train: '#b3423a', station: '#c4b28f', platform: '#a7a8a2', pylon: '#2c2f33' };
 
 const MINI_PARK = { summer: '#6f8f4f', autumn: '#80894c', winter: '#dde3e6' };
 

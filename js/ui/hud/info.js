@@ -54,7 +54,7 @@ export const infoMethods = {
     const key = `${this.spawnIds.join(',')}|${cur}|${flags.map((f) => `${f.id}${f.owner !== this.team ? 'x' : f.contested ? '!' : ''}`).join(',')}`;
     if (key === this.spawnKey) return;
     this.spawnKey = key;
-    const opt = (f) => `<option value="${f.id}"${f.id === cur ? ' selected' : ''}>Flagge ${f.letter}${f.owner !== this.team ? ' (verloren)' : f.contested ? ' (umkämpft)' : ''}</option>`;
+    const opt = (f) => `<option value="${f.id}"${f.id === cur ? ' selected' : ''}>Flagge ${f.letter}${f.name ? ` ${esc(f.name)}` : ''}${f.owner !== this.team ? ' (verloren)' : f.contested ? ' (umkämpft)' : ''}</option>`;
     this.spawnEl.innerHTML =
       `<label class="small">Neue Einheiten erscheinen <select data-spawn><option value=""${cur === null ? ' selected' : ''}>am Gebäude</option>${flags.map(opt).join('')}</select></label>` +
       (flags.length ? '' : '<div class="muted small">Noch keine eigene Flagge</div>');

@@ -1,8 +1,31 @@
-# Symbol-Index render (Teil 3 von 3, nature.js bis works.js)
+# Symbol-Index render (Teil 3 von 4, minimap.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## nature.js (Fortsetzung)
+## minimap.js (11 KB)
+- class Minimap
+  - constructor(canvas, game, camera, team)
+  - setMaxDpr(max) – Obergrenze der Pixeldichte setzen (Bildauflösung) und die Minimap sofort neu au…
+  - resize() – Canvas-Pufferung an CSS-Größe und DPR anpassen (höchstens maxDpr)
+  - view() – Abbildung Welt → Minimap (CSS-Pixel) als [a, b, c, d, e, f] wie ctx.setTransfor…
+  - toWorld(mx, my) – Minimap-Position (CSS-Pixel im Canvas) → Weltkoordinate (Umkehrung von view, au…
+  - render()
+  - cityImage(c, color) – Kleines Bild (eine Zelle = ein Pixel) von Gebiet und Gebäuden einer Stadt
+
+## mood.js (3.4 KB)
+- MOOD_SETTINGS – Einstellungen des Startmenüs: aus, Zufall (aus dem Seed, nach Jahreszeit gewich…
+- MOODS – mult: Farbe der Multiplikation (255 = unverändert) · glow: Lichtschein [r, g, b…
+- pickMood(setting, seed, season) – Stimmung für diese Partie: setting 'off' | 'random' | feste Stimmung; Zufall de…
+- drawMood(ctx, mood, cssW, cssH) – Stimmung über die Welt zeichnen (ctx in CSS-Pixeln, Transform = dpr)
+
+## nature.js (43 KB)
+- SPECIES
+- forestKind(o) – Waldart (fest nach Lage des Walds): Laubwald, Nadelwald oder Mischwald
+- forestSpecies(kind, u) – Art eines Baums im Wald nach Waldart; u ∈ [0, 1) ist der Zufall des Baums
+- drawTreeIso(ctx, cam, t, season) – Baum in Iso (Stammfuß am Weltpunkt, Größe nach t.r)
+- drawTreeTop(ctx, t, season, zoom) – Baum von oben (2D, Welt-Transformation gesetzt), mit Schatten
+- drawBushIso(ctx, cam, b, season) – Busch in Iso (Fuß am Weltpunkt)
+- drawBushTop(ctx, b, season, zoom) – Busch von oben (2D)
 - natureShadowIso(ctx, cam, o, t) – Hängt den Schatten eines Baums (t 1), Felsens (2) oder Buschs (13) als Ellipse…
 - drawRockIso(ctx, cam, o, season) – Fels in Iso (Fuß am Weltpunkt), in jeder Drehung der Ansicht von der passenden…
 - drawRockTop(ctx, o, season, zoom) – Fels von oben (2D) mit Schatten nach rechts unten
@@ -142,12 +165,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - forklift(g, u, v, col) – Gabelstapler (orange) mit Palette auf der Gabel nach +u.
 - ringTop(c, x, y, r, color, w)
 - roundShadow(c, x, y, r, h, a) – Schatten eines runden Baus der Höhe h: Scheibe r, nach rechts unten gezogen
-- discTop(c, x, y, r, color, edge) – Runde Scheibe mit Lichtverlauf und dünnem Rand
-- blockTop(c, x0, y0, x1, y1, H, wall, deck) – Gebäude mit Flachdach: Schatten, Attika, Dachfläche
-- pipeTop(c, pts, w, col) – Rohr von oben (Linienzug) mit Schatten und Glanzlinie
-- palletTop(c, x, y, s, col) – Palette von oben (Holzrand, Ware)
-- lorryTop(c, x, y, along, cabCol, load, o) – LKW von oben (Fahrerhaus bei +x bzw. +y)
-- forkliftTop(c, x, y, col) – Gabelstapler von oben mit Palette vorn (+x)
-- worksLift(kind, level) – Höhe (Weltpixel) über dem höchsten Teil, für das Schild darüber
-- drawWorksIso(ctx, cam, b, season) – Isometrisch: das ganze Werk als Bild aus dem Zwischenspeicher (für jede Drehung…
-- drawWorksTop(ctx, b, zoom) – 2D von oben (Weltkoordinaten, Kamera-Transformation gesetzt)

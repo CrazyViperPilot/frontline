@@ -203,6 +203,7 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Spielzustand, Befehle, Sieg, Endstatistik | `PRD.md` | `game/game.js` | Bild `ui/menu/end.js` | `game`, `stats` |
 | Ausbildung, Einheitenlimit, Nachschub, Einkommen | `ressourcen-bau` | `game/economy.js` | KI `ai/army/produce.js` | `economy` |
 | Eroberung (Flaggen, Tickets, Viertel-Sperre) | `eroberung` | `game/conquest.js` | KI `ai/army/conquest.js`; Bild `render/layers/zones.js` | `conquest` |
+| Feste Karten, eigene Flaggen, Seiten-Baugebiete | `feste-karten` | `data/maps/index.js` | `game/mapdata.js`, `game/conquest.js`; Bild `render/landmarks.js` | `fixedmaps` |
 | Konfliktzone, Punkte, Zonengeld | `zone-gelaende` | `game/zone.js` | Bild `render/layers/zones.js` | `economy`, `game` |
 | Hot Zone und Bohrer | `zone-gelaende` | `game/hotzone.js` | Bild `render/layers/zones.js` | `game` |
 | Lager, LKW, Nachfüllen, Werkslager | `ressourcen-bau` | `game/logistics.js` | KI `ai/army/logistics.js`; Bild `render/layers/overlays.js` | `logistics`, `pickup` |

@@ -1,4 +1,4 @@
-# Symbol-Index render (Teil 2 von 3, isobuild.js bis nature.js)
+# Symbol-Index render (Teil 2 von 4, isobuild.js bis milbuild.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
@@ -121,8 +121,24 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawUnitSprite(ctx, cam, u, p, aim, lift, now) – Einheit in Iso (gemalt, unitpaint.js): Soldaten blicken zum Ziel, Türme folgen…
 - drawWreckSprite(ctx, cam, w, p) – Wrack als verkohltes Fahrzeugmodell am Boden (auch abgeschossene Hubschrauber)
 
-## maptown.js (78 KB)
+## landmarks.js (13 KB)
+- PLANT_TALL
+- paintPlant(g, o) – Iso: große Fabrikhalle im Rahmen o = { long, a0, a1, b0, b1, seed }
+- plantTop(c, o) – 2D: große Fabrikhalle von oben im Rahmen o = { long, x0, x1, y0, y1 }
+- PYLON_TALL
+- PYLON_WIRES – Aufhängepunkte der Leiterseile eines Masts: [quer (Weltpx entlang der Traverse)…
+- paintPylon(g, o) – Iso: Gittermast; o.arm = Richtung der Traversen im Bildrahmen (Einheitsvektor […
+- pylonTop(c, ang) – 2D: Mast von oben (Weltkoordinaten ab der Mastmitte); ang = Richtung der Traver…
+- pylonNet(buildings) – Masten einer Karte nach Linie in Kartenreihenfolge, je Mast die Richtung der Li…
+- drawWires(ctx, net, pt, lw, inView) – Leiterseile zwischen den Masten (über allen Objekten gezeichnet)
+
+## mappreview.js (3.3 KB)
+- drawMapPreview(canvas, map) – Zeichnet die Karte `map` in das Canvas `canvas` (ganze Fläche)
+- drawPowerLines(ctx, buildings, lw) – Leitungen zwischen Strommasten derselben Linie (Kartenreihenfolge) als dünne Li…
+
+## maptown.js (79 KB)
 - setMapTown(map) – Zu Beginn jedes Bilds (Renderer): Felder der Karte merken (Gehöfte erkennt man…
+- mapPylons(map) – Strommasten der Karte mit Richtung und Nachfolger (pylonNet), neu berechnet, we…
 - drawMapIso(ctx, cam, b) – Iso: Gebäude b der Karte gemalt; false = nicht hier (schräger Zug oder Bahnstei…
 - drawMapTop(ctx, b, zoom) – 2D: Gebäude b der Karte von oben (Weltkoordinaten, Kamera-Transformation gesetz…
 - drawPark(ctx, p, zoom, season, rails) – Park p als Bodenbild: in 2D mit der Kamera-Transformation, iso mit der Bodentra…
@@ -149,28 +165,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - setMilWalls(list) – Mauern und Tore merken (je Bild, für die Verbindungen zu den Nachbarn)
 - drawMilIso(ctx, cam, b, color) – Iso-Bild eines Militärgebäudes (Ankerpunkt = Mitte des Grundrisses)
 - drawMilTop(ctx, b, color, zoom) – 2D von oben (Kamera-Transformation gesetzt, Weltkoordinaten)
-
-## minimap.js (11 KB)
-- class Minimap
-  - constructor(canvas, game, camera, team)
-  - setMaxDpr(max) – Obergrenze der Pixeldichte setzen (Bildauflösung) und die Minimap sofort neu au…
-  - resize() – Canvas-Pufferung an CSS-Größe und DPR anpassen (höchstens maxDpr)
-  - view() – Abbildung Welt → Minimap (CSS-Pixel) als [a, b, c, d, e, f] wie ctx.setTransfor…
-  - toWorld(mx, my) – Minimap-Position (CSS-Pixel im Canvas) → Weltkoordinate (Umkehrung von view, au…
-  - render()
-  - cityImage(c, color) – Kleines Bild (eine Zelle = ein Pixel) von Gebiet und Gebäuden einer Stadt
-
-## mood.js (3.4 KB)
-- MOOD_SETTINGS – Einstellungen des Startmenüs: aus, Zufall (aus dem Seed, nach Jahreszeit gewich…
-- MOODS – mult: Farbe der Multiplikation (255 = unverändert) · glow: Lichtschein [r, g, b…
-- pickMood(setting, seed, season) – Stimmung für diese Partie: setting 'off' | 'random' | feste Stimmung; Zufall de…
-- drawMood(ctx, mood, cssW, cssH) – Stimmung über die Welt zeichnen (ctx in CSS-Pixeln, Transform = dpr)
-
-## nature.js (43 KB)
-- SPECIES
-- forestKind(o) – Waldart (fest nach Lage des Walds): Laubwald, Nadelwald oder Mischwald
-- forestSpecies(kind, u) – Art eines Baums im Wald nach Waldart; u ∈ [0, 1) ist der Zufall des Baums
-- drawTreeIso(ctx, cam, t, season) – Baum in Iso (Stammfuß am Weltpunkt, Größe nach t.r)
-- drawTreeTop(ctx, t, season, zoom) – Baum von oben (2D, Welt-Transformation gesetzt), mit Schatten
-- drawBushIso(ctx, cam, b, season) – Busch in Iso (Fuß am Weltpunkt)
-- drawBushTop(ctx, b, season, zoom) – Busch von oben (2D)

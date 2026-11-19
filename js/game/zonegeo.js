@@ -11,3 +11,11 @@ export function inZone(zone, x, y, pad = 0) {
 export function zoneDist(zone, x, y) {
   return zone.half ? Math.max(Math.abs(x - zone.x), Math.abs(y - zone.y)) : Math.hypot(x - zone.x, y - zone.y);
 }
+
+/** Kartenseite eines Punkts um die Zonenmitte (Teilung entlang der Diagonalen): 0 oben, 1 rechts, 2 unten, 3 links. */
+export function sideOf(zone, x, y) {
+  const dx = x - zone.x;
+  const dy = y - zone.y;
+  if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? 1 : 3;
+  return dy > 0 ? 2 : 0;
+}

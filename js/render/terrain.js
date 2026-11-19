@@ -548,6 +548,17 @@ function drawTown(ctx, map, S, iso = false) {
         ctx.lineTo(x + (w * k) / 5, y + h);
       }
       ctx.stroke();
+    } else if (b.kind === 'pylon') {
+      ctx.fillStyle = '#3d454b'; // Strommast von oben: Fuß mit Kreuz (die Leitungen zeichnet mappreview.js)
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = '#8d969c';
+      ctx.lineWidth = Math.max(1, 4 * S);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + w, y + h);
+      ctx.moveTo(x + w, y);
+      ctx.lineTo(x, y + h);
+      ctx.stroke();
     } else if (b.kind === 'wall') {
       ctx.fillStyle = '#a29f94';
       ctx.fillRect(x, y, w, h);

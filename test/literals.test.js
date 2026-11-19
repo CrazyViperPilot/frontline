@@ -21,6 +21,7 @@ const ALLOWED = {
   'game/cmd/build.js': ['1e-9', '8', '4'], // Rechengenauigkeit, 8 Richtungen
   'game/combat.js': ['4', '3', '4', '1.001', '1e6', '1e6'], // Trefferseite (Viertelkreise), Rundung, Sortierschlüssel
   'game/conquest.js': ['9', '4'], // Code „gesperrt“, Teamzahl der Viertelregel
+  'game/zonegeo.js': ['3'], // Kartenseite links (sideOf: 0 oben, 1 rechts, 2 unten, 3 links)
   'game/crates.js': ['100000'], // ID-Basis
   'game/entities.js': ['1e9', '1e-9', '1e-9', '1e-9', '1e9', '1e9'], // Rechengenauigkeit, „lange her“
   'game/flow.js': ['10', '0.005', '0.999', '60', '0.999'], // Zahlenformat, Rundung, „unter 1 min“
@@ -33,7 +34,7 @@ const ALLOWED = {
   'game/landscape.js': ['3', '512', '256', '256', '255', '256', '256', '255', '255', '3', '3', '2654435761', '90', '3', '3', '5', '3', '5', '3', '118', '372', '1.001', '1.001', '2246822519', '180', '1e-9', '1e-9', '118', '8', '8', '8', '10'], // Rauschen (Permutation, Glättung), Seed-Mischung, Abtastschritte, Speicherbereich der Höhen, Spiegelphasen der Seen
   'game/logistics.js': ['1e-9'], // Rechengenauigkeit
   'game/map.js': ['8', '1.5', '1.5', '1.5', '40', '40', '2654435761', '30', '100', '100', '3', '3'], // Abtastschritte, Blockgeometrie, Seed-Mischung, Rundung, Viertelseiten
-  'game/mapdata.js': ['24', '300', '24', '24', '96', '900', '200', '4000', '60', '400', '40', '20', '400', '64', '20', '200', '90', '24', '600', '70', '24', '600', '1e-3', '40', '400', '9', '6', '40', '300', '60', '900', '220', '60', '900', '1e-3', '6', '40'], // Ladegrenzen und Vorgaben für Editor-Karten (Prüfung, keine Spielwerte)
+  'game/mapdata.js': ['24', '300', '4', '32', '24', '24', '24', '96', '900', '200', '4000', '60', '400', '40', '20', '400', '64', '20', '200', '90', '24', '600', '70', '24', '600', '1e-3', '40', '400', '9', '6', '40', '300', '60', '900', '220', '60', '900', '1e-3', '6', '40'], // Ladegrenzen und Vorgaben für Editor-Karten (Prüfung, keine Spielwerte); Startpunkte, Leitungen, Namenslänge (feste Karten)
   'game/movement.js': ['128', '2.39996', '1e-6', '1e-6', '100003', '1e-9', '1e-9', '1e-6', '1e-9', '1e-6', '37', '91', '360', '180', '256'], // Hash, goldener Winkel, Rechengenauigkeit
   'game/pathfinding.js': ['1024', '20000', '4', '4', '16777619', '4', '16777619', '4', '8', '4', '4', '1e-9'], // Speichergrößen, FNV-Hash, 4/8 Nachbarn
   'game/relief.js': ['64', '128', '9', '9', '16', '3', '3', '3', '3', '1.000001', '1.000001', '16', '4', '255'], // Speicherformat, Interpolation, Rechengenauigkeit, Abtastschritt

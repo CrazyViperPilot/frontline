@@ -20,6 +20,8 @@ const STUB = 18; // so weit ragt ein zerstörter Brückenkopf übers Wasser
 // Fahrbahn wie eine Stadtstraße (seit v5.03): eine Stadtzelle breit, Gehweg an beiden Seiten, gestrichelte Mittellinie im selben
 // Takt wie die Straßenzellen (Striche bei 10–22 und 42–54 je 64 px ab dem Brückenende, das auf einer Zellkante liegt)
 const LANE = 32; // halbe Fahrbahnbreite (eine halbe Stadtzelle)
+const TRACK = 7.2; // Eisenbahnbrücke: halbe Spurweite (wie die Gleise der Karte, ways.js)
+const SLEEPER_GAP = 7; // Abstand der Schwellen
 const DASHES = (u0, u1) => {
   const out = [];
   for (let a = Math.floor(u0 / 32) * 32; a < u1; a += 32) {
@@ -30,6 +32,9 @@ const DASHES = (u0, u1) => {
   return out;
 };
 const COL = {
+  ballast: '#8a8378', // Eisenbahnbrücke: Schotter, Schwellen, Schienen
+  sleeper: '#5a4632',
+  steel: '#c9ccd0',
   concrete: '#8f8a7f',
   cornice: '#b4afa4',
   girder: '#77726a',
@@ -102,12 +107,28 @@ const progressOf = (b) => (b.broken && b.rebuild ? Math.min(1, b.rebuild.progres
 
 // ---- 2D (von oben) ---------------------------------------------------------------------------
 
-function deckRect(ctx, u0, u1, season = 'summer', joints = [], lampList = []) {
+function deckRect(ctx, u0, u1, season = 'summer', joints = [], lampList = [], rail = false) {
   ctx.fillStyle = COL.concrete;
   ctx.fillRect(u0, -HALF, u1 - u0, DECK);
   ctx.fillStyle = COL.cornice; // Gesims an den Rändern
   ctx.fillRect(u0, -HALF, u1 - u0, 2);
   ctx.fillRect(u0, HALF - 2, u1 - u0, 2);
+  if (rail) {
+    // Eisenbahnbrücke: Schotter, Schwellen, Schienen
+    ctx.fillStyle = season === 'winter' ? '#d9dcdc' : COL.ballast;
+    ctx.fillRect(u0, -LANE, u1 - u0, LANE * 2);
+    ctx.fillStyle = COL.sleeper;
+    for (let u = u0 + 2; u < u1 - 2; u += SLEEPER_GAP) ctx.fillRect(u, -TRACK - 5, 2.4, 2 * TRACK + 10);
+    ctx.fillStyle = COL.steel;
+    for (const s of [-1, 1]) ctx.fillRect(u0, s * TRACK - 0.9, u1 - u0, 1.8);
+    lampList = [];
+  } else paveDeck(ctx, u0, u1, season, joints);
+  // Geländer: Pfosten und zwei Holme
+  railingTop(ctx, u0, u1);
+  lampsTop(ctx, u0, u1, lampList);
+}
+
+function paveDeck(ctx, u0, u1, season, joints) {
   const mat = patternMatrix(null);
   ctx.fillStyle = deckFill(ctx, 'asphalt', season, mat);
   ctx.fillRect(u0, -LANE, u1 - u0, LANE * 2);
@@ -125,7 +146,9 @@ function deckRect(ctx, u0, u1, season = 'summer', joints = [], lampList = []) {
   for (const [a, b] of DASHES(u0, u1)) ctx.fillRect(a, -ROAD.line / 2, b - a, ROAD.line);
   ctx.fillStyle = COL.joint; // Fugen über den Pfeilern
   for (const u of joints) if (u > u0 + 1 && u < u1 - 1) ctx.fillRect(u - 0.6, -LANE, 1.2, LANE * 2);
-  // Geländer: Pfosten und zwei Holme
+}
+
+function railingTop(ctx, u0, u1) {
   ctx.fillStyle = COL.post;
   for (let u = u0 + 4; u < u1 - 2; u += 9) for (const s of [-1, 1]) ctx.fillRect(u - 1, s * (HALF - 1.5) - 1, 2, 2);
   ctx.strokeStyle = COL.rail;
@@ -136,7 +159,10 @@ function deckRect(ctx, u0, u1, season = 'summer', joints = [], lampList = []) {
     ctx.lineTo(u1, s * (HALF - 1.5));
   }
   ctx.stroke();
-  // Laternen: Mast am Rand, Leuchte über dem Gehweg
+}
+
+/** Laternen: Mast am Rand, Leuchte über dem Gehweg. */
+function lampsTop(ctx, u0, u1, lampList) {
   for (const [u, s] of lampList) {
     if (u < u0 + 2 || u > u1 - 2) continue;
     ctx.strokeStyle = COL.lampPole;
@@ -221,7 +247,7 @@ export function drawBridgeTop(ctx, b, season = 'summer') {
     ctx.stroke();
   }
   if (!b.broken) {
-    deckRect(ctx, 0, L, season, joints, lampList);
+    deckRect(ctx, 0, L, season, joints, lampList, !!b.src?.rail);
     // Widerlager an den Enden
     ctx.fillStyle = COL.edge;
     ctx.fillRect(0, -HALF, 5, DECK);
@@ -265,8 +291,8 @@ export function drawBridgeTop(ctx, b, season = 'summer') {
       }
       ctx.globalAlpha = 1;
     }
-    deckRect(ctx, 0, w0 + STUB, season, [], lampList);
-    deckRect(ctx, w1 - STUB, L, season, [], lampList);
+    deckRect(ctx, 0, w0 + STUB, season, [], lampList, !!b.src?.rail);
+    deckRect(ctx, w1 - STUB, L, season, [], lampList, !!b.src?.rail);
     brokenEdge(ctx, w0 + STUB, 1);
     brokenEdge(ctx, w1 - STUB, -1);
     // Bewehrungseisen ragen aus den Bruchkanten
@@ -430,6 +456,21 @@ export function drawBridgeIso(ctx, cam, dpr, b, season = 'summer') {
     // Überbau: dunklerer Träger, darauf das helle Gesims, das an beiden Seiten etwas übersteht
     drawRotBox(ctx, cam, c.x, c.y, u1 - u0, DECK - 6, b.angle, SLAB - 2, COL.girder, { base: lift - SLAB, noShadow: true, wallS: '#6a655d', wallE: '#56524b' });
     drawRotBox(ctx, cam, c.x, c.y, u1 - u0, DECK, b.angle, 2, COL.cornice, { base: lift - 2, roof: COL.concrete, noShadow: true, wallS: '#a39e93', wallE: '#8b867c' });
+    if (b.src?.rail) {
+      // Eisenbahnbrücke (feste Karten): Schotterbett, Schwellen, zwei Schienen statt Fahrbahn
+      ctx.fillStyle = season === 'winter' ? '#d9dcdc' : COL.ballast;
+      quad(-LANE, LANE, u0, u1);
+      if (fine) {
+        ctx.fillStyle = COL.sleeper;
+        for (let u = u0 + 2; u < u1 - 2; u += SLEEPER_GAP) quad(-TRACK - 5, TRACK + 5, u, u + 2.4);
+      }
+      ctx.fillStyle = COL.steel;
+      for (const s of [-1, 1]) quad(s * TRACK - 0.9, s * TRACK + 0.9, u0, u1);
+      ctx.restore();
+      railing(u0, u1, -near);
+      railing(u0, u1, near);
+      return;
+    }
     // Fahrbahn wie eine Stadtstraße: Asphalt, Gehwege aus Platten, Bordstein, Rinne, Mittellinie, Fugen
     ctx.fillStyle = deckFill(ctx, 'asphalt', season, mat);
     quad(-LANE, LANE, u0, u1);

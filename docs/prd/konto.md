@@ -72,7 +72,7 @@ Die Schnittstelle `api/match.php` (Match-Start) nutzt dieselben Regeln, siehe un
 - **Bestehendes Konto:** Bei unbestätigtem Konto bleibt das alte Passwort; nur der Link wird neu geschickt. Bei bestätigtem
   Konto passiert bei `register` nichts (keine Mail, gleiche Antwort).
 - **Passwort:** mindestens 8 Zeichen, höchstens 72 Byte (bcrypt liest nur 72 Byte; längere Eingaben würden still gekürzt).
-- **Anmeldebremse:** höchstens 10 Anmeldeversuche je IP in 15 Minuten, danach 429. Gezählt werden alle Versuche.
+- **Anmeldebremse:** höchstens 10 Anmeldeversuche je IP und 20 je E-Mail-Adresse (von allen IPs zusammen) in 15 Minuten, danach 429. Gezählt werden alle Versuche.
 - **Mailbremse:** je Adresse höchstens 5 Mails je Stunde; die Sechste bekommt die gleiche Antwort ohne Mail (stille Bremse).
   Je IP höchstens 20 Mail-Anfragen je Stunde, danach 429 (verhindert Massenversand an fremde Adressen).
 - **IP:** nur `REMOTE_ADDR` zählt (ein `X-Forwarded-For` ließe sich fälschen). Hinter einem Proxy, der alle Anfragen mit
@@ -404,3 +404,10 @@ Detailbereich öffnen und schließen, Nickname speichern (auch Fehler und Eingab
 Knopf im Pausenmenü fehlt. Die Schnittstelle wurde von Hand gegen MariaDB und `php -S` geprüft (Nickname-Regeln, Mailbremse,
 Link einmal gültig, Sitzungen weg, Login 403, Reaktivieren, Historie je Änderung, Löschen räumt Historie, Umrüstung einer KO1-Datenbank
 mit Bestandskonto), die Oberfläche per Browser mit gefälschtem Backend.
+
+## Sicherheit (Audit, seit dem Paket „Kontoschutz“)
+
+- **Erneut registrieren:** Ist das Konto noch unbestätigt, gilt das Passwort der neuesten Registrierung. Beim Bestätigen enden alle
+  Sitzungen des Kontos. So kann niemand eine fremde Adresse vorab mit eigenem Passwort belegen und das Konto später übernehmen.
+- **Spielstände auf dem Server:** höchstens 100 je Konto und 4 MB je gepacktem Stand (`FL_MAX_SAVES`, `FL_MAX_BYTES` in
+  `api/save.php`); darüber antwortet `save.php` mit 413. Ersetzen eines vorhandenen Standes geht immer.

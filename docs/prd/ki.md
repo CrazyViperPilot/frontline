@@ -223,6 +223,10 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   `hallBm` reicht (sonst später). Findet sie im Baugebiet keinen Weg, weil das Land zwischen Stadt und FOB unerkundet ist, schickt sie den
   Späher zur ersten dunklen Zelle des Wegs (`exploreAt`, wie beim Fliegerhorst). Gemessen (20 min, Seeds 3, 5, 7, 9, 11, 13): Hallen bei 11
   statt 10 von 12 Teams; Seed 11 Team 0 baut bei 600 statt 1030 s; mittlerer FOB-Bestand 821 statt 810.
+  Balance gemessen (20 min, Seeds 3, 5, 7, 11, je Variante): frühere Halle (`hallLow` 2000, `hallFrom` 240), doppelter Mindestzulauf (`fill`),
+  doppelte Abgabe an FOBs (`feed.rate`) und `keep` 200 ändern FOB-Bestand (785 bis 792), Ausbildung und Abschüsse nicht über das Rauschen.
+  Die Hallen sind leer (alles geht sofort an die FOBs), die Hauptstadt steht bei einer Sorte oft an `keep`: Engpass ist die Erzeugung von
+  Munition und Treibstoff, nicht die Halle. Ohne Munition oder Treibstoff sind nur 0,4 % der Einheiten; darum bleiben die Werte.
 - **Kampfhubschrauber und Su-27 (Paket „KI-Einheiten“):** Ab `GUN_FROM` (12) eigenen Kampfeinheiten hält die KI `GUNSHIPS` Kampfhubschrauber
   (Leicht 0, Normal 1, Schwer 2), nur aus Überschuss (Geld über Preis und `GUN_RESERVE`; Sparen auf ihn ließ die Armee minutenlang ohne
   Nachschub). Er zählt zu den Kampfeinheiten, fliegt mit den Wellen und tankt wie sie. Den Festungs-Hubschrauber lässt er vor. Dafür baut die Stadt ab `CITY.ai.heliMoreFrom`

@@ -91,7 +91,7 @@ URL-Parameter, Smoke-Varianten, Prüfsummen und Prüftests: `docs/testen.md`.
 - Neuer Schalter im Startmenü → `docs/rezepte/neue-startoption.md`.
 - Neues Spielsystem mit eigenem Modul unter `js/game/` → `docs/rezepte/neues-spielsystem.md`.
 - Neuer Spielmodus, Flaggen- oder Ticketregel der Eroberung → `docs/rezepte/neuer-spielmodus.md`.
-- Neue feste Karte (Startmenü „Feste Karten“, eigene Flaggen, Baugebiete an den Seiten) → `docs/rezepte/feste-karte.md`.
+- Neue feste Karte (Startmenü „Feste Karten“, eigene Flaggen) → `docs/rezepte/feste-karte.md`.
 - KI verhält sich falsch (greift zu früh an, baut zu wenig …) → `docs/rezepte/ki-verhalten.md`.
 - Test schlägt fehl, neuer Test, Browserfehler nachstellen, URL-Parameter → `docs/testen.md`.
 - CI, Deploy auf den Webspace, Secrets → `docs/betrieb.md`.

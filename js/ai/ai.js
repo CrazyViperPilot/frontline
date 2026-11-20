@@ -89,6 +89,7 @@ export class AI {
     this.replaceCommander(s);
     this.research(s); // vor produce: die nächste Stufe bekommt das Geld zuerst
     this.gunships(s); // vor produce: der erste Kampfhubschrauber bekommt das Geld zuerst (Paket „KI-Einheiten“)
+    this.gunshipOps(s); // Kampfhubschrauber: Luftnahunterstützung vom Heliport aus (Paket „Hubschrauber im Gefecht“)
     this.jets(s); // Fliegerhorst: Jets kaufen und losschicken (seit v5.03); vor produce, sonst bekommen die Bodentruppen alles Geld (Paket „Jets und Späher“)
     this.recon(s); // Fliegerhorst: U-2 zur Aufklärung (seit v5.83)
     this.produce(s);
@@ -134,7 +135,7 @@ export class AI {
     const enemies = g.units.filter((u) => u.alive && u.team !== t && g.sees(t, u));
     this.corridor = home ? { x: home.x, y: home.y, dx: dir.x, dy: dir.y } : null;
 
-    const combat = units.filter((u) => u.def.range > 0 && !u.crate && !u.def.hero && !u.def.jet && !u.def.indirect); // Kistenträger kämpfen nicht, der Kommandeur bleibt hinten, Jets führt jets(), Artillerie artillery()
+    const combat = units.filter((u) => u.def.range > 0 && !u.crate && !u.def.hero && !u.def.jet && !u.def.indirect && u.type !== 'gunship'); // Kistenträger kämpfen nicht, der Kommandeur bleibt hinten, Jets führt jets(), Artillerie artillery(), Kampfhubschrauber gunshipOps()
     // Ausbildende Gebäude (seit v4.96): Kaserne, Fabrikhalle und Heliport der Stadt; FOBs bilden nichts aus
     const producers = cityTrainers(g, t);
     const queuedCombat = producers.reduce((n, b) => n + b.queue.filter((e) => UNITS[e.unit ?? e].range > 0).length, 0);

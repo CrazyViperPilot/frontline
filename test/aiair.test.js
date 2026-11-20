@@ -168,7 +168,7 @@ test('Luftschlag-Ziel: wertvollste gesehene Gruppe, nicht unter Flugabwehr, Fein
   assert.ok(t === tankA || t === tankB, 'Panzergruppe ist das Ziel');
   assert.ok(2 * UNITS.tank.cost.money >= STRIKE_MIN);
   // Flak daneben: kein Luftschlag dorthin
-  const flak = foe('flak', ...at(30, airReach(UNITS.flak, true) + STRIKE_AA_MARGIN - 50));
+  const flak = foe('flak', ...at(30, airReach(UNITS.flak, 'jet', 20) + STRIKE_AA_MARGIN - 50));
   assert.equal(ai.strikeTarget({ ...s, enemies: [tankA, tankB, lone, flak] }), null);
   // ein Schütze allein lohnt nicht, mit eigenen Truppen daneben auch nicht (zu billig)
   assert.equal(ai.strikeTarget({ ...s, enemies: [lone] }), null);

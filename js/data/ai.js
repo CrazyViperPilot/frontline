@@ -252,6 +252,17 @@ export const JET_GROUP = 2; // so viele startbereite F-16 fliegen zusammen los (
 export const JET_EVERY = 6; // s zwischen zwei Startbefehlen an die Jets
 export const JET_STEEL_LOTS = 10; // fehlt Stahl für ein Flugzeug, kauft sie davor höchstens so viele Lose am Markt (combat.js steelFor)
 // Luftschlag der KI (Paket „Aufklären und Luftschlag“, combat.js strikeTarget): Jets mit Bodenwaffen greifen gesehene Gruppen an und landen danach
+// Kampfhubschrauber im Einsatz (Paket „Hubschrauber im Gefecht“, combat.js gunshipOps): Luftnahunterstützung vom Heliport aus
+export const GUN_EVERY = 4; // s zwischen zwei Einsatzentscheidungen
+export const GUN_HP = 0.5; // unter diesem Anteil der Trefferpunkte landet er am Heliport (Reparatur)
+export const GUN_HP_BACK = 0.9; // und startet erst ab diesem Anteil wieder
+export const GUN_FUEL = 0.9; // startet erst mit so viel Treibstoff (Anteil)
+export const GUN_MIN = 300; // Geldwert der gegnerischen Gruppe mit Kontakt zu eigenen Truppen, ab dem er startet
+export const GUN_REACH = 0.4; // Einsatzradius vom Heliport: Anteil seiner Reichweite (Tempo × Flugzeit), Hin- und Rückflug mit Kampf
+export const GUN_AA_MARGIN = 100; // px über die Reichweite gesehener reiner Flugabwehr (Flak, SAM, Gepard, Fliegerfaust) hinaus: Ziele darin greift er nicht an
+export const GUN_HOME_R = 600; // px: Gegner so nah an eigenen Gebäuden (FOB, Stadt) gelten als Kontakt, auch ohne eigene Truppen daneben
+export const GUN_RAID_R = 1500; // px: sieht sie Gegner so nah an ihrer Stadt oder ihren FOBs (gemerkt AIR_MEMORY s), kauft sie Kampfhubschrauber
+export const GUN_CHASE = 800; // px: in der Luft ohne Ziel greift er die nächste Gruppe so nah an, sonst landet er
 export const STRIKE_EVERY = 20; // s zwischen zwei Luftschlägen
 export const STRIKE_MIN = 800; // Geldwert der Gegner um das Ziel, ab dem sich ein Luftschlag lohnt
 export const STRIKE_CLUSTER_R = 180; // px: gesehene Gegner so nah am Ziel zählen zu seinem Wert (Gruppe)

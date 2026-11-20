@@ -192,12 +192,15 @@ export const logisticsMethods = {
     }
     const plan = this.pendlerPlan(s, taken, tr);
     if (!plan) {
+      // Hubschrauber ohne Auftrag landen auf ihrem Heliport, statt in der Luft zu stehen (Paket „Hubschrauber im Gefecht“)
+      const pad = tr.heli?.phase === 'air' ? g.getEntity(tr.heli.home) : null;
       if (o.type === 'route' && cur) {
         // nichts mehr zu tun: Ladung (falls vorhanden) abliefern, sonst anhalten
         if (cargoTotal(tr) > ROUTE_LOAD) g.issue(this.team, { type: 'unload', ids: [tr.id], fobId: cur.toId });
+        else if (pad?.alive) g.issue(this.team, { type: 'land', ids: [tr.id], airportId: pad.id });
         else g.issue(this.team, { type: 'stop', ids: [tr.id] });
         this.routes.delete(tr.id);
-      }
+      } else if (pad?.alive && o.type === 'idle' && !tr.passengers?.length) g.issue(this.team, { type: 'land', ids: [tr.id], airportId: pad.id });
       return;
     }
     const r = plan.work

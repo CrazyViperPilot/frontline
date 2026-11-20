@@ -1,0 +1,1 @@
+**Hubschrauber der KI im Gefecht** (§10): Der Kampfhubschrauber der KI fliegt nicht mehr mit den Wellen (die Zone liegt außerhalb seiner Reichweite), sondern wartet am Heliport und verteidigt Stadt und nahe FOBs gegen Gruppen ohne Flugabwehr; gekauft wird er nur nach gesehenen Gegnern nahe der Stadt. Transporthubschrauber ohne Auftrag landen.

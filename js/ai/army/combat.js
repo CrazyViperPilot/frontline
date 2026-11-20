@@ -10,7 +10,7 @@ import { BALANCE } from '../../data/balance.js';
 import { UNITS } from '../../data/units.js';
 import { canGarrison } from '../../game/garrison.js';
 import { weatherSight } from '../../game/weather.js';
-import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, FIELD_MUL, CMD_ARRIVED, ART_COLS, GUNSHIPS, GUN_FROM, GUN_RESERVE, SCOUT_HP, SCOUT_HP_BACK, SCOUT_MARGIN, SCOUT_STEP, SCOUT_FLEE_EVERY, STRIKE_EVERY, STRIKE_MIN, STRIKE_CLUSTER_R, STRIKE_CONTACT_R, STRIKE_CONTACT_MUL, STRIKE_AA_MARGIN, STRIKE_AA_DMG, RECON_FOBS } from '../../data/ai.js';
+import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, FIELD_MUL, CMD_ARRIVED, ART_COLS, GUNSHIPS, GUN_FROM, GUN_RESERVE, SCOUT_HP, SCOUT_HP_BACK, SCOUT_MARGIN, SCOUT_STEP, SCOUT_FLEE_EVERY, STRIKE_EVERY, STRIKE_MIN, STRIKE_CLUSTER_R, STRIKE_CONTACT_R, STRIKE_CONTACT_MUL, STRIKE_AA_MARGIN, STRIKE_AA_DMG, RECON_FOBS, GUN_EVERY, GUN_HP, GUN_HP_BACK, GUN_FUEL, GUN_MIN, GUN_REACH, GUN_AA_MARGIN, GUN_CHASE, GUN_HOME_R, GUN_RAID_R } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
 import { inZone as inZoneOf } from '../../game/zonegeo.js';
 import { nearestOf } from '../../game/teams.js';
@@ -62,14 +62,17 @@ const SCOUT_MONEY = UNITS.littlebird.cost.money; // Geld, ab dem ein Späher aus
 
 /**
  * Größte Reichweite (px) der Waffen von def, die Luftziele treffen (0 = keine); Waffen mit targets ohne 'air' zählen nicht.
- * jet = true: nur Waffen, die Flugzeugen mindestens STRIKE_AA_DMG Schaden machen (Schadensklasse jet, fehlt sie: air).
+ * cls: Schadensklasse des Ziels ('air' Hubschrauber, 'jet' Flugzeuge, fehlt sie: air); min: nur Waffen ab so viel Schaden je Treffer;
+ * min = 'aa': nur reine Flugabwehrwaffen (targets nur 'air' bzw. Schaden nur gegen Luftziele: Flak, SAM, Gepard, Fliegerfaust).
  */
-export function airReach(def, jet = false) {
-  const dmg = (d) => (jet ? d?.jet ?? d?.air ?? 0 : d?.air ?? 0);
-  const min = jet ? STRIKE_AA_DMG : Number.MIN_VALUE;
+export function airReach(def, cls = 'air', min = Number.MIN_VALUE) {
+  const only = min === 'aa';
+  const pure = (w) => (w.targets ? w.targets.every((k) => k === 'air') : Object.keys(w.damage ?? {}).every((k) => k === 'air' || k === 'jet'));
+  if (only) min = Number.MIN_VALUE;
+  const dmg = (d) => (cls === 'jet' ? d?.jet ?? d?.air ?? 0 : d?.air ?? 0);
   let r = 0;
   for (const w of def?.weapons ?? []) {
-    const hitsAir = (w.targets ? w.targets.includes('air') : true) && dmg(w.damage) >= min;
+    const hitsAir = (w.targets ? w.targets.includes('air') : true) && dmg(w.damage) >= min && (!only || pure(w));
     if (hitsAir && (w.range ?? 0) > r) r = w.range;
   }
   if (!def?.weapons && dmg(def?.damage) >= min) r = Math.max(r, def.range ?? 0);
@@ -79,7 +82,8 @@ export function airReach(def, jet = false) {
 export const combatMethods = {
   /**
    * Kampfhubschrauber (Paket „KI-Einheiten“): hält GUNSHIPS[Schwierigkeit] ab GUN_FROM Kampfeinheiten (Heliport der Stadt), nur aus
-   * Überschuss (Sparen ließ die Armee minutenlang ohne Nachschub). Einsatz: er zählt zu den Kampfeinheiten und fliegt mit den Wellen.
+   * Überschuss (Sparen ließ die Armee minutenlang ohne Nachschub). Einsatz: gunshipOps (seit „Hubschrauber im Gefecht“ nicht mehr mit den Wellen,
+   * gekauft nur nach gesehenen Gegnern nahe Stadt oder FOBs).
    */
   gunships(s) {
     const g = this.game;
@@ -87,12 +91,53 @@ export const combatMethods = {
     if (!want || (s.combat?.length ?? 0) < GUN_FROM) return;
     const have = s.units.filter((u) => u.type === 'gunship').length + this.queued(s, 'gunship');
     if (have >= want) return;
+    // Paket „Hubschrauber im Gefecht“: nur, wenn sie kürzlich Gegner nahe ihrer Stadt oder FOBs gesehen hat (bis GUN_RAID_R, gemerkt
+    // AIR_MEMORY s); die Zone liegt außerhalb seiner Reichweite (gunshipOps)
+    const raid = s.enemies.filter((e) => !e.def.air && (this.nearCity(e.x, e.y, GUN_RAID_R) || s.own.some((b) => dist(b.x, b.y, e.x, e.y) <= GUN_RAID_R))).length;
+    if (!this.rememberSeen('raid', raid)) return;
     // Der Festungs-Hubschrauber geht vor (wie bei der Drohne): steht ein Turm und fehlt er, wartet der Kampfhubschrauber
     if (s.own.some((b) => b.type === 'tower' && b.built) && !s.helis.length && !this.queued(s, 'transporter')) return;
     const b = this.pickProducer(s, 'gunship', BALANCE.queueMax, false);
     if (!b) return;
     if (this.saveForJet) return; // Sparen auf den nächsten Jet geht vor (Paket „Jets und Späher“)
     if (g.teams[this.team].res.money >= UNITS.gunship.cost.money + GUN_RESERVE) this.trainOrWant(b, 'gunship');
+  },
+
+  /**
+   * Einsatz der Kampfhubschrauber (Paket „Hubschrauber im Gefecht“): Sein Tank reicht nur gut eine Minute (gemessen: die Kämpfe in der
+   * Zone liegen 8500 bis 12000 px vom Heliport, mehr als Hin- und Rückflug), darum fliegt er nicht mehr mit den Wellen, sondern wartet
+   * am Heliport und verteidigt den Umkreis. Alle GUN_EVERY s: gelandet und betankt (ab GUN_FUEL) startet er gegen die beste gesehene
+   * Gruppe mit Kontakt zu eigenen Truppen (bestGroup, ab GUN_MIN, bis GUN_REACH × Reichweite vom Heliport, nicht unter reiner
+   * Flugabwehr wie Flak, SAM, Gepard, Fliegerfaust plus GUN_AA_MARGIN; Gewehre, MG und RPG nimmt er in Kauf). In der Luft ohne Ziel: nächste Gruppe bis GUN_CHASE px, sonst Landung. Unter GUN_HP
+   * Trefferpunkten landet er (Reparatur am Heliport, Start erst ab GUN_HP_BACK).
+   */
+  gunshipOps(s) {
+    const g = this.game;
+    if (!this.once('gunship-ops', GUN_EVERY)) return;
+    const aa = { cls: 'air', min: 'aa', margin: GUN_AA_MARGIN };
+    for (const u of s.units) {
+      if (u.type !== 'gunship' || !u.heli) continue;
+      const pad = g.getEntity(u.heli.home);
+      if (!pad?.alive) continue;
+      const land = () => g.issue(this.team, { type: 'land', ids: [u.id], airportId: pad.id });
+      const air = u.heli.phase === 'air';
+      const hp = u.hp / u.maxHp;
+      if (hp < GUN_HP || (u.heli.phase === 'landed' && hp < GUN_HP_BACK)) {
+        if (air && u.order.type !== 'land') land();
+        continue;
+      }
+      if (u.heli.phase === 'landed') {
+        if (u.fuel < u.def.fuelMax * GUN_FUEL || u.order.type !== 'idle') continue;
+        const tg = this.bestGroup(s, { ...aa, low: GUN_MIN, fx: pad.x, fy: pad.y, reach: u.def.speed * u.def.fuelMax * GUN_REACH, contact: true });
+        if (tg) g.issue(this.team, { type: 'attack', ids: [u.id], targetId: tg.id });
+        continue;
+      }
+      if (!air || u.order.type === 'land' || (u.order.type === 'attack' && u.order.targetId != null && g.getEntity(u.order.targetId)?.alive)) continue;
+      // in der Luft ohne lebendes Ziel (oder noch aus einer Welle): nächste Gruppe in der Nähe, sonst heim
+      const tg = this.bestGroup(s, { ...aa, low: GUN_MIN, fx: u.x, fy: u.y, reach: GUN_CHASE });
+      if (tg) g.issue(this.team, { type: 'attack', ids: [u.id], targetId: tg.id });
+      else land();
+    }
   },
 
   /**
@@ -184,28 +229,57 @@ export const combatMethods = {
    * besonders U-2, Drohne und Späher.
    */
   strikeTarget(s) {
-    const foes = s.enemies.filter((e) => e.kind === 'unit' && !e.def.air && !e.house);
-    const aa = s.enemies.filter((e) => airReach(e.def, true) > 0);
-    const covered = (x, y) => aa.some((a) => dist(a.x, a.y, x, y) <= airReach(a.def, true) + STRIKE_AA_MARGIN);
+    const aa = { cls: 'jet', min: STRIKE_AA_DMG, margin: STRIKE_AA_MARGIN };
+    const best = this.bestGroup(s, { ...aa, low: STRIKE_MIN });
+    if (best) return best;
     // Ohne lohnende Gruppe: die gemerkte gegnerische FOB (nicht die Hauptstadt) nächst der Zone, wenn keine gesehene Flugabwehr sie deckt
     this.rememberFobs();
-    const fob = () => [...this.seenFobs.values()].filter((b) => b.alive && !b.main && !covered(b.x, b.y)).sort((a, b) => dist(a.x, a.y, s.zone.x, s.zone.y) - dist(b.x, b.y, s.zone.x, s.zone.y) || a.id - b.id)[0] ?? null;
-    if (!foes.length) return fob();
+    const covered = this.aaCover(s, aa);
+    return [...this.seenFobs.values()].filter((b) => b.alive && !b.main && !covered(b.x, b.y)).sort((a, b) => dist(a.x, a.y, s.zone.x, s.zone.y) - dist(b.x, b.y, s.zone.x, s.zone.y) || a.id - b.id)[0] ?? null;
+  },
+
+  /** Liegt (x, y) bis r px an einem Gebäude der eigenen Stadt (Werke, Wohnen, Heliport …)? */
+  nearCity(x, y, r = GUN_HOME_R) {
+    const c = this.game.city?.[this.team];
+    if (!c) return false;
+    for (const e of c.ents.values()) if (e.alive && dist(e.x, e.y, x, y) <= r) return true;
+    return false;
+  },
+
+  /** Prüfung (x, y) → in Reichweite gesehener Flugabwehr (Schadensklasse cls, ab min Schaden, plus margin)? */
+  aaCover(s, { cls, min, margin }) {
+    const aa = s.enemies.filter((e) => airReach(e.def, cls, min) > 0);
+    return (x, y) => aa.some((a) => dist(a.x, a.y, x, y) <= airReach(a.def, cls, min) + margin);
+  },
+
+  /**
+   * Beste gesehene gegnerische Bodengruppe für einen Angriff aus der Luft (Luftschlag, Kampfhubschrauber): jede gesehene Bodeneinheit
+   * (nicht im Haus) mit dem Geldwert aller Gegner bis STRIKE_CLUSTER_R um sie, mal STRIKE_CONTACT_MUL bei eigenen Bodeneinheiten bis
+   * STRIKE_CONTACT_R; nicht unter Flugabwehr (aaCover), ab Wert low, optional nur bis reach px von (fx, fy) und nur mit Kontakt (contact:
+   * eigene Bodeneinheiten bis STRIKE_CONTACT_R oder eigene Gebäude bis GUN_HOME_R, die Verteidigung der eigenen Stadt und FOBs).
+   */
+  bestGroup(s, { cls, min, margin, low, fx = null, fy = null, reach = Infinity, contact = false }) {
+    const foes = s.enemies.filter((e) => e.kind === 'unit' && !e.def.air && !e.house);
+    if (!foes.length) return null;
+    const covered = this.aaCover(s, { cls, min, margin });
     const own = s.units.filter((u) => !u.def.air);
     const value = (e) => UNITS[e.type]?.cost.money ?? 0;
     let best = null;
-    let bestV = STRIKE_MIN;
+    let bestV = low;
     for (const e of foes) {
+      if (fx !== null && dist(fx, fy, e.x, e.y) > reach) continue;
       if (covered(e.x, e.y)) continue;
+      const near = own.some((u) => dist(u.x, u.y, e.x, e.y) <= STRIKE_CONTACT_R);
+      if (contact && !near && !s.own.some((b) => dist(b.x, b.y, e.x, e.y) <= GUN_HOME_R) && !this.nearCity(e.x, e.y)) continue;
       let v = 0;
       for (const f of foes) if (dist(f.x, f.y, e.x, e.y) <= STRIKE_CLUSTER_R) v += value(f);
-      if (own.some((u) => dist(u.x, u.y, e.x, e.y) <= STRIKE_CONTACT_R)) v *= STRIKE_CONTACT_MUL;
+      if (near) v *= STRIKE_CONTACT_MUL;
       if (v > bestV || (v === bestV && best && e.id < best.id)) {
         bestV = v;
         best = e;
       }
     }
-    return best ?? fob();
+    return best;
   },
 
   /**

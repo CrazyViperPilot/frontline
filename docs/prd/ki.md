@@ -243,6 +243,14 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   Schwer den Festungsausbau). Bei den Mehrzweckjets wechseln F-16 und Su-27; Teams mit ungerader Nummer (Rot, Gelb) beginnen mit der Su-27.
   Gemessen (30 min, Normal, Seeds 3, 7, 11): Kampfhubschrauber bei 3 von 6 Teams (einem vierten fehlte Stahl), Su-27 bei allen roten;
   Abschüsse je Team 114 bis 159 wie vorher.
+  Paket „Hubschrauber im Gefecht“ (`gunshipOps` in `js/ai/army/combat.js`): Gemessen flog er mit den Wellen, hing dann ohne Treibstoff
+  untätig in der Luft und hatte fast nie ein Ziel; die Kämpfe in der Zone liegen 8500 bis 12000 px vom Heliport, seine ganze Reichweite
+  (150 px/s × 70 s) beträgt 10 500 px hin und zurück. Seitdem zählt er nicht mehr zu den Kampfeinheiten der Wellen und wird nur gekauft,
+  wenn die KI kürzlich Gegner bis `GUN_RAID_R` an ihrer Stadt oder ihren FOBs gesehen hat. Er wartet am Heliport; alle `GUN_EVERY` s
+  startet er betankt (ab `GUN_FUEL`) gegen die beste gesehene Gruppe ab `GUN_MIN` im Einsatzradius (`GUN_REACH` × Reichweite), die
+  Kontakt zu eigenen Truppen hat oder bis `GUN_HOME_R` an eigenen Gebäuden steht, und nicht unter reiner Flugabwehr (Flak, SAM, Gepard,
+  Fliegerfaust, plus `GUN_AA_MARGIN`). In der Luft ohne Ziel greift er die nächste Gruppe bis `GUN_CHASE` px an, sonst landet er; unter
+  `GUN_HP` landet er zur Reparatur und startet ab `GUN_HP_BACK`. Transporthubschrauber ohne Pendelauftrag landen auf ihrem Heliport.
 - **Kaserne an der Lagerhalle (Paket „Ausbildung an der Lagerhalle“, `aiHallTrainer` in `js/ai/city/warehouse.js`):** Ab `CITY.ai.hallTrainFrom`
   (Leicht nie, Normal 600 s, Schwer 480 s) baut die KI neben eine angeschlossene Lagerhalle ohne Ausbildungsgebäude im Umkreis von `hallTrainNear`
   (12) Zellen eine Kaserne (`hallTrainer`), höchstens `hallTrainReach` (8) Zellen entfernt, mit Straße zum Lager; Geld und Baumaterial wie bei
@@ -337,6 +345,8 @@ je Zeile mit Kommentar; die Tabelle nennt nur die wichtigsten.
 | Versorgungskisten | Takt / Umkreis / Holer gleichzeitig Leicht–Normal–Schwer (`CRATE_EVERY`, `CRATE_RANGE`, `difficulty.cratePickers`) | 6 s / 5500 px / 1–2–3 |
 | F-22-Anteil an den Kampfflugzeugen (seit v5.83) | `CITY.ai.f22Share` | 0,4 |
 | U-2 zur Aufklärung (seit v5.83) | höchstens gleichzeitig (`reconMax`) · ab Spielzeit (`reconFrom`, Leicht nie) · Takt der Flüge (`reconEvery`) | 1 · 600 s (Schwer 480 s) · 30 s |
+| Kampfhubschrauber (`gunshipOps`) | Takt `GUN_EVERY` · Landung unter `GUN_HP`, Start ab `GUN_HP_BACK` und `GUN_FUEL` · Mindestwert `GUN_MIN` · Radius `GUN_REACH` | 4 s · 50 % · 90 % · 90 % · 300 · 0,4 |
+| Kampfhubschrauber (`gunshipOps`) | Abstand Flugabwehr `GUN_AA_MARGIN` · Gebäude-Kontakt `GUN_HOME_R` · Kauf nach Gegnern bis `GUN_RAID_R` · Nachsetzen `GUN_CHASE` | 100 px · 600 px · 1500 px · 800 px |
 | Luftschlag (`strikeTarget`) | Takt `STRIKE_EVERY` · Mindestwert `STRIKE_MIN` · Gruppe `STRIKE_CLUSTER_R` · Kontakt `STRIKE_CONTACT_R` × `STRIKE_CONTACT_MUL` | 20 s · 800 · 180 px · 500 px × 1,5 |
 | Luftschlag (`strikeTarget`) | Abstand zur Flugabwehr `STRIKE_AA_MARGIN` ab Schaden `STRIKE_AA_DMG` · FOBs der U-2 `RECON_FOBS` | 150 px ab 20 · 2 |
 | Flugzeuge (seit v5.03) | Fliegerhorst ab Arbeitsstätten (`CITY.ai.airportFrom`) · F-16 Leicht/Normal/Schwer (`CITY.ai.jets`) · Geld danach (`jetReserve`) · Sparen auf so viele (`jetSave`) · Gruppe / Takt / Warteschlange (`JET_GROUP`, `JET_EVERY`, `JET_QUEUE`) | 14 · 2/4/6 · 400 · 2 / 6 s / 2 |

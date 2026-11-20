@@ -208,5 +208,39 @@ test('KI bildet ab GUN_FROM Kampfeinheiten aus Überschuss einen Kampfhubschraub
   easy.gunships(easy.snapshot());
   assert.ok(!queued(), 'Leicht: keiner');
   ai.gunships(ai.snapshot());
+  assert.ok(!queued(), 'ohne gesehene Gegner nahe Stadt oder FOBs: keiner (Paket „Hubschrauber im Gefecht“)');
+  const raider = g.spawnUnit('rifleman', 1, m.x + 300, m.y + 300);
+  ai.gunships({ ...ai.snapshot(), enemies: [raider] });
   assert.ok(queued(), 'Normal: Kampfhubschrauber in Ausbildung');
+});
+
+test('KI-Kampfhubschrauber: wartet am Heliport, startet gegen Gegner nahe der eigenen Stadt, landet ohne Ziel (Paket „Hubschrauber im Gefecht“)', async () => {
+  const { AI } = await import('../js/ai/ai.js');
+  const g = new Game({ seed: 3 });
+  const { m } = heliBase(g);
+  const ai = new AI(g, 0, 'normal');
+  const u = g.spawnUnit('gunship', 0, m.x + 80, m.y + 80);
+  u.heli = { home: 'pad', phase: 'landed', t: 0, alt: 0 };
+  const pad = { id: 'pad', alive: true, x: u.x, y: u.y };
+  const get = g.getEntity.bind(g);
+  g.getEntity = (id) => (id === 'pad' ? pad : get(id));
+  const sent = [];
+  const issue = g.issue.bind(g);
+  g.issue = (t, cmd) => (sent.push(cmd), issue(t, cmd));
+  const tick = (enemies) => {
+    ai.memo = {};
+    ai.gunshipOps({ ...ai.snapshot(), enemies });
+  };
+  tick([]);
+  assert.deepEqual(sent, [], 'ohne Gegner bleibt er stehen');
+  const raider = g.spawnUnit('tank', 1, m.x + 200, m.y + 150);
+  tick([raider]);
+  assert.equal(sent.at(-1)?.type, 'attack', 'Gegner an der Hauptstadt: Angriff');
+  assert.equal(sent.at(-1).targetId, raider.id);
+  // in der Luft ohne Ziel: Landung
+  sent.length = 0;
+  u.heli.phase = 'air';
+  u.order = { type: 'idle', x: u.x, y: u.y, targetId: null };
+  tick([]);
+  assert.equal(sent.at(-1)?.type, 'land');
 });

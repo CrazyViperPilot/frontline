@@ -1,8 +1,11 @@
-# Symbol-Index render (Teil 3 von 4, marks.js bis works.js)
+# Symbol-Index render (Teil 3 von 4, marks.js bis ways.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
 ## marks.js (Fortsetzung)
+- drawMoveRing(ctx, x, y, k, z, iso) – Wegziel am Boden (Weltkoordinaten auf der Bodenebene): Ring mit dunklem Saum wä…
+- drawSlotMark(ctx, x, y, z, alpha) – Formationsplatz am Boden: kleiner grüner Punkt mit dunklem Rand und hellem Kern…
+- strokeTrail(ctx, color, w, dash) – Linie mit dunklem Saum: der Aufrufer baut den Pfad (beginPath, moveTo/lineTo),…
 - drawArrowHead(ctx, x, y, ang, s, color, px) – Pfeilspitze am Boden: Spitze bei (x, y) in Richtung ang, Länge s; Füllung mit d…
 - drawFootRing(ctx, x, y, r, color, px) – Ring am Boden um einen Punkt (Anfang einer Route, Fuß des Sammelpunkts): dunkle…
 - drawRallyFlag(ctx, x, y, f) – Sammelpunkt-Fahne (einmal gemalt, Bildschirmpixel): Mast mit Knauf und ein gold…
@@ -11,6 +14,11 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - setMilWalls(list) – Mauern und Tore merken (je Bild, für die Verbindungen zu den Nachbarn)
 - drawMilIso(ctx, cam, b, color) – Iso-Bild eines Militärgebäudes (Ankerpunkt = Mitte des Grundrisses)
 - drawMilTop(ctx, b, color, zoom) – 2D von oben (Kamera-Transformation gesetzt, Weltkoordinaten)
+
+## milprops.js (17 KB)
+- isMilSingle(kind) – Gibt es ein Einzelstück-Modell für diese Art?
+- milModel(kind, v, d, w, rubble, flag, open) – Körper eines Einzelstücks in Modellrichtung (x entlang der Länge)
+- move
 
 ## minimap.js (11 KB)
 - class Minimap
@@ -160,13 +168,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - patternMatrix(u) – Transformation eines Musters: flach (Weltkoordinaten) oder auf die Iso-Achsen u…
 - invalidateWays() – Karte wurde an Ort und Stelle verändert (Editor): Feldwege, Gleise und Felder b…
 - drawWays(ren, ctx, season) – Feldwege und Gleise unter allem anderen (direkt nach dem Boden)
-- drawCityRails(ren, ctx, list, key, season) – Gleise der Stadt zeichnen, mit denselben Farben und Maßen wie die Gleise der Ka…
-
-## weatherfx.js (9.6 KB)
-- windDrift(t) – Weg des Windes bis zur Zeit t (px, Integral von 14 + 22 · Böe): Flocken treiben…
-- drawWeather(ctx, weather, cssW, cssH, now, cam) – Wetter über die Welt zeichnen (ctx in CSS-Pixeln, Transform = dpr)
-
-## works.js (82 KB)
-- WORKS_KINDS
-- WORKS_GROUND – Boden unter dem fertigen Werk (sichtbar am Rand des Grundstücks)
-- shadowRound(g, u, v, r, h, a) – Schatten eines runden Bauteils nach links unten (wie shadow() für Quader, nach…

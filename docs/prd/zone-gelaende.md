@@ -206,6 +206,32 @@ Werte je Art in `js/data/props.js` (Tabelle unten), Regeln in `js/game/props.js`
 | Betonmauer | alle | nein | 60 % / 30 % | ja | 600 | Schuttwall: hält Radfahrzeuge auf, 35 % Deckung |
 | Bruchsteinmauer | alle | ja | 50 % / 15 % | nein | 300 | Trümmer: 25 % Deckung |
 
+**Militär** (Gruppe „Militär“ im Editor; Kacheln oben, Einzelstücke unten mit Drehung in 45°-Schritten):
+
+| Art | hält auf | Kette walzt nieder | Deckung Inf. / Fz. | verdeckt Sicht | Treffer­punkte | danach / Besonderes |
+|---|---|---|---|---|---|---|
+| Sandsackwall | alle | ja | 55 % / 20 % | nein | 250 | Trümmer: 25 % Deckung |
+| Hesco-Barriere | alle | nein | 70 % / 40 % | nein | 800 | Sandhaufen: hält Radfahrzeuge auf, 30 % Deckung |
+| Betonsperre (Jersey) | Fahrzeuge | nein | 40 % / 25 % | nein | 500 | Brocken: 15 % Deckung |
+| Stacheldrahtrolle | alle | ja | – | nein | 30 | weg |
+| Panzersperre (Tschechenigel) | Fahrzeuge | nein | 10 % / – | nein | 400 | weg; je Zelle ein Igel, ohne Verbindung |
+| Sandsack-Stellung (Halbkreis) | Fahrzeuge | ja | 60 % / – | nein | 300 | Infanterie darin hat Deckung nach allen Seiten |
+| Tarnnetz | niemanden | ja | – | nein | 40 | Einheiten darunter getarnt (wie Scharfschützen) |
+| Zelt | alle | ja | 10 % / – | ja | 80 | Fahne; eingefallene Plane |
+| Funkmast | alle | nein | – | nein | 300 | Fahne; umgestürzt |
+| Munitionskisten | alle | ja | 35 % / – | nein | 60 | explodiert (70 px) |
+| Treibstofftank | alle | nein | 40 % / 30 % | nein | 200 | explodiert (110 px); ausgebrannte Hülle sperrt weiter |
+| Kontrollpunkt-Häuschen | alle | nein | 50 % / 20 % | ja | 400 | Fahne; Mauerreste halten Radfahrzeuge auf |
+| Schranke | Fahrzeuge (zu) | ja | – | nein | 40 | offen: hält niemanden auf |
+
+- **Fahnen:** Zelt, Funkmast und Kontrollpunkt tragen eine Fahne. Im Editor einstellbar (neutral weiß, Blau, Rot, Grün, Gelb); in
+  der Eroberung zeigt sie den Besitzer der nächsten Flagge (bis 700 px, grau-weiß solange niemand sie hält).
+- **Explosion:** Zerstört Beschuss Munitionskisten oder einen Treibstofftank, explodieren sie im nächsten Schritt wie eine Granate
+  ohne Team (trifft alle, auch andere Props: Kettenreaktion möglich). Überfahrene Kisten explodieren nicht.
+- **Tarnnetz:** Bodeneinheiten unter einem heilen Netz erkennt der Gegner nur aus 160 px Nähe oder 4 s nach einem Schuss.
+- **Zufallskarten:** An der Hälfte der Kistenpaare steht ein kleines Feldlager (Zelt, Munitionskisten, Sandsack-Stellung) 110 bis 170 px
+  um die Kiste, gespiegelt; zusammen mit den Feldern im Mittel rund 32 Props je Karte.
+
 - **Bewegung:** Infanterie, Radfahrzeuge und Kettenfahrzeuge (`crush` in `units.js`: Kampfpanzer, Schützenpanzer, Bergepanzer,
   Flakpanzer, Gepard, Panzerhaubitze, Raketenwerfer, Bagger, Brückenleger) suchen getrennte Wege. Ein Kettenfahrzeug fährt durch
   überfahrbare Kacheln, die Kachel ist danach weg (die Lücke ist für alle frei). Luftfahrzeuge kümmern sich nicht darum.
@@ -218,12 +244,13 @@ Werte je Art in `js/data/props.js` (Tabelle unten), Regeln in `js/game/props.js`
   und Besatzer (30) sehen darüber. Auch auf flachen Karten.
 - **Zerstörung:** Granaten, Raketen und Bomben treffen Kacheln im Umkreis wie Gebäude (Splash). Ohne Trefferpunkte wird die Kachel
   zu Trümmern (Werte oben) oder ist weg. Spielstände speichern den Zustand.
-- **Editor:** Werkzeug „Zaun, Mauer“ (Gruppe Deko): rechts die Art wählen, tippen setzt eine Kachel, ziehen eine Linie mit höchstens
-  einer Ecke. Mit „Wählen“: Tor (keins, zu, offen), Drehen (einzelne Kachel), Art wechseln. Höchstens 6000 Kacheln je Karte.
+- **Editor:** Werkzeug „Deko“: rechts die Art wählen, tippen setzt eine Kachel, ziehen eine Linie mit höchstens einer Ecke;
+  Einzelstücke: tippen setzt (Drehung rechts vorher wählen), ziehen verschiebt. Mit „Wählen“: Tor bzw. Schranke (zu, offen), Drehen,
+  Art wechseln, Fahne. Höchstens 6000 Props je Karte.
 - **Zufallskarten:** Mit eigenem Zufall (die übrige Karte eines Seeds bleibt gleich) bekommen 30 % der geraden Äcker an einer Seite
   ein Stück von 4 bis 9 Kacheln (Bruchsteinmauer, Holzzaun oder Maschendraht, lange Zäune mit offenem Tor), punktsymmetrisch, abseits
   von Straßen, Feldwegen, Bauland, Zone, Kisten und Brückenzufahrten. Weiden haben schon ihren gemalten Koppelzaun. Sperrt das die
-  Verbindung der Startpunkte, entfallen die Props. Im Mittel rund 27 Kacheln je Karte.
+  Verbindung der Startpunkte, entfallen die Props.
 - **Bild:** Gleicher Painter und gleiches Licht wie Einheiten und Gebäude, Schatten scharf nach links unten (2D nach rechts unten),
   Schnee auf den Oberkanten im Winter, Farbe je Gebiet, Einzelheiten je Kachel. Vorschau: `node tools/propspreview.mjs`.
 

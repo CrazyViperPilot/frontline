@@ -68,7 +68,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - toB64
 - fromB64
 
-## editor/editor.js (82 KB)
+## editor/editor.js (85 KB)
 - (keine Exporte)
 
 ## main.js (27 KB)

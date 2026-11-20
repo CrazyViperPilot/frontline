@@ -8,8 +8,9 @@ import { hashXY } from './color.js';
 import { ISO_K } from './camera.js';
 import { PROPS } from '../data/props.js';
 import { BALANCE } from '../data/balance.js';
-import { propIndex, forgetPropIndex, PROP_STATE } from '../game/props.js';
+import { propIndex, forgetPropIndex, PROP_STATE, GATE } from '../game/props.js';
 import { fenceModel, isFenceKind, LINE_DIRS } from './fences.js';
+import { milModel, isMilSingle } from './milprops.js';
 
 const { paintSolids, boundsOf, viewAngle, sectorOf } = PAINT;
 const TAU = Math.PI * 2;
@@ -23,6 +24,8 @@ const SHADOW_ISO = 0.28; // Iso: Schatten je Höhe nach links unten (wie isokit.
 const SHADOW_TOP = 0.22; // 2D: je Höhe nach rechts unten (wie isokit.shadowTop)
 const SHADOW_A = 0.26; // Deckkraft der Schatten (wie Infanterie, unitpaint.js)
 const EMPTY = [];
+const EIGHTHS = 8; // Drehungen eines Einzelstücks (rot × 45°) und Bildrichtungen in Iso
+const NEUTRAL_FLAG = '#e8e6dc';
 
 // ---------- Aussehen ----------
 
@@ -48,14 +51,15 @@ export function propLooksOf(props, st = null, version = 0) {
     const c = Math.floor(p.x / TILE);
     const r = Math.floor(p.y / TILE);
     let mask = 0;
-    if (K.line) {
+    if (K.line && K.connect !== false) {
       LINE_DIRS.forEach(([dc, dr], q) => {
         const nc = c + dc;
         const nr = r + dr;
         if (nc < 0 || nr < 0 || nc >= COLS || nr >= ROWS) return;
         for (const j of cells.get(nr * COLS + nc) ?? EMPTY) {
           const sj = state(j);
-          if (!PROPS.kinds[props[j].kind]?.line || sj === PROP_STATE.gone || (s === PROP_STATE.ok && sj !== PROP_STATE.ok)) continue;
+          const Kj = PROPS.kinds[props[j].kind];
+          if (!Kj?.line || Kj.connect === false || sj === PROP_STATE.gone || (s === PROP_STATE.ok && sj !== PROP_STATE.ok)) continue;
           mask |= 1 << q;
         }
       });
@@ -63,7 +67,11 @@ export function propLooksOf(props, st = null, version = 0) {
     const along = (p.rot ?? 0) % 4 >= 2 ? 'y' : 'x'; // Drehung in Achteln: 2 und 6 = quer
     // v: Farbe je Gebiet (eine Zaunlinie sieht gleich aus), d: Einzelheiten je Kachel (Steine, fehlende Latte)
     const v = hashXY(Math.floor(p.x / AREA), Math.floor(p.y / AREA)) % VARIANTS;
-    list.push({ i, x: p.x, y: p.y, kind: p.kind, mask, along, gate: p.gate ?? 0, rubble: s === PROP_STATE.rubble, v, d: hashXY(p.x, p.y) % DETAILS });
+    // Einzelstücke: Drehung a (Bogenmaß, Achtel), Fahne (flag) mit eingestellter Farbe team
+    list.push({
+      i, x: p.x, y: p.y, kind: p.kind, mask, along, gate: p.gate ?? 0, rubble: s === PROP_STATE.rubble, v, d: hashXY(p.x, p.y) % DETAILS,
+      single: !K.line, a: K.line ? 0 : ((p.rot ?? 0) * TAU) / EIGHTHS, flag: !!K.flag, team: p.team ?? -1,
+    });
   });
   lookCache.set(props, { st, v: version, list });
   return list;
@@ -83,19 +91,45 @@ export const propLooks = (g) => propLooksOf(g.map.props, g.propSt ?? null, g.pro
 
 const models = new Map(); // Schlüssel → { S }
 
-function lookKey(o, season) {
-  return `${o.kind}|${o.mask}|${o.along}|${o.gate}|${o.rubble ? 1 : 0}|${o.v}|${o.d}|${season === 'winter' ? 'w' : 's'}`;
+function lookKey(o, season, flag) {
+  return `${o.kind}|${o.mask}|${o.along}|${o.gate}|${o.rubble ? 1 : 0}|${o.v}|${o.d}|${season === 'winter' ? 'w' : 's'}|${flag ?? ''}`;
 }
 
-function modelOf(o, season) {
-  const key = lookKey(o, season);
+function modelOf(o, season, flag = null) {
+  const key = lookKey(o, season, flag);
   let m = models.get(key);
   if (!m) {
-    const S = isFenceKind(o.kind) ? fenceModel(o.kind, o.mask, o.along, o.gate, o.rubble, o.v, o.d, season === 'winter') : [];
+    const w = season === 'winter';
+    let S = [];
+    if (isFenceKind(o.kind)) S = fenceModel(o.kind, o.mask, o.along, o.gate, o.rubble, o.v, o.d, w);
+    else if (isMilSingle(o.kind)) S = milModel(o.kind, o.v, o.d, w, o.rubble, flag, o.gate === GATE.open);
     m = { S, key };
     models.set(key, m);
   }
   return m;
+}
+
+/**
+ * Farbe der Fahne eines Props: in der Eroberung der Besitzer der nächsten Flagge (höchstens PROPS.flagReach px), sonst die im Editor
+ * eingestellte Teamfarbe, sonst weiß. null, wenn die Art keine Fahne hat.
+ */
+export function propFlagColor(g, o) {
+  if (!o.flag) return null;
+  const flags = g?.conquest?.flags;
+  if (flags?.length) {
+    let best = null;
+    let bd = PROPS.flagReach;
+    for (const f of flags) {
+      const dd = Math.hypot(f.x - o.x, f.y - o.y);
+      if (dd <= bd) {
+        bd = dd;
+        best = f;
+      }
+    }
+    if (best && best.owner >= 0) return BALANCE.teamColors[best.owner] ?? NEUTRAL_FLAG;
+    if (best) return NEUTRAL_FLAG;
+  }
+  return o.team >= 0 ? (BALANCE.teamColors[o.team] ?? NEUTRAL_FLAG) : NEUTRAL_FLAG;
 }
 
 /** Punkt eines Körpers um yaw gedreht und in Lichtrichtung auf den Boden gelegt (kx, ky je Höhe). */
@@ -156,20 +190,23 @@ function shadowBounds(m, yaw, iso, kx, ky) {
 
 // ---------- Iso ----------
 
-/** Blickrichtung der Kamera als Drehung der Modelle (Props stehen an den Achsen der Karte). */
-function viewYaw(cam) {
-  const sec = sectorOf(viewAngle(cam, 0), 4);
-  return { sec, yaw: (sec / 4) * TAU };
+/**
+ * Blickrichtung: Kacheln stehen an den Achsen der Karte (4 Bilder je Drehung der Kamera), Einzelstücke sind um o.a gedreht
+ * (8 Richtungen).
+ */
+function viewYaw(cam, o) {
+  const n = o.single ? EIGHTHS : 4;
+  const sec = sectorOf(viewAngle(cam, o.single ? o.a : 0), n);
+  return { sec: `${n}.${sec}`, yaw: (sec / n) * TAU };
 }
 
-/** Prop in Iso (Fuß am Weltpunkt der Zellmitte). false = noch kein Bild (Budget dieses Bilds). */
-export function drawPropIso(ctx, cam, o, season = 'summer') {
-  const m = modelOf(o, season);
+/** Prop in Iso (Fuß am Weltpunkt). flag: Farbe der Fahne (propFlagColor). Ohne Bild (Budget dieses Bilds) direkt gemalt. */
+export function drawPropIso(ctx, cam, o, season = 'summer', flag = null) {
+  const m = modelOf(o, season, flag);
   if (!m.S.length) return true;
-  const { sec, yaw } = viewYaw(cam);
+  const { sec, yaw } = viewYaw(cam, o);
   const f = cam.zoom;
   const e = sprite(`mp|${m.key}|${sec}`, f * spriteDpr(), boundsOf(m, m.S, yaw, true), (cx, s) => paintSolids(cx, m.S, yaw, { iso: true, s }));
-  if (e === false) return false;
   const p = cam.worldToScreen(o.x, o.y);
   if (e) blit(ctx, e, p.x, p.y, f);
   else {
@@ -183,9 +220,9 @@ export function drawPropIso(ctx, cam, o, season = 'summer') {
 
 /** Iso: Schatten eines Props, scharf begrenzt nach links unten. */
 export function drawPropShadowIso(ctx, cam, o, season = 'summer') {
-  const m = modelOf(o, season);
+  const m = modelOf(o, season, o.flag ? NEUTRAL_FLAG : null);
   if (!m.S.length) return;
-  const { sec, yaw } = viewYaw(cam);
+  const { sec, yaw } = viewYaw(cam, o);
   const f = cam.zoom;
   const e = sprite(`mps|${m.key}|${sec}`, f * spriteDpr(), shadowBounds(m, yaw, true, 0, SHADOW_ISO), (cx, s) => paintShadow(cx, m.S, yaw, s, true, 0, SHADOW_ISO));
   if (!e) return;
@@ -197,27 +234,34 @@ export function drawPropShadowIso(ctx, cam, o, season = 'summer') {
 
 // ---------- 2D von oben ----------
 
-/** 2D (Weltkoordinaten): erst alle Schatten, dann alle Props, damit kein Schatten über einem Nachbarn liegt. */
-export function drawPropsTop(ctx, looks, inRect, zoom = 1, season = 'summer') {
+/**
+ * 2D (Weltkoordinaten): erst alle Schatten, dann alle Props, damit kein Schatten über einem Nachbarn liegt. flagOf(o): Farbe der
+ * Fahne (propFlagColor) oder fehlt (weiß).
+ */
+export function drawPropsTop(ctx, looks, inRect, zoom = 1, season = 'summer', flagOf = null) {
   const sc = zoom * spriteDpr();
-  const shown = looks.filter((o) => inRect(o.x, o.y, TILE));
+  const shown = looks.filter((o) => inRect(o.x, o.y, o.single ? TILE * 2 : TILE));
+  // Einzelstücke: Schatten je Drehung (der Schatten fällt immer nach rechts unten), Bild gedreht
+  const ang = (o) => (o.single ? o.a : 0);
   ctx.globalAlpha = SHADOW_A;
   for (const o of shown) {
-    const m = modelOf(o, season);
+    const m = modelOf(o, season, o.flag ? NEUTRAL_FLAG : null);
     if (!m.S.length) continue;
-    const e = sprite(`mpts|${m.key}`, sc, shadowBounds(m, 0, false, SHADOW_TOP, SHADOW_TOP), (cx, s) => paintShadow(cx, m.S, 0, s, false, SHADOW_TOP, SHADOW_TOP));
+    const a = ang(o);
+    const e = sprite(`mpts|${m.key}|${Math.round(a * 100)}`, sc, shadowBounds(m, a, false, SHADOW_TOP, SHADOW_TOP), (cx, s) => paintShadow(cx, m.S, a, s, false, SHADOW_TOP, SHADOW_TOP));
     if (e) blit(ctx, e, o.x, o.y, 1);
   }
   ctx.globalAlpha = 1;
   for (const o of shown) {
-    const m = modelOf(o, season);
+    const m = modelOf(o, season, o.flag ? (flagOf?.(o) ?? NEUTRAL_FLAG) : null);
     if (!m.S.length) continue;
-    const e = sprite(`mpt|${m.key}`, sc, boundsOf(m, m.S, 0, false), (cx, s) => paintSolids(cx, m.S, 0, { iso: false, s }));
+    const a = ang(o);
+    const e = sprite(`mpt|${m.key}|${Math.round(a * 100)}`, sc, boundsOf(m, m.S, a, false), (cx, s) => paintSolids(cx, m.S, a, { iso: false, s }));
     if (e) blit(ctx, e, o.x, o.y, 1);
-    else if (e === null) {
+    else {
       ctx.save();
       ctx.translate(o.x, o.y);
-      paintSolids(ctx, m.S, 0, { iso: false, s: 1 });
+      paintSolids(ctx, m.S, a, { iso: false, s: 1 });
       ctx.restore();
     }
   }

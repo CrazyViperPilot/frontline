@@ -60,7 +60,7 @@ const TOOLS = [
   ['forest', 'Wald', 'Natur', '♠', 'Tippen setzt einen Wald (blockiert)'],
   ['rock', 'Fels', 'Natur', '●', 'Tippen setzt einen Felsen (blockiert)'],
   ['car', 'Auto', 'Natur', '▰', 'Tippen setzt ein geparktes Auto (Dekoration)'],
-  ['prop', 'Zaun, Mauer', 'Deko', '⧉', 'Rechts die Art wählen. Tippen setzt eine Kachel, Ziehen eine Linie mit Ecke; Kacheln verbinden sich von selbst (Ecke, T-Stück, Kreuz, Ende). Tor: Kachel wählen, „Tor“'],
+  ['prop', 'Deko', 'Deko', '⧉', 'Rechts die Art wählen. Zäune, Mauern, Sandsäcke …: Tippen setzt eine Kachel, Ziehen eine Linie mit Ecke; Kacheln verbinden sich von selbst. Einzelstücke (Zelt, Tank …): Tippen setzt, Ziehen verschiebt, rechts „Drehen“. Tor, Fahne: mit „Wählen“ antippen'],
   ['raise', 'Heben', 'Gelände', '▲', 'Gedrückt halten oder ziehen hebt das Gelände (Pinsel rechts einstellen)'],
   ['lower', 'Senken', 'Gelände', '▼', 'Gedrückt halten oder ziehen senkt das Gelände, unter dem Wasserspiegel entsteht ein See'],
   ['smooth', 'Glätten', 'Gelände', '∿', 'Ziehen glättet Kanten und steile Hänge'],
@@ -129,9 +129,10 @@ const st = {
   touches: new Map(),
   pinch: null,
   carVertical: false,
-  propKind: 'fence_wood', // Art für das Werkzeug „Zaun, Mauer“ (js/data/props.js)
+  propKind: 'fence_wood', // Art für das Werkzeug „Deko“ (js/data/props.js)
   propSig: '', // Prüfsumme der Props: ändert sie sich, werden Zellindex und Aussehen neu berechnet (propSync)
   propVer: 0,
+  propRot: 0, // Drehung des nächsten Einzelstücks in Achteln (45°)
   fieldCrop: 'wheat', // Frucht für das nächste neue Feld (wheat, green, soil, rape oder pasture)
   brush: { size: 2, power: 1 }, // Indizes in BRUSH_SIZES und BRUSH_POWER
   reliefImg: null, // { relief, canvas }: Geländebild der 2D-Ansicht
@@ -183,7 +184,7 @@ function placePropLine(a, b) {
 function propSync() {
   const list = st.map.props ?? [];
   let h = list.length;
-  for (const p of list) h = (Math.imul(h, 31) + p.x * 7 + p.y * 13 + (p.gate ?? 0) + (p.rot ?? 0) * 3 + p.kind.length) | 0;
+  for (const p of list) h = (Math.imul(h, 31) + p.x * 7 + p.y * 13 + (p.gate ?? 0) + (p.rot ?? 0) * 3 + (p.team ?? -1) * 17 + p.kind.length) | 0;
   const sig = `${list.length}|${h}|${list.map((p) => p.kind[0]).join('')}`;
   if (sig === st.propSig) return;
   st.propSig = sig;
@@ -367,7 +368,16 @@ function pickAt(wx, wy, sx = null, sy = null) {
   const pr = Math.floor(wy / TILE_PX);
   for (let i = (m.props ?? []).length - 1; i >= 0; i--) {
     const o = m.props[i];
-    if (Math.floor(o.x / TILE_PX) === pc && Math.floor(o.y / TILE_PX) === pr) return { k: 'prop', o };
+    const K = PROPS.kinds[o.kind];
+    if (K?.size) {
+      // Einzelstück: Punkt in der gedrehten Grundfläche
+      const a = ((o.rot ?? 0) * Math.PI) / 4;
+      const dx = wx - o.x;
+      const dy = wy - o.y;
+      const u = dx * Math.cos(a) + dy * Math.sin(a);
+      const v = -dx * Math.sin(a) + dy * Math.cos(a);
+      if (Math.abs(u) <= K.size[0] / 2 + tol && Math.abs(v) <= Math.max(K.size[1], 16) / 2 + tol) return { k: 'prop', o };
+    } else if (Math.floor(o.x / TILE_PX) === pc && Math.floor(o.y / TILE_PX) === pr) return { k: 'prop', o };
   }
   const circ = (k, list, grow = 0) => {
     for (let i = list.length - 1; i >= 0; i--) {
@@ -847,7 +857,23 @@ function draw() {
   }
   drawGhost(world, px);
   // Vorschau einer Zaunlinie: die Zellen, die entstehen
-  const pg = st.gesture?.type === 'propline' ? propPath(st.gesture.a, st.gesture.b) : st.tool === 'prop' && st.hover && st.pointer && !st.gesture ? [cellAt(st.pointer.x, st.pointer.y)] : [];
+  const singleTool = st.tool === 'prop' && !PROPS.kinds[st.propKind].line;
+  if (singleTool && st.hover && st.pointer && !st.gesture) {
+    const [l, dpt] = PROPS.kinds[st.propKind].size;
+    const x = snap(st.pointer.x);
+    const y = snap(st.pointer.y);
+    world(x, y);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate((st.propRot * Math.PI) / 4);
+    ctx.fillStyle = 'rgba(255,230,150,0.35)';
+    ctx.strokeStyle = 'rgba(255,230,150,0.9)';
+    ctx.lineWidth = px;
+    ctx.fillRect(-l / 2, -dpt / 2, l, dpt);
+    ctx.strokeRect(-l / 2, -dpt / 2, l, dpt);
+    ctx.restore();
+  }
+  const pg = st.gesture?.type === 'propline' ? propPath(st.gesture.a, st.gesture.b) : st.tool === 'prop' && !singleTool && st.hover && st.pointer && !st.gesture ? [cellAt(st.pointer.x, st.pointer.y)] : [];
   for (const { c, r } of pg) {
     world(c * TILE_PX + TILE_PX / 2, r * TILE_PX + TILE_PX / 2);
     ctx.fillStyle = 'rgba(255,230,150,0.35)';
@@ -1389,6 +1415,18 @@ canvas.addEventListener('pointerdown', (e) => {
     const a = t === 'river' ? { x: Math.round(w.x), y: Math.round(w.y) } : snapRoad(w.x, w.y, t);
     const lw = lineWidth(t);
     st.gesture = { type: 'line', kind: t, dirt: t === 'dirt', w: lw, x1: a.x, y1: a.y, x2: a.x, y2: a.y };
+  } else if (t === 'prop' && !PROPS.kinds[st.propKind].line) {
+    // Einzelstück: setzen, Ziehen verschiebt es im 8-px-Raster
+    const list = listOf('prop');
+    if (list.length >= MAX_PROPS) say(`Höchstens ${MAX_PROPS} Props je Karte`, true);
+    else {
+      pushHistory();
+      const o = { kind: st.propKind, x: clamp(snap(w.x), 0, W - 1), y: clamp(snap(w.y), 0, H - 1), ...(st.propRot ? { rot: st.propRot } : {}) };
+      list.push(o);
+      st.gesture = { type: 'propmove', o, x: w.x, y: w.y };
+      updateInfo();
+    }
+    st.needDraw = true;
   } else if (t === 'prop') {
     const a = cellAt(w.x, w.y);
     st.gesture = { type: 'propline', a, b: a };
@@ -1493,6 +1531,12 @@ window.addEventListener('pointermove', (e) => {
     g.y = w.y;
     st.needDraw = true;
     updateInfo();
+  } else if (g.type === 'propmove') {
+    g.o.x = clamp(g.o.x + snap(w.x) - snap(g.x), 0, W - 1);
+    g.o.y = clamp(g.o.y + snap(w.y) - snap(g.y), 0, H - 1);
+    g.x = w.x;
+    g.y = w.y;
+    st.needDraw = true;
   } else if (g.type === 'propline') {
     const b = cellAt(w.x, w.y);
     if (b.c !== g.b.c || b.r !== g.b.r) {
@@ -1538,6 +1582,10 @@ function endPointer(e) {
   st.needDraw = true; // Boden der Iso-Ansicht wird erst ohne laufende Geste neu gebacken
   if (!g) return;
   if (g.type === 'move' || g.type === 'place') settleProp(st.sel);
+  if (g.type === 'propmove') {
+    updateInfo();
+    return;
+  }
   if (g.type === 'propline' && e.type !== 'pointercancel') {
     pushHistory();
     placePropLine(g.a, g.b);
@@ -1674,7 +1722,8 @@ function showInspector() {
       const btns = Object.entries(PROPS.kinds).filter(([, k]) => k.group === gk).map(([id, k]) => `<button data-p="${id}" aria-pressed="${id === st.propKind}">${k.name}</button>`);
       return `<div class="muted small">${gname}</div><div class="row wrap">${btns.join('')}</div>`;
     });
-    el.innerHTML = `<h3>Zaun, Mauer: ${K.name}</h3>${groups.join('')}<div class="muted small">${propRulesText(K)}</div>`;
+    const turn = K.line ? '' : `<div class="row"><button data-b="prot">Drehen: ${st.propRot * 45}°</button></div>`;
+    el.innerHTML = `<h3>Deko: ${K.name}</h3>${groups.join('')}${turn}<div class="muted small">${propRulesText(K)}</div>`;
     el.hidden = false;
     return;
   }
@@ -1745,8 +1794,11 @@ function showInspector() {
   } else if (s.k === 'prop') {
     const K = PROPS.kinds[s.o.kind];
     const gate = { 0: 'kein Tor', [GATE.closed]: 'Tor zu', [GATE.open]: 'Tor offen' }[s.o.gate ?? 0];
-    rows.push(`<div class="row">${K?.gate ? `<button data-i="gate">${gate}</button>` : ''}<button data-i="turn">Drehen</button><button data-i="pkind">Art</button></div>`);
-    rows.push(`<div class="muted small">${K ? propRulesText(K) : ''} Tor nur in geraden Stücken; offen hält es niemanden auf. „Drehen“ gilt für einzelne Kacheln ohne Nachbarn.</div>`);
+    const gname = K?.line ? gate : { 0: 'zu', [GATE.closed]: 'zu', [GATE.open]: 'offen' }[s.o.gate ?? 0];
+    const team = (s.o.team ?? -1) >= 0 ? BALANCE.teamNames[s.o.team] : 'neutral';
+    rows.push(`<div class="row">${K?.gate ? `<button data-i="gate">${K.line ? gname : `Schranke ${gname}`}</button>` : ''}<button data-i="turn">Drehen</button><button data-i="pkind">Art</button></div>`);
+    if (K?.flag) rows.push(`<div class="row"><button data-i="pteam">Fahne: ${team}</button></div>`);
+    rows.push(`<div class="muted small">${K ? propRulesText(K) : ''} ${K?.line ? 'Tor nur in geraden Stücken; offen hält es niemanden auf. „Drehen“ gilt für einzelne Kacheln ohne Nachbarn.' : `Drehen: 45° je Druck (jetzt ${(s.o.rot ?? 0) * 45}°).${K?.flag ? ' Fahne: in der Eroberung zeigt sie den Besitzer der nächsten Flagge.' : ''}`}</div>`);
   } else if (s.k === 'crate') {
     const d = st.map.spawns.map((sp) => Math.round(Math.hypot(sp.x - s.o.x, sp.y - s.o.y)));
     rows.push(`<div class="muted small">Ziehen verschiebt die Kiste. Abstand zu den Starts: ${d[0]} / ${d[1]} px. Auf freien Boden setzen (sonst rückt sie im Spiel zur nächsten freien Stelle).</div>`);
@@ -1787,12 +1839,17 @@ function inspectorAction(a) {
     if (next) o.gate = next;
     else delete o.gate;
   } else if (a === 'pkind') {
-    const kinds = Object.keys(PROPS.kinds).filter((k) => PROPS.kinds[k].group === PROPS.kinds[o.kind]?.group);
+    const kinds = Object.keys(PROPS.kinds).filter((k) => PROPS.kinds[k].group === PROPS.kinds[o.kind]?.group && !!PROPS.kinds[k].line === !!PROPS.kinds[o.kind]?.line);
     o.kind = kinds[(kinds.indexOf(o.kind) + 1) % kinds.length];
     if (!PROPS.kinds[o.kind].gate) delete o.gate;
+    if (!PROPS.kinds[o.kind].flag) delete o.team;
     st.propKind = o.kind;
+  } else if (a === 'pteam') {
+    const t = (o.team ?? -1) + 1;
+    if (t >= BALANCE.teamNames.length) delete o.team;
+    else o.team = t;
   } else if (a === 'turn' && s.k === 'prop') {
-    o.rot = ((o.rot ?? 0) + 2) & 7; // Achtel: um 90°
+    o.rot = ((o.rot ?? 0) + (PROPS.kinds[o.kind]?.line ? 2 : 1)) & 7; // Achtel: Kacheln um 90°, Einzelstücke um 45°
     if (!o.rot) delete o.rot;
   } else if (a === 'turn') {
     if (s.k === 'car') o.vertical = !o.vertical;
@@ -1863,12 +1920,18 @@ $('[data-insp]').addEventListener('click', (e) => {
   if (p) brushAction(p.dataset.b);
   const k = e.target.closest('[data-p]');
   if (k && PROPS.kinds[k.dataset.p]) {
-    st.propKind = k.dataset.p; // Art für das Werkzeug „Zaun, Mauer“
+    st.propKind = k.dataset.p; // Art für das Werkzeug „Deko“
     showInspector();
   }
 });
 
 function brushAction(a) {
+  if (a === 'prot') {
+    st.propRot = (st.propRot + 1) & 7; // nächstes Einzelstück um 45° weiter gedreht
+    showInspector();
+    st.needDraw = true;
+    return;
+  }
   const br = st.brush;
   if (a === 'size+') br.size = Math.min(BRUSH_SIZES.length - 1, br.size + 1);
   else if (a === 'size-') br.size = Math.max(0, br.size - 1);
@@ -1891,7 +1954,7 @@ $('[data-tools]').addEventListener('click', (e) => {
 function updateInfo() {
   const d = describeMap(st.map);
   $('[data-msg]').classList.remove('bad');
-  $('[data-info]').textContent = `${d.buildings} Gebäude · ${d.roads} Straßen · ${d.trees} Bäume · ${d.obstacles} Hindernisse · ${st.map.town.fields.length} Felder · ${st.map.crates.length} Kisten · ${(st.map.props ?? []).length} Zaun- und Mauerkacheln`;
+  $('[data-info]').textContent = `${d.buildings} Gebäude · ${d.roads} Straßen · ${d.trees} Bäume · ${d.obstacles} Hindernisse · ${st.map.town.fields.length} Felder · ${st.map.crates.length} Kisten · ${(st.map.props ?? []).length} Deko`;
 }
 
 function setMap(map, { keepId = false } = {}) {

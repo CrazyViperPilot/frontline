@@ -244,6 +244,7 @@ function normProps(list) {
       y,
       ...(rot ? { rot } : {}),
       ...(K.gate && (p.gate === GATE.closed || p.gate === GATE.open) ? { gate: p.gate } : {}),
+      ...(K.flag && Number.isInteger(p.team) && p.team >= 0 && p.team < MAX_SPAWNS ? { team: p.team } : {}), // Fahne in Teamfarbe
     });
   }
   return out;

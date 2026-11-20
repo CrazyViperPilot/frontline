@@ -16,7 +16,7 @@ const SNOW = '#eef2f4';
 export const LINE_DIRS = [[1, 0], [0, 1], [-1, 0], [0, -1]]; // Bits 1, 2, 4, 8: Osten, Süden, Westen, Norden
 
 /** Zufallszahl 0 … 1 aus Variante und Zähler (fest je Kachel, kein Zufall zur Laufzeit). */
-const rnd = (v, k) => (hashXY(v * 131 + k, k * 7 + 3) % 1000) / 1000;
+export const rnd = (v, k) => (hashXY(v * 131 + k, k * 7 + 3) % 1000) / 1000;
 
 /**
  * Arm in Richtung q (0 Osten, 1 Süden, 2 Westen, 3 Norden) aus dem Arm nach Osten: gespiegelt statt gedreht, damit Latten, Riegel
@@ -34,7 +34,7 @@ function turn(solids, q) {
 }
 
 /** Körper um die Achse entlang x (ax 'x') bzw. y durch den Punkt (0, 0, z0) bzw. um z0 gekippt (Bruchplatten der Trümmer). */
-function tilt(so, ax, a, px, py, pz) {
+export function tilt(so, ax, a, px, py, pz) {
   const c = Math.cos(a);
   const sn = Math.sin(a);
   const R = (p) => {
@@ -49,7 +49,7 @@ function tilt(so, ax, a, px, py, pz) {
 }
 
 /** Schnee auf waagrechten Oberseiten (Winter). */
-const snowy = (w) => (w ? { top: { col: SNOW, at: 0.6 } } : {});
+export const snowy = (w) => (w ? { top: { col: SNOW, at: 0.6 } } : {});
 
 // ---------- Arten ----------
 // Je Art: arm(v, w) baut einen Arm entlang +x von 0 bis HALF, mid(v, w) das Mittelstück, gate(v, w) die Torpfosten bei ±GATE_AT
@@ -261,6 +261,11 @@ const STONE = {
 
 const KINDS = { fence_wood: WOOD, fence_metal: METAL, fence_wire: WIRE, wall_concrete: CONCRETE, wall_stone: STONE };
 
+/** Weitere Kachelarten anderer Module (Sandsäcke, Hesco … in milprops.js) mit arm/mid/rubble (gate/leaf nur mit Tor). */
+export function addLineKinds(defs) {
+  Object.assign(KINDS, defs);
+}
+
 /** Gibt es ein Bild für diese Art (Kachel aus diesem Modul)? */
 export const isFenceKind = (kind) => !!KINDS[kind];
 
@@ -274,6 +279,7 @@ export const fenceHeight = (kind) => KINDS[kind]?.h ?? 0;
 export function fenceModel(kind, mask, along, gate, rubble, v, d, w) {
   const D = KINDS[kind];
   if (!D) return [];
+  if (D.solo) return rubble ? [] : D.mid(v, w, d); // ohne Verbindung (Panzersperren): je Zelle ein Stück
   const straightX = mask === 0b0101 || (!mask && along === 'x') || mask === 0b0001 || mask === 0b0100;
   const straightY = mask === 0b1010 || (!mask && along === 'y') || mask === 0b0010 || mask === 0b1000;
   let arms = mask || (along === 'y' ? 0b1010 : 0b0101);
@@ -283,7 +289,7 @@ export function fenceModel(kind, mask, along, gate, rubble, v, d, w) {
     for (let q = 0; q < 4; q++) if (arms & (1 << q)) S.push(...turn(D.rubble(v, d * 4 + q), q));
     return S;
   }
-  if (gate && (straightX || straightY)) {
+  if (gate && D.gate && (straightX || straightY)) {
     const S = [...D.gate(v, w)];
     const len = GATE_AT - (kind === 'fence_wood' || kind === 'fence_wire' ? 1 : 2.4);
     for (const s of [-1, 1]) {

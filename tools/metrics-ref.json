@@ -1,86 +1,86 @@
 {
  "3": [
   {
-   "steel": 2798,
-   "mun": 3205,
-   "trained": 27,
-   "kills": 48,
+   "steel": 2601,
+   "mun": 2881,
+   "trained": 30,
+   "kills": 59,
    "fobs": 5,
-   "cells": 576,
+   "cells": 488,
    "houses": 4,
-   "storms": 0,
+   "storms": 8,
    "workRoutes": 0,
    "airDef": 0,
-   "points": 6
+   "points": 13
   },
   {
-   "steel": 2623,
-   "mun": 4335,
-   "trained": 27,
-   "kills": 58,
+   "steel": 2283,
+   "mun": 3417,
+   "trained": 30,
+   "kills": 48,
    "fobs": 5,
-   "cells": 657,
-   "houses": 3,
-   "storms": 1,
+   "cells": 625,
+   "houses": 5,
+   "storms": 3,
    "workRoutes": 1,
    "airDef": 0,
-   "points": 11
+   "points": 9
   }
  ],
  "7": [
   {
-   "steel": 2502,
-   "mun": 3376,
-   "trained": 36,
-   "kills": 60,
+   "steel": 2957,
+   "mun": 3817,
+   "trained": 29,
+   "kills": 55,
    "fobs": 5,
-   "cells": 563,
-   "houses": 3,
-   "storms": 0,
-   "workRoutes": 0,
+   "cells": 615,
+   "houses": 4,
+   "storms": 6,
+   "workRoutes": 1,
    "airDef": 0,
-   "points": 5
+   "points": 6
   },
   {
-   "steel": 1090,
-   "mun": 1747,
-   "trained": 29,
-   "kills": 61,
+   "steel": 1593,
+   "mun": 3053,
+   "trained": 27,
+   "kills": 57,
    "fobs": 5,
-   "cells": 555,
-   "houses": 4,
-   "storms": 7,
-   "workRoutes": 2,
+   "cells": 526,
+   "houses": 6,
+   "storms": 5,
+   "workRoutes": 1,
    "airDef": 0,
-   "points": 15
+   "points": 17
   }
  ],
  "11": [
   {
-   "steel": 2780,
-   "mun": 3299,
-   "trained": 29,
-   "kills": 55,
+   "steel": 2999,
+   "mun": 4326,
+   "trained": 35,
+   "kills": 66,
    "fobs": 5,
-   "cells": 683,
-   "houses": 3,
+   "cells": 627,
+   "houses": 4,
+   "storms": 1,
+   "workRoutes": 0,
+   "airDef": 0,
+   "points": 12
+  },
+  {
+   "steel": 2083,
+   "mun": 2476,
+   "trained": 32,
+   "kills": 71,
+   "fobs": 5,
+   "cells": 593,
+   "houses": 5,
    "storms": 0,
    "workRoutes": 0,
    "airDef": 0,
    "points": 8
-  },
-  {
-   "steel": 1781,
-   "mun": 3144,
-   "trained": 33,
-   "kills": 58,
-   "fobs": 5,
-   "cells": 592,
-   "houses": 3,
-   "storms": 0,
-   "workRoutes": 1,
-   "airDef": 0,
-   "points": 13
   }
  ]
 }

@@ -323,5 +323,11 @@ export const MAPGEN = {
     roadGap: 6, // Abstand (px) vom Straßen- und Feldwegrand
     spawnGap: 900, // Abstand (px) zu den Startpunkten (Bauland bleibt frei)
     crateGap: 80, // Abstand (px) zu Versorgungskisten
+    // Feldlager an Versorgungskisten: Zelt, Munitionskisten und Sandsack-Stellung im Ring um die Kiste
+    camp: 0.5, // Anteil der Kistenpaare mit einem Lager
+    campR: [110, 170], // Abstand (px) der Lagerteile von der Kiste (Zufallsbereich)
+    campKinds: ['tent', 'ammo_stack', 'sandbag_nest'], // Teile eines Lagers, im Kreis um die Kiste verteilt
+    campTries: 6, // Versuche je Teil (Richtung, Abstand)
+    campJitter: 0.6, // Richtung der Teile streut um so viel Bogenmaß (gleichmäßig im Kreis verteilt)
   },
 };

@@ -22,7 +22,7 @@ import { updateConstruction } from './construction.js';
 import { updateTowers, ejectCrew } from './tower.js';
 import { createHouses, updateGarrison, dropOccupant } from './garrison.js';
 import { createCrates, updateCrates, updateCrateIntel } from './crates.js';
-import { createProps, updateProps } from './props.js';
+import { createProps, updateProps, concealed } from './props.js';
 import { createScars, updateScars, updateScarIntel, addUnitWreck, addBuildingWreck, clearWrecksUnder } from './scars.js';
 import { createAnimals, updateAnimals } from './animals.js';
 import { updateFormations } from './formation.js';
@@ -340,7 +340,8 @@ export class Game {
     if (!this.fog[team].isVisible(e.x, e.y)) return false;
     if (e.kind !== 'unit') return true; // Nicht-Einheiten (Granaten, Gebäude …) zuerst: Granaten haben kein def
     // getarnt: Scharfschütze (def.stealth) immer, Aufklärungsfahrzeug (def.stillCamo) nach so vielen Sekunden Stillstand
-    if (!e.def?.stealth && !(e.def?.stillCamo && (e.still || 0) >= e.def.stillCamo)) return true;
+    // unter einem Tarnnetz (props.js) wie ein Scharfschütze getarnt
+    if (!e.def?.stealth && !(e.def?.stillCamo && (e.still || 0) >= e.def.stillCamo) && !(e.def && !e.def.air && concealed(this, e.x, e.y))) return true;
     if (this.time < (e.revealedUntil || 0)) return true;
     const r2 = BALANCE.stealth.detectRange ** 2;
     for (const u of this.units) if (u.alive && u.team === team && (u.x - e.x) ** 2 + (u.y - e.y) ** 2 <= r2) return true;

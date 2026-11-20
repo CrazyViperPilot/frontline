@@ -8,7 +8,7 @@ import { setRelief, RELIEF } from './relief.js';
 import { buildLandscape, groundOk, countRoutes, RIVER_SIZE } from './landscape.js';
 import { openBridges } from './river.js';
 import { zoneDist } from './zonegeo.js';
-import { rasterizeProps, GATE } from './props.js';
+import { rasterizeProps, propCells, GATE } from './props.js';
 
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;
@@ -929,6 +929,29 @@ function placeProps(seed, town, grid, crates, cleared) {
       props.push(o, { ...o, x: W - p.x, y: H - p.y });
       taken.add(`${grid.toCell(p.x)},${grid.toCell(p.y)}`);
       taken.add(`${grid.toCell(W - p.x)},${grid.toCell(H - p.y)}`);
+    });
+  }
+  // Feldlager an Versorgungskisten (Kisten liegen paarweise: Original, Spiegelbild)
+  const cols = W / TILE;
+  const rows = H / TILE;
+  for (let i = 0; i < crates.length; i += 2) {
+    const k0 = crates[i];
+    const roll = rng.next();
+    const a0 = rng.next() * Math.PI * 2;
+    if (roll > PG.camp) continue;
+    PG.campKinds.forEach((kind, n) => {
+      for (let t = 0; t < PG.campTries; t++) {
+        const a = a0 + (n / PG.campKinds.length) * Math.PI * 2 + (rng.next() - 0.5) * PG.campJitter;
+        const r = rng.range(...PG.campR);
+        const o = { kind, x: Math.round(k0.x + Math.cos(a) * r), y: Math.round(k0.y + Math.sin(a) * r), rot: Math.floor(rng.next() * 8) };
+        const m = { ...o, x: W - o.x, y: H - o.y, rot: (o.rot + 4) % 8 };
+        const all = [...propCells(o, cols, rows), ...propCells(m, cols, rows)];
+        const ok = all.every((j) => free(((j % cols) + 0.5) * TILE, (Math.floor(j / cols) + 0.5) * TILE));
+        if (!ok) continue;
+        props.push(o, m);
+        for (const j of all) taken.add(`${j % cols},${Math.floor(j / cols)}`);
+        break;
+      }
     });
   }
   return props;

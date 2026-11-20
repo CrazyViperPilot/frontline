@@ -482,6 +482,12 @@ export function impact(game, p) {
 }
 
 function updateProjectiles(game, dt) {
+  // Munition und Treibstoff der Karte, durch Beschuss zerstört (props.js): Explosion wie ein Einschlag
+  if (game.propBlasts?.length) {
+    const blasts = game.propBlasts;
+    game.propBlasts = [];
+    for (const b of blasts) impact(game, b);
+  }
   for (const p of game.projectiles) {
     if (!p.alive) continue;
     p.t += dt;

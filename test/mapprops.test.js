@@ -155,9 +155,19 @@ test('Spielstand: Zustand der Props und Raster überstehen Speichern und Laden',
   assert.equal(g2.grid.prop[g2.grid.idx(g2.grid.toCell(p.x), g2.grid.toCell(p.y))], 0, 'Lücke auch nach dem Laden');
 });
 
-test('Bild: jede Kachelart in jeder Verbindung, mit Toren und als Trümmer hat Körper mit endlichen Koordinaten', async () => {
+test('Bild: jede Art (Kacheln in jeder Verbindung, mit Toren, Einzelstücke in jeder Drehung) und ihre Trümmer haben Körper mit endlichen Koordinaten', async () => {
   const { fenceModel } = await import('../js/render/fences.js');
-  for (const kind of Object.keys(PROPS.kinds)) {
+  const { milModel } = await import('../js/render/milprops.js'); // meldet die Kacheln der Militär-Props an
+  for (const kind of Object.keys(PROPS.kinds).filter((k) => !PROPS.kinds[k].line)) {
+    for (let rot = 0; rot < 8; rot++) {
+      for (const [rubble, open] of [[false, false], [true, false], [false, true]]) {
+        const S = milModel(kind, rot % 3, rot, rot % 2 === 0, rubble, '#3d8bfd', open);
+        assert.ok(S.length > 0 || (rubble && !PROPS.kinds[kind].rubble), `${kind}: Bild`);
+        for (const so of S) for (const f of so.faces) for (const p of f) assert.ok(p.every(Number.isFinite), `${kind}: Koordinate`);
+      }
+    }
+  }
+  for (const kind of Object.keys(PROPS.kinds).filter((k) => PROPS.kinds[k].line)) {
     for (let mask = 0; mask < 16; mask++) {
       for (const [gate, rubble] of [[0, false], [GATE.closed, false], [GATE.open, false], [0, true]]) {
         const S = fenceModel(kind, mask, mask % 2 ? 'x' : 'y', gate, rubble, mask % 3, mask, mask % 2 === 0);
@@ -181,4 +191,51 @@ test('Zufallskarten: wenige Kacheln an Äckern, punktsymmetrisch, ohne Fluss und
     const all = new Set(a.map(key));
     for (const p of a) assert.ok(all.has(`${p.kind},${BALANCE.map.width - p.x},${BALANCE.map.height - p.y}`), 'Spiegelbild vorhanden');
   }
+});
+
+test('Militär: Jersey-Sperre und Tschechenigel halten Fahrzeuge auf, Infanterie kommt durch; Schranke zu hält Fahrzeuge, offen niemanden', () => {
+  const j = at(4, 4);
+  const h = at(8, 4);
+  const b = at(12, 4);
+  const o = at(16, 4);
+  const map = normalizeMap({ ...generateMap(1), props: [
+    { kind: 'jersey', ...j }, { kind: 'hedgehog', ...h }, { kind: 'boom_gate', ...b, gate: GATE.closed }, { kind: 'boom_gate', ...o, gate: GATE.open },
+  ] });
+  const g = new Game({ seed: 1, map });
+  const G = g.grid;
+  const [inf, truck, tank] = ['rifleman', 'truck', 'tank'].map((t) => g.spawnUnit(t, 0, at(0, 0).x, at(0, 0).y));
+  const pass = (u, pt) => G.passable(G.toCell(pt.x), G.toCell(pt.y), moverOf(u));
+  assert.deepEqual([pass(inf, j), pass(truck, j), pass(tank, j)], [true, false, false], 'Jersey');
+  assert.deepEqual([pass(inf, h), pass(truck, h), pass(tank, h)], [true, false, false], 'Igel');
+  assert.deepEqual([pass(inf, b), pass(truck, b), pass(tank, b)], [true, false, true], 'Schranke zu: Panzer walzt sie nieder');
+  assert.deepEqual([pass(inf, o), pass(truck, o)], [true, true], 'Schranke offen');
+});
+
+test('Militär: Munitionskisten fliegen beim Zerstören in die Luft und verletzen Einheiten ringsum', () => {
+  const p = at(8, 8);
+  const g = gameWith([{ kind: 'ammo_stack', ...p }]);
+  const u = g.spawnUnit('rifleman', 1, p.x + 30, p.y);
+  const hp = u.hp;
+  damageProp(g, 0, PROPS.kinds.ammo_stack.hp + 1);
+  assert.equal(g.propSt[0], PROP_STATE.gone);
+  g.update(0.05);
+  assert.ok(u.hp < hp, `Splash der Explosion (${hp} → ${u.hp})`);
+});
+
+test('Militär: unter einem Tarnnetz sieht der Gegner eine Einheit nur aus der Nähe', () => {
+  const p = at(10, 10);
+  const g = gameWith([{ kind: 'camo_net', ...p }]);
+  const hidden = g.spawnUnit('rifleman', 1, p.x, p.y);
+  const far = g.spawnUnit('scout', 0, p.x - 220, p.y);
+  g.fog[0].update(g, 0);
+  assert.equal(g.fog[0].isVisible(p.x, p.y), true, 'Stelle liegt in Sicht');
+  assert.equal(g.sees(0, hidden), false, 'getarnt');
+  far.x = p.x - BALANCE.stealth.detectRange + 10;
+  g.fog[0].update(g, 0);
+  assert.equal(g.sees(0, hidden), true, 'aus der Nähe erkannt');
+});
+
+test('Militär: Fahne mit Teamfarbe bleibt im Kartenformat, nur bei Arten mit Fahne', () => {
+  const m = normalizeMap({ ...createEmptyMap(), props: [{ kind: 'tent', x: 500, y: 500, rot: 3, team: 1 }, { kind: 'ammo_stack', x: 700, y: 500, team: 1 }] });
+  assert.deepEqual(m.props, [{ kind: 'tent', x: 500, y: 500, rot: 3, team: 1 }, { kind: 'ammo_stack', x: 700, y: 500 }]);
 });

@@ -62,15 +62,28 @@ try {
       const scene = (kind) => {
         const props = [];
         const st = [];
-        PLAN.forEach((row, r) => [...row].forEach((ch, c) => {
+        const K = PROPS.kinds[kind];
+        if (!K.line) {
+          // Einzelstück: gerade, 90°, 45°, mit Fahne in Teamfarben, zerstört; Schranke zu und offen
+          const at = [[2, 1.5], [6, 1.5], [10, 1.5], [2, 3.8], [6, 3.8]];
+          const set = [
+            { rot: 0, team: 0 }, { rot: 2, team: 1 }, { rot: 1, team: -1 },
+            K.gate ? { rot: 0, gate: 2 } : { rot: 6, team: 2 }, { rot: 0, rubble: true },
+          ];
+          set.forEach((o, k) => {
+            if (o.rubble && !K.rubble && !K.gate) return;
+            props.push({ kind, x: (X0 + at[k][0]) * T, y: (Y0 + at[k][1]) * T, rot: o.rot, ...(o.team >= 0 ? { team: o.team } : {}), ...(o.gate ? { gate: o.gate } : {}) });
+            st.push(o.rubble && K.rubble ? 1 : 0);
+          });
+        } else PLAN.forEach((row, r) => [...row].forEach((ch, c) => {
           if (ch === ' ') return;
-          props.push({ kind, x: (X0 + c + 0.5) * T, y: (Y0 + r + 0.5) * T, ...(ch === 'g' ? { gate: 1 } : ch === 'o' ? { gate: 2 } : {}) });
+          props.push({ kind, x: (X0 + c + 0.5) * T, y: (Y0 + r + 0.5) * T, ...(K.gate && ch === 'g' ? { gate: 1 } : K.gate && ch === 'o' ? { gate: 2 } : {}) });
           st.push(ch === 'r' ? 1 : 0);
         }));
         const units = [
-          { type: 'rifleman', team: 0, angle: 0.6, x: (X0 + 2) * T, y: (Y0 + 2.2) * T },
+          { type: 'rifleman', team: 0, angle: 0.6, x: (X0 + (PROPS.kinds[kind].line ? 2 : 1.6)) * T, y: (Y0 + 2.6) * T },
           { type: 'rifleman', team: 1, angle: 2.2, x: (X0 + 5.6) * T, y: (Y0 + 1.1) * T },
-          { type: 'tank', team: 0, angle: 0.3, x: (X0 + 11) * T, y: (Y0 + 1.5) * T },
+          { type: 'tank', team: 0, angle: 0.3, x: (X0 + 11) * T, y: (Y0 + (PROPS.kinds[kind].line ? 1.5 : 4)) * T },
         ].map((u) => ({ ...u, def: UNITS[u.type], alive: true, id: 1 }));
         return { props, st: Uint8Array.from(st), units };
       };
@@ -142,14 +155,14 @@ try {
             for (const it of items) {
               SC.spriteFrame();
               p.setTransform(1, 0, 0, 1, 0, 0);
-              if (it.o) MP.drawPropIso(p, cam, it.o, season);
+              if (it.o) MP.drawPropIso(p, cam, it.o, season, MP.propFlagColor(null, it.o));
               else U.drawUnitIso(p, cam, it.u, cam.worldToScreen(it.u.x, it.u.y));
             }
           } else {
             p.setTransform(z, 0, 0, z, w / 2 - cx * z, h / 2 - cy * z);
             for (const o of looks) {
               SC.spriteFrame();
-              MP.drawPropsTop(p, [o], () => true, z, season);
+              MP.drawPropsTop(p, [o], () => true, z, season, (q) => MP.propFlagColor(null, q));
             }
             for (const u of units) {
               SC.spriteFrame();

@@ -2,7 +2,10 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
 
-## roads.js (Fortsetzung)
+## roads.js (5.9 KB)
+- MAP_ROAD – Wert einer Zelle in game.roads.kind: 0 keine, 1 Straße der Zonenstadt, 2 Brücke…
+- BRIDGE_ROAD
+- segDist(px, py, x1, y1, x2, y2) – Abstand eines Punkts zur Strecke (x1, y1)–(x2, y2)
 - createRoads(game) – Stadtstraßen der Karte anlegen (`game.roads`): Zonenstraßen über die Zellen, de…
 - laneGrid(cols, rows, isRoad, maxLanes) – Mehrspurige Straßen (Daniels Wunsch „2 Straßenlinien nebeneinander“): Straßenze…
 

@@ -61,7 +61,7 @@ export function canPlace(game, team, type, x, y, { carried = false } = {}) {
       if (!g.inBounds(c, r)) return bad('Außerhalb der Karte');
       const i = g.idx(c, r);
       if (g.terrain[i]) return bad('Gelände blockiert');
-      if (g.prop?.[i]) return bad('Zaun, Mauer oder Hindernis im Weg'); // Props (game/props.js)
+      if (g.prop?.[i]) return bad('Zaun, Mauer oder andere Deko im Weg'); // Props (game/props.js)
       if (g.struct[i]) return bad('Fläche bereits belegt');
       if (g.ford?.[i] || g.deck?.[i]) return bad('Nicht auf Brücken und in Furten');
     }

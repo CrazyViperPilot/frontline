@@ -1,4 +1,4 @@
-# Symbol-Index render (Teil 1 von 4, airbase.js bis isobuild.js)
+# Symbol-Index render (Teil 1 von 4, airbase.js bis iso.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
@@ -87,6 +87,10 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 
 ## fences.js (15 KB)
 - LINE_DIRS – Bits 1, 2, 4, 8: Osten, Süden, Westen, Norden
+- rnd(v, k) – Zufallszahl 0 … 1 aus Variante und Zähler (fest je Kachel, kein Zufall zur Lauf…
+- tilt(so, ax, a, px, py, pz) – Körper um die Achse entlang x (ax 'x') bzw. y durch den Punkt (0, 0, z0) bzw. u…
+- snowy(w) – Schnee auf waagrechten Oberseiten (Winter)
+- addLineKinds(defs) – Weitere Kachelarten anderer Module (Sandsäcke, Hesco … in milprops.js) mit arm/…
 - isFenceKind(kind) – Gibt es ein Bild für diese Art (Kachel aus diesem Modul)?
 - fenceHeight(kind) – Höhe einer Art (px), für den Schatten in 2D
 - fenceModel(kind, mask, along, gate, rubble, v, d, w) – Körper einer Kachel
@@ -145,9 +149,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawTree(ctx, cam, t, season) – Baum: Schatten, Stamm und zwei Kronenkugeln (aufrecht), Krone nach Jahreszeit
 - drawRock(ctx, cam, o) – Fels: Schatten und flacher Brocken (aufrecht)
 - fitText
-- hexA
-
-## isobuild.js (37 KB)
-- drawCar(ctx, cam, c) – Geparktes Auto als kleiner Körper mit Kabine (aufrecht ausgerichtet an x oder y…
-- drawBench(ctx, cam, b) – Parkbank (seit v5.23 aus Latten): drei Sitz- und zwei Lehnenlatten auf gusseise…
-- drawTownBuilding(ctx, cam, b, season) – Gebäude der Stadt (Haus, Halle, Fabrik) mit Fenstern, Türen, Toren, Balkonen un…

@@ -1,8 +1,18 @@
-# Symbol-Index render (Teil 4 von 4, works.js)
+# Symbol-Index render (Teil 4 von 4, ways.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## works.js (Fortsetzung)
+## ways.js (Fortsetzung)
+- drawCityRails(ren, ctx, list, key, season) – Gleise der Stadt zeichnen, mit denselben Farben und Maßen wie die Gleise der Ka…
+
+## weatherfx.js (9.6 KB)
+- windDrift(t) – Weg des Windes bis zur Zeit t (px, Integral von 14 + 22 · Böe): Flocken treiben…
+- drawWeather(ctx, weather, cssW, cssH, now, cam) – Wetter über die Welt zeichnen (ctx in CSS-Pixeln, Transform = dpr)
+
+## works.js (82 KB)
+- WORKS_KINDS
+- WORKS_GROUND – Boden unter dem fertigen Werk (sichtbar am Rand des Grundstücks)
+- shadowRound(g, u, v, r, h, a) – Schatten eines runden Bauteils nach links unten (wie shadow() für Quader, nach…
 - gate(g, face, plane, a, w, h, col) – Rolltor mit Rahmen und Lamellen in einer Wand (Mitte a, Breite w, Höhe h)
 - strip(g, face, plane, a0, a1, h0, h1, step, glow) – Durchgehendes Fensterband mit Pfosten (a0…a1, Höhe h0…h1); glow = warm beleucht…
 - walls(g, u0, u1, v0, v1, H, wall, o) – Wände einer Halle mit Schatten und Sockel (o.ribs: Wellblech, o.band: Band unte…

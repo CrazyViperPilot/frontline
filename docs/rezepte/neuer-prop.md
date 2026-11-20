@@ -11,8 +11,9 @@ Props sind Deko und Gelände der Karte (Zäune, Mauern, später Sandsäcke, Cont
    Trümmer, Spielstand. Neue Regeln dort, nie als Zahl im Code (Regel 3).
 3. Bild: Modell aus wenigen Körpern des Painters (`PAINT` aus `js/render/unitpaint.js`: `box`, `cyl`, `prX` …), Kleinteile mit
    `fine()`, Winter über `top: { col, at }`, Varianten nur aus `v` (Farbe je Gebiet) und `d` (Einzelheiten je Kachel), kein Zufall.
-   Kacheln: neue Art in `js/render/fences.js` (`arm`, `mid`, `gate`, `leaf`, `rubble`); andere Gruppen: eigenes Modul, in
-   `modelOf` von `js/render/mapprops.js` einhängen. Schatten, Iso, 2D und Editor zeichnet `mapprops.js`.
+   Kacheln: Art mit `arm`, `mid`, `rubble` (Tor: `gate`, `leaf`; ohne Verbindung: `solo`) in `js/render/fences.js` oder über
+   `addLineKinds` aus einem eigenen Modul (Beispiel `milprops.js`); Einzelstücke: Modell in `milprops.js` (`SINGLE`) bzw. eigenem Modul,
+   in `modelOf` von `js/render/mapprops.js` einhängen. Fahne (`flag`): Tuch in der übergebenen Farbe. Schatten, Iso, 2D und Editor zeichnet `mapprops.js`.
 4. Vorschau: `node tools/propspreview.mjs <art>` (Sommer, Winter, Zoom 3 und 1,6, 2D, mit Panzer und Soldaten) und Bild ansehen.
 5. Zufallskarten optional: `MAPGEN.props` und `placeProps` in `js/game/map.js` (eigener Zufall, punktsymmetrisch, sparsam);
    ändert die Prüfsummen (`npm run metrics -- --update`, `test/golden.test.js`).

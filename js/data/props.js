@@ -14,7 +14,11 @@
 //   sight     Sichthöhe (wie Gelände, BALANCE.sightHeight: Augen Infanterie 16, Fahrzeug 20, Gebäude 30); 0 = durchsichtig
 //   hp        Trefferpunkte; Schaden je Panzerklasse `armor` der Waffe (inf, light, heavy, struct)
 //   rubble    Trümmer nach Zerstörung durch Beschuss { blocks, crush, cover, sight } oder null (dann ist es weg)
-//   gate      Kachel kann ein Tor sein (map: gate 1 = geschlossen wie die Kachel, 2 = offen: sperrt nichts, keine Deckung)
+//   gate      Kachel kann ein Tor sein (map: gate 1 = geschlossen wie die Kachel, 2 = offen: sperrt nichts, keine Deckung); Schranke ebenso
+//   connect   Kacheln ohne Verbindung (false): je Zelle ein Stück (Panzersperren)
+//   flag      trägt eine Fahne in Teamfarbe (map: team −1 … 3, PROPS.flagReach)
+//   conceal   Tarnnetz: Einheiten darunter sind getarnt
+//   blast     fliegt bei Zerstörung durch Beschuss in die Luft { r, damage je Panzerklasse }
 export const PROPS = {
   // Deckung (combat.js): Infanterie höchstens r px vom Rand einer Prop-Zelle, die zwischen ihr und dem Schützen liegt (Winkel zur
   // Schussrichtung höchstens arc, Bogenmaß), nimmt cover weniger Schaden. absorb: Anteil des Schadens gegen die Panzerklasse des Props,
@@ -23,7 +27,12 @@ export const PROPS = {
   // Splash von Granaten und Bomben (combat.impact) trifft Props mit diesem Anteil des Schadens gegen ihre Panzerklasse
   splashMul: 1,
   // Gruppen im Editor (Reihenfolge der Auswahlliste)
-  groups: { fence: 'Zäune und Mauern' },
+  groups: { fence: 'Zäune und Mauern', mil: 'Militär' },
+  // Fahnen (Kontrollpunkt, Zelt, Funkmast): in der Eroberung zeigt eine Fahne die Farbe des Besitzers der nächsten Flagge, wenn sie
+  // höchstens flagReach px von ihr steht; sonst die im Editor eingestellte Farbe (team) oder weiß (neutral)
+  flagReach: 700,
+  // Tarnung unter Tarnnetzen (conceal): Einheiten darunter sieht der Gegner nur aus der Nähe (BALANCE.stealth.detectRange), bis sie
+  // schießen (BALANCE.stealth.revealTime), wie Scharfschützen
   kinds: {
     fence_wood: {
       name: 'Holzzaun',
@@ -91,6 +100,179 @@ export const PROPS = {
       hp: 300,
       armor: 'struct',
       rubble: { blocks: 'none', crush: true, cover: 0.25, sight: 0 },
+    },
+    // ---------- Militär (Schritt 3) ----------
+    // Kacheln: Sandsackwall, Hesco, Jersey-Sperre, Stacheldrahtrolle, Panzersperren (ohne Verbindung: je Zelle ein Igel)
+    sandbag: {
+      name: 'Sandsackwall',
+      group: 'mil',
+      line: true,
+      blocks: 'all',
+      crush: true,
+      cover: 0.55,
+      coverVeh: 0.2,
+      sight: 0,
+      hp: 250,
+      armor: 'struct',
+      rubble: { blocks: 'none', crush: true, cover: 0.25, sight: 0 }, // aufgerissene Säcke
+    },
+    hesco: {
+      name: 'Hesco-Barriere',
+      group: 'mil',
+      line: true,
+      blocks: 'all',
+      crush: false,
+      cover: 0.7,
+      coverVeh: 0.4,
+      sight: 0,
+      hp: 800,
+      armor: 'struct',
+      rubble: { blocks: 'veh', crush: true, cover: 0.3, sight: 0 }, // Sandhaufen aus geplatzten Körben
+    },
+    jersey: {
+      name: 'Betonsperre (Jersey)',
+      group: 'mil',
+      line: true,
+      blocks: 'veh', // Infanterie steigt darüber
+      crush: false,
+      cover: 0.4,
+      coverVeh: 0.25,
+      sight: 0,
+      hp: 500,
+      armor: 'struct',
+      rubble: { blocks: 'none', crush: true, cover: 0.15, sight: 0 },
+    },
+    wire_coil: {
+      name: 'Stacheldrahtrolle',
+      group: 'mil',
+      line: true,
+      blocks: 'all', // Infanterie und Radfahrzeuge bleiben hängen
+      crush: true,
+      cover: 0,
+      sight: 0,
+      hp: 30,
+      armor: 'light',
+      rubble: null,
+    },
+    hedgehog: {
+      name: 'Panzersperre (Tschechenigel)',
+      group: 'mil',
+      line: true,
+      connect: false, // jede Zelle ein Igel, keine Verbindung
+      blocks: 'veh', // Infanterie geht zwischen den Igeln durch
+      crush: false,
+      cover: 0.1,
+      sight: 0,
+      hp: 400,
+      armor: 'heavy',
+      rubble: null,
+    },
+    // Einzelstücke: Grundfläche size [Länge, Tiefe] px, gedreht um rot × 45°
+    sandbag_nest: {
+      name: 'Sandsack-Stellung (Halbkreis)',
+      group: 'mil',
+      size: [56, 40],
+      blocks: 'veh', // Infanterie steigt hinein: steht sie darin, deckt die Stellung nach allen Seiten
+      crush: true,
+      cover: 0.6,
+      sight: 0,
+      hp: 300,
+      armor: 'struct',
+      rubble: { blocks: 'none', crush: true, cover: 0.25, sight: 0 },
+    },
+    camo_net: {
+      name: 'Tarnnetz',
+      group: 'mil',
+      size: [80, 52],
+      blocks: 'none', // nur dünne Stangen
+      crush: true,
+      cover: 0,
+      sight: 0,
+      conceal: true,
+      hp: 40,
+      armor: 'light',
+      rubble: null,
+    },
+    tent: {
+      name: 'Zelt',
+      group: 'mil',
+      size: [64, 44],
+      flag: true,
+      blocks: 'all',
+      crush: true,
+      cover: 0.1,
+      sight: 22,
+      hp: 80,
+      armor: 'light',
+      rubble: { blocks: 'none', crush: true, cover: 0, sight: 0 }, // eingefallene Plane
+    },
+    radio_mast: {
+      name: 'Funkmast',
+      group: 'mil',
+      size: [24, 24],
+      flag: true,
+      blocks: 'all',
+      crush: false,
+      cover: 0,
+      sight: 0, // Gittermast: durchsichtig
+      hp: 300,
+      armor: 'heavy',
+      rubble: { blocks: 'none', crush: true, cover: 0.1, sight: 0 }, // umgestürzt
+    },
+    ammo_stack: {
+      name: 'Munitionskisten',
+      group: 'mil',
+      size: [28, 20],
+      blocks: 'all',
+      crush: true,
+      cover: 0.35,
+      sight: 0,
+      hp: 60,
+      armor: 'light',
+      // fliegt in die Luft, wenn Beschuss sie zerstört (nicht beim Überfahren): Splash wie eine Granate
+      blast: { r: 70, damage: { inf: 60, light: 50, heavy: 15, struct: 60 } },
+      rubble: null,
+    },
+    fuel_tank: {
+      name: 'Treibstofftank',
+      group: 'mil',
+      size: [64, 30],
+      blocks: 'all',
+      crush: false,
+      cover: 0.4,
+      coverVeh: 0.3,
+      sight: 0,
+      hp: 200,
+      armor: 'heavy',
+      blast: { r: 110, damage: { inf: 90, light: 90, heavy: 30, struct: 100 } },
+      rubble: { blocks: 'all', crush: false, cover: 0.4, sight: 0 }, // ausgebrannte Hülle
+    },
+    checkpoint: {
+      name: 'Kontrollpunkt-Häuschen',
+      group: 'mil',
+      size: [40, 40],
+      flag: true,
+      blocks: 'all',
+      crush: false,
+      cover: 0.5,
+      coverVeh: 0.2,
+      sight: 24,
+      hp: 400,
+      armor: 'struct',
+      rubble: { blocks: 'veh', crush: true, cover: 0.3, sight: 0 },
+    },
+    boom_gate: {
+      name: 'Schranke',
+      group: 'mil',
+      size: [64, 8],
+      gate: true, // zu (1): hält Fahrzeuge auf; offen (2): hält niemanden auf
+      blocks: 'veh', // Infanterie duckt sich darunter durch
+      crush: true,
+      cover: 0,
+      sight: 0,
+      hp: 40,
+      armor: 'light',
+      rubble: null,
     },
   },
 };

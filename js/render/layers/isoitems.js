@@ -10,7 +10,7 @@ import { houseYardTrees, houseYardIso } from '../maptown.js';
 import { drawUnitSprite, drawWreckSprite } from '../isosprites.js';
 import { drawMapCarIso, drawMapCarShadowIso, drawBenchIso, drawBenchShadowIso, drawCrateIso, drawBaleIso, drawBaleShadowIso } from '../props.js';
 import { fieldBales } from '../fields.js';
-import { propLooks, drawPropIso, drawPropShadowIso } from '../mapprops.js';
+import { propLooks, drawPropIso, drawPropShadowIso, propFlagColor } from '../mapprops.js';
 import { drawTreeIso, drawBushIso, drawRockIso, natureShadowIso, drawAnimalIso } from '../nature.js';
 import { scarAlpha } from '../../game/scars.js';
 import { setRoofSnow } from '../season.js';
@@ -65,7 +65,7 @@ export const isoItemMethods = {
       }
     }
     for (const o of this.deco.rocks) if (inRect(o.x, o.y, PAD)) items.push({ k: cam.depth(o.x, o.y), t: 2, o });
-    for (const o of propLooks(g)) if (inRect(o.x, o.y, 40)) items.push({ k: cam.depth(o.x, o.y), t: 16, o }); // Zäune, Mauern … (mapprops.js)
+    for (const o of propLooks(g)) if (inRect(o.x, o.y, o.single ? 80 : 40)) items.push({ k: cam.depth(o.x, o.y), t: 16, o }); // Zäune, Mauern … (mapprops.js)
     const small = z < 0.6; // weit herausgezoomt: Unterholz im Wald weglassen (winzig, unter den Kronen)
     for (const b of this.deco.bushes) if (inRect(b.x, b.y, 40) && !(small && b.under) && !gone(b.x, b.y)) items.push({ k: cam.depth(b.x, b.y), t: 13, o: b });
     for (const b of g.buildings) {
@@ -133,7 +133,7 @@ export const isoItemMethods = {
       else if (it.t === 6) { if (!drawMapCarIso(ctx, cam, it.o, this.season)) drawCar(ctx, cam, it.o); } // gemalt (props.js, seit v5.43)
       else if (it.t === 7) { if (!drawBenchIso(ctx, cam, it.o, this.season)) drawBench(ctx, cam, it.o); }
       else if (it.t === 14) drawBaleIso(ctx, cam, it.o, this.season);
-      else if (it.t === 16) drawPropIso(ctx, cam, it.o, this.season); // Zäune, Mauern … (mapprops.js)
+      else if (it.t === 16) drawPropIso(ctx, cam, it.o, this.season, propFlagColor(g, it.o)); // Zäune, Mauern … (mapprops.js)
       else if (it.t === 8) {
         const s = it.o.ground ? 16 : 13;
         if (!drawCrateIso(ctx, cam, it.o.x, it.o.y, s, 0, it.o.ground ? glow : 0)) drawCrate(ctx, cam, it.o.x, it.o.y, s, 0, it.o.ground ? glow : 0);

@@ -150,8 +150,23 @@ export function damageProp(game, i, amount) {
   game.propHp[i] -= amount;
   if (game.propHp[i] > 0) return;
   game.propHp[i] = 0;
-  setPropState(game, i, PROPS.kinds[p.kind]?.rubble ? PROP_STATE.rubble : PROP_STATE.gone);
-  game.addEffect('explosion', p.x, p.y, -1, p.x, p.y, 'hit');
+  const K = PROPS.kinds[p.kind];
+  setPropState(game, i, K?.rubble ? PROP_STATE.rubble : PROP_STATE.gone);
+  game.addEffect('explosion', p.x, p.y, -1, p.x, p.y, K?.blast ? 'building' : 'hit');
+  // Munition, Treibstoff: fliegt in die Luft; den Splash wickelt combat.js im nächsten Schritt ab (wie eine Granate ohne Team)
+  if (K?.blast) (game.propBlasts ??= []).push({ alive: true, team: -1, tx: p.x, ty: p.y, splash: K.blast.r, damage: K.blast.damage });
+}
+
+/** Steht (x, y) unter einem heilen Tarnnetz (conceal)? Einheiten darunter sind getarnt (game.sees). */
+export function concealed(game, x, y) {
+  const props = game.map.props;
+  if (!props?.length) return false;
+  const grid = game.grid;
+  const c = Math.floor(x / TILE);
+  const r = Math.floor(y / TILE);
+  if (c < 0 || r < 0 || c >= grid.cols || r >= grid.rows) return false;
+  const list = propIndex(props, grid.cols, grid.rows).cells.get(r * grid.cols + c);
+  return !!list?.some((i) => game.propSt[i] === PROP_STATE.ok && PROPS.kinds[props[i].kind]?.conceal);
 }
 
 /** Schaden einer Waffe (damage je Panzerklasse) gegen Prop i, mal mul. */

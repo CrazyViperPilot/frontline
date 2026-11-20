@@ -12,6 +12,7 @@ import { propIndex, forgetPropIndex, PROP_STATE, GATE } from '../game/props.js';
 import { fenceModel, isFenceKind, LINE_DIRS } from './fences.js';
 import { milModel, isMilSingle } from './milprops.js';
 import { indModel, isIndSingle } from './indprops.js';
+import { civModel, isCivSingle, DELEGATE } from './civprops.js';
 
 const { paintSolids, boundsOf, viewAngle, sectorOf } = PAINT;
 const TAU = Math.PI * 2;
@@ -102,9 +103,10 @@ function modelOf(o, season, flag = null) {
   if (!m) {
     const w = season === 'winter';
     let S = [];
-    if (isFenceKind(o.kind)) S = fenceModel(o.kind, o.mask, o.along, o.gate, o.rubble, o.v, o.d, w);
+    if (isFenceKind(o.kind)) S = fenceModel(o.kind, o.mask, o.along, o.gate, o.rubble, o.v, o.d, w, season);
     else if (isMilSingle(o.kind)) S = milModel(o.kind, o.v, o.d, w, o.rubble, flag, o.gate === GATE.open);
     else if (isIndSingle(o.kind)) S = indModel(o.kind, o.v, o.d, w, o.rubble, o.stack);
+    else if (isCivSingle(o.kind)) S = civModel(o.kind, o.v, o.d, season, o.rubble);
     m = { S, key };
     models.set(key, m);
   }
@@ -204,6 +206,8 @@ function viewYaw(cam, o) {
 
 /** Prop in Iso (Fuß am Weltpunkt). flag: Farbe der Fahne (propFlagColor). Ohne Bild (Budget dieses Bilds) direkt gemalt. */
 export function drawPropIso(ctx, cam, o, season = 'summer', flag = null) {
+  const del = DELEGATE[o.kind]; // Auto, Bank, Ballen, Busch, Fels: vorhandener Maler (civprops.js)
+  if (del) return del.iso(ctx, cam, o, season) !== false;
   const m = modelOf(o, season, flag);
   if (!m.S.length) return true;
   const { sec, yaw } = viewYaw(cam, o);
@@ -221,7 +225,12 @@ export function drawPropIso(ctx, cam, o, season = 'summer', flag = null) {
 }
 
 /** Iso: Schatten eines Props, scharf begrenzt nach links unten. */
-export function drawPropShadowIso(ctx, cam, o, season = 'summer') {
+export function drawPropShadowIso(ctx, cam, o, season = 'summer', dpr = 1) {
+  const del = DELEGATE[o.kind];
+  if (del) {
+    del.shadow(ctx, cam, o, dpr);
+    return;
+  }
   const m = modelOf(o, season, o.flag ? NEUTRAL_FLAG : null);
   if (!m.S.length) return;
   const { sec, yaw } = viewYaw(cam, o);
@@ -247,6 +256,7 @@ export function drawPropsTop(ctx, looks, inRect, zoom = 1, season = 'summer', fl
   const ang = (o) => (o.single ? o.a : 0);
   ctx.globalAlpha = SHADOW_A;
   for (const o of shown) {
+    if (DELEGATE[o.kind]) continue; // zeichnen ihren Schatten selbst
     const m = modelOf(o, season, o.flag ? NEUTRAL_FLAG : null);
     if (!m.S.length) continue;
     const a = ang(o);
@@ -255,6 +265,10 @@ export function drawPropsTop(ctx, looks, inRect, zoom = 1, season = 'summer', fl
   }
   ctx.globalAlpha = 1;
   for (const o of shown) {
+    if (DELEGATE[o.kind]) {
+      DELEGATE[o.kind].top(ctx, o, zoom, season);
+      continue;
+    }
     const m = modelOf(o, season, o.flag ? (flagOf?.(o) ?? NEUTRAL_FLAG) : null);
     if (!m.S.length) continue;
     const a = ang(o);

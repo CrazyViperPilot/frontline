@@ -276,10 +276,10 @@ export const fenceHeight = (kind) => KINDS[kind]?.h ?? 0;
  * Körper einer Kachel. mask: verbundene Nachbarn (Bits LINE_DIRS); ohne Nachbarn entlang along ('x' oder 'y'). gate: 0 keins,
  * 1 zu, 2 offen (nur gerade Kacheln). rubble: Trümmer statt der Kachel. v: Farbvariante 0 … 2, d: Einzelheiten, w: Winter.
  */
-export function fenceModel(kind, mask, along, gate, rubble, v, d, w) {
+export function fenceModel(kind, mask, along, gate, rubble, v, d, w, season = w ? 'winter' : 'summer') {
   const D = KINDS[kind];
   if (!D) return [];
-  if (D.solo) return rubble ? [] : D.mid(v, w, d); // ohne Verbindung (Panzersperren): je Zelle ein Stück
+  if (D.solo) return rubble ? [] : D.mid(v, w, d, season); // ohne Verbindung (Panzersperren): je Zelle ein Stück
   const straightX = mask === 0b0101 || (!mask && along === 'x') || mask === 0b0001 || mask === 0b0100;
   const straightY = mask === 0b1010 || (!mask && along === 'y') || mask === 0b0010 || mask === 0b1000;
   let arms = mask || (along === 'y' ? 0b1010 : 0b0101);
@@ -307,7 +307,7 @@ export function fenceModel(kind, mask, along, gate, rubble, v, d, w) {
     return turn(S, straightY ? 1 : 0);
   }
   if (!mask) arms = along === 'y' ? 0b1010 : 0b0101;
-  const S = [...D.mid(v, w)];
-  for (let q = 0; q < 4; q++) if (arms & (1 << q)) S.push(...turn(D.arm(v, w, d * 4 + q), q));
+  const S = [...D.mid(v, w, d, season)];
+  for (let q = 0; q < 4; q++) if (arms & (1 << q)) S.push(...turn(D.arm(v, w, d * 4 + q, season), q));
   return S;
 }

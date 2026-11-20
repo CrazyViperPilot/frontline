@@ -9,6 +9,7 @@ import { buildLandscape, groundOk, countRoutes, RIVER_SIZE } from './landscape.j
 import { openBridges } from './river.js';
 import { zoneDist } from './zonegeo.js';
 import { rasterizeProps, propCells, GATE } from './props.js';
+import { PROPS } from '../data/props.js';
 
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;
@@ -982,6 +983,37 @@ function placeProps(seed, town, grid, crates, cleared) {
       props.push(o, m);
       for (const j of all) taken.add(`${j % cols},${Math.floor(j / cols)}`);
     }
+  }
+  // Einzelstück o samt Spiegelbild setzen, wenn alle Zellen frei sind (Spiegelbild halb gedreht)
+  const put = (o) => {
+    const m = { ...o, x: W - o.x, y: H - o.y, rot: ((o.rot ?? 0) + 4) % 8 };
+    const all = [...propCells(o, cols, rows), ...propCells(m, cols, rows)];
+    if (!all.every((j) => free(((j % cols) + 0.5) * TILE, (Math.floor(j / cols) + 0.5) * TILE))) return false;
+    props.push(o, m);
+    for (const j of all) taken.add(`${j % cols},${Math.floor(j / cols)}`);
+    return true;
+  };
+  // Kriegsspuren im Ring um die Zone
+  for (let i = 0; i < PG.scars; i++) {
+    const kind = pick(PG.scarKinds, rng.next());
+    for (let t = 0; t < PG.scarTries; t++) {
+      const a = rng.next() * Math.PI * 2;
+      const r = ZONE_R + rng.range(...PG.scarRing);
+      const rot = Math.floor(rng.next() * 8) & (PROPS.kinds[kind].rotStep === 2 ? 6 : 7);
+      if (put({ kind, x: Math.round(CX + Math.cos(a) * r), y: Math.round(CY + Math.sin(a) * r), rot })) break;
+    }
+  }
+  // Kleinkram an Einzelhäusern (Häuser liegen paarweise: Original, Spiegelbild)
+  const homes = town.buildings.filter((b) => b.kind === 'house');
+  for (let i = 0; i < homes.length; i += 2) {
+    const h = homes[i];
+    const roll = rng.next();
+    const kind = pick(PG.homeKinds, rng.next());
+    const a = rng.next() * Math.PI * 2;
+    const r = rng.range(...PG.homeR);
+    const rot = Math.floor(rng.next() * 4) * 2;
+    if (roll > PG.homes) continue;
+    put({ kind, x: Math.round(h.x + Math.cos(a) * r), y: Math.round(h.y + Math.sin(a) * r), rot });
   }
   return props;
 }

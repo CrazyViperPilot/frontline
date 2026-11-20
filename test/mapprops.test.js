@@ -159,10 +159,17 @@ test('Bild: jede Art (Kacheln in jeder Verbindung, mit Toren, Einzelstücke in j
   const { fenceModel } = await import('../js/render/fences.js');
   const { milModel } = await import('../js/render/milprops.js'); // meldet die Kacheln der Militär-Props an
   const { indModel, isIndSingle } = await import('../js/render/indprops.js');
+  const { civModel, isCivSingle, DELEGATE } = await import('../js/render/civprops.js'); // meldet die Hecke an
   for (const kind of Object.keys(PROPS.kinds).filter((k) => !PROPS.kinds[k].line)) {
     for (let rot = 0; rot < 8; rot++) {
       for (const [rubble, open] of [[false, false], [true, false], [false, true]]) {
-        const S = isIndSingle(kind) ? indModel(kind, rot % 3, rot, rot % 2 === 0, rubble, (rot % 3) + 1) : milModel(kind, rot % 3, rot, rot % 2 === 0, rubble, '#3d8bfd', open);
+        if (DELEGATE[kind]) continue; // vorhandene Maler (Auto, Bank, Ballen, Busch, Fels): eigene Tests
+        const season = ['summer', 'autumn', 'winter'][rot % 3];
+        const S = isIndSingle(kind)
+          ? indModel(kind, rot % 3, rot, rot % 2 === 0, rubble, (rot % 3) + 1)
+          : isCivSingle(kind)
+            ? civModel(kind, rot % 3, rot, season, rubble)
+            : milModel(kind, rot % 3, rot, rot % 2 === 0, rubble, '#3d8bfd', open);
         assert.ok(S.length > 0 || (rubble && !PROPS.kinds[kind].rubble), `${kind}: Bild`);
         for (const so of S) for (const f of so.faces) for (const p of f) assert.ok(p.every(Number.isFinite), `${kind}: Koordinate`);
       }
@@ -265,4 +272,21 @@ test('Zufallskarten: Lagerhöfe an Hallen, punktsymmetrisch', () => {
   assert.ok(a.length > 0 && a.length < 120, `${a.length} Teile`);
   const all = new Set(a.map((p) => `${p.kind},${p.x},${p.y}`));
   for (const p of a) assert.ok(all.has(`${p.kind},${BALANCE.map.width - p.x},${BALANCE.map.height - p.y}`));
+});
+
+test('Zivil und Natur: Hecke verdeckt die Sicht, im Krater hat Infanterie Deckung nach allen Seiten, umgestürzter Baum sperrt', () => {
+  const k = at(8, 8);
+  const t = at(16, 8);
+  const g = gameWith([{ kind: 'crater', ...k }, { kind: 'fallen_tree', ...t }]);
+  const u = g.spawnUnit('rifleman', 1, k.x + 4, k.y + 4);
+  for (const [dx, dy] of [[300, 0], [-300, 0], [0, 300], [0, -300]]) assert.equal(propCover(g, u, k.x + dx, k.y + dy), PROPS.kinds.crater.cover, `Schütze aus ${dx},${dy}`);
+  const inf = g.spawnUnit('rifleman', 0, at(0, 0).x, at(0, 0).y);
+  assert.equal(g.grid.passable(g.grid.toCell(t.x), g.grid.toCell(t.y), moverOf(inf)), false, 'Baum sperrt');
+  const look = (props) => {
+    const h = gameWith(props);
+    h.spawnUnit('rifleman', 0, at(9, 10).x, at(9, 10).y);
+    h.fog[0].update(h, 0);
+    return h.fog[0].isVisible(at(14, 10).x, at(14, 10).y);
+  };
+  assert.equal(look(column('hedge', 10, 0, 20)), false, 'Hecke verdeckt');
 });

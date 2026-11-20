@@ -20,6 +20,7 @@
 //   conceal   Tarnnetz: Einheiten darunter sind getarnt
 //   blast     fliegt bei Zerstörung durch Beschuss in die Luft { r, damage je Panzerklasse }
 //   stack     bis zu so viele Lagen übereinander (map: stack 1 … stack; Container): Trefferpunkte und Sichthöhe je Lage
+//   rotStep   Drehung im Editor in Achteln je Druck (Autos: 2 = 90°, sie stehen an den Achsen)
 //   foot      Teilflächen [[x0, x1, y0, y1] …] (px, wie size gedreht): nur sie sperren (Portalkran: nur die Beine)
 export const PROPS = {
   // Deckung (combat.js): Infanterie höchstens r px vom Rand einer Prop-Zelle, die zwischen ihr und dem Schützen liegt (Winkel zur
@@ -29,7 +30,7 @@ export const PROPS = {
   // Splash von Granaten und Bomben (combat.impact) trifft Props mit diesem Anteil des Schadens gegen ihre Panzerklasse
   splashMul: 1,
   // Gruppen im Editor (Reihenfolge der Auswahlliste)
-  groups: { fence: 'Zäune und Mauern', mil: 'Militär', ind: 'Industrie und Logistik' },
+  groups: { fence: 'Zäune und Mauern', mil: 'Militär', ind: 'Industrie und Logistik', civ: 'Zivil und Natur', war: 'Kriegsspuren' },
   // Fahnen (Kontrollpunkt, Zelt, Funkmast): in der Eroberung zeigt eine Fahne die Farbe des Besitzers der nächsten Flagge, wenn sie
   // höchstens flagReach px von ihr steht; sonst die im Editor eingestellte Farbe (team) oder weiß (neutral)
   flagReach: 700,
@@ -412,6 +413,193 @@ export const PROPS = {
       cover: 0.15,
       sight: 0,
       hp: 40,
+      armor: 'light',
+      rubble: null,
+    },
+    // ---------- Zivil und Natur (Schritt 5) ----------
+    civ_car: {
+      name: 'Zivilauto',
+      group: 'civ',
+      size: [36, 16],
+      rotStep: 2,
+      blocks: 'all',
+      crush: true,
+      cover: 0.4,
+      coverVeh: 0.2,
+      sight: 0,
+      hp: 100,
+      armor: 'light',
+      rubble: { blocks: 'all', crush: true, cover: 0.35, sight: 0 }, // ausgebrannt
+    },
+    bus_stop: {
+      name: 'Bushaltestelle',
+      group: 'civ',
+      size: [40, 14],
+      blocks: 'all',
+      crush: true,
+      cover: 0.1,
+      sight: 0, // Glas
+      hp: 60,
+      armor: 'light',
+      rubble: { blocks: 'none', crush: true, cover: 0, sight: 0 }, // Gestell ohne Scheiben
+    },
+    bench: {
+      name: 'Parkbank',
+      group: 'civ',
+      size: [20, 8],
+      blocks: 'none',
+      crush: true,
+      cover: 0.1,
+      sight: 0,
+      hp: 30,
+      armor: 'light',
+      rubble: null,
+    },
+    mailbox: {
+      name: 'Briefkasten',
+      group: 'civ',
+      size: [6, 6],
+      blocks: 'none',
+      crush: true,
+      cover: 0,
+      sight: 0,
+      hp: 20,
+      armor: 'light',
+      rubble: null,
+    },
+    road_sign: {
+      name: 'Verkehrsschild',
+      group: 'civ',
+      size: [6, 6],
+      blocks: 'none',
+      crush: true,
+      cover: 0,
+      sight: 0,
+      hp: 20,
+      armor: 'light',
+      rubble: { blocks: 'none', crush: true, cover: 0, sight: 0 }, // umgeknickt
+    },
+    hay_bale: {
+      name: 'Heuballen',
+      group: 'civ',
+      size: [20, 13],
+      blocks: 'all',
+      crush: true,
+      cover: 0.4,
+      sight: 0,
+      hp: 40,
+      armor: 'light',
+      rubble: null,
+    },
+    log_pile: {
+      name: 'Holzstapel',
+      group: 'civ',
+      size: [36, 16],
+      blocks: 'all',
+      crush: true,
+      cover: 0.5,
+      sight: 0,
+      hp: 150,
+      armor: 'light',
+      rubble: { blocks: 'none', crush: true, cover: 0.2, sight: 0 }, // verstreute Stämme
+    },
+    well: {
+      name: 'Brunnen',
+      group: 'civ',
+      size: [20, 20],
+      blocks: 'all',
+      crush: false,
+      cover: 0.4,
+      sight: 0,
+      hp: 300,
+      armor: 'struct',
+      rubble: { blocks: 'veh', crush: true, cover: 0.3, sight: 0 }, // Brunnenring ohne Dach
+    },
+    rock: {
+      name: 'Felsen',
+      group: 'civ',
+      size: [24, 24],
+      blocks: 'all',
+      crush: false,
+      cover: 0.5,
+      coverVeh: 0.3,
+      sight: 0,
+      hp: 3000, // praktisch unzerstörbar
+      armor: 'struct',
+      rubble: null,
+    },
+    bush: {
+      name: 'Busch',
+      group: 'civ',
+      size: [16, 16],
+      blocks: 'none',
+      crush: true,
+      cover: 0.1,
+      sight: 0,
+      hp: 20,
+      armor: 'light',
+      rubble: null,
+    },
+    hedge: {
+      name: 'Hecke',
+      group: 'civ',
+      line: true,
+      blocks: 'all',
+      crush: true,
+      cover: 0.2, // Blätter halten kaum Kugeln auf
+      sight: 20, // aber man sieht nicht hindurch (Fahrzeuge mit Augenhöhe 20 gerade nicht)
+      hp: 80,
+      armor: 'light',
+      rubble: null,
+    },
+    // ---------- Kriegsspuren ----------
+    crater: {
+      name: 'Krater',
+      group: 'war',
+      size: [40, 40],
+      blocks: 'none',
+      crush: false,
+      cover: 0.35, // wer darin steht, liegt tiefer: Deckung nach allen Seiten
+      sight: 0,
+      hp: 9999, // unzerstörbar
+      armor: 'struct',
+      rubble: null,
+    },
+    rubble_heap: {
+      name: 'Trümmerhaufen',
+      group: 'war',
+      size: [40, 32],
+      blocks: 'veh', // Infanterie klettert darüber
+      crush: true,
+      cover: 0.4,
+      coverVeh: 0.2,
+      sight: 0,
+      hp: 1000,
+      armor: 'struct',
+      rubble: null,
+    },
+    burnt_car: {
+      name: 'Ausgebranntes Auto',
+      group: 'war',
+      size: [36, 16],
+      rotStep: 2,
+      blocks: 'all',
+      crush: true,
+      cover: 0.35,
+      sight: 0,
+      hp: 150,
+      armor: 'heavy',
+      rubble: null,
+    },
+    fallen_tree: {
+      name: 'Umgestürzter Baum',
+      group: 'war',
+      size: [60, 20],
+      blocks: 'all',
+      crush: true,
+      cover: 0.35,
+      sight: 0,
+      hp: 120,
       armor: 'light',
       rubble: null,
     },

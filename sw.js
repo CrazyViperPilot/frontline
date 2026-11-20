@@ -164,6 +164,7 @@ const ASSETS = [
   './js/render/fences.js',
   './js/render/milprops.js',
   './js/render/indprops.js',
+  './js/render/civprops.js',
   './js/render/bigbuild.js',
   './js/render/cityhall.js',
   './js/render/govquarter.js',

@@ -318,7 +318,7 @@ export const MAPGEN = {
     field: 0.3, // Anteil der geraden Äcker mit einem Stück Mauer oder Zaun an einer Seite
     len: [4, 9], // Kacheln je Stück (ganze Zahl, Zufallsbereich); kürzere Reste entfallen
     minLen: 3, // so viele Kacheln braucht ein Stück mindestens
-    kinds: [['wall_stone', 0.5], ['fence_wood', 0.85], ['fence_wire', 1]], // Arten (kumulierte Wahrscheinlichkeit)
+    kinds: [['wall_stone', 0.4], ['hedge', 0.65], ['fence_wood', 0.88], ['fence_wire', 1]], // Arten (kumulierte Wahrscheinlichkeit)
     gateMin: 7, // ab so vielen Kacheln hat ein Zaun in der Mitte ein offenes Tor
     roadGap: 6, // Abstand (px) vom Straßen- und Feldwegrand
     spawnGap: 900, // Abstand (px) zu den Startpunkten (Bauland bleibt frei)
@@ -337,5 +337,14 @@ export const MAPGEN = {
     yardFill: 0.5, // Anteil der Plätze, die belegt werden
     stackMax: 2, // höchstens so viele Lagen Container im Hof
     lampAt: 0.5, // Anteil der Höfe mit Laternenmast an der Hallenecke
+    // Kriegsspuren im Ring um die Zone: Krater, Trümmerhaufen, ausgebrannte Autos, umgestürzte Bäume (Paare)
+    scars: 7, // Paare
+    scarRing: [120, 1300], // Abstand (px) vom Zonenrand (Zufallsbereich)
+    scarKinds: [['crater', 0.45], ['rubble_heap', 0.62], ['burnt_car', 0.8], ['fallen_tree', 1]],
+    scarTries: 12, // Versuche je Paar
+    // Kleinkram an Einzelhäusern außerhalb der Zone: Holzstapel, Brunnen, Auto, Briefkasten
+    homes: 0.35, // Anteil der Häuserpaare mit einem Stück
+    homeR: [62, 90], // Abstand (px) von der Hausmitte (Zufallsbereich)
+    homeKinds: [['log_pile', 0.35], ['well', 0.55], ['civ_car', 0.85], ['mailbox', 1]],
   },
 };

@@ -110,7 +110,7 @@ export const isoItemMethods = {
       if (relief) cam.pin(this.baseHeight(it));
       if (it.t === 6) drawMapCarShadowIso(ctx, cam, it.o, dpr);
       else if (it.t === 7) drawBenchShadowIso(ctx, cam, it.o, dpr);
-      else if (it.t === 16) drawPropShadowIso(ctx, cam, it.o, this.season); // scharf nach links unten (mapprops.js)
+      else if (it.t === 16) drawPropShadowIso(ctx, cam, it.o, this.season, dpr); // scharf nach links unten (mapprops.js)
       else drawBaleShadowIso(ctx, cam, it.o, dpr);
       cam.unpin();
     }

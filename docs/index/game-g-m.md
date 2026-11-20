@@ -146,5 +146,5 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - cmdDropoff(game, team, cmd) – { type: 'dropoff', ids, x, y }: Hubschrauber fliegt zum Punkt und setzt alle Pa…
 - updateLogistics(game, dt) – Logistik-Schritt: LKW-Aufträge fahren und laden, alle resupplyInterval s Nachfü…
 
-## map.js (46 KB)
+## map.js (48 KB)
 - generateMap(seed, { river = false, players = 2 }) – Erzeugt eine Karte

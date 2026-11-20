@@ -1799,7 +1799,7 @@ function showInspector() {
     rows.push(`<div class="row">${K?.gate ? `<button data-i="gate">${K.line ? gname : `Schranke ${gname}`}</button>` : ''}<button data-i="turn">Drehen</button><button data-i="pkind">Art</button></div>`);
     if (K?.flag) rows.push(`<div class="row"><button data-i="pteam">Fahne: ${team}</button></div>`);
     if (K?.stack) rows.push(`<div class="row"><button data-i="pstack">Lagen: ${s.o.stack ?? 1}</button></div>`);
-    rows.push(`<div class="muted small">${K ? propRulesText(K) : ''} ${K?.line ? 'Tor nur in geraden Stücken; offen hält es niemanden auf. „Drehen“ gilt für einzelne Kacheln ohne Nachbarn.' : `Drehen: 45° je Druck (jetzt ${(s.o.rot ?? 0) * 45}°).${K?.flag ? ' Fahne: in der Eroberung zeigt sie den Besitzer der nächsten Flagge.' : ''}`}</div>`);
+    rows.push(`<div class="muted small">${K ? propRulesText(K) : ''} ${K?.line ? 'Tor nur in geraden Stücken; offen hält es niemanden auf. „Drehen“ gilt für einzelne Kacheln ohne Nachbarn.' : `Drehen: ${(K?.rotStep ?? 1) * 45}° je Druck (jetzt ${(s.o.rot ?? 0) * 45}°).${K?.flag ? ' Fahne: in der Eroberung zeigt sie den Besitzer der nächsten Flagge.' : ''}`}</div>`);
   } else if (s.k === 'crate') {
     const d = st.map.spawns.map((sp) => Math.round(Math.hypot(sp.x - s.o.x, sp.y - s.o.y)));
     rows.push(`<div class="muted small">Ziehen verschiebt die Kiste. Abstand zu den Starts: ${d[0]} / ${d[1]} px. Auf freien Boden setzen (sonst rückt sie im Spiel zur nächsten freien Stelle).</div>`);
@@ -1855,7 +1855,7 @@ function inspectorAction(a) {
     if (t >= BALANCE.teamNames.length) delete o.team;
     else o.team = t;
   } else if (a === 'turn' && s.k === 'prop') {
-    o.rot = ((o.rot ?? 0) + (PROPS.kinds[o.kind]?.line ? 2 : 1)) & 7; // Achtel: Kacheln um 90°, Einzelstücke um 45°
+    o.rot = ((o.rot ?? 0) + (PROPS.kinds[o.kind]?.rotStep ?? (PROPS.kinds[o.kind]?.line ? 2 : 1))) & 7; // Achtel: Kacheln und Autos um 90°, Einzelstücke um 45°
     if (!o.rot) delete o.rot;
   } else if (a === 'turn') {
     if (s.k === 'car') o.vertical = !o.vertical;
@@ -1933,7 +1933,7 @@ $('[data-insp]').addEventListener('click', (e) => {
 
 function brushAction(a) {
   if (a === 'prot') {
-    st.propRot = (st.propRot + 1) & 7; // nächstes Einzelstück um 45° weiter gedreht
+    st.propRot = (st.propRot + (PROPS.kinds[st.propKind]?.rotStep ?? 1)) & 7; // nächstes Einzelstück um 45° (Autos 90°) weiter gedreht
     showInspector();
     st.needDraw = true;
     return;

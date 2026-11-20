@@ -226,7 +226,8 @@ function carModel(kind, col, v, season) {
 /** Aussehen eines geparkten Autos (fest je Lage): Form und Richtung (an x oder y, nach vorn oder hinten). */
 function carLook(c) {
   const h = hashXY(c.x, c.y);
-  return { kind: CAR_PICK[(h >>> 5) % CAR_PICK.length], angle: (c.vertical ? Math.PI / 2 : 0) + ((h >>> 11) & 1 ? Math.PI : 0) };
+  // angle gesetzt (Props der Karte): genau diese Richtung, sonst längs oder quer, vorn oder hinten nach Lage
+  return { kind: CAR_PICK[(h >>> 5) % CAR_PICK.length], angle: c.angle ?? (c.vertical ? Math.PI / 2 : 0) + ((h >>> 11) & 1 ? Math.PI : 0) };
 }
 
 const colorOf = (c) => (typeof c.color === 'string' && /^#[0-9a-f]{6}$/i.test(c.color) ? c.color : '#b8b8b0');
@@ -240,14 +241,15 @@ export function drawMapCarIso(ctx, cam, c, season = 'summer') {
   const sn = seasonKey(season);
   const m = carModel(L.kind, col, `${nearSide(yaw) > 0 ? '+' : '-'}${nearEnd(yaw) > 0 ? '+' : '-'}`, sn);
   const f = cam.zoom * CAR_ISO;
-  const e = sprite(`mc|${L.kind}|${col}|${sn}|${sec}`, f * spriteDpr(), boundsOf(m, m.S, yaw, true), (cx, s) => paintGroups(cx, m.groups, yaw, { iso: true, s }));
+  const ch = !!c.charred; // ausgebrannt (Props der Karte, mapprops.js)
+  const e = sprite(`mc|${L.kind}|${col}|${sn}|${sec}${ch ? '|x' : ''}`, f * spriteDpr(), boundsOf(m, m.S, yaw, true), (cx, s) => paintGroups(cx, m.groups, yaw, { iso: true, s, charred: ch }));
   if (e === false) return false;
   const p = cam.worldToScreen(c.x, c.y);
   if (e) blit(ctx, e, p.x, p.y, f);
   else {
     ctx.save();
     ctx.translate(p.x, p.y);
-    paintGroups(ctx, m.groups, yaw, { iso: true, s: f });
+    paintGroups(ctx, m.groups, yaw, { iso: true, s: f, charred: ch });
     ctx.restore();
   }
   return true;
@@ -271,11 +273,12 @@ export function drawMapCarTop(ctx, c, zoom = 1, season = 'summer') {
   const m = carModel(L.kind, col, 'top', sn);
   const sc = zoom * spriteDpr() * CAR_TOP;
   const b = boundsOf(m, m.S, 0, false);
-  const e = sprite(`mct|${L.kind}|${col}|${sn}`, sc, b, (cx, s) => paintSolids(cx, m.S, 0, { iso: false, s }));
+  const ch = !!c.charred;
+  const e = sprite(`mct|${L.kind}|${col}|${sn}${ch ? '|x' : ''}`, sc, b, (cx, s) => paintSolids(cx, m.S, 0, { iso: false, s, charred: ch }));
   if (e === false) return false;
   const ms = carModel(L.kind, '#808080', 'top', 's');
   const sh = sprite(`mcs|${L.kind}`, sc, boundsOf(ms, ms.S, 0, false), (cx, s) => paintSolids(cx, ms.S, 0, { iso: false, s, shadow: true }));
-  placeTop(ctx, e, sh, c.x, c.y, L.angle, CAR_TOP, 2.2, (cx) => paintSolids(cx, m.S, 0, { iso: false, s: zoom * CAR_TOP }));
+  placeTop(ctx, e, sh, c.x, c.y, L.angle, CAR_TOP, 2.2, (cx) => paintSolids(cx, m.S, 0, { iso: false, s: zoom * CAR_TOP, charred: ch }));
   return true;
 }
 

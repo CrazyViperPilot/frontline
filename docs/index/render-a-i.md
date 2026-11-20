@@ -78,6 +78,11 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawSiteTop(ctx, b, zoom) – Baustelle von oben (2D, Weltkoordinaten, Kamera-Transformation gesetzt)
 - siteWall – Farbe des Rohbaus je Zellenart und Variante (Wohnen meist Kalksandstein, manchm…
 
+## civprops.js (14 KB)
+- isCivSingle(kind) – Gibt es ein eigenes Modell dieser Art hier?
+- civModel(kind, v, d, season, rubble) – Körper eines Einzelstücks (Modellrichtung)
+- DELEGATE
+
 ## color.js (1.4 KB)
 - rgbOf(c) – Farbe als [r, g, b] (0 … 255): '#rrggbb' oder 'rgb(r,g,b)' (Ergebnis von shade/…
 - hexOf(c) – [r, g, b] als '#rrggbb' (gerundet, auf 0 … 255 begrenzt)
@@ -93,7 +98,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - addLineKinds(defs) – Weitere Kachelarten anderer Module (Sandsäcke, Hesco … in milprops.js) mit arm/…
 - isFenceKind(kind) – Gibt es ein Bild für diese Art (Kachel aus diesem Modul)?
 - fenceHeight(kind) – Höhe einer Art (px), für den Schatten in 2D
-- fenceModel(kind, mask, along, gate, rubble, v, d, w) – Körper einer Kachel
+- fenceModel(kind, mask, along, gate, rubble, v, d, w, season) – Körper einer Kachel
 
 ## fields.js (29 KB)
 - fieldBales(f) – Heu- und Strohballen eines Felds (fest je Lage): auf Weiden 1–3 Heuballen, auf…
@@ -148,5 +153,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - setIsoGround(ctx, cam, dpr) – Bodenebene der ganzen Welt isometrisch (Gelände, Zone, Nebel …); mit Gelände au…
 - drawBox(ctx, cam, x0, y0, x1, y1, h, color, opts) – Quader mit Grundfläche [x0,x1]×[y0,y1] (Welt) und Höhe h (Bildschirm-Pixel, mit…
 - drawRotBox(ctx, cam, cx, cy, len, wid, ang, h, color, opts) – Quader um (cx, cy) mit Länge `len` (entlang `ang`) und Breite `wid`, beliebig g…
-- wallPoint(w, t, hpx, off) – Punkt auf einer Wand von drawBox: t = Lage entlang der Wand (0–1, in Richtung d…
-- wallQuad(w, t0, t1, h0, h1, off) – Viereck auf einer Wand (t0–t1 entlang, h0–h1 Höhe in Pixeln, off nach außen)

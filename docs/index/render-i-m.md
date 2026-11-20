@@ -3,6 +3,8 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
 ## iso.js (Fortsetzung)
+- wallPoint(w, t, hpx, off) – Punkt auf einer Wand von drawBox: t = Lage entlang der Wand (0–1, in Richtung d…
+- wallQuad(w, t0, t1, h0, h1, off) – Viereck auf einer Wand (t0–t1 entlang, h0–h1 Höhe in Pixeln, off nach außen)
 - drawTree(ctx, cam, t, season) – Baum: Schatten, Stamm und zwei Kronenkugeln (aufrecht), Krone nach Jahreszeit
 - drawRock(ctx, cam, o) – Fels: Schatten und flacher Brocken (aufrecht)
 - fitText
@@ -154,7 +156,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - propLooks(g) – Aussehen der Props einer Partie
 - propFlagColor(g, o) – Farbe der Fahne eines Props: in der Eroberung der Besitzer der nächsten Flagge…
 - drawPropIso(ctx, cam, o, season, flag) – Prop in Iso (Fuß am Weltpunkt)
-- drawPropShadowIso(ctx, cam, o, season) – Iso: Schatten eines Props, scharf begrenzt nach links unten
+- drawPropShadowIso(ctx, cam, o, season, dpr) – Iso: Schatten eines Props, scharf begrenzt nach links unten
 - drawPropsTop(ctx, looks, inRect, zoom, season, flagOf) – 2D (Weltkoordinaten): erst alle Schatten, dann alle Props, damit kein Schatten…
 
 ## maptown.js (96 KB)
@@ -174,5 +176,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawSelectMark(ctx, e, z, hover, iso, scale) – Auswahl- bzw. Hover-Markierung eines Objekts am Boden
 - drawDragFrame(ctx, d) – Auswahlrahmen beim Aufziehen (Bildschirmkoordinaten, Transformation auf DPR): F…
 - drawGauge(ctx, x, y, w, h, frac, color, px, ticks) – Balken mit dunkler Platte (1 Bildschirmpixel Rand), dunkelgrauem leerem Teil, F…
-- drawCargoGauge(ctx, x, y, w, h, parts, px) – LKW-Ladung: ein Balken mit den Sorten nebeneinander (parts = [[Anteil 0..1, Far…
-- drawStarMark(ctx, x, y, r, zoom) – Kommandeursstern mit Mittelpunkt (x, y) in Welt, r = Radius in Weltmaßen, zoom…

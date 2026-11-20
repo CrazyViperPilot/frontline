@@ -251,7 +251,30 @@ Werte je Art in `js/data/props.js` (Tabelle unten), Regeln in `js/game/props.js`
   ihre eigene Farbe (sieben Reedereifarben, aus der Lage gewählt).
 - **Zufallskarten:** Die Hälfte der freistehenden Hallenpaare bekommt einen Lagerhof: eine Reihe Container (bis zwei Lagen), Paletten,
   Kisten, Fässer, Reifen, Gabelstapler oder Stromverteiler 34 px vor einer Längsseite, dazu oft ein Laternenmast an der Ecke; gespiegelt.
-  Fabrikhöfe bleiben frei (Umfahrung innerhalb der Mauer). Zusammen mit Feldern und Lagern im Mittel rund 67 Props je Karte.
+  Fabrikhöfe bleiben frei (Umfahrung innerhalb der Mauer).
+
+**Zivil und Natur, Kriegsspuren** (Gruppen „Zivil und Natur“, „Kriegsspuren“; Hecke als Kachel, sonst Einzelstücke):
+
+| Art | hält auf | Kette walzt nieder | Deckung Inf. / Fz. | verdeckt Sicht | Treffer­punkte | danach / Besonderes |
+|---|---|---|---|---|---|---|
+| Zivilauto | alle | ja | 40 % / 20 % | nein | 100 | ausgebrannt; Farbe aus der Lage; Drehung in 90°-Schritten |
+| Bushaltestelle | alle | ja | 10 % / – | nein | 60 | Gestell ohne Scheiben |
+| Parkbank, Briefkasten, Verkehrsschild, Busch | niemanden | ja | bis 10 % | nein | 20 bis 30 | Schild: Stopp, Vorfahrt achten, Tempo, Hinweis |
+| Heuballen | alle | ja | 40 % / – | nein | 40 | weg |
+| Holzstapel | alle | ja | 50 % / – | nein | 150 | verstreute Stämme, 20 % Deckung |
+| Brunnen | alle | nein | 40 % / – | nein | 300 | Brunnenring hält Fahrzeuge auf |
+| Felsen | alle | nein | 50 % / 30 % | nein | 3000 | praktisch unzerstörbar |
+| Hecke (Kachel) | alle | ja | 20 % / – | ja (Höhe 20) | 80 | weg; Laub je Jahreszeit, im Winter kahl |
+| Krater | niemanden | – | 35 % / – | nein | unzerstörbar | Infanterie darin hat Deckung nach allen Seiten |
+| Trümmerhaufen | Fahrzeuge | ja | 40 % / 20 % | nein | 1000 | Infanterie klettert darüber |
+| Ausgebranntes Auto | alle | ja | 35 % / – | nein | 150 | weg |
+| Umgestürzter Baum | alle | ja | 35 % / – | nein | 120 | weg |
+
+- **Bild:** Zivilauto, ausgebranntes Auto, Parkbank, Heuballen, Busch und Felsen zeichnen dieselben Maler wie die Autos, Bänke, Ballen
+  und die Natur der Karte; die Hecke verdeckt Infanterie (Augen 16), Fahrzeuge (20) sehen gerade nicht darüber.
+- **Zufallskarten:** Hecken an Äckern (wie Mauern und Zäune), 7 Paare Kriegsspuren 120 bis 1300 px außerhalb des Zonenrands, an gut einem
+  Drittel der Einzelhäuser ein Stück Kleinkram (Holzstapel, Brunnen, Auto, Briefkasten), alles gespiegelt. Zusammen mit Feldern, Lagern
+  und Höfen im Mittel rund 96 Props je Karte.
 
 - **Bewegung:** Infanterie, Radfahrzeuge und Kettenfahrzeuge (`crush` in `units.js`: Kampfpanzer, Schützenpanzer, Bergepanzer,
   Flakpanzer, Gepard, Panzerhaubitze, Raketenwerfer, Bagger, Brückenleger) suchen getrennte Wege. Ein Kettenfahrzeug fährt durch

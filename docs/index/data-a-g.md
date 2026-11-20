@@ -1,4 +1,4 @@
-# Symbol-Index data (Teil 2 von 2, ai.js bis units.js)
+# Symbol-Index data (Teil 2 von 3, ai.js bis goods.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/data/`. Pfade relativ zu `js/data/`.
 
@@ -93,7 +93,14 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - JET_GROUP – so viele startbereite F-16 fliegen zusammen los (seit v5.03; Zahl der Jets und…
 - JET_EVERY – s zwischen zwei Startbefehlen an die Jets
 - JET_STEEL_LOTS – fehlt Stahl für ein Flugzeug, kauft sie davor höchstens so viele Lose am Markt…
-- JET_ARMOR_RANGE – Vielfaches von DEF_RANGE um die Hauptstadt: gepanzerte Gegner darin (oder in de…
+- STRIKE_EVERY – Luftschlag der KI (Paket „Aufklären und Luftschlag“, combat.js strikeTarget): J…
+- STRIKE_MIN – Geldwert der Gegner um das Ziel, ab dem sich ein Luftschlag lohnt
+- STRIKE_CLUSTER_R – px: gesehene Gegner so nah am Ziel zählen zu seinem Wert (Gruppe)
+- STRIKE_CONTACT_R – px: stehen eigene Bodeneinheiten so nah am Ziel, gilt es als Feindkontakt
+- STRIKE_CONTACT_MUL – Wert eines Ziels mit Feindkontakt mal so viel (eigene Truppen entlasten)
+- STRIKE_AA_MARGIN – px über die Reichweite gesehener Flugabwehr hinaus: Ziele darin greift sie nich…
+- RECON_FOBS – so viele gesehene gegnerische FOBs überfliegt die U-2 reihum mit Zone und Haupt…
+- STRIKE_AA_DMG – Schaden je Treffer gegen Flugzeuge, ab dem eine Waffe als Flugabwehr gilt (MG z…
 - JET_QUEUE – so viele F-16 höchstens in der Warteschlange eines Fliegerhorsts
 - CQ_HOLD – Eroberung (js/ai/army/conquest.js, PRD §7 „Eroberung“): Flaggen als Angriffszie…
 - CQ_EVERY – s zwischen zwei Marschbefehlen an dieselbe Flaggengruppe
@@ -146,20 +153,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - STORED_GOODS – Waren mit Lager (Hauptstadt oder Stadtlager)
 - CITY_STORE_GOODS – Waren im Stadtlager (Stahl heißt intern metal)
 - MARKET_GOODS – Waren am Markt
-- GOOD_NAME – Name, Kürzel und Farbe je Ware
-- GOOD_SHORT
-- GOOD_COLOR
-- IMPORTS – Rohwaren (Paket „Import“): kommen von außerhalb der Karte über eine eigene Stra…
-- IMPORT_GOODS – Rohwaren in der Reihenfolge des Registers
-
-## mapgen.js (27 KB)
-- MAPGEN – Werte des Kartengenerators (js/game/map.js, landscape.js, relief.js, river.js,…
-
-## props.js (18 KB)
-- PROPS – Props der Karte (Deko und Gelände: Zäune, Mauern, später Sandsäcke, Container,…
-
-## research.js (12 KB)
-- RESEARCH
-
-## units.js (36 KB)
-- UNITS

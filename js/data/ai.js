@@ -251,7 +251,15 @@ export const HELI_MIN_MONEY = 300; // seit v5.26: so viel über seinem Preis spa
 export const JET_GROUP = 2; // so viele startbereite F-16 fliegen zusammen los (seit v5.03; Zahl der Jets und Reserve: CITY.ai.jets/jetReserve)
 export const JET_EVERY = 6; // s zwischen zwei Startbefehlen an die Jets
 export const JET_STEEL_LOTS = 10; // fehlt Stahl für ein Flugzeug, kauft sie davor höchstens so viele Lose am Markt (combat.js steelFor)
-export const JET_ARMOR_RANGE = 2; // Vielfaches von DEF_RANGE um die Hauptstadt: gepanzerte Gegner darin (oder in der Zone) sind Ziele der F-16
+// Luftschlag der KI (Paket „Aufklären und Luftschlag“, combat.js strikeTarget): Jets mit Bodenwaffen greifen gesehene Gruppen an und landen danach
+export const STRIKE_EVERY = 20; // s zwischen zwei Luftschlägen
+export const STRIKE_MIN = 800; // Geldwert der Gegner um das Ziel, ab dem sich ein Luftschlag lohnt
+export const STRIKE_CLUSTER_R = 180; // px: gesehene Gegner so nah am Ziel zählen zu seinem Wert (Gruppe)
+export const STRIKE_CONTACT_R = 500; // px: stehen eigene Bodeneinheiten so nah am Ziel, gilt es als Feindkontakt
+export const STRIKE_CONTACT_MUL = 1.5; // Wert eines Ziels mit Feindkontakt mal so viel (eigene Truppen entlasten)
+export const STRIKE_AA_MARGIN = 150; // px über die Reichweite gesehener Flugabwehr hinaus: Ziele darin greift sie nicht aus der Luft an
+export const RECON_FOBS = 2; // so viele gesehene gegnerische FOBs überfliegt die U-2 reihum mit Zone und Hauptstadt
+export const STRIKE_AA_DMG = 20; // Schaden je Treffer gegen Flugzeuge, ab dem eine Waffe als Flugabwehr gilt (MG zählt nicht)
 export const JET_QUEUE = 2; // so viele F-16 höchstens in der Warteschlange eines Fliegerhorsts
 // Eroberung (js/ai/army/conquest.js, PRD §7 „Eroberung“): Flaggen als Angriffsziele, jeder gegen jeden
 export const CQ_HOLD = 2; // so viele Einheiten bleiben als Wache an einer eingenommenen Flagge, der Rest zieht zur nächsten

@@ -190,7 +190,7 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   F-22 fliegen nur gegen Luftziele (Hubschrauber, Flugzeuge, U-2), sonst patrouillieren sie über die Zone.
   Die U-2 (`recon()`) kauft sie höchstens einmal gleichzeitig (`reconMax`), ab `reconFrom` (Leicht nie), erst mit einem Kampfjet, nur auf einem ganz freien Stellplatz und mit `jetReserve` danach;
   die Stadt-KI hält dafür einen Stellplatz frei.
-  Startbereit fliegt sie im Wechsel über die Konfliktzone und die gegnerische Hauptstadt und kreist dort; höchstens alle `reconEvery` s ein Flug.
+  Startbereit fliegt sie reihum über die Konfliktzone, die gegnerische Hauptstadt und gesehene FOBs und kreist dort; höchstens alle `reconEvery` s ein Flug.
 - **Fliegerhorst mit Anschlusspflicht (Baugebiet):** Die Bahn braucht keinen Anschluss (Paket „Fliegerhorst-Anschluss“; der frühere Schalter `CITY.ai.runwayLink` ist entfallen).
   Stellplätze und Tower legt die KI neben die Bahn, ohne Straße; die Reihe liegt unter bzw. rechts der Bahn oder, wenn nur diese Seite
   im eigenen Gebiet erlaubt ist, darüber bzw. links (Paket „Luftwaffe der KI“; vorher nur unten/rechts, die KI oben rechts fand oft keinen Platz).
@@ -267,6 +267,15 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   Alle 6 s schickt sie startbereite Jets zu zweit los (`JET_EVERY`, `JET_GROUP`):
   zuerst gegen gesehene Hubschrauber und Flugzeuge, dann gegen Fahrzeuge in der Zone oder nahe ihrer Basis, sonst auf Angriffsmarsch über die Zone.
   Ihre Wellen, Verteidigung und Rückzüge führen Jets nicht.
+  Seit Paket „Aufklären und Luftschlag“ gilt für Jets mit Bodenwaffen (F-16, Su-27, A-10) ohne Luftziel: alle `STRIKE_EVERY` s höchstens ein
+  Luftschlag (Befehl `airstrike`, die Jets landen danach) auf das beste Ziel aus `strikeTarget`: jede gesehene gegnerische Bodeneinheit mit
+  dem Geldwert aller Gegner bis `STRIKE_CLUSTER_R` um sie, mal `STRIKE_CONTACT_MUL`, wenn eigene Bodeneinheiten bis `STRIKE_CONTACT_R`
+  stehen (Feindkontakt), ab `STRIKE_MIN`; Ziele in Reichweite gesehener Flugabwehr gegen Jets (Waffen ab `STRIKE_AA_DMG` Schaden, plus
+  `STRIKE_AA_MARGIN`) entfallen. Ohne solche Gruppe greift sie die gemerkte gegnerische FOB nächst der Zone an (nicht die Hauptstadt,
+  nicht unter Flugabwehr). Ohne Ziel bleiben sie startbereit stehen (kein Kreisen mehr über der Zone); F-22 kreisen weiter.
+  Die U-2 fliegt reihum über Zone, gegnerische Hauptstadt und bis zu `RECON_FOBS` gesehene FOBs, alle `reconEvery` (30, vorher 300) s.
+  Gemessen (30 min, Seeds 3, 7, 11): vorher 0 Luftschläge, die U-2 rund 5 % der Zeit in der Luft; danach 3 bis 6 Luftschläge je KI ohne
+  Jetverlust, U-2 25 bis 45 % der Zeit in der Luft.
 - **Alarmrotte (Paket „Alarmrotte“):** Normal und Schwer lassen ihre Jets mit Luft-Luft-Waffe in Alarmbereitschaft (§15 „Alarmrotte“), Leicht schaltet sie ab
   (`BALANCE.difficulty[…].scramble`, Befehl `scramble` in `jets()`, `js/ai/army/combat.js`).
   Jets im Alarm schickt sie nicht zusätzlich auf eigene Einsätze.
@@ -327,7 +336,9 @@ je Zeile mit Kommentar; die Tabelle nennt nur die wichtigsten.
 | Häuserkampf II (seit v5.67) | Ausbau: Takt / Reserve nach dem Preis (`HOUSE_WORK_EVERY`, `HOUSE_WORK_RESERVE`) / Reihenfolge (`HOUSE_WORK_ORDER`) | 10 s / 400 Geld / Sandsäcke, Stacheldraht, MG-Nest |
 | Versorgungskisten | Takt / Umkreis / Holer gleichzeitig Leicht–Normal–Schwer (`CRATE_EVERY`, `CRATE_RANGE`, `difficulty.cratePickers`) | 6 s / 5500 px / 1–2–3 |
 | F-22-Anteil an den Kampfflugzeugen (seit v5.83) | `CITY.ai.f22Share` | 0,4 |
-| U-2 zur Aufklärung (seit v5.83) | höchstens gleichzeitig (`reconMax`) · ab Spielzeit (`reconFrom`, Leicht nie) · Takt der Flüge (`reconEvery`) | 1 · 600 s (Schwer 480 s) · 300 s |
+| U-2 zur Aufklärung (seit v5.83) | höchstens gleichzeitig (`reconMax`) · ab Spielzeit (`reconFrom`, Leicht nie) · Takt der Flüge (`reconEvery`) | 1 · 600 s (Schwer 480 s) · 30 s |
+| Luftschlag (`strikeTarget`) | Takt `STRIKE_EVERY` · Mindestwert `STRIKE_MIN` · Gruppe `STRIKE_CLUSTER_R` · Kontakt `STRIKE_CONTACT_R` × `STRIKE_CONTACT_MUL` | 20 s · 800 · 180 px · 500 px × 1,5 |
+| Luftschlag (`strikeTarget`) | Abstand zur Flugabwehr `STRIKE_AA_MARGIN` ab Schaden `STRIKE_AA_DMG` · FOBs der U-2 `RECON_FOBS` | 150 px ab 20 · 2 |
 | Flugzeuge (seit v5.03) | Fliegerhorst ab Arbeitsstätten (`CITY.ai.airportFrom`) · F-16 Leicht/Normal/Schwer (`CITY.ai.jets`) · Geld danach (`jetReserve`) · Sparen auf so viele (`jetSave`) · Gruppe / Takt / Warteschlange (`JET_GROUP`, `JET_EVERY`, `JET_QUEUE`) | 14 · 2/4/6 · 400 · 2 / 6 s / 2 |
 | Stadt: Anschlusspflicht (Paket „Straßen“; Netz verlängern nur mit Baugebiet, offene Ausgänge auch ohne, Paket „Offenes Netz“) | Netz verlängern unter so vielen freien Anschlusszellen (`CITY.ai.linkSpare`) · Baumaterial-Polster (`linkBm`) | 6 / 200 BM |
 | Stadt: Anschlusspflicht (Paket „Straßen“; Netz verlängern nur mit Baugebiet, offene Ausgänge auch ohne, Paket „Offenes Netz“) | Versuche je Takt / Pause nach Fehlschlag (`linkTries`, `linkRetry`) · offene Ausgänge (`linkOutlets`) | 4, 120 s / 2 |
@@ -343,7 +354,7 @@ je Zeile mit Kommentar; die Tabelle nennt nur die wichtigsten.
 | Festung (seit v5.164) | Verteidigung außerhalb des Rings ab `FORT_CLEAR` 224 px · Hubschrauber vor Drohne · Stahldeckel für den Hubschrauber `CITY.ai.metalMaxPriceHeli` 2,0 |
 | Straßen räumen (Paket „Straßen“) | Takt (`ROAD_REPAIR_EVERY`) · kein Räumen bei sichtbaren Gegnern näher als (`ROAD_REPAIR_SAFE`) | 10 s / 400 px |
 | Stellwerte der Armee-KI (Paket „KI-Zahlen in die Daten“) | Höhensuche: Punkte auf dem Kreis (`HIGH_SAMPLES`) · Zonen-FOB gilt bis `ZONE_FOB_R` + `ZONE_FOB_SLACK` · Haubitzen je Reihe (`ART_COLS`) · Verteilen an der Zone ab (`CLUMP_MIN`) Einheiten | 8 · 16 px · 3 · 2 |
-| Stellwerte der Armee-KI (Paket „KI-Zahlen in die Daten“) | „draußen“ ab `GATHER_DIST` × `FIELD_MUL` · Kommandeur am Ziel bis `CMD_MOVE` × `CMD_ARRIVED` · F-16 gegen Panzer bis `DEF_RANGE` × `JET_ARMOR_RANGE` · Stahl-Lose vor einer Flugzeugbestellung (`JET_STEEL_LOTS`) | 2 · 0,5 · 2 · 10 |
+| Stellwerte der Armee-KI (Paket „KI-Zahlen in die Daten“) | „draußen“ ab `GATHER_DIST` × `FIELD_MUL` · Kommandeur am Ziel bis `CMD_MOVE` × `CMD_ARRIVED` · Stahl-Lose vor einer Flugzeugbestellung (`JET_STEEL_LOTS`) | 2 · 0,5 · 10 |
 | Stellwerte der Stadt-KI (Paket „KI-Zahlen in die Daten“) | Ausbau-Umkreis (`CITY.ai.growRing` × `territory.building`) · Ring × `ringWeight` + Abstand · Großbau-Versuche (`bigTries`) · Reihe an der Bahn (`airportRow`) | 4 · 100 · 8 · 2 Stellplätze, Tower |
 | Stellwerte der Stadt-KI (Paket „KI-Zahlen in die Daten“) | Grundriss des Industrieparks `CITY.parkPlan` (9 × 5, Bahnhof in der Mitte, Gleis nach unten) · Fliegerhorst-Geometrie aus `CITY.air.runwayWidth` und `CITY.size.stand` | – |
 

@@ -381,7 +381,7 @@ export const CITY = {
     // über die Konfliktzone und die gegnerische Hauptstadt, dort kreisend.
     reconMax: 1,
     reconFrom: { easy: null, normal: 600, hard: 480 },
-    reconEvery: 300,
+    reconEvery: 30, // seit Paket „Aufklären und Luftschlag“ (vorher 300): die U-2 stand meist am Boden; jetzt startet sie nach dem Tanken bald wieder
     // A-10 (Paket K3): statt eines Teils der F-16, wenn die KI schwere gegnerische Fahrzeuge sieht (gemerkt AIR_MEMORY s, Anzahl ab a10Heavy);
     // Anteil an den Kampfflugzeugen a10Share (Zahl nach CITY.ai.jets), nur mit a10Reserve Geld nach dem Kauf
     a10Heavy: 4, // gleichzeitig gesehene gegnerische schwere Fahrzeuge, ab denen die KI A-10 bestellt

@@ -10,7 +10,7 @@ import { BALANCE } from '../../data/balance.js';
 import { UNITS } from '../../data/units.js';
 import { canGarrison } from '../../game/garrison.js';
 import { weatherSight } from '../../game/weather.js';
-import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, JET_ARMOR_RANGE, FIELD_MUL, CMD_ARRIVED, ART_COLS, GUNSHIPS, GUN_FROM, GUN_RESERVE, SCOUT_HP, SCOUT_HP_BACK, SCOUT_MARGIN, SCOUT_STEP, SCOUT_FLEE_EVERY } from '../../data/ai.js';
+import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, FIELD_MUL, CMD_ARRIVED, ART_COLS, GUNSHIPS, GUN_FROM, GUN_RESERVE, SCOUT_HP, SCOUT_HP_BACK, SCOUT_MARGIN, SCOUT_STEP, SCOUT_FLEE_EVERY, STRIKE_EVERY, STRIKE_MIN, STRIKE_CLUSTER_R, STRIKE_CONTACT_R, STRIKE_CONTACT_MUL, STRIKE_AA_MARGIN, STRIKE_AA_DMG, RECON_FOBS } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
 import { inZone as inZoneOf } from '../../game/zonegeo.js';
 import { nearestOf } from '../../game/teams.js';
@@ -60,14 +60,19 @@ export function needA10(heavy, a10Have, total) {
 
 const SCOUT_MONEY = UNITS.littlebird.cost.money; // Geld, ab dem ein Späher ausgebildet wird
 
-/** Größte Reichweite (px) der Waffen von def, die Luftziele treffen (0 = keine); Waffen mit targets ohne 'air' zählen nicht. */
-export function airReach(def) {
+/**
+ * Größte Reichweite (px) der Waffen von def, die Luftziele treffen (0 = keine); Waffen mit targets ohne 'air' zählen nicht.
+ * jet = true: nur Waffen, die Flugzeugen mindestens STRIKE_AA_DMG Schaden machen (Schadensklasse jet, fehlt sie: air).
+ */
+export function airReach(def, jet = false) {
+  const dmg = (d) => (jet ? d?.jet ?? d?.air ?? 0 : d?.air ?? 0);
+  const min = jet ? STRIKE_AA_DMG : Number.MIN_VALUE;
   let r = 0;
   for (const w of def?.weapons ?? []) {
-    const hitsAir = w.targets ? w.targets.includes('air') : (w.damage?.air ?? 0) > 0;
+    const hitsAir = (w.targets ? w.targets.includes('air') : true) && dmg(w.damage) >= min;
     if (hitsAir && (w.range ?? 0) > r) r = w.range;
   }
-  if (!def?.weapons && (def?.damage?.air ?? 0) > 0) r = Math.max(r, def.range ?? 0);
+  if (!def?.weapons && dmg(def?.damage) >= min) r = Math.max(r, def.range ?? 0);
   return r;
 }
 
@@ -146,28 +151,67 @@ export const combatMethods = {
     const ready = fighters.filter((u) => u.parked && u.jet?.ready && u.order.type === 'idle' && !u.jet.qra).sort((a, b) => a.id - b.id);
     if (!ready.length || !this.once('jets', JET_EVERY)) return;
     const air = s.enemies.filter((e) => e.def.air && !e.parked);
-    const armor = s.enemies.filter((e) => (e.def.armor === 'heavy' || e.def.armor === 'light') && (inZoneOf(s.zone, e.x, e.y) || dist(e.x, e.y, s.ax, s.ay) <= DEF_RANGE * JET_ARMOR_RANGE));
     const near = (list) => list.slice().sort((a, b) => dist(a.x, a.y, s.ax, s.ay) - dist(b.x, b.y, s.ax, s.ay) || a.id - b.id);
     // Nur Waffen mit Bodenziel (F-16, Luft-Boden) greifen gepanzerte Fahrzeuge an; hochfliegende Ziele nur mit antiHighAlt (F-22)
     const groundArms = (u) => u.def.weapons.some((w) => (w.targets ?? []).some((k) => k !== 'air'));
     const canHit = (u, e) => !isHighAlt(e) || u.def.weapons.some((w) => w.antiHighAlt);
     const groups = [ready.filter((u) => groundArms(u)), ready.filter((u) => !groundArms(u))];
+    // Paket „Aufklären und Luftschlag“: Jets mit Bodenwaffen fliegen ohne Luftziel einen Luftschlag auf das beste gesehene Ziel
+    // (strikeTarget) und landen danach; ohne lohnendes Ziel bleiben sie startbereit stehen statt über der Zone zu kreisen
+    const strike = groups[0].length ? this.strikeTarget(s) : null;
+    let struck = false;
     for (const list of groups) {
       for (let k = 0; k < list.length; k += JET_GROUP) {
         const ids = list.slice(k, k + JET_GROUP).map((u) => u.id);
         const first = list[k];
-        const pool = [...near(air.filter((e) => canHit(first, e))), ...(groundArms(first) ? near(armor) : [])];
+        const pool = near(air.filter((e) => canHit(first, e)));
         const tg = pool[(k / JET_GROUP) % Math.max(1, pool.length)];
         if (tg) g.issue(t, { type: 'attack', ids, targetId: tg.id });
-        else g.issue(t, { type: 'attackMove', ids, x: s.zone.x, y: s.zone.y });
+        else if (!groundArms(first)) g.issue(t, { type: 'attackMove', ids, x: s.zone.x, y: s.zone.y });
+        else if (strike && !struck && this.once('strike', STRIKE_EVERY)) {
+          struck = true; // ein Luftschlag schickt alle startbereiten Jets mit Bodenwaffen (höchstens CITY.air.strike.maxJets)
+          g.issue(t, { type: 'airstrike', x: strike.x, y: strike.y, targetId: strike.id });
+        }
       }
     }
   },
 
   /**
+   * Ziel für einen Luftschlag (Paket „Aufklären und Luftschlag“): jede gesehene gegnerische Bodeneinheit (nicht im Haus) mit dem Geldwert
+   * aller gesehenen Gegner im Umkreis STRIKE_CLUSTER_R; mal STRIKE_CONTACT_MUL, wenn eigene Einheiten bis STRIKE_CONTACT_R stehen
+   * (Feindkontakt). Ziele in Reichweite gesehener Flugabwehr gegen Jets (plus STRIKE_AA_MARGIN) entfallen. Das beste Ziel ab
+   * STRIKE_MIN, sonst eine gemerkte gegnerische FOB (nicht die Hauptstadt), sonst null. Sicht kommt von allen eigenen Einheiten,
+   * besonders U-2, Drohne und Späher.
+   */
+  strikeTarget(s) {
+    const foes = s.enemies.filter((e) => e.kind === 'unit' && !e.def.air && !e.house);
+    const aa = s.enemies.filter((e) => airReach(e.def, true) > 0);
+    const covered = (x, y) => aa.some((a) => dist(a.x, a.y, x, y) <= airReach(a.def, true) + STRIKE_AA_MARGIN);
+    // Ohne lohnende Gruppe: die gemerkte gegnerische FOB (nicht die Hauptstadt) nächst der Zone, wenn keine gesehene Flugabwehr sie deckt
+    this.rememberFobs();
+    const fob = () => [...this.seenFobs.values()].filter((b) => b.alive && !b.main && !covered(b.x, b.y)).sort((a, b) => dist(a.x, a.y, s.zone.x, s.zone.y) - dist(b.x, b.y, s.zone.x, s.zone.y) || a.id - b.id)[0] ?? null;
+    if (!foes.length) return fob();
+    const own = s.units.filter((u) => !u.def.air);
+    const value = (e) => UNITS[e.type]?.cost.money ?? 0;
+    let best = null;
+    let bestV = STRIKE_MIN;
+    for (const e of foes) {
+      if (covered(e.x, e.y)) continue;
+      let v = 0;
+      for (const f of foes) if (dist(f.x, f.y, e.x, e.y) <= STRIKE_CLUSTER_R) v += value(f);
+      if (own.some((u) => dist(u.x, u.y, e.x, e.y) <= STRIKE_CONTACT_R)) v *= STRIKE_CONTACT_MUL;
+      if (v > bestV || (v === bestV && best && e.id < best.id)) {
+        bestV = v;
+        best = e;
+      }
+    }
+    return best ?? fob();
+  },
+
+  /**
    * Aufklärung (seit v5.83): eine U-2 (CITY.ai.reconMax) ab CITY.ai.reconFrom[Schwierigkeit] s, nur auf einem ganz freien Stellplatz
    * (sie belegt beide Plätze) und mit jetReserve Geld danach. Startbereit fliegt sie im Wechsel über die Konfliktzone und die gegnerische
-   * Hauptstadt und kreist dort; höchstens alle CITY.ai.reconEvery s ein Flug.
+   * Hauptstadt (seit „Aufklären und Luftschlag“ auch gesehene FOBs) und kreist dort; höchstens alle CITY.ai.reconEvery s ein Flug.
    */
   recon(s) {
     const g = this.game;
@@ -186,9 +230,13 @@ export const combatMethods = {
     }
     const ready = s.units.filter((u) => u.def.highAlt && u.parked && u.jet?.ready && u.order.type === 'idle');
     if (!ready.length || !this.once('recon', A.reconEvery)) return;
-    this.reconToFoe = !this.reconToFoe; // im Wechsel: Konfliktzone, gegnerische Hauptstadt
+    // Reihum (Paket „Aufklären und Luftschlag“): Konfliktzone, nächste gegnerische Hauptstadt, gesehene gegnerische FOBs (nächste zur
+    // Zone zuerst, höchstens RECON_FOBS); was die U-2 dort sieht, kann strikeTarget angreifen
     const foe = nearestOf(g.buildings.filter((b) => b.alive && b.built && b.type === 'fob' && b.main && b.team !== t), s.ax, s.ay); // die nächste gegnerische Hauptstadt
-    const dest = this.reconToFoe && foe ? foe : s.zone;
+    const fobs = [...this.seenFobs.values()].filter((b) => b.alive && !b.main).sort((a, b) => dist(a.x, a.y, s.zone.x, s.zone.y) - dist(b.x, b.y, s.zone.x, s.zone.y) || a.id - b.id).slice(0, RECON_FOBS);
+    const dests = [s.zone, ...(foe ? [foe] : []), ...fobs];
+    this.reconIdx = ((this.reconIdx ?? -1) + 1) % dests.length;
+    const dest = dests[this.reconIdx];
     g.issue(t, { type: 'move', ids: [ready[0].id], x: dest.x, y: dest.y });
   },
 

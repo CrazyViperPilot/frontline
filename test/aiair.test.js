@@ -149,3 +149,27 @@ test('Späher: Reichweite gegen Luftziele, Ausweichen aus der Reichweite, angesc
   assert.equal(ai.airSafety({ ...s, enemies: [] }, bird, 'scout'), true);
   assert.deepEqual(sent, ['land']);
 });
+
+// Paket „Aufklären und Luftschlag“: Zielwahl des Luftschlags
+test('Luftschlag-Ziel: wertvollste gesehene Gruppe, nicht unter Flugabwehr, Feindkontakt zählt mehr', async () => {
+  const { STRIKE_MIN, STRIKE_AA_MARGIN } = await import('../js/data/ai.js');
+  const { airReach } = await import('../js/ai/army/combat.js');
+  const g = new Game({ seed: 7 });
+  const ai = new AI(g, 1, 'normal');
+  const base = ai.snapshot();
+  let id = 9000;
+  const foe = (type, x, y) => ({ id: id++, kind: 'unit', type, def: UNITS[type], x, y, alive: true });
+  const at = (dx, dy) => [base.zone.x + dx, base.zone.y + dy];
+  const tankA = foe('tank', ...at(0, 0));
+  const tankB = foe('tank', ...at(60, 0));
+  const lone = foe('rifleman', ...at(1500, 0));
+  const s = { ...base, enemies: [tankA, tankB, lone], units: [] };
+  const t = ai.strikeTarget(s);
+  assert.ok(t === tankA || t === tankB, 'Panzergruppe ist das Ziel');
+  assert.ok(2 * UNITS.tank.cost.money >= STRIKE_MIN);
+  // Flak daneben: kein Luftschlag dorthin
+  const flak = foe('flak', ...at(30, airReach(UNITS.flak, true) + STRIKE_AA_MARGIN - 50));
+  assert.equal(ai.strikeTarget({ ...s, enemies: [tankA, tankB, lone, flak] }), null);
+  // ein Schütze allein lohnt nicht, mit eigenen Truppen daneben auch nicht (zu billig)
+  assert.equal(ai.strikeTarget({ ...s, enemies: [lone] }), null);
+});

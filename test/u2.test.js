@@ -200,10 +200,11 @@ test('U-2: kreist am Ziel und fliegt erst bei Treibstoffmangel heim, nicht sofor
   assert.ok(u.jet.rtb, 'bei Treibstoffmangel Heimflug');
 });
 
-test('KI kauft F-16 und F-22 nach CITY.ai.f22Share, die U-2 erst ab reconFrom', () => {
+test('KI kauft F-16 und F-22 nach CITY.ai.f22Share (F-22 nur nach gesehenen Luftfahrzeugen), die U-2 erst ab reconFrom', () => {
   const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const ai = new AI(g, 0, 'normal');
+  ai.rememberSeen('heli', 1); // Paket „Jets und Späher“: ohne gesehenes Luftziel keine F-22
   const tick = () => {
     const s = ai.snapshot();
     ai.jets(s);
@@ -244,6 +245,7 @@ test('KI: U-2 zur Aufklärung ab reconFrom auf freiem Stellplatz, dann Flug (hö
   const g = new Game({ seed: 3 });
   const { stands } = airbase(g);
   const ai = new AI(g, 0, 'normal');
+  g.spawnUnit('f16', 0, g.map.spawns[0].x, g.map.spawns[0].y); // Paket „Jets und Späher“: U-2 erst nach einem Kampfjet
   const tick = () => {
     const s = ai.snapshot();
     ai.recon(s);

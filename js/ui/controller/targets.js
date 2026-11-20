@@ -10,6 +10,8 @@ import { BUILDINGS } from '../../data/buildings.js';
 import { canSeat, ownWork, isWarehouse } from '../../game/logistics.js';
 import { canGarrison, canEnter } from '../../game/garrison.js';
 import { WALL_MAX, isCarrier } from './util.js';
+import { propAt } from '../../game/propfire.js';
+import { PROPS } from '../../data/props.js';
 
 /** Mauerzug von Start- zu Endzelle, höchstens WALL_MAX Zellen. */
 function wallLine(a, b) {
@@ -40,6 +42,14 @@ export const targetMethods = {
     if (bridge) {
       if (!this.issue({ type: 'attack', ids, targetId: bridge.id }).ok) return;
       this.message('Brücke wird beschossen');
+      if (!shift) this.setMode('normal');
+      return;
+    }
+    // Zaun, Mauer, Container … angeklickt: gezielt beschießen (props der Karte, propfire.js)
+    const pi = propAt(this.game, wx, wy);
+    if (pi >= 0) {
+      if (!this.issue({ type: 'attackProp', ids, x: wx, y: wy }).ok) return;
+      this.message(`${PROPS.kinds[this.game.map.props[pi].kind].name} wird beschossen`);
       if (!shift) this.setMode('normal');
       return;
     }

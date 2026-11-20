@@ -26,7 +26,7 @@ test('Befehlsregister: jeder Eintrag hat einen Handler, unbekannte und geerbte T
 });
 
 test('Befehlsregister: selbst gefahrene Aufträge (früher OWN_DRIVERS in movement.js) unverändert', () => {
-  const old = ['load', 'unload', 'route', 'build', 'repair', 'board', 'dropoff', 'paradrop', 'garrison', 'storm', 'pickup', 'deliver', 'repairBridge', 'dig', 'land', 'shellRoad', 'clearRubble', 'layBridge', 'layMine']; // shellRoad, clearRubble seit dem Paket „Straßen“; layBridge seit E14; layMine seit E15 (läuft hin)
+  const old = ['load', 'unload', 'route', 'build', 'repair', 'board', 'dropoff', 'paradrop', 'garrison', 'storm', 'pickup', 'deliver', 'repairBridge', 'dig', 'land', 'shellRoad', 'clearRubble', 'layBridge', 'layMine', 'attackProp']; // shellRoad, clearRubble seit dem Paket „Straßen“; layBridge seit E14; layMine seit E15 (läuft hin); attackProp seit den Props
   assert.deepEqual([...OWN_DRIVERS].sort(), old.sort());
 });
 

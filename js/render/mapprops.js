@@ -8,7 +8,7 @@ import { hashXY } from './color.js';
 import { ISO_K } from './camera.js';
 import { PROPS } from '../data/props.js';
 import { BALANCE } from '../data/balance.js';
-import { propIndex, forgetPropIndex, PROP_STATE, GATE } from '../game/props.js';
+import { propIndex, forgetPropIndex, PROP_STATE, GATE, GATE_OPEN, stateOf } from '../game/props.js';
 import { fenceModel, isFenceKind, LINE_DIRS } from './fences.js';
 import { milModel, isMilSingle } from './milprops.js';
 import { indModel, isIndSingle } from './indprops.js';
@@ -31,7 +31,7 @@ const NEUTRAL_FLAG = '#e8e6dc';
 
 // ---------- Aussehen ----------
 
-const lookCache = new WeakMap(); // map.props → { st, v, list }
+const lookCache = new WeakMap(); // map.props → Map(Zustandsliste oder 'none' → { v, list })
 
 /**
  * Aussehen aller sichtbaren Props: [{ i, x, y, kind, mask, along, gate, rubble, v (Farbe), d (Einzelheiten) }]. st: Zustand je Prop (game.propSt) oder null
@@ -40,10 +40,13 @@ const lookCache = new WeakMap(); // map.props → { st, v, list }
  */
 export function propLooksOf(props, st = null, version = 0) {
   if (!props?.length) return EMPTY;
-  const hit = lookCache.get(props);
-  if (hit && hit.st === st && hit.v === version) return hit.list;
+  let byState = lookCache.get(props);
+  if (!byState) lookCache.set(props, (byState = new Map()));
+  const hit = byState.get(st ?? 'none');
+  if (hit && hit.v === version) return hit.list;
   const { cells } = propIndex(props, COLS, ROWS);
-  const state = (i) => (st ? st[i] : PROP_STATE.ok);
+  const state = (i) => (st ? stateOf(st[i]) : PROP_STATE.ok);
+  const gateOf = (p, i) => (!p.gate ? 0 : st ? (st[i] & GATE_OPEN ? GATE.open : GATE.closed) : p.gate === GATE.open ? GATE.open : GATE.closed); // Bild: offen oder zu
   const list = [];
   props.forEach((p, i) => {
     const s = state(i);
@@ -71,11 +74,11 @@ export function propLooksOf(props, st = null, version = 0) {
     const v = hashXY(Math.floor(p.x / AREA), Math.floor(p.y / AREA)) % VARIANTS;
     // Einzelstücke: Drehung a (Bogenmaß, Achtel), Fahne (flag) mit eingestellter Farbe team
     list.push({
-      i, x: p.x, y: p.y, kind: p.kind, mask, along, gate: p.gate ?? 0, rubble: s === PROP_STATE.rubble, v, d: hashXY(p.x, p.y) % DETAILS,
+      i, x: p.x, y: p.y, kind: p.kind, mask, along, gate: gateOf(p, i), rubble: s === PROP_STATE.rubble, v, d: hashXY(p.x, p.y) % DETAILS,
       single: !K.line, a: K.line ? 0 : ((p.rot ?? 0) * TAU) / EIGHTHS, flag: !!K.flag, team: p.team ?? -1, stack: p.stack ?? 1,
     });
   });
-  lookCache.set(props, { st, v: version, list });
+  byState.set(st ?? 'none', { v: version, list });
   return list;
 }
 
@@ -86,8 +89,15 @@ export function forgetPropLooks(props) {
   forgetPropIndex(props);
 }
 
-/** Aussehen der Props einer Partie. */
-export const propLooks = (g) => propLooksOf(g.map.props, g.propSt ?? null, g.propVersion ?? 0);
+/**
+ * Aussehen der Props einer Partie für `team`: der Zustand, den das Team zuletzt gesehen hat (Nebel, game.propSeen); ohne Team oder mit
+ * all = true der wirkliche Zustand (Editor, Zuschauer).
+ */
+export function propLooks(g, team = -1, all = false) {
+  const seen = !all && team >= 0 ? g.propSeen?.[team] : null;
+  if (seen) return propLooksOf(g.map.props, seen, -1 - g.propSeenV[team]);
+  return propLooksOf(g.map.props, g.propSt ?? null, g.propVersion ?? 0);
+}
 
 // ---------- Modelle und Schatten ----------
 
@@ -280,5 +290,35 @@ export function drawPropsTop(ctx, looks, inRect, zoom = 1, season = 'summer', fl
       paintSolids(ctx, m.S, a, { iso: false, s: 1 });
       ctx.restore();
     }
+  }
+}
+
+// ---------- Minimap ----------
+
+const MINI_COL = { fence: 'rgba(52,44,34,0.85)', mil: 'rgba(70,72,48,0.9)', ind: 'rgba(60,64,70,0.9)', civ: 'rgba(48,56,40,0.75)', war: 'rgba(40,34,30,0.8)' };
+
+/**
+ * Minimap (Weltkoordinaten, Transformation gesetzt): Kacheln als Zellen, Einzelstücke als Rechteck ihrer Grundfläche, mindestens
+ * minPx Welt-Pixel groß (sonst unsichtbar klein). Trümmer blasser; was nichts aufhält (Bank, Schild …), fehlt.
+ */
+export function drawPropsMini(ctx, looks, minPx) {
+  const byCol = new Map();
+  for (const o of looks) {
+    const K = PROPS.kinds[o.kind];
+    if (!K || (K.blocks === 'none' && !K.cover)) continue;
+    const col = o.rubble ? 'rgba(60,56,50,0.4)' : (MINI_COL[K.group] ?? MINI_COL.fence); // Trümmer blass
+    let list = byCol.get(col);
+    if (!list) byCol.set(col, (list = []));
+    list.push(o);
+  }
+  for (const [col, list] of byCol) {
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    for (const o of list) {
+      const K = PROPS.kinds[o.kind];
+      const w = Math.max(minPx, K.line ? TILE : Math.max(...K.size));
+      ctx.rect(o.x - w / 2, o.y - w / 2, w, w);
+    }
+    ctx.fill();
   }
 }

@@ -1,0 +1,1 @@
+**Props: Tore, Beschuss, Nebel, Minimap** (§7 „Zäune und Mauern“): Einheiten öffnen geschlossene Tore und Schranken im Vorbeigehen, sie schließen danach wieder; neu „verschlossen“ sperrt. A + Klick auf Zaun, Mauer, Container … beschießt das Prop gezielt (Befehl `attackProp`). Im Nebel zeigen Props den zuletzt gesehenen Zustand, die Minimap zeigt sie als Marken.

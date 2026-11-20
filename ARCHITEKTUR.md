@@ -138,6 +138,7 @@ Neue Befehle: Rezept `docs/rezepte/neuer-befehl.md`.
 | `layBridge` | `ids, c, r` | `river.js` `cmdLayBridge` | Brückenleger legt auf einer Flusszelle am Ufer eine Behelfsbrücke (E14); Schritt `updateBridgeLayers` (nach `updateBridges`) |
 | `dig` | `ids, c0, r0, c1, r1, append?` | `excavator.js` `cmdDig` | Bagger räumen die Zellen des Rechtecks nacheinander (Zonenstraße, Bäume, Häuser, eigene Gebäude, Schutt und gegnerische Straßen) |
 | `shellRoad` | `ids, c0, r0, c1?, r1?` | `roadwar.js` `cmdShellRoad` | Einheiten mit Granaten oder Raketen beschießen die Straßenzellen des Rechtecks, bis sie zu Schutt werden (Paket „Straßen“, Teil 3) |
+| `attackProp` | `ids, x, y` | `propfire.js` `cmdAttackProp` | Einheiten beschießen das Prop unter (x, y) (Zaun, Mauer, Container …) mit ihrer stärksten Waffe gegen seine Panzerklasse, bis es Trümmer oder weg ist |
 | `clearRubble` | `ids, c0, r0, c1?, r1?` | `roadwar.js` `cmdClearRubble` | Baufahrzeuge räumen Schutt eigener Straßen und Stadtstraßen, die Straße ist wieder da (Paket „Straßen“, Teil 3) |
 | `storm`, `fortifyHouse` | `ids, houseId` (Sturm) / `houseId, work` (ausbauen) | `garrison.js` `cmdStorm`, `cmdFortifyHouse` | Besetztes gegnerisches Haus stürmen / ein eigenes Haus zur Stellung ausbauen |
 | `trade` | `good` (`bm`, `mun`, `fuel`, `metal`, `kero`), `dir` (`sell`, `buy`), `count?` (Lose, bis `CITY.market.maxCount`) | `city/commands.js` `cmdTrade` | Lose am eigenen Markt handeln; reicht es nicht, so viele wie möglich (`done`) |

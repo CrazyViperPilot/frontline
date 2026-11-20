@@ -280,7 +280,14 @@ Werte je Art in `js/data/props.js` (Tabelle unten), Regeln in `js/game/props.js`
   Flakpanzer, Gepard, Panzerhaubitze, Raketenwerfer, Bagger, Brückenleger) suchen getrennte Wege. Ein Kettenfahrzeug fährt durch
   überfahrbare Kacheln, die Kachel ist danach weg (die Lücke ist für alle frei). Luftfahrzeuge kümmern sich nicht darum.
   Bauplätze, Stadtzellen und Startformationen meiden jede Kachel.
-- **Tore:** Eine gerade Kachel kann ein Tor sein: zu (wie die Kachel) oder offen (hält niemanden auf, keine Deckung).
+- **Tore:** Eine gerade Kachel (und die Schranke) kann ein Tor sein. „Zu“: Bodeneinheiten öffnen es im Vorbeigehen (die Wegsuche rechnet
+  1,5 Zellen Umweg dafür), ohne Einheit in seiner Zelle schließt es nach 4 s wieder; geschlossen gibt es Deckung und Sicht wie die Kachel.
+  „Offen“: bleibt offen, hält niemanden auf, keine Deckung. „Verschlossen“: sperrt wie die Kachel (zerstören oder überfahren).
+- **Gezielt beschießen:** A + Klick auf ein Prop (Befehl `attackProp`): die gewählten Einheiten fahren in Reichweite und schießen mit
+  ihrer stärksten Waffe gegen die Panzerklasse des Props, bis es Trümmer oder weg ist. Krater sind kein Ziel. Von selbst greift niemand
+  Props an.
+- **Nebel und Minimap:** Jedes Team sieht Props im Zustand, in dem es sie zuletzt gesehen hat (heil, Trümmer, weg, Tor offen oder zu);
+  die Karte selbst kennt jeder. Die Minimap zeigt Props, die etwas aufhalten oder decken, als kleine dunkle Marken (Trümmer blass).
 - **Deckung:** Direktfeuer auf eine Einheit, die höchstens 24 px neben einer Kachel steht, wobei die Kachel zwischen ihr und dem
   Schützen liegt (Winkel höchstens 63°), macht entsprechend weniger Schaden; die Kachel nimmt die Hälfte des abgefangenen Schadens
   (gegen ihre Panzerklasse: Holz und Draht „leicht“, Mauern „Bauwerk“). Steilfeuer, Granaten und Angriffe aus der Luft kennen keine Deckung.

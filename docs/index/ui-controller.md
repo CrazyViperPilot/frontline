@@ -19,10 +19,10 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - trainEntries(blds) – Ausbildungs-Einträge der Befehlskarte für die gewählten Gebäude (Hauptstadt bzw…
   - buildingCard(blds)
 
-## modes.js (4.8 KB)
+## modes.js (4.9 KB)
 - MODES – UI-Modi der Steuerung (Review E-04): je Modus der Hinweis oben (hint) und was e…
 
-## targets.js (15 KB)
+## targets.js (16 KB)
 - targetMethods
   - confirmPlace(wx, wy, shift)
   - confirmAttackMove(wx, wy, shift)

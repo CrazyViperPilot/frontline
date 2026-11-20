@@ -10,24 +10,41 @@ const TILE = BALANCE.map.tile;
 const EIGHTH = Math.PI / 4;
 const CV = PROPS.cover;
 
-/** Zustand eines Props im Spiel. */
+/** Zustand eines Props im Spiel (game.propSt, untere zwei Bits). */
 export const PROP_STATE = { ok: 0, rubble: 1, gone: 2 };
-/** Tor einer Kachel (map.props[i].gate). */
-export const GATE = { closed: 1, open: 2 };
+const STATE_MASK = 3;
+/** Bit in game.propSt: das Tor steht gerade offen. */
+export const GATE_OPEN = 1 << 2;
+/** Tor einer Kachel oder Schranke (map.props[i].gate): zu (Einheiten öffnen es), offen, verschlossen (sperrt). */
+export const GATE = { closed: 1, open: 2, locked: 3 };
+
+/** Zustand (heil, Trümmer, weg) aus dem Wert in game.propSt. */
+export const stateOf = (v) => v & STATE_MASK;
 
 const NONE = { blocks: 'none', crush: false, cover: 0, coverVeh: 0, sight: 0 };
+const closedRules = new Map(); // Art → Spielwerte eines geschlossenen Tors (wie die Kachel, aber passierbar: Einheiten öffnen es)
 
 /** Art eines Props (Eintrag in PROPS.kinds) oder undefined. */
 export const propKind = (p) => PROPS.kinds[p.kind];
 
-/** Spielwerte eines Props im Zustand st: Art, Trümmer, offenes Tor (sperrt nichts) oder null (weg). */
-export function propRules(p, st = PROP_STATE.ok) {
+/**
+ * Spielwerte eines Props im Zustand v (game.propSt): Art, Trümmer, offenes Tor (sperrt nichts), geschlossenes Tor (Deckung und Sicht
+ * wie die Kachel, aber passierbar) oder null (weg). Verschlossene Tore sperren wie die Kachel.
+ */
+export function propRules(p, v = PROP_STATE.ok) {
   const K = PROPS.kinds[p.kind];
+  const st = v & STATE_MASK;
   if (!K || st === PROP_STATE.gone) return null;
   if (st === PROP_STATE.rubble) return K.rubble ?? null;
-  if (p.gate === GATE.open) return NONE;
-  return K;
+  if (!p.gate || p.gate === GATE.locked) return K;
+  if (v & GATE_OPEN) return NONE;
+  let R = closedRules.get(K);
+  if (!R) closedRules.set(K, (R = { ...K, blocks: 'none' }));
+  return R;
 }
+
+/** Kann eine Einheit dieses Tor öffnen (zu oder offen, nicht verschlossen)? */
+const openable = (p) => p.gate === GATE.closed || p.gate === GATE.open;
 
 /** Sperr-Bits (grid.prop) von Spielwerten. */
 export function blockBits(R) {
@@ -128,6 +145,11 @@ export function rasterizeProps(grid, props) {
     const { bits, h } = cellRules(props, list, null);
     if (bits) (grid.prop ??= new Uint8Array(grid.cols * grid.rows))[j] = bits;
     if (h) (grid.propH ??= new Uint8Array(grid.cols * grid.rows))[j] = h;
+    // Tor, das Einheiten erst öffnen müssen: die Wegsuche nimmt lieber einen offenen Weg
+    if (list.some((i) => props[i].gate === GATE.closed)) {
+      const cost = (grid.cost ??= new Uint8Array(grid.cols * grid.rows));
+      cost[j] = Math.min(255, cost[j] + PROPS.gateCost);
+    }
   }
 }
 
@@ -136,15 +158,30 @@ export function createProps(game) {
   const props = game.map.props ?? [];
   game.propHp = new Float32Array(props.length);
   game.propSt = new Uint8Array(props.length);
-  props.forEach((p, i) => (game.propHp[i] = (PROPS.kinds[p.kind]?.hp ?? 0) * (p.stack ?? 1))); // gestapelt: je Lage
+  props.forEach((p, i) => {
+    game.propHp[i] = (PROPS.kinds[p.kind]?.hp ?? 0) * (p.stack ?? 1); // gestapelt: je Lage
+    if (p.gate === GATE.open) game.propSt[i] = GATE_OPEN;
+  });
+  game.propGateT = new Float32Array(props.length); // Sekunden ohne Einheit im offenen Tor (schließt nach PROPS.gateClose)
+  initPropIntel(game);
   game.propVersion = 0;
 }
 
-/** Setzt Prop i in den Zustand st und schreibt seine Zellen neu ins Raster. */
+/** Setzt Prop i in den Zustand st (das Tor-Bit bleibt) und schreibt seine Zellen neu ins Raster. */
 export function setPropState(game, i, st) {
+  setPropValue(game, i, (game.propSt[i] & GATE_OPEN) | st);
+}
+
+/** Tor von Prop i öffnen oder schließen. */
+export function setGateOpen(game, i, open) {
+  setPropValue(game, i, open ? game.propSt[i] | GATE_OPEN : game.propSt[i] & ~GATE_OPEN);
+}
+
+/** Wert v (Zustand und Tor-Bit) für Prop i, Raster neu. */
+function setPropValue(game, i, v) {
   const props = game.map.props;
-  if (!props?.[i] || game.propSt[i] === st) return;
-  game.propSt[i] = st;
+  if (!props?.[i] || game.propSt[i] === v) return;
+  game.propSt[i] = v;
   game.propVersion++;
   const grid = game.grid;
   const { cells, of } = propIndex(props, grid.cols, grid.rows);
@@ -157,7 +194,7 @@ export function setPropState(game, i, st) {
 
 /** Schaden an Prop i; bei 0 Trefferpunkten Trümmer (oder weg, wenn die Art keine hat). */
 export function damageProp(game, i, amount) {
-  if (!(amount > 0) || game.propSt[i] !== PROP_STATE.ok) return;
+  if (!(amount > 0) || stateOf(game.propSt[i]) !== PROP_STATE.ok) return;
   const p = game.map.props[i];
   game.propHp[i] -= amount;
   if (game.propHp[i] > 0) return;
@@ -178,7 +215,7 @@ export function concealed(game, x, y) {
   const r = Math.floor(y / TILE);
   if (c < 0 || r < 0 || c >= grid.cols || r >= grid.rows) return false;
   const list = propIndex(props, grid.cols, grid.rows).cells.get(r * grid.cols + c);
-  return !!list?.some((i) => game.propSt[i] === PROP_STATE.ok && PROPS.kinds[props[i].kind]?.conceal);
+  return !!list?.some((i) => stateOf(game.propSt[i]) === PROP_STATE.ok && PROPS.kinds[props[i].kind]?.conceal);
 }
 
 /** Schaden einer Waffe (damage je Panzerklasse) gegen Prop i, mal mul. */
@@ -269,21 +306,77 @@ export function coverHit(game, t, sx, sy, damage) {
   return 1 - v;
 }
 
-/** Kettenfahrzeuge (def.crush) überfahren die Props in ihrer Zelle: überfahrbare sind danach weg. Nach der Bewegung aufrufen. */
-export function updateProps(game) {
+/** Indizes der Props mit Tor, das Einheiten öffnen (je Prop-Liste einmal). */
+const gateLists = new WeakMap();
+const gatesOf = (props) => {
+  let g = gateLists.get(props);
+  if (!g) gateLists.set(props, (g = props.map((p, i) => (openable(p) ? i : -1)).filter((i) => i >= 0)));
+  return g;
+};
+
+/**
+ * Nach der Bewegung: Kettenfahrzeuge (def.crush) überfahren die Props in ihrer Zelle (überfahrbare sind danach weg); Bodeneinheiten
+ * öffnen Tore, durch die sie gehen; Tore, die zu waren, schließen nach PROPS.gateClose s ohne Einheit in ihrer Zelle wieder.
+ */
+export function updateProps(game, dt = 0) {
   const props = game.map.props;
   if (!props?.length) return;
   const grid = game.grid;
   const { cells } = propIndex(props, grid.cols, grid.rows);
+  const gates = gatesOf(props);
+  const busy = gates.length ? new Set() : null;
   for (const u of game.units) {
-    if (!u.alive || !u.def.crush || u.def.air || u.house) continue;
+    if (!u.alive || u.def.air || u.house) continue;
     const c = Math.floor(u.x / TILE);
     const r = Math.floor(u.y / TILE);
     const list = cells.get(r * grid.cols + c);
     if (!list) continue;
     for (const i of list) {
+      if (busy && openable(props[i]) && stateOf(game.propSt[i]) === PROP_STATE.ok) {
+        busy.add(i);
+        setGateOpen(game, i, true);
+      }
+      if (!u.def.crush) continue;
       const R = propRules(props[i], game.propSt[i]);
       if (R && R.crush) setPropState(game, i, PROP_STATE.gone);
     }
   }
+  if (!busy) return;
+  game.propGateT ??= new Float32Array(props.length);
+  for (const i of gates) {
+    if (busy.has(i) || props[i].gate !== GATE.closed || !(game.propSt[i] & GATE_OPEN)) {
+      game.propGateT[i] = 0;
+      continue;
+    }
+    game.propGateT[i] += dt;
+    if (game.propGateT[i] >= PROPS.gateClose) {
+      game.propGateT[i] = 0;
+      setGateOpen(game, i, false);
+    }
+  }
+}
+
+/** Lagebild je Team anlegen: zuletzt gesehener Zustand = Zustand der Karte (game.propSeen, game.propSeenV). */
+export function initPropIntel(game) {
+  if (!game.teams || !game.propSt) return;
+  game.propSeen = game.teams.map(() => game.propSt.slice());
+  game.propSeenV = game.teams.map(() => 0);
+}
+
+/**
+ * Lagebild der Props für `team` nach seiner Sichtberechnung: was das Team gerade sieht, merkt es sich im aktuellen Zustand
+ * (game.propSeen[team]); im Nebel zeigt die Darstellung den zuletzt gesehenen. game.propSeenV[team] zählt Änderungen.
+ */
+export function updatePropIntel(game, team) {
+  const props = game.map.props;
+  const seen = game.propSeen?.[team];
+  if (!props?.length || !seen) return;
+  const fog = game.fog[team];
+  let changed = false;
+  for (let i = 0; i < props.length; i++) {
+    if (seen[i] === game.propSt[i] || !fog.isVisible(props[i].x, props[i].y)) continue;
+    seen[i] = game.propSt[i];
+    changed = true;
+  }
+  if (changed) game.propSeenV[team]++;
 }

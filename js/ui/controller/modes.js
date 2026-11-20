@@ -27,7 +27,7 @@ export const MODES = {
   },
   attackMove: {
     target: true,
-    hint: () => 'Angriffsbewegung: Ziel anklicken (auf eine Brücke: sprengen) · Esc bricht ab',
+    hint: () => 'Angriffsbewegung: Ziel anklicken (auf eine Brücke: sprengen; auf Zaun, Mauer, Container …: beschießen) · Esc bricht ab',
     click: (c, wx, wy, shift) => c.confirmAttackMove(wx, wy, shift),
   },
   loadFob: {

@@ -22,7 +22,8 @@ import { updateConstruction } from './construction.js';
 import { updateTowers, ejectCrew } from './tower.js';
 import { createHouses, updateGarrison, dropOccupant } from './garrison.js';
 import { createCrates, updateCrates, updateCrateIntel } from './crates.js';
-import { createProps, updateProps, concealed } from './props.js';
+import { updatePropFire } from './propfire.js';
+import { createProps, updateProps, concealed, initPropIntel, updatePropIntel } from './props.js';
 import { createScars, updateScars, updateScarIntel, addUnitWreck, addBuildingWreck, clearWrecksUnder } from './scars.js';
 import { createAnimals, updateAnimals } from './animals.js';
 import { updateFormations } from './formation.js';
@@ -196,6 +197,7 @@ export class Game {
     // Flaggen, Tickets, gesperrte Viertel (nur im Modus Eroberung)
     this.hot = createHot(this);
     this.fog = this.teams.map(() => new Fog(W, H));
+    initPropIntel(this); // je Team zuletzt gesehener Zustand der Props (Nebel)
 
     // Startzustand: je Team die Hauptstadt auf dem Spawn (unendlicher Vorrat), Startunits als Formation davor
     for (let t = 0; t < teamCount; t++) {
@@ -241,6 +243,7 @@ export class Game {
     this.statTimer = this.statTimer || 0;
     this.fogTimers ??= [0, BALANCE.fogInterval / 2];
     if (!this.propSt) createProps(this); // Stände vor den Props
+    if (!this.propSeen) initPropIntel(this); // Stände vor dem Lagebild der Props
     this.mode.restore(this); // Eroberung: Viertel-Sperre wieder ins Wegeraster hängen // Stände vor v5.93 hatten einen gemeinsamen fogTimer
     // Ruinenliste fehlt in Ständen vor v5.66: aus den eingestürzten Häusern neu aufbauen
     if (!this.ruins) this.ruins = (this.houses || []).filter((h) => h.ruined);
@@ -361,7 +364,10 @@ export class Game {
   }
 
   updateFog() {
-    for (let t = 0; t < this.teams.length; t++) this.fog[t].update(this, t);
+    for (let t = 0; t < this.teams.length; t++) {
+      this.fog[t].update(this, t);
+      updatePropIntel(this, t); // Props im Nebel: zuletzt gesehener Zustand
+    }
     updateCrateIntel(this);
     updateScarIntel(this);
   }
@@ -764,7 +770,7 @@ export class Game {
     updateTowers(this, dt);
     updateFormations(this);
     updateMovement(this, dt, OWN_DRIVERS);
-    updateProps(this); // Kettenfahrzeuge überfahren Zäune, Draht … (props.js)
+    updateProps(this, dt); // Kettenfahrzeuge überfahren Zäune, Draht …; Einheiten öffnen Tore (props.js)
     updateParadrop(this, dt); // Absetzen: C-130 im Anflug, Fallschirm-Zeiten (Paket E13 b)
     updateScramble(this); // Alarmrotte: Jets in Bereitschaft starten gegen Luftziele am Fliegerhorst (Paket „Alarmrotte“)
     updateAirstrike(this); // Luftschlag: Jets nach dem Einsatz heimschicken (Paket „Luftschlag“)
@@ -775,6 +781,7 @@ export class Game {
     updateConstruction(this, dt);
     updateDig(this, dt); // Bagger räumen Stadtzellen (seit v5.35)
     updateRoadWar(this, dt); // Straßen beschießen, Schutt räumen (Paket „Straßen“)
+    updatePropFire(this, dt); // Props gezielt beschießen (propfire.js)
     updateBridges(this, dt);
     updateBridgeLayers(this, dt); // Brückenleger (Paket E14)
     separate(this);
@@ -803,6 +810,7 @@ export class Game {
       if (this.fogTimers[t] < BALANCE.fogInterval) continue;
       this.fogTimers[t] = 0;
       this.fog[t].update(this, t);
+      updatePropIntel(this, t);
       fogged = true;
     }
     if (fogged) {

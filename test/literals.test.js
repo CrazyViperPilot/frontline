@@ -29,7 +29,7 @@ const ALLOWED = {
   'game/formation.js': ['4', '3'], // Rangfolge der Einheitenarten
   'game/game.js': ['180', '1e9', '1e9'], // Grad in Bogenmaß, „lange her“
   'game/garrison.js': ['4', '1e9'], // Geometrie, „lange her“
-  'game/props.js': ['4'], // Achtel einer Drehung (rot, π / 4)
+  'game/props.js': ['4', '255', '3', '3'], // Achtel einer Drehung (rot, π / 4), Byte-Grenze der Wegkosten, Zustandsbits und Tor „verschlossen“
   'game/grid.js': ['255', '255', '3', '4'], // Byte-Grenze; Bewegungsklasse 3 (Kette) und 4 Bits fürs Team im Mover (moverOf)
   'game/hotzone.js': ['1e-6'], // Rechengenauigkeit
   'game/landscape.js': ['3', '512', '256', '256', '255', '256', '256', '255', '255', '3', '3', '2654435761', '90', '3', '3', '5', '3', '5', '3', '118', '372', '1.001', '1.001', '2246822519', '180', '1e-9', '1e-9', '118', '8', '8', '8', '10'], // Rauschen (Permutation, Glättung), Seed-Mischung, Abtastschritte, Speicherbereich der Höhen, Spiegelphasen der Seen

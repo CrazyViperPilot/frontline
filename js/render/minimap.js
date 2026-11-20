@@ -5,6 +5,7 @@
 import { BALANCE } from '../data/balance.js';
 import { buildTerrain } from './terrain.js';
 import { drawMapTownMini } from './maptown.js';
+import { propLooks, drawPropsMini } from './mapprops.js';
 import { seasonal } from './season.js';
 import { makeFogLayer, updateFogLayer } from './renderer.js';
 import { hexA, CRATE_MARK } from './sprites.js';
@@ -105,6 +106,7 @@ export class Minimap {
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(this.terrain, 0, 0, this.terrain.width, this.terrain.height, 0, 0, W, H);
     drawMapTownMini(ctx, g.map.town, g.weather?.season); // Parks und Gebäude der Karte (seit v5.23 nicht mehr im Geländebild)
+    drawPropsMini(ctx, propLooks(g, team, reveal), 1.5 * px); // Zäune, Mauern, Lager … im zuletzt gesehenen Zustand (mapprops.js)
 
     // Zone
     const zn = g.zone;

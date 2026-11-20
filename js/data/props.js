@@ -21,6 +21,7 @@
 //   blast     fliegt bei Zerstörung durch Beschuss in die Luft { r, damage je Panzerklasse }
 //   stack     bis zu so viele Lagen übereinander (map: stack 1 … stack; Container): Trefferpunkte und Sichthöhe je Lage
 //   rotStep   Drehung im Editor in Achteln je Druck (Autos: 2 = 90°, sie stehen an den Achsen)
+//   target    false: kein Ziel für den Befehl „Prop beschießen“ (Krater)
 //   foot      Teilflächen [[x0, x1, y0, y1] …] (px, wie size gedreht): nur sie sperren (Portalkran: nur die Beine)
 export const PROPS = {
   // Deckung (combat.js): Infanterie höchstens r px vom Rand einer Prop-Zelle, die zwischen ihr und dem Schützen liegt (Winkel zur
@@ -34,6 +35,11 @@ export const PROPS = {
   // Fahnen (Kontrollpunkt, Zelt, Funkmast): in der Eroberung zeigt eine Fahne die Farbe des Besitzers der nächsten Flagge, wenn sie
   // höchstens flagReach px von ihr steht; sonst die im Editor eingestellte Farbe (team) oder weiß (neutral)
   flagReach: 700,
+  // Tore (gate 1 „zu“): Einheiten öffnen sie im Vorbeigehen; ohne Einheit in der Zelle schließen sie nach gateClose s wieder.
+  // gateCost: Mehrkosten der Wegsuche durch ein solches Tor (Zehntel einer Zelle), offene Wege werden bevorzugt.
+  // Verschlossene Tore (gate 3) sperren wie die Kachel; offene (gate 2) bleiben offen.
+  gateClose: 4,
+  gateCost: 15,
   // Tarnung unter Tarnnetzen (conceal): Einheiten darunter sieht der Gegner nur aus der Nähe (BALANCE.stealth.detectRange), bis sie
   // schießen (BALANCE.stealth.revealTime), wie Scharfschützen
   kinds: {
@@ -562,6 +568,7 @@ export const PROPS = {
       cover: 0.35, // wer darin steht, liegt tiefer: Deckung nach allen Seiten
       sight: 0,
       hp: 9999, // unzerstörbar
+      target: false, // kein Ziel für „Prop beschießen“
       armor: 'struct',
       rubble: null,
     },

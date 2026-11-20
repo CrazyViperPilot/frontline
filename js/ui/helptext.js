@@ -54,7 +54,7 @@ export const KEYS = [
   ['Rechtsklick auf FOB', 'LKW: leer laden, beladen entladen · Baufahrzeug: an Baustelle helfen, beschädigtes Gebäude reparieren'],
   ['Rechtsklick auf Werk', 'LKW holen die Ware aus dem Ausgangslager des Werks (BM-Werk, Munitionswerk, Raffinerie), bis es leer ist oder der LKW voll · ' +
     'Solange ein LKW dorthin unterwegs ist, legt das Werk die Hälfte seines Ausstoßes ins Ausgangslager (bis 400)'],
-  ['A + Klick', 'Angriffsbewegung · auf eine Brücke: beschießen, bis sie einstürzt'],
+  ['A + Klick', 'Angriffsbewegung · auf eine Brücke: beschießen, bis sie einstürzt · auf Zaun, Mauer, Container, Fässer …: gezielt beschießen'],
   ['Fluss', `Falls im Startmenü an: auf Zufallskarten trennt je ein Fluss die Startecken von Blau und Rot von der Zone (mit 3 oder 4 Spielern in der Eroberung nur diese beiden) · ` +
     `drei Brücken und zwei Furten führen hinüber (in der Furt halbes Tempo) · Brücken greift nur an, wer es befiehlt (A + Klick); eingestürzt sperren sie, ` +
     `bis ein Baufahrzeug sie wieder aufbaut (Rechtsklick oder Tippen auf die Trümmer, ${BALANCE.river.rebuildCost} Geld, ${BALANCE.river.rebuild} s)`],

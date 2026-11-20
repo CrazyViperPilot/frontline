@@ -243,7 +243,7 @@ function normProps(list) {
       x,
       y,
       ...(rot ? { rot } : {}),
-      ...(K.gate && (p.gate === GATE.closed || p.gate === GATE.open) ? { gate: p.gate } : {}),
+      ...(K.gate && (p.gate === GATE.closed || p.gate === GATE.open || p.gate === GATE.locked) ? { gate: p.gate } : {}), // zu, offen, verschlossen
       ...(K.stack && Number.isInteger(p.stack) && p.stack > 1 ? { stack: Math.min(K.stack, p.stack) } : {}), // Lagen (Container)
       ...(K.flag && Number.isInteger(p.team) && p.team >= 0 && p.team < MAX_SPAWNS ? { team: p.team } : {}), // Fahne in Teamfarbe
     });

@@ -23,6 +23,7 @@ import { cmdAirstrike } from './airstrike.js';
 import { cmdHeliLand, isHeliport } from './helipad.js';
 import { cmdDig } from './excavator.js';
 import { cmdShellRoad, cmdClearRubble } from './roadwar.js';
+import { cmdAttackProp } from './propfire.js';
 import { cmdLayMine } from './mines.js';
 import { cmdParadrop } from './paradrop.js';
 import { setWeather, WEATHER_NAMES } from './weather.js';
@@ -102,6 +103,7 @@ export const COMMANDS = {
   dig: { run: cmdDig, drives: true, sound: true },
   layBridge: { run: cmdLayBridge, drives: true, sound: true },
   shellRoad: { run: cmdShellRoad, drives: true, sound: true },
+  attackProp: { run: cmdAttackProp, drives: true, sound: true }, // Zaun, Mauer, Container … beschießen (propfire.js)
   clearRubble: { run: cmdClearRubble, drives: true, sound: true },
   city: { run: cmdCity },
   cityUpgrade: { run: cmdCityUpgrade },

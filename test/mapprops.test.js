@@ -6,7 +6,7 @@ import { Game } from '../js/game/game.js';
 import { generateMap } from '../js/game/map.js';
 import { normalizeMap, terrainGrid, createEmptyMap } from '../js/game/mapdata.js';
 import { moverOf } from '../js/game/grid.js';
-import { PROP_STATE, GATE, propCover, damageProp } from '../js/game/props.js';
+import { PROP_STATE, GATE, GATE_OPEN, propCover, damageProp } from '../js/game/props.js';
 import { PROPS } from '../js/data/props.js';
 import { BALANCE } from '../js/data/balance.js';
 import { snapshotGame, restoreGame } from '../js/game/savegame.js';
@@ -201,13 +201,13 @@ test('Zufallskarten: wenige Kacheln an Äckern, punktsymmetrisch, ohne Fluss und
   }
 });
 
-test('Militär: Jersey-Sperre und Tschechenigel halten Fahrzeuge auf, Infanterie kommt durch; Schranke zu hält Fahrzeuge, offen niemanden', () => {
+test('Militär: Jersey-Sperre und Tschechenigel halten Fahrzeuge auf, Infanterie kommt durch; Schranke verschlossen hält Fahrzeuge, offen niemanden', () => {
   const j = at(4, 4);
   const h = at(8, 4);
   const b = at(12, 4);
   const o = at(16, 4);
   const map = normalizeMap({ ...generateMap(1), props: [
-    { kind: 'jersey', ...j }, { kind: 'hedgehog', ...h }, { kind: 'boom_gate', ...b, gate: GATE.closed }, { kind: 'boom_gate', ...o, gate: GATE.open },
+    { kind: 'jersey', ...j }, { kind: 'hedgehog', ...h }, { kind: 'boom_gate', ...b, gate: GATE.locked }, { kind: 'boom_gate', ...o, gate: GATE.open },
   ] });
   const g = new Game({ seed: 1, map });
   const G = g.grid;
@@ -215,7 +215,7 @@ test('Militär: Jersey-Sperre und Tschechenigel halten Fahrzeuge auf, Infanterie
   const pass = (u, pt) => G.passable(G.toCell(pt.x), G.toCell(pt.y), moverOf(u));
   assert.deepEqual([pass(inf, j), pass(truck, j), pass(tank, j)], [true, false, false], 'Jersey');
   assert.deepEqual([pass(inf, h), pass(truck, h), pass(tank, h)], [true, false, false], 'Igel');
-  assert.deepEqual([pass(inf, b), pass(truck, b), pass(tank, b)], [true, false, true], 'Schranke zu: Panzer walzt sie nieder');
+  assert.deepEqual([pass(inf, b), pass(truck, b), pass(tank, b)], [true, false, true], 'Schranke verschlossen: Panzer walzt sie nieder');
   assert.deepEqual([pass(inf, o), pass(truck, o)], [true, true], 'Schranke offen');
 });
 
@@ -289,4 +289,53 @@ test('Zivil und Natur: Hecke verdeckt die Sicht, im Krater hat Infanterie Deckun
     return h.fog[0].isVisible(at(14, 10).x, at(14, 10).y);
   };
   assert.equal(look(column('hedge', 10, 0, 20)), false, 'Hecke verdeckt');
+});
+
+test('Tore: ein geschlossenes Tor öffnet sich, wenn eine Einheit hindurchgeht, und schließt danach wieder; ein verschlossenes sperrt', () => {
+  const wall = column('fence_wood', 10, 0, 20);
+  wall[10] = { ...wall[10], gate: GATE.closed };
+  wall[4] = { ...wall[4], gate: GATE.locked };
+  const g = gameWith(wall);
+  const G = g.grid;
+  const gate = g.map.props[10];
+  const inf = g.spawnUnit('rifleman', 0, at(6, 10).x, at(6, 10).y);
+  assert.equal(G.passable(G.toCell(gate.x), G.toCell(gate.y), moverOf(inf)), true, 'zu: passierbar (wird geöffnet)');
+  const locked = g.map.props[4];
+  assert.equal(G.passable(G.toCell(locked.x), G.toCell(locked.y), moverOf(inf)), false, 'verschlossen: sperrt');
+  assert.ok(g.issue(0, { type: 'move', ids: [inf.id], x: at(14, 10).x, y: at(14, 10).y }).ok);
+  let opened = false;
+  for (let k = 0; k < 400 && !opened; k++) {
+    g.update(0.05);
+    opened = !!(g.propSt[10] & GATE_OPEN);
+  }
+  assert.ok(opened, 'Einheit hat das Tor geöffnet');
+  run(g, 20);
+  assert.ok(Math.hypot(inf.x - at(14, 10).x, inf.y - at(14, 10).y) < 2 * T, 'durch das Tor am Ziel');
+  assert.equal(g.propSt[10] & GATE_OPEN, 0, 'wieder zu');
+});
+
+test('Props beschießen: A-Befehl auf eine Mauer zerstört sie; Krater sind kein Ziel', () => {
+  const w = at(10, 10);
+  const k = at(16, 10);
+  const g = gameWith([{ kind: 'wall_stone', ...w }, { kind: 'crater', ...k }]);
+  const tank = g.spawnUnit('tank', 0, at(4, 10).x, at(4, 10).y);
+  assert.equal(g.issue(0, { type: 'attackProp', ids: [tank.id], x: k.x, y: k.y }).ok, false, 'Krater');
+  assert.ok(g.issue(0, { type: 'attackProp', ids: [tank.id], x: w.x, y: w.y }).ok);
+  run(g, 30);
+  assert.equal(g.propSt[0] & 3, PROP_STATE.rubble);
+  assert.notEqual(tank.order.type, 'attackProp', 'Auftrag erledigt');
+});
+
+test('Nebel: jedes Team sieht Props im zuletzt gesehenen Zustand', () => {
+  const p = at(10, 10);
+  const g = gameWith([{ kind: 'wall_concrete', ...p }]);
+  damageProp(g, 0, PROPS.kinds.wall_concrete.hp + 1);
+  g.updateFog();
+  const seenNow = (t) => g.propSeen[t][0] & 3;
+  const sees = g.fog[0].isVisible(p.x, p.y);
+  assert.equal(seenNow(0), sees ? PROP_STATE.rubble : PROP_STATE.ok, 'Team 0 kennt den Zustand nur, wenn es die Stelle sieht');
+  g.spawnUnit('scout', 0, p.x - 100, p.y);
+  g.updateFog();
+  assert.equal(seenNow(0), PROP_STATE.rubble, 'in Sicht: Trümmer bekannt');
+  assert.equal(g.propSt[0] & 3, PROP_STATE.rubble);
 });

@@ -1,6 +1,10 @@
-# Symbol-Index render (Teil 4 von 4, ways.js bis works.js)
+# Symbol-Index render (Teil 4 von 4, university.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
+
+## university.js (Fortsetzung)
+- drawUniversityTop(ctx, b) – 2D von oben (Weltkoordinaten, Kontext skaliert): Kreuzbau mit Kuppel, Portalen,…
+- UNI_LAWNS – Rasen und Wege des Hofs (Weltkoordinaten relativ zur Mitte): vier Rasenflächen…
 
 ## ways.js (26 KB)
 - groundPattern(ctx, kind, season) – Muster für Boden-Flächen: 'asphalt', 'pavers' (Gehweg), 'dirt', 'rut', 'gravel'…

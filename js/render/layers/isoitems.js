@@ -65,7 +65,7 @@ export const isoItemMethods = {
       }
     }
     for (const o of this.deco.rocks) if (inRect(o.x, o.y, PAD)) items.push({ k: cam.depth(o.x, o.y), t: 2, o });
-    for (const o of propLooks(g)) if (inRect(o.x, o.y, o.single ? 80 : 40)) items.push({ k: cam.depth(o.x, o.y), t: 16, o }); // Zäune, Mauern … (mapprops.js)
+    for (const o of propLooks(g, team, this.revealAll)) if (inRect(o.x, o.y, o.single ? 80 : 40)) items.push({ k: cam.depth(o.x, o.y), t: 16, o }); // Zäune, Mauern … (mapprops.js)
     const small = z < 0.6; // weit herausgezoomt: Unterholz im Wald weglassen (winzig, unter den Kronen)
     for (const b of this.deco.bushes) if (inRect(b.x, b.y, 40) && !(small && b.under) && !gone(b.x, b.y)) items.push({ k: cam.depth(b.x, b.y), t: 13, o: b });
     for (const b of g.buildings) {

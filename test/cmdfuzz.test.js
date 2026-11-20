@@ -60,6 +60,7 @@ const TEMPLATES = {
   cityConnect: { buildingId: 'cityEnt' },
   dig: { ids: 'ids', c0: 'col', r0: 'row', c1: 'col', r1: 'row', append: 'bool' },
   shellRoad: { ids: 'ids', c0: 'col', r0: 'row', c1: 'col', r1: 'row' },
+  attackProp: { ids: 'ids', x: 'propX', y: 'propY' },
   clearRubble: { ids: 'ids', c0: 'col', r0: 'row' },
   storm: { ids: 'ids', houseId: 'house' },
   fortifyHouse: { houseId: 'house', work: 'houseWork' },
@@ -115,6 +116,7 @@ function makeGen(g, dead, rng) {
   const ents = (t) => [...(g.city?.[t]?.ents.values() ?? [])].filter((e) => e.alive);
   const S = 64;
   const near = () => choose(own()) ?? g.mainFob(0);
+  let lastProp = null;
   return {
     ids: () => {
       // 1 bis 3 Einheiten einer zufälligen Sorte (sonst sind passende Ausführende, z. B. nur LKW, selten zusammen gewählt)
@@ -127,6 +129,12 @@ function makeGen(g, dead, rng) {
       if (rng.next() < 0.1) out.push(dead.id);
       return out;
     },
+    // Prop der Karte (Zaun, Mauer …): propX wählt eines, propY liefert dessen y
+    propX: () => {
+      lastProp = choose((g.map.props ?? []).filter((p, i) => (g.propSt[i] & 3) === 0));
+      return lastProp?.x;
+    },
+    propY: () => lastProp?.y,
     x: () => near().x + (rng.next() - 0.5) * 1200,
     y: () => near().y + (rng.next() - 0.5) * 1200,
     col: () => Math.floor(near().x / S) + Math.floor((rng.next() - 0.5) * 8),

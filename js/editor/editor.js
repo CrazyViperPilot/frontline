@@ -142,6 +142,7 @@ const st = {
 
 const snap = (v) => Math.round(v / SNAP) * SNAP;
 const TILE_PX = BALANCE.map.tile; // Rasterzelle: Kacheln der Zäune und Mauern
+const K_LINE = (o) => !!PROPS.kinds[o.kind]?.line;
 
 /** Zellen einer Zaunlinie von Zelle a nach b: erst entlang der längeren Achse, dann quer (höchstens eine Ecke). */
 function propPath(a, b) {
@@ -1793,13 +1794,13 @@ function showInspector() {
     rows.push(`<div class="muted small">Seichtes Wasser im Kreis (Radius ${s.o.r} px): Bodeneinheiten kommen mit halbem Tempo hindurch. Rot-weiße Stangen markieren die Furt im Spiel.</div>`);
   } else if (s.k === 'prop') {
     const K = PROPS.kinds[s.o.kind];
-    const gate = { 0: 'kein Tor', [GATE.closed]: 'Tor zu', [GATE.open]: 'Tor offen' }[s.o.gate ?? 0];
-    const gname = K?.line ? gate : { 0: 'zu', [GATE.closed]: 'zu', [GATE.open]: 'offen' }[s.o.gate ?? 0];
+    const gate = { 0: 'kein Tor', [GATE.closed]: 'Tor zu', [GATE.open]: 'Tor offen', [GATE.locked]: 'Tor verschlossen' }[s.o.gate ?? 0];
+    const gname = K?.line ? gate : { 0: 'zu', [GATE.closed]: 'zu', [GATE.open]: 'offen', [GATE.locked]: 'verschlossen' }[s.o.gate ?? 0];
     const team = (s.o.team ?? -1) >= 0 ? BALANCE.teamNames[s.o.team] : 'neutral';
     rows.push(`<div class="row">${K?.gate ? `<button data-i="gate">${K.line ? gname : `Schranke ${gname}`}</button>` : ''}<button data-i="turn">Drehen</button><button data-i="pkind">Art</button></div>`);
     if (K?.flag) rows.push(`<div class="row"><button data-i="pteam">Fahne: ${team}</button></div>`);
     if (K?.stack) rows.push(`<div class="row"><button data-i="pstack">Lagen: ${s.o.stack ?? 1}</button></div>`);
-    rows.push(`<div class="muted small">${K ? propRulesText(K) : ''} ${K?.line ? 'Tor nur in geraden Stücken; offen hält es niemanden auf. „Drehen“ gilt für einzelne Kacheln ohne Nachbarn.' : `Drehen: ${(K?.rotStep ?? 1) * 45}° je Druck (jetzt ${(s.o.rot ?? 0) * 45}°).${K?.flag ? ' Fahne: in der Eroberung zeigt sie den Besitzer der nächsten Flagge.' : ''}`}</div>`);
+    rows.push(`<div class="muted small">${K ? propRulesText(K) : ''} ${K?.line ? 'Tor nur in geraden Stücken; „zu“ öffnen Einheiten im Vorbeigehen (es schließt danach wieder), „offen“ bleibt offen, „verschlossen“ sperrt wie die Kachel. „Drehen“ gilt für einzelne Kacheln ohne Nachbarn.' : `Drehen: ${(K?.rotStep ?? 1) * 45}° je Druck (jetzt ${(s.o.rot ?? 0) * 45}°).${K?.flag ? ' Fahne: in der Eroberung zeigt sie den Besitzer der nächsten Flagge.' : ''}`}</div>`);
   } else if (s.k === 'crate') {
     const d = st.map.spawns.map((sp) => Math.round(Math.hypot(sp.x - s.o.x, sp.y - s.o.y)));
     rows.push(`<div class="muted small">Ziehen verschiebt die Kiste. Abstand zu den Starts: ${d[0]} / ${d[1]} px. Auf freien Boden setzen (sonst rückt sie im Spiel zur nächsten freien Stelle).</div>`);
@@ -1836,7 +1837,8 @@ function inspectorAction(a) {
   else if (a === 'h+') o.h = Math.min(600, o.h + 16);
   else if (a === 'h-') o.h = Math.max(24, o.h - 16);
   else if (a === 'gate') {
-    const next = { 0: GATE.closed, [GATE.closed]: GATE.open, [GATE.open]: 0 }[o.gate ?? 0];
+    // Kachel: kein Tor → zu → offen → verschlossen; Schranke: zu → offen → verschlossen
+    const next = { 0: GATE.closed, [GATE.closed]: GATE.open, [GATE.open]: GATE.locked, [GATE.locked]: K_LINE(o) ? 0 : GATE.closed }[o.gate ?? 0];
     if (next) o.gate = next;
     else delete o.gate;
   } else if (a === 'pkind') {

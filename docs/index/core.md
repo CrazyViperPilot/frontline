@@ -68,8 +68,16 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - toB64
 - fromB64
 
-## editor/editor.js (85 KB)
+## editor/editor.js (90 KB)
 - (keine Exporte)
+
+## editor/space.js (4.9 KB)
+- footprint(k, o) – Grundfläche des Objekts o der Art k (wie pickAt in editor.js): Rechteck (Mitte,…
+- overlaps(a, b) – Überdecken sich zwei Grundflächen (mehr als EPS)?
+- blockerOf(map, k, o, skip) – Erstes Objekt der Karte, das die Grundfläche von o (Art k) überdeckt: { k, o }…
+- hasRoom(map, k, o, skip) – Ist der Platz für o (Art k) frei?
+- stackTarget(map, kind, x, y) – Einzelstück am Weltpunkt (x, y), auf das sich ein weiteres derselben Art stapel…
+- blockerName(b) – Name eines Hindernisses für die Meldung „Kein Platz: …“
 
 ## main.js (27 KB)
 - (keine Exporte)

@@ -186,7 +186,7 @@ Kleine Ordner ohne eigene Datei:
 - `js/core/`: `loop.js` feste Schrittweite und Frames, `rng.js` Zufall je Seed (mulberry32), `snapshot.js` Objektgraph ↔ JSON (§8).
 - `js/audio/`: `sound.js` Ton per WebAudio (liest `game.effects`, Meldungen, Wetter; ein `Sound` für alle Partien in `main.js`),
   `music.js` Hintergrundmusik, von `Sound` erzeugt und gesteuert. Beide ändern nichts an der Partie.
-- `js/editor/editor.js` + `editor.html`: Karteneditor; speichert Karten über `js/game/mapdata.js` im `localStorage`.
+- `js/editor/editor.js` + `editor.html`: Karteneditor; speichert Karten über `js/game/mapdata.js` im `localStorage`; `space.js` Platzprüfung.
 - Sonstiges: `sw.js` Service Worker (network-first, Präfix `frontline-`), `manifest.json`, `css/`, `icons/` (keine weiteren Bilddateien,
   alles gemalt), `tools/doc-tables.mjs` (Wertetabellen der PRD, `npm run docs`), `test/` (node --test), `api/` und `admin/` (PHP, §9).
 - Symbol-Index `docs/index/`: je Ordner unter `js/` „Datei → Exporte“ mit Methoden und erstem Kommentarsatz, erzeugt von `npm run index`

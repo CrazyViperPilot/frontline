@@ -247,8 +247,9 @@ Werte je Art in `js/data/props.js` (Tabelle unten), Regeln in `js/game/props.js`
 | Laternenmast | niemanden | ja | – | nein | 30 | umgeknickt |
 | Stromverteiler | niemanden | ja | 15 % / – | nein | 40 | weg |
 
-- **Container stapeln:** Im Editor mit „Wählen“ und „Lagen“ (1, 2, 3). Trefferpunkte und Sichthöhe wachsen je Lage; jede Lage hat
-  ihre eigene Farbe (sieben Reedereifarben, aus der Lage gewählt).
+- **Stapeln:** Container (bis 3 Lagen), Paletten (3), Kistenstapel (2), Reifenstapel (3) und Holzstapel (2). Im Editor setzt die
+  Deko auf ein Stück derselben Art eine Lage darauf, oder „Wählen“ und „Lagen“. Trefferpunkte und Sichthöhe wachsen je Lage; jede
+  Container-Lage hat ihre eigene Farbe (sieben Reedereifarben, aus der Lage gewählt), die anderen Arten wechseln die Einzelheiten je Lage.
 - **Zufallskarten:** Die Hälfte der freistehenden Hallenpaare bekommt einen Lagerhof: eine Reihe Container (bis zwei Lagen), Paletten,
   Kisten, Fässer, Reifen, Gabelstapler oder Stromverteiler 34 px vor einer Längsseite, dazu oft ein Laternenmast an der Ecke; gespiegelt.
   Fabrikhöfe bleiben frei (Umfahrung innerhalb der Mauer).

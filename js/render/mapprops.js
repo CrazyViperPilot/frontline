@@ -107,6 +107,29 @@ function lookKey(o, season, flag) {
   return `${o.kind}|${o.mask}|${o.along}|${o.gate}|${o.rubble ? 1 : 0}|${o.v}|${o.d}|${o.stack}|${season === 'winter' ? 'w' : 's'}|${flag ?? ''}`;
 }
 
+/**
+ * Gestapelte Einzelstücke (PROPS stack, Editor „Lagen“): Lage l steht auf der Oberkante der Lage darunter; make(l, top) liefert die
+ * Körper einer Lage (Schnee nur auf der obersten). Trümmer liegen am Boden.
+ */
+function stacked(o, make) {
+  const n = o.rubble ? 1 : o.stack;
+  if (n <= 1) return make(0, true);
+  const S = [];
+  let z0 = 0;
+  for (let l = 0; l < n; l++) {
+    const L = make(l, l === n - 1);
+    let top = 0;
+    for (const so of L) {
+      so.faces = so.faces.map((f) => f.map((p) => [p[0], p[1], p[2] + z0]));
+      so.c = [so.c[0], so.c[1], so.c[2] + z0];
+      for (const f of so.faces) for (const p of f) top = Math.max(top, p[2]);
+    }
+    S.push(...L);
+    z0 = top;
+  }
+  return S;
+}
+
 function modelOf(o, season, flag = null) {
   const key = lookKey(o, season, flag);
   let m = models.get(key);
@@ -115,8 +138,9 @@ function modelOf(o, season, flag = null) {
     let S = [];
     if (isFenceKind(o.kind)) S = fenceModel(o.kind, o.mask, o.along, o.gate, o.rubble, o.v, o.d, w, season);
     else if (isMilSingle(o.kind)) S = milModel(o.kind, o.v, o.d, w, o.rubble, flag, o.gate === GATE.open);
-    else if (isIndSingle(o.kind)) S = indModel(o.kind, o.v, o.d, w, o.rubble, o.stack);
-    else if (isCivSingle(o.kind)) S = civModel(o.kind, o.v, o.d, season, o.rubble);
+    else if (o.kind === 'container') S = indModel(o.kind, o.v, o.d, w, o.rubble, o.stack); // Container: Farbe je Lage
+    else if (isIndSingle(o.kind)) S = stacked(o, (l, top) => indModel(o.kind, o.v, (o.d + l) % DETAILS, w && top, o.rubble));
+    else if (isCivSingle(o.kind)) S = stacked(o, (l, top) => civModel(o.kind, o.v, (o.d + l) % DETAILS, top || season !== 'winter' ? season : 'autumn', o.rubble));
     m = { S, key };
     models.set(key, m);
   }

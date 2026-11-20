@@ -12,6 +12,7 @@ import { ISO_K } from '../render/camera.js';
 import { Game } from '../game/game.js';
 import { createEmptyMap, normalizeMap, checkMap, accessRoutes, describeMap, loadMap, saveMap, isFixedMap, MAX_SPAWNS, MAX_FLAGS, PYLON_LINES, MAX_CRATES, MAX_FIELDS, FIELD_CROPS, MAX_FORDS, MAX_BRIDGES, BRIDGE_LEN, MAX_PAVING, PLAZA_SIZE, WALK_W, MAX_PROPS } from '../game/mapdata.js';
 import { drawMapIso } from '../render/maptown.js';
+import { spriteFrame, spriteMissed } from '../render/spritecache.js';
 import { RIVER_SIZE, riverHeight } from '../game/landscape.js';
 import { bridgeShape } from '../game/river.js';
 import { createRoads } from '../game/roads.js';
@@ -24,6 +25,7 @@ import { GATE } from '../game/props.js';
 import { propLooksOf, forgetPropLooks, drawPropsTop } from '../render/mapprops.js';
 import { Relief, RELIEF, COARSE_N, reliefOf, setRelief } from '../game/relief.js';
 import { reliefTiles, updateReliefTiles, drawReliefTiles } from '../render/reliefimg.js';
+import { footprint, overlaps, blockerOf, stackTarget, blockerName } from './space.js';
 
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;
@@ -166,18 +168,23 @@ function placePropLine(a, b) {
   const list = listOf('prop');
   const cells = propPath(a, b);
   let last = null;
+  let skipped = 0;
   for (const { c, r } of cells) {
     const x = c * TILE_PX + TILE_PX / 2;
     const y = r * TILE_PX + TILE_PX / 2;
     let o = list.find((p) => p.x === x && p.y === y);
     if (o) o.kind = st.propKind;
-    else if (list.length >= MAX_PROPS) {
+    else if (blockerOf(st.map, 'prop', { kind: st.propKind, x, y })) {
+      skipped++;
+      continue;
+    } else if (list.length >= MAX_PROPS) {
       say(`Höchstens ${MAX_PROPS} Kacheln je Karte`, true);
       break;
     } else list.push((o = { kind: st.propKind, x, y }));
     if (cells.length === 1 && b.along === 'y') o.rot = 2; // einzelne Kachel quer
     last = o;
   }
+  if (skipped) say(`${skipped} ${skipped === 1 ? 'Kachel' : 'Kacheln'} ohne Platz ausgelassen`, true);
   return last;
 }
 
@@ -467,6 +474,7 @@ function place(tool, x, y) {
   const py = clamp(snap(y), 0, H);
   if (BUILD_DEF[tool]) {
     const { o } = ghostOf(tool, x, y);
+    if (!roomFor('building', o)) return null;
     m.town.buildings.push(o);
     return { k: 'building', o };
   }
@@ -479,6 +487,7 @@ function place(tool, x, y) {
     case 'forest':
     case 'rock': {
       const sel = ghostOf(tool, x, y);
+      if (!roomFor(sel.k, sel.o)) return null;
       listOf(sel.k).push(sel.o);
       return sel;
     }
@@ -493,11 +502,13 @@ function place(tool, x, y) {
     }
     case 'tree': {
       const o = { x: Math.round(x), y: Math.round(y), r: 12 + Math.floor(Math.random() * 9) };
+      if (!roomFor('tree', o)) return null;
       m.trees.push(o);
       return { k: 'tree', o };
     }
     case 'car': {
       const o = { x: px, y: py, vertical: st.carVertical, color: CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)] };
+      if (!roomFor('car', o)) return null;
       m.town.cars.push(o);
       return { k: 'car', o };
     }
@@ -549,6 +560,7 @@ function place(tool, x, y) {
         return null;
       }
       const o = { x: px, y: py };
+      if (!roomFor('crate', o)) return null;
       m.crates.push(o);
       return { k: 'crate', o };
     }
@@ -605,6 +617,10 @@ function ghostOf(tool, x, y) {
     }
     case 'tree': return { k: 'tree', o: { x: Math.round(x), y: Math.round(y), r: 16 } };
     case 'crate': return { k: 'crate', o: { x: px, y: py } };
+    case 'prop': {
+      if (PROPS.kinds[st.propKind].line) return null;
+      return { k: 'prop', o: { kind: st.propKind, x: clamp(px, 0, W - 1), y: clamp(py, 0, H - 1), ...(st.propRot ? { rot: st.propRot } : {}) } };
+    }
     default: return null;
   }
 }
@@ -649,9 +665,18 @@ function placeAlongRail(o, x, y) {
       const along = (x - b.x) * ux + (y - b.y) * uy;
       const across = (x - b.x) * nx + (y - b.y) * ny;
       if (Math.abs(across) < 60 && Math.abs(along) < 160) {
+        const dir = along >= 0 ? 1 : -1;
         const gap = (b.w + o.w) / 2 + 4;
-        o.x = b.x + ux * gap * (along >= 0 ? 1 : -1);
-        o.y = b.y + uy * gap * (along >= 0 ? 1 : -1);
+        o.x = b.x + ux * gap * dir;
+        o.y = b.y + uy * gap * dir;
+        // steht dort schon ein Zugteil: ans Ende des Zuges weiterrücken
+        for (let n = 0; n < 40; n++) {
+          const fp = footprint('building', o);
+          const next = st.map.town.buildings.find((t) => t.kind === 'train' && t !== o && overlaps(fp, footprint('building', t)));
+          if (!next) break;
+          o.x = next.x + ux * ((next.w + o.w) / 2 + 4) * dir;
+          o.y = next.y + uy * ((next.w + o.w) / 2 + 4) * dir;
+        }
         break;
       }
     }
@@ -687,6 +712,45 @@ function settleProp(sel) {
   const { c, r } = cellAt(sel.o.x, sel.o.y);
   sel.o.x = c * TILE_PX + TILE_PX / 2;
   sel.o.y = r * TILE_PX + TILE_PX / 2;
+}
+
+// ---- Platz ----------------------------------------------------------------------
+
+/** Steht o (Art k) auf freiem Platz? Sonst Meldung „Kein Platz“ (quiet: ohne) und false. */
+function roomFor(k, o, quiet = false) {
+  const b = blockerOf(st.map, k, o);
+  if (b && !quiet) say(`Kein Platz: ${b.k === 'building' ? KIND_NAMES[b.o.kind] ?? 'Gebäude' : blockerName(b)} im Weg`, true);
+  else if (!b && !quiet && $('[data-msg]').textContent.startsWith('Kein Platz')) say(''); // alte Meldung weg, sobald es passt
+  return !b;
+}
+
+/** Objekt verschieben, aber nur auf freien Platz; false = blieb stehen. */
+function tryMove(sel, dx, dy) {
+  if (!footprint(sel.k, sel.o)) {
+    moveObj(sel, dx, dy);
+    return true;
+  }
+  const { x, y } = sel.o;
+  moveObj(sel, dx, dy);
+  if (roomFor(sel.k, sel.o, true)) return true;
+  sel.o.x = x;
+  sel.o.y = y;
+  return false;
+}
+
+/** Kopie neben das Original legen: erste freie Stelle rechts, unten, schräg, links oder oben; false = nirgends Platz. */
+function placeCopy(k, copy) {
+  const fp = footprint(k, copy);
+  const step = fp ? 2 * fp.R + 8 : 48;
+  const { x, y } = copy;
+  for (let n = 1; n <= 3; n++) {
+    for (const [dx, dy] of [[1, 0], [0, 1], [1, 1], [-1, 0], [0, -1]]) {
+      copy.x = clamp(x + dx * step * n, 0, W);
+      copy.y = clamp(y + dy * step * n, 0, H);
+      if (!fp || roomFor(k, copy, true)) return true;
+    }
+  }
+  return false;
 }
 
 // ---- Zeichnen --------------------------------------------------------------------
@@ -746,8 +810,9 @@ function draw() {
   const d = st.renderer.dpr;
   if (iso) {
     syncGhost();
-    st.renderer.render({});
+    st.renderer.render({}); // setzt das Zeitbudget der Bilder selbst zurück
   } else {
+    spriteFrame(d);
     ctx.setTransform(d, 0, 0, d, 0, 0);
     ctx.fillStyle = '#2a2f27';
     ctx.fillRect(0, 0, vw, vh);
@@ -931,6 +996,7 @@ function draw() {
     ctx.fillStyle = '#fff';
     ctx.fillText(`Start ${BALANCE.teamNames[i]}`, p.x, p.y - Math.max(14, 44 * z));
   });
+  if (spriteMissed()) st.needDraw = true; // Bilder fehlten (Zeitbudget): gleich noch einmal, bis alle gemalt sind
 }
 
 /**
@@ -988,13 +1054,27 @@ function drawGhost(world, px) {
       }
     }
   }
-  // Fußabdruck gestrichelt: genau die Fläche, die das Objekt belegt
+  // Fußabdruck gestrichelt: genau die Fläche, die das Objekt belegt; rot, wenn dort kein Platz ist (Stapeln: Umriss des Stapels)
   world(o.x, o.y);
   ctx.globalAlpha = 0.9;
-  ctx.strokeStyle = '#ffffff';
+  const top = gh.k === 'prop' ? stackTarget(st.map, o.kind, x, y) : null;
+  const fp = footprint(gh.k, top ?? o);
+  const blocked = !top && fp && blockerOf(st.map, gh.k, o);
+  ctx.strokeStyle = blocked ? '#ff4a3a' : '#ffffff';
   ctx.lineWidth = 1.5 * px;
   ctx.setLineDash([6 * px, 4 * px]);
-  if (o.w !== undefined && o.h !== undefined) {
+  if (fp) {
+    ctx.fillStyle = blocked ? 'rgba(255,60,40,0.3)' : 'rgba(255,255,255,0.12)';
+    ctx.beginPath();
+    if (fp.t === 'circle') ctx.arc(fp.x, fp.y, fp.r, 0, Math.PI * 2);
+    else {
+      ctx.translate(fp.x, fp.y);
+      ctx.rotate(fp.a);
+      ctx.rect(-fp.hw, -fp.hh, fp.hw * 2, fp.hh * 2);
+    }
+    ctx.fill();
+    ctx.stroke();
+  } else if (o.w !== undefined && o.h !== undefined) {
     ctx.translate(o.x, o.y);
     ctx.rotate(o.angle || 0);
     ctx.strokeRect(-o.w / 2, -o.h / 2, o.w, o.h);
@@ -1419,10 +1499,21 @@ canvas.addEventListener('pointerdown', (e) => {
   } else if (t === 'prop' && !PROPS.kinds[st.propKind].line) {
     // Einzelstück: setzen, Ziehen verschiebt es im 8-px-Raster
     const list = listOf('prop');
-    if (list.length >= MAX_PROPS) say(`Höchstens ${MAX_PROPS} Props je Karte`, true);
-    else {
+    const K = PROPS.kinds[st.propKind];
+    const top = stackTarget(st.map, st.propKind, w.x, w.y); // auf ein Stück derselben Art: eine Lage darauf
+    const o = ghostOf('prop', w.x, w.y).o;
+    if (top) {
+      if ((top.stack ?? 1) >= K.stack) say(`${K.name}: höchstens ${K.stack} Lagen`, true);
+      else {
+        pushHistory();
+        top.stack = (top.stack ?? 1) + 1;
+        st.sel = { k: 'prop', o: top };
+        showInspector();
+        say(`${K.name}: ${top.stack} Lagen`);
+      }
+    } else if (list.length >= MAX_PROPS) say(`Höchstens ${MAX_PROPS} Props je Karte`, true);
+    else if (roomFor('prop', o)) {
       pushHistory();
-      const o = { kind: st.propKind, x: clamp(snap(w.x), 0, W - 1), y: clamp(snap(w.y), 0, H - 1), ...(st.propRot ? { rot: st.propRot } : {}) };
       list.push(o);
       st.gesture = { type: 'propmove', o, x: w.x, y: w.y };
       updateInfo();
@@ -1495,15 +1586,15 @@ window.addEventListener('pointermove', (e) => {
     if (!g.started) {
       if (Math.hypot(p.x - g.sx, p.y - g.sy) < 5) return;
       g.started = true;
+      g.orig = { x: st.sel.o.x, y: st.sel.o.y };
       pushHistory();
     }
-    if (st.sel.k === 'spawn' || st.sel.k === 'zone') {
-      moveObj(st.sel, snap(w.x) - snap(g.x), snap(w.y) - snap(g.y));
-    } else {
-      moveObj(st.sel, w.x - g.x, w.y - g.y);
+    // nur auf freien Platz: ist er belegt, bleibt das Objekt stehen und springt nach, sobald der Zeiger wieder frei ist
+    const moved = st.sel.k === 'spawn' || st.sel.k === 'zone' ? tryMove(st.sel, snap(w.x) - snap(g.x), snap(w.y) - snap(g.y)) : tryMove(st.sel, w.x - g.x, w.y - g.y);
+    if (moved) {
+      g.x = w.x;
+      g.y = w.y;
     }
-    g.x = w.x;
-    g.y = w.y;
     st.needDraw = true;
   } else if (g.type === 'endpoint') {
     const r = st.sel.o;
@@ -1533,10 +1624,16 @@ window.addEventListener('pointermove', (e) => {
     st.needDraw = true;
     updateInfo();
   } else if (g.type === 'propmove') {
-    g.o.x = clamp(g.o.x + snap(w.x) - snap(g.x), 0, W - 1);
-    g.o.y = clamp(g.o.y + snap(w.y) - snap(g.y), 0, H - 1);
-    g.x = w.x;
-    g.y = w.y;
+    const { x, y } = g.o;
+    g.o.x = clamp(x + snap(w.x) - snap(g.x), 0, W - 1);
+    g.o.y = clamp(y + snap(w.y) - snap(g.y), 0, H - 1);
+    if (roomFor('prop', g.o, true)) {
+      g.x = w.x;
+      g.y = w.y;
+    } else {
+      g.o.x = x;
+      g.o.y = y;
+    }
     st.needDraw = true;
   } else if (g.type === 'propline') {
     const b = cellAt(w.x, w.y);
@@ -1554,8 +1651,7 @@ window.addEventListener('pointermove', (e) => {
     }
   } else if (g.type === 'place') {
     // Beim Setzen ziehen = Objekt feinjustieren
-    if (st.sel && g.sel === st.sel) {
-      moveObj(st.sel, snap(w.x) - snap(g.x), snap(w.y) - snap(g.y));
+    if (st.sel && g.sel === st.sel && tryMove(st.sel, snap(w.x) - snap(g.x), snap(w.y) - snap(g.y))) {
       g.x = w.x;
       g.y = w.y;
       st.needDraw = true;
@@ -1582,7 +1678,16 @@ function endPointer(e) {
   const g = cancelGesture();
   st.needDraw = true; // Boden der Iso-Ansicht wird erst ohne laufende Geste neu gebacken
   if (!g) return;
-  if (g.type === 'move' || g.type === 'place') settleProp(st.sel);
+  if (g.type === 'move' || g.type === 'place') {
+    settleProp(st.sel);
+    // Kachel in eine Zelle mit einer anderen Kachel gerutscht: zurück an den Start
+    const o = st.sel?.o;
+    if (g.orig && st.sel.k === 'prop' && K_LINE(o) && st.map.props.some((p) => p !== o && p.x === o.x && p.y === o.y)) {
+      o.x = g.orig.x;
+      o.y = g.orig.y;
+      say('Kein Platz: dort liegt schon eine Kachel', true);
+    }
+  }
   if (g.type === 'propmove') {
     updateInfo();
     return;
@@ -1828,6 +1933,7 @@ function inspectorAction(a) {
   const o = s.o;
   if (a === 'del') return deleteSelected();
   pushHistory();
+  const before = JSON.stringify(o);
   if (s.k === 'plaza' && /^[wh][+-]$/.test(a)) {
     const key = a[0];
     o[key] = clamp(o[key] + (a[1] === '+' ? PLAZA_SIZE / 2 : -PLAZA_SIZE / 2), PLAZA_SIZE / 2, 600); // in halben Feldern: bleibt im Raster
@@ -1847,6 +1953,7 @@ function inspectorAction(a) {
     if (!PROPS.kinds[o.kind].gate) delete o.gate;
     if (!PROPS.kinds[o.kind].flag) delete o.team;
     if (!PROPS.kinds[o.kind].stack) delete o.stack;
+    else if (o.stack > PROPS.kinds[o.kind].stack) o.stack = PROPS.kinds[o.kind].stack;
     st.propKind = o.kind;
   } else if (a === 'pstack') {
     const n = ((o.stack ?? 1) % (PROPS.kinds[o.kind]?.stack ?? 1)) + 1; // Container: 1, 2, 3 Lagen
@@ -1912,10 +2019,20 @@ function inspectorAction(a) {
   } else if (a === 'dup') {
     const copy = JSON.parse(JSON.stringify(o));
     if (SEG_KINDS.has(s.k)) { copy.x1 += 48; copy.y1 += 48; copy.x2 += 48; copy.y2 += 48; }
-    else { copy.x += 48; copy.y += 48; }
+    else if (!placeCopy(s.k, copy)) {
+      st.hist.pop();
+      say('Kein Platz für eine Kopie daneben', true);
+      return;
+    }
     listOf(s.k).push(copy);
     st.sel = { k: s.k, o: copy };
     updateInfo();
+  }
+  if (a !== 'dup' && footprint(s.k, o) && !roomFor(s.k, o)) {
+    // größer, gedreht oder andere Art: passt nicht mehr, also zurück
+    for (const key of Object.keys(o)) delete o[key];
+    Object.assign(o, JSON.parse(before));
+    st.hist.pop();
   }
   showInspector();
   st.needDraw = true;

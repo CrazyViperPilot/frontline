@@ -254,7 +254,12 @@
   **Vorschau:** Mit der Maus zeigt der Editor vor dem Klick halb durchsichtig, was das Werkzeug setzen würde, genau dort, wo es landet
   (Raster, an Gleisen ausgerichtet), mit gestricheltem Fußabdruck; isometrisch als gemaltes Gebäude. Ziehwerkzeuge zeigen den eingerasteten Startpunkt.
   Bürgersteige und Plätze sind nur Boden (`town.walks`, `town.plazas`, je höchstens 2000; ältere Karten haben keine): Einheiten fahren darüber, die Stadt baut darüber.
-  Gewähltes Objekt: verschieben, Größe/Breite/Höhe, drehen, Art/Farbe, Kopie, Löschen; Straßenenden ziehbar.
+  **Platz:** Gebäude, Zugteile, Deko, Autos, Bäume, Wald, Felsen und Kisten gehen nur auf freien Platz (kein Überlappen); die Vorschau
+  zeigt belegten Platz rot, Setzen, Verschieben, Drehen, Vergrößern und Kopieren dorthin unterbleibt („Kein Platz: … im Weg“). Boden
+  (Straßen, Gleise, Plätze, Felder, Parks) und Spielmarken zählen nicht; Tarnnetz und Krater dürfen über allem liegen. Zaunlinien lassen
+  belegte Kacheln aus. Stapelbare Deko (Container, Paletten, Kisten, Reifen, Holz) auf ein Stück derselben Art gesetzt wird eine Lage höher.
+  Ein Zugteil auf einen Zug gesetzt hängt sich an dessen Ende.
+  Gewähltes Objekt: verschieben, Größe/Breite/Höhe, drehen, Art/Farbe, Kopie (neben das Original, auf freien Platz), Löschen; Straßenenden ziehbar.
   Rückgängig/Wiederholen (60 Schritte, Strg+Z/Y), Zoom (Rad, Zwei-Finger), Verschieben (Hand, rechte Maustaste, ein Finger auf leerem Grund), Zufallskarte als Ausgangspunkt, Leer,
   Import/Export als Datei, Speichern, **Spielen**.
 - **Geländepinsel:** Gedrückt halten oder ziehen; Heben/Senken mit 150 Höhe/s in der Pinselmitte (Stärke sanft ×0,45, mittel ×1, stark ×2), Glätten gleicht an die Nachbarn an,
@@ -278,6 +283,7 @@
   Der **Bahnsteig** (begehbar, mit Dach auf Stützen) legt sich parallel neben das nächste Gleis.
   Das **Bahnhofsgebäude** (Satteldach, Uhrenturm, Tore; blockiert) setzt sich neben gerade, waagerechte oder senkrechte Gleise; Bahnhof lässt sich um 90° drehen.
   Gedrehte Zugteile und Bahnsteige (`angle`) lassen sich im Inspektor in 15°-Schritten drehen; gedrehte Zugteile sperren ihr umschließendes Rechteck.
+  Isometrisch sind Zugteile und Bahnsteige in jeder Gleisrichtung gemalt (gedrehtes Bild in 2°-Schritten), nicht als einfache Kästen.
 - **Prüfung:** Startpunkte brauchen 180 px freien Platz (auch kein Steilhang oder Wasser) und Abstand zum Rand, die Startpunkte mindestens 2500 px Abstand,
   von Start 1 müssen Zonenmitte und Start 2 erreichbar sein (Pfadsuche, Gelände eingeschlossen, Furten passierbar, Brücken offen).
   Brücken dürfen höchstens 900 px lang sein und beide Enden müssen auf festem Grund liegen.

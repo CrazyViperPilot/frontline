@@ -1726,9 +1726,37 @@ function yardTreesOf(b, rot) {
   });
 }
 
-/** Iso: Gebäude b der Karte gemalt; false = nicht hier (schräger Zug oder Bahnsteig). */
+/**
+ * Zugteil oder Bahnsteig im Bildrahmen der Kamera: Längsachse long ('u' oder 'v') und Restdrehung th (Bogenmaß, höchstens ±45°, in
+ * 2°-Schritten). Gleise in beliebiger Richtung: das Bild wird um th gedreht gemalt, die sichtbaren Wände bleiben dieselben.
+ */
+function alongView(cam, b) {
+  const [ra, rb, rc, rd] = VROT[cam.rot | 0];
+  const c = Math.cos(b.angle || 0);
+  const s = Math.sin(b.angle || 0);
+  let al = Math.atan2(rc * c + rd * s, ra * c + rb * s);
+  if (al > Math.PI / 2) al -= Math.PI;
+  else if (al <= -Math.PI / 2) al += Math.PI;
+  let long = 'u';
+  let th = al;
+  if (Math.abs(al) > Math.PI / 4) {
+    long = 'v';
+    th = al - Math.sign(al) * (Math.PI / 2);
+  }
+  const step = Math.PI / 90;
+  return { long, th: Math.round(th / step) * step };
+}
+
+/** Zeichenkontext g um th gedreht (um den Ankerpunkt, in der Bodenebene). */
+function turned(g, th) {
+  if (!th) return g;
+  const c = Math.cos(th);
+  const s = Math.sin(th);
+  return { ...g, P: (u, v, h = 0) => g.P(u * c - v * s, u * s + v * c, h) };
+}
+
+/** Iso: Gebäude b der Karte gemalt; false = nicht hier. */
 export function drawMapIso(ctx, cam, b) {
-  if ((b.kind === 'train' || b.kind === 'platform') && b.angle) return false;
   const odd = cam.rot % 2 === 1;
   const info = infoOf(b);
   const snow = roofSnowOn() ? 1 : 0;
@@ -1751,9 +1779,9 @@ export function drawMapIso(ctx, cam, b) {
     return put(ctx, cam, b, `mpy|${cam.rot | 0}|${ang.toFixed(3)}|${snow}`, isoBounds(-R, R, -R, R, PYLON_TALL), (g) => paintPylon(g, { arm }));
   }
   if (b.kind === 'train') {
-    const long = odd ? 'v' : 'u';
+    const { long, th } = alongView(cam, b);
     const o = { ...info, long, part: b.part };
-    return put(ctx, cam, b, `mz|${b.part}|${info.c}|${long}|${snow}`, isoBounds(-50, 50, -50, 50, 36), (g) => zugteil(g, o));
+    return put(ctx, cam, b, `mz|${b.part}|${info.c}|${long}|${th.toFixed(3)}|${snow}`, isoBounds(-50, 50, -50, 50, 36), (g) => zugteil(turned(g, th), o));
   }
   if (b.kind === 'house') {
     const o = houseFrame(b, cam.rot, info);
@@ -1770,14 +1798,24 @@ export function drawMapIso(ctx, cam, b) {
   }
   const paint = PAINTERS[b.kind];
   if (!paint) return false;
-  const W = odd ? b.h : b.w;
-  const D = odd ? b.w : b.h;
+  let W = odd ? b.h : b.w;
+  let D = odd ? b.w : b.h;
+  let th = 0;
+  if (b.kind === 'platform' && b.angle) {
+    // schräger Bahnsteig: Längsseite entlang long, um th gedreht
+    const v = alongView(cam, b);
+    th = v.th;
+    W = v.long === 'u' ? b.w : b.h;
+    D = v.long === 'u' ? b.h : b.w;
+  }
   const A = Math.max(W, D);
   const B = Math.min(W, D);
   const m = b.kind === 'wall' || b.kind === 'platform' ? 0 : 2;
   const o = { ...info, long: W >= D ? 'u' : 'v', a0: -A / 2 + m, a1: A / 2 - m, b0: -B / 2 + m, b1: B / 2 - m };
-  const key = `m${b.kind}|${info.c}|${info.c2}|${info.vault ? 1 : 0}|${W}|${D}|${snow}`;
-  return put(ctx, cam, b, key, isoBounds(-W / 2 - 2, W / 2 + 2, -D / 2 - 2, D / 2 + 2, TALL[b.kind]), (g) => paint(g, o));
+  const key = `m${b.kind}|${info.c}|${info.c2}|${info.vault ? 1 : 0}|${W}|${D}|${th.toFixed(3)}|${snow}`;
+  const R = th ? Math.hypot(W, D) / 2 + 2 : 0; // gedreht: Bild über den ganzen Drehkreis
+  const bounds = th ? isoBounds(-R, R, -R, R, TALL[b.kind]) : isoBounds(-W / 2 - 2, W / 2 + 2, -D / 2 - 2, D / 2 + 2, TALL[b.kind]);
+  return put(ctx, cam, b, key, bounds, (g) => paint(turned(g, th), o));
 }
 
 /** 2D: Gebäude b der Karte von oben (Weltkoordinaten, Kamera-Transformation gesetzt); false = nicht hier (schräg). */

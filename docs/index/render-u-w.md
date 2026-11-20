@@ -3,6 +3,7 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
 ## university.js (Fortsetzung)
+- drawUniversityIso(ctx, cam, b) – Isometrisch: ganze Anlage in einem Zug (hinten nach vorne)
 - drawUniversityTop(ctx, b) – 2D von oben (Weltkoordinaten, Kontext skaliert): Kreuzbau mit Kuppel, Portalen,…
 - UNI_LAWNS – Rasen und Wege des Hofs (Weltkoordinaten relativ zur Mitte): vier Rasenflächen…
 

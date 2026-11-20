@@ -40,12 +40,18 @@ let ratio = 1;
 /** Gerätepixel je CSS-Pixel des laufenden Bilds (für den Maßstab der Bilder). */
 export const spriteDpr = () => ratio;
 
+let missed = 0; // Bilder, die in diesem Bild wegen des Zeitbudgets fehlten oder im falschen Maßstab kamen
+
+/** Fehlte in diesem Bild ein Bild (Budget)? Wer nur bei Bedarf neu zeichnet (Editor), zeichnet dann gleich noch einmal. */
+export const spriteMissed = () => missed > 0;
+
 /** Zu Beginn jedes Bilds aufrufen (Renderer): merkt die Gerätepixel, setzt das Zeitbudget zurück und räumt alte Bilder weg. */
 export function spriteFrame(r = 1) {
   ratio = r || 1;
   prev = now;
   now = clock();
   spent = 0;
+  missed = 0;
   if (now - lastSweep < 2000) return;
   lastSweep = now;
   for (const [key, levels] of store) {
@@ -115,6 +121,7 @@ export function sprite(key, scale, bounds, paint) {
           best = ee;
         }
       }
+      missed++;
       if (!best) return false;
       best.used = now;
       return best;

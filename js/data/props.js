@@ -19,7 +19,9 @@
 //   flag      trägt eine Fahne in Teamfarbe (map: team −1 … 3, PROPS.flagReach)
 //   conceal   Tarnnetz: Einheiten darunter sind getarnt
 //   blast     fliegt bei Zerstörung durch Beschuss in die Luft { r, damage je Panzerklasse }
-//   stack     bis zu so viele Lagen übereinander (map: stack 1 … stack; Container): Trefferpunkte und Sichthöhe je Lage
+//   stack     bis zu so viele Lagen übereinander (map: stack 1 … stack; Container, Paletten, Kisten, Reifen, Holz): Trefferpunkte
+//             und Sichthöhe je Lage; im Editor stapelt Setzen auf ein Stück derselben Art eine Lage darauf
+//   overlap   Editor: darf über anderen Objekten liegen (Tarnnetz über Fahrzeugen, Krater); sonst nur auf freien Platz
 //   rotStep   Drehung im Editor in Achteln je Druck (Autos: 2 = 90°, sie stehen an den Achsen)
 //   target    false: kein Ziel für den Befehl „Prop beschießen“ (Krater)
 //   foot      Teilflächen [[x0, x1, y0, y1] …] (px, wie size gedreht): nur sie sperren (Portalkran: nur die Beine)
@@ -208,6 +210,7 @@ export const PROPS = {
       name: 'Tarnnetz',
       group: 'mil',
       size: [80, 52],
+      overlap: true, // spannt sich über Fahrzeuge und Kisten
       blocks: 'none', // nur dünne Stangen
       crush: true,
       cover: 0,
@@ -317,6 +320,7 @@ export const PROPS = {
       name: 'Paletten',
       group: 'ind',
       size: [18, 14],
+      stack: 3, // bis drei Stapel übereinander
       blocks: 'none', // flacher Stapel: man steigt und fährt darüber
       crush: true,
       cover: 0.1,
@@ -329,6 +333,7 @@ export const PROPS = {
       name: 'Kistenstapel',
       group: 'ind',
       size: [24, 18],
+      stack: 2,
       blocks: 'all',
       crush: true,
       cover: 0.3,
@@ -367,6 +372,7 @@ export const PROPS = {
       name: 'Reifenstapel',
       group: 'ind',
       size: [16, 16],
+      stack: 3,
       blocks: 'all',
       crush: true,
       cover: 0.3,
@@ -516,6 +522,7 @@ export const PROPS = {
       name: 'Holzstapel',
       group: 'civ',
       size: [36, 16],
+      stack: 2,
       blocks: 'all',
       crush: true,
       cover: 0.5,
@@ -578,6 +585,7 @@ export const PROPS = {
       name: 'Krater',
       group: 'war',
       size: [40, 40],
+      overlap: true, // Loch im Boden: darf unter allem liegen
       blocks: 'none',
       crush: false,
       cover: 0.35, // wer darin steht, liegt tiefer: Deckung nach allen Seiten

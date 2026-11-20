@@ -133,6 +133,10 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - FOG_EXPLORED_ALPHA – Nebel über Erkundetem: abgedunkelt, nicht schwarz (0 … 255)
 - getGround() – Gemeinsamer WebGL-Boden (ein Kontext für Spiel und Editor) oder null, wenn WebG…
 
+## indprops.js (11 KB)
+- isIndSingle(kind) – Gibt es ein Modell dieser Art hier?
+- indModel(kind, v, d, w, rubble, stack) – Körper eines Einzelstücks der Industrie (Modellrichtung)
+
 ## iso.js (10 KB)
 - TOWN_H – Höhe (Bildschirm-Pixel bei Zoom 1) der Stadtgebäude und der Spielgebäude je Typ
 - flying(u) – Wird die Einheit über allem gezeichnet (fliegt)? Jets am Boden (abgestellt, rol…
@@ -146,6 +150,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawRotBox(ctx, cam, cx, cy, len, wid, ang, h, color, opts) – Quader um (cx, cy) mit Länge `len` (entlang `ang`) und Breite `wid`, beliebig g…
 - wallPoint(w, t, hpx, off) – Punkt auf einer Wand von drawBox: t = Lage entlang der Wand (0–1, in Richtung d…
 - wallQuad(w, t0, t1, h0, h1, off) – Viereck auf einer Wand (t0–t1 entlang, h0–h1 Höhe in Pixeln, off nach außen)
-- drawTree(ctx, cam, t, season) – Baum: Schatten, Stamm und zwei Kronenkugeln (aufrecht), Krone nach Jahreszeit
-- drawRock(ctx, cam, o) – Fels: Schatten und flacher Brocken (aufrecht)
-- fitText

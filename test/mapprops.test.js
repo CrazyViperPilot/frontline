@@ -158,10 +158,11 @@ test('Spielstand: Zustand der Props und Raster überstehen Speichern und Laden',
 test('Bild: jede Art (Kacheln in jeder Verbindung, mit Toren, Einzelstücke in jeder Drehung) und ihre Trümmer haben Körper mit endlichen Koordinaten', async () => {
   const { fenceModel } = await import('../js/render/fences.js');
   const { milModel } = await import('../js/render/milprops.js'); // meldet die Kacheln der Militär-Props an
+  const { indModel, isIndSingle } = await import('../js/render/indprops.js');
   for (const kind of Object.keys(PROPS.kinds).filter((k) => !PROPS.kinds[k].line)) {
     for (let rot = 0; rot < 8; rot++) {
       for (const [rubble, open] of [[false, false], [true, false], [false, true]]) {
-        const S = milModel(kind, rot % 3, rot, rot % 2 === 0, rubble, '#3d8bfd', open);
+        const S = isIndSingle(kind) ? indModel(kind, rot % 3, rot, rot % 2 === 0, rubble, (rot % 3) + 1) : milModel(kind, rot % 3, rot, rot % 2 === 0, rubble, '#3d8bfd', open);
         assert.ok(S.length > 0 || (rubble && !PROPS.kinds[kind].rubble), `${kind}: Bild`);
         for (const so of S) for (const f of so.faces) for (const p of f) assert.ok(p.every(Number.isFinite), `${kind}: Koordinate`);
       }
@@ -238,4 +239,30 @@ test('Militär: unter einem Tarnnetz sieht der Gegner eine Einheit nur aus der N
 test('Militär: Fahne mit Teamfarbe bleibt im Kartenformat, nur bei Arten mit Fahne', () => {
   const m = normalizeMap({ ...createEmptyMap(), props: [{ kind: 'tent', x: 500, y: 500, rot: 3, team: 1 }, { kind: 'ammo_stack', x: 700, y: 500, team: 1 }] });
   assert.deepEqual(m.props, [{ kind: 'tent', x: 500, y: 500, rot: 3, team: 1 }, { kind: 'ammo_stack', x: 700, y: 500 }]);
+});
+
+test('Industrie: gestapelte Container halten mehr aus und verdecken höher; Portalkran sperrt nur an den Beinen', () => {
+  const c1 = at(4, 4);
+  const c3 = at(10, 4);
+  const k = at(10, 14);
+  const map = normalizeMap({ ...generateMap(1), props: [{ kind: 'container', ...c1 }, { kind: 'container', ...c3, stack: 3 }, { kind: 'gantry_crane', ...k }] });
+  assert.equal(map.props[1].stack, 3);
+  const g = new Game({ seed: 1, map });
+  assert.equal(g.propHp[1], PROPS.kinds.container.hp * 3, 'Trefferpunkte je Lage');
+  const G = g.grid;
+  const h = (p) => G.propH[G.idx(G.toCell(p.x), G.toCell(p.y))];
+  assert.equal(h(c3), h(c1) * 3, 'Sichthöhe je Lage');
+  const truck = g.spawnUnit('truck', 0, at(0, 0).x, at(0, 0).y);
+  const pass = (x, y) => G.passable(G.toCell(x), G.toCell(y), moverOf(truck));
+  assert.equal(pass(k.x, k.y), true, 'unter dem Kran durch');
+  assert.equal(pass(k.x - 58, k.y), false, 'Bein links');
+  assert.equal(pass(k.x + 58, k.y), false, 'Bein rechts');
+});
+
+test('Zufallskarten: Lagerhöfe an Hallen, punktsymmetrisch', () => {
+  const ind = new Set(['container', 'pallets', 'crate_stack', 'barrels', 'barrels_lying', 'tyres', 'forklift', 'power_box', 'street_lamp']);
+  const a = (generateMap(3).props ?? []).filter((p) => ind.has(p.kind));
+  assert.ok(a.length > 0 && a.length < 120, `${a.length} Teile`);
+  const all = new Set(a.map((p) => `${p.kind},${p.x},${p.y}`));
+  for (const p of a) assert.ok(all.has(`${p.kind},${BALANCE.map.width - p.x},${BALANCE.map.height - p.y}`));
 });

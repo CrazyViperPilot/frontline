@@ -230,7 +230,28 @@ Werte je Art in `js/data/props.js` (Tabelle unten), Regeln in `js/game/props.js`
   ohne Team (trifft alle, auch andere Props: Kettenreaktion möglich). Überfahrene Kisten explodieren nicht.
 - **Tarnnetz:** Bodeneinheiten unter einem heilen Netz erkennt der Gegner nur aus 160 px Nähe oder 4 s nach einem Schuss.
 - **Zufallskarten:** An der Hälfte der Kistenpaare steht ein kleines Feldlager (Zelt, Munitionskisten, Sandsack-Stellung) 110 bis 170 px
-  um die Kiste, gespiegelt; zusammen mit den Feldern im Mittel rund 32 Props je Karte.
+  um die Kiste, gespiegelt.
+
+**Industrie und Logistik** (Gruppe „Industrie und Logistik“ im Editor, alles Einzelstücke mit Drehung in 45°-Schritten):
+
+| Art | hält auf | Kette walzt nieder | Deckung Inf. / Fz. | verdeckt Sicht | Treffer­punkte | danach / Besonderes |
+|---|---|---|---|---|---|---|
+| Container (1 bis 3 Lagen) | alle | nein | 60 % / 40 % | ja (je Lage höher) | 400 je Lage | aufgerissen, sperrt weiter |
+| Paletten | niemanden | ja | 10 % / – | nein | 30 | weg |
+| Kistenstapel | alle | ja | 30 % / – | nein | 60 | weg |
+| Fässer stehend, liegend | alle | ja | 30 % bzw. 25 % / – | nein | 50 | explodieren (50 px) |
+| Reifenstapel | alle | ja | 30 % / – | nein | 80 | weg |
+| Gabelstapler | alle | ja | 30 % / – | nein | 120 | Wrack |
+| Portalkran | nur an den Beinen | nein | 20 % / – | nein | 1500 | Trümmer an den Beinen; darunter fährt man durch |
+| Laderampe | Fahrzeuge | nein | 45 % / 20 % | nein | 800 | Brocken, 20 % Deckung |
+| Laternenmast | niemanden | ja | – | nein | 30 | umgeknickt |
+| Stromverteiler | niemanden | ja | 15 % / – | nein | 40 | weg |
+
+- **Container stapeln:** Im Editor mit „Wählen“ und „Lagen“ (1, 2, 3). Trefferpunkte und Sichthöhe wachsen je Lage; jede Lage hat
+  ihre eigene Farbe (sieben Reedereifarben, aus der Lage gewählt).
+- **Zufallskarten:** Die Hälfte der freistehenden Hallenpaare bekommt einen Lagerhof: eine Reihe Container (bis zwei Lagen), Paletten,
+  Kisten, Fässer, Reifen, Gabelstapler oder Stromverteiler 34 px vor einer Längsseite, dazu oft ein Laternenmast an der Ecke; gespiegelt.
+  Fabrikhöfe bleiben frei (Umfahrung innerhalb der Mauer). Zusammen mit Feldern und Lagern im Mittel rund 67 Props je Karte.
 
 - **Bewegung:** Infanterie, Radfahrzeuge und Kettenfahrzeuge (`crush` in `units.js`: Kampfpanzer, Schützenpanzer, Bergepanzer,
   Flakpanzer, Gepard, Panzerhaubitze, Raketenwerfer, Bagger, Brückenleger) suchen getrennte Wege. Ein Kettenfahrzeug fährt durch

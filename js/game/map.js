@@ -954,5 +954,34 @@ function placeProps(seed, town, grid, crates, cleared) {
       }
     });
   }
+  // Lagerhöfe an freistehenden Hallen (Hallen liegen paarweise: Original, Spiegelbild)
+  const halls = town.buildings.filter((b) => b.kind === 'hall');
+  for (let i = 0; i < halls.length; i += 2) {
+    const h = halls[i];
+    const roll = rng.next();
+    const side = rng.next() < 0.5 ? -1 : 1;
+    if (roll > PG.yard) continue;
+    const long = h.w >= h.h; // Längsseite entlang x
+    const half = (long ? h.w : h.h) / 2;
+    const off = (long ? h.h : h.w) / 2 + PG.yardGap;
+    const items = [];
+    for (let t = -half + PG.yardStep / 2; t <= half - PG.yardStep / 2; t += PG.yardStep) {
+      const fill = rng.next();
+      const kind = pick(PG.yardKinds, rng.next());
+      const stack = 1 + Math.floor(rng.next() * PG.stackMax);
+      if (fill > PG.yardFill) continue;
+      const x = Math.round(long ? h.x + t : h.x + side * off);
+      const y = Math.round(long ? h.y + side * off : h.y + t);
+      items.push({ kind, x, y, rot: long ? 0 : 2, ...(kind === 'container' && stack > 1 ? { stack } : {}) });
+    }
+    if (rng.next() < PG.lampAt) items.push({ kind: 'street_lamp', x: Math.round(long ? h.x - half : h.x + side * off), y: Math.round(long ? h.y + side * off : h.y - half) });
+    for (const o of items) {
+      const m = { ...o, x: W - o.x, y: H - o.y, ...(o.rot ? { rot: (o.rot + 4) % 8 } : { rot: 4 }) };
+      const all = [...propCells(o, cols, rows), ...propCells(m, cols, rows)];
+      if (!all.every((j) => free(((j % cols) + 0.5) * TILE, (Math.floor(j / cols) + 0.5) * TILE))) continue;
+      props.push(o, m);
+      for (const j of all) taken.add(`${j % cols},${Math.floor(j / cols)}`);
+    }
+  }
   return props;
 }

@@ -3,6 +3,8 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
 ## ways.js (Fortsetzung)
+- invalidateWays() – Karte wurde an Ort und Stelle verändert (Editor): Feldwege, Gleise und Felder b…
+- drawWays(ren, ctx, season) – Feldwege und Gleise unter allem anderen (direkt nach dem Boden)
 - drawCityRails(ren, ctx, list, key, season) – Gleise der Stadt zeichnen, mit denselben Farben und Maßen wie die Gleise der Ka…
 
 ## weatherfx.js (9.6 KB)

@@ -3,6 +3,9 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
 ## iso.js (Fortsetzung)
+- drawTree(ctx, cam, t, season) – Baum: Schatten, Stamm und zwei Kronenkugeln (aufrecht), Krone nach Jahreszeit
+- drawRock(ctx, cam, o) – Fels: Schatten und flacher Brocken (aufrecht)
+- fitText
 - hexA
 
 ## isobuild.js (37 KB)
@@ -145,7 +148,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawMapPreview(canvas, map) – Zeichnet die Karte `map` in das Canvas `canvas` (ganze Fläche)
 - drawPowerLines(ctx, buildings, lw) – Leitungen zwischen Strommasten derselben Linie (Kartenreihenfolge) als dünne Li…
 
-## mapprops.js (10 KB)
+## mapprops.js (11 KB)
 - propLooksOf(props, st, version) – Aussehen aller sichtbaren Props: [{ i, x, y, kind, mask, along, gate, rubble, v…
 - forgetPropLooks(props) – Zwischengespeichertes Aussehen und Zellindex einer Prop-Liste verwerfen (Editor…
 - propLooks(g) – Aussehen der Props einer Partie
@@ -173,5 +176,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawGauge(ctx, x, y, w, h, frac, color, px, ticks) – Balken mit dunkler Platte (1 Bildschirmpixel Rand), dunkelgrauem leerem Teil, F…
 - drawCargoGauge(ctx, x, y, w, h, parts, px) – LKW-Ladung: ein Balken mit den Sorten nebeneinander (parts = [[Anteil 0..1, Far…
 - drawStarMark(ctx, x, y, r, zoom) – Kommandeursstern mit Mittelpunkt (x, y) in Welt, r = Radius in Weltmaßen, zoom…
-- drawCareMark(ctx, x, y, z) – Grünes Kreuz mit weißem Rand und dunklem Saum: wird geheilt oder repariert
-- drawNoAmmoMark(ctx, x, y, z) – Warnzeichen „ohne Munition“: rotes Dreieck mit dunklem Saum und weißem Ausrufez…

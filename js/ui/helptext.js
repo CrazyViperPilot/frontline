@@ -50,7 +50,7 @@ export const KEYS = [
   ['Zäune und Mauern', 'Halten Infanterie und Radfahrzeuge auf; Kettenfahrzeuge (Panzer, Schützenpanzer …) walzen Zäune und Bruchsteinmauern nieder, Betonmauern nicht · ' +
     'Infanterie dahinter nimmt weniger Schaden, wenn die Mauer zwischen ihr und dem Schützen liegt (Mörser und Luftangriffe ausgenommen) · Betonmauern verdecken die Sicht · ' +
     'Beschuss und Granaten zerstören sie, Mauern hinterlassen Trümmer · offene Tore lassen alle durch · Militär: Jersey-Sperren und Panzersperren halten nur Fahrzeuge auf, ' +
-    'Sandsäcke und Hesco geben viel Deckung, unter Tarnnetzen sind Einheiten getarnt, Munitionskisten und Treibstofftanks explodieren unter Beschuss'],
+    'Sandsäcke und Hesco geben viel Deckung, unter Tarnnetzen sind Einheiten getarnt, Munitionskisten, Treibstofftanks und Fässer explodieren unter Beschuss · Container stehen bis drei Lagen hoch und verdecken die Sicht, unter einem Portalkran fährt man durch'],
   ['Rechtsklick auf FOB', 'LKW: leer laden, beladen entladen · Baufahrzeug: an Baustelle helfen, beschädigtes Gebäude reparieren'],
   ['Rechtsklick auf Werk', 'LKW holen die Ware aus dem Ausgangslager des Werks (BM-Werk, Munitionswerk, Raffinerie), bis es leer ist oder der LKW voll · ' +
     'Solange ein LKW dorthin unterwegs ist, legt das Werk die Hälfte seines Ausstoßes ins Ausgangslager (bis 400)'],

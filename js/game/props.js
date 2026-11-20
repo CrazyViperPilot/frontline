@@ -54,6 +54,8 @@ export function propCells(p, cols, rows) {
   const hd = K.size[1] / 2;
   const ext = Math.abs(ca) * hw + Math.abs(sa) * hd; // halbe Ausdehnung in x
   const eyt = Math.abs(sa) * hw + Math.abs(ca) * hd; // in y
+  // Teilflächen (foot): nur sie sperren; sonst die ganze Grundfläche
+  const parts = K.foot ?? [[-hw, hw, -hd, hd]];
   const out = [];
   for (let r = Math.floor((p.y - eyt) / TILE); r <= Math.floor((p.y + eyt) / TILE); r++) {
     for (let c = Math.floor((p.x - ext) / TILE); c <= Math.floor((p.x + ext) / TILE); c++) {
@@ -62,10 +64,19 @@ export function propCells(p, cols, rows) {
       const dy = (r + 0.5) * TILE - p.y;
       const u = dx * ca + dy * sa; // in Längsrichtung des Props
       const v = -dx * sa + dy * ca;
-      if (Math.abs(u) <= hw && Math.abs(v) <= hd) out.push(r * cols + c);
+      if (parts.some(([u0, u1, v0, v1]) => u >= u0 && u <= u1 && v >= v0 && v <= v1)) out.push(r * cols + c);
     }
   }
-  if (!out.length && inside(c0, r0)) out.push(r0 * cols + c0);
+  // kleines Prop oder schmale Teilfläche: keine Zellmitte getroffen, dann die Zelle unter jeder Teilfläche
+  if (!out.length) {
+    for (const [u0, u1, v0, v1] of parts) {
+      const u = (u0 + u1) / 2;
+      const v = (v0 + v1) / 2;
+      const c = Math.floor((p.x + u * ca - v * sa) / TILE);
+      const r = Math.floor((p.y + u * sa + v * ca) / TILE);
+      if (inside(c, r) && !out.includes(r * cols + c)) out.push(r * cols + c);
+    }
+  }
   return out;
 }
 
@@ -103,7 +114,8 @@ function cellRules(props, list, st) {
     const R = propRules(props[i], st ? st[i] : PROP_STATE.ok);
     if (!R) continue;
     bits |= blockBits(R);
-    if (R.sight > h) h = R.sight;
+    const sh = R.sight * (R === PROPS.kinds[props[i].kind] ? props[i].stack ?? 1 : 1); // gestapelte Container: je Lage höher
+    if (sh > h) h = sh;
   }
   return { bits, h };
 }
@@ -124,7 +136,7 @@ export function createProps(game) {
   const props = game.map.props ?? [];
   game.propHp = new Float32Array(props.length);
   game.propSt = new Uint8Array(props.length);
-  props.forEach((p, i) => (game.propHp[i] = PROPS.kinds[p.kind]?.hp ?? 0));
+  props.forEach((p, i) => (game.propHp[i] = (PROPS.kinds[p.kind]?.hp ?? 0) * (p.stack ?? 1))); // gestapelt: je Lage
   game.propVersion = 0;
 }
 

@@ -184,7 +184,7 @@ function placePropLine(a, b) {
 function propSync() {
   const list = st.map.props ?? [];
   let h = list.length;
-  for (const p of list) h = (Math.imul(h, 31) + p.x * 7 + p.y * 13 + (p.gate ?? 0) + (p.rot ?? 0) * 3 + (p.team ?? -1) * 17 + p.kind.length) | 0;
+  for (const p of list) h = (Math.imul(h, 31) + p.x * 7 + p.y * 13 + (p.gate ?? 0) + (p.rot ?? 0) * 3 + (p.team ?? -1) * 17 + (p.stack ?? 1) * 19 + p.kind.length) | 0;
   const sig = `${list.length}|${h}|${list.map((p) => p.kind[0]).join('')}`;
   if (sig === st.propSig) return;
   st.propSig = sig;
@@ -1798,6 +1798,7 @@ function showInspector() {
     const team = (s.o.team ?? -1) >= 0 ? BALANCE.teamNames[s.o.team] : 'neutral';
     rows.push(`<div class="row">${K?.gate ? `<button data-i="gate">${K.line ? gname : `Schranke ${gname}`}</button>` : ''}<button data-i="turn">Drehen</button><button data-i="pkind">Art</button></div>`);
     if (K?.flag) rows.push(`<div class="row"><button data-i="pteam">Fahne: ${team}</button></div>`);
+    if (K?.stack) rows.push(`<div class="row"><button data-i="pstack">Lagen: ${s.o.stack ?? 1}</button></div>`);
     rows.push(`<div class="muted small">${K ? propRulesText(K) : ''} ${K?.line ? 'Tor nur in geraden Stücken; offen hält es niemanden auf. „Drehen“ gilt für einzelne Kacheln ohne Nachbarn.' : `Drehen: 45° je Druck (jetzt ${(s.o.rot ?? 0) * 45}°).${K?.flag ? ' Fahne: in der Eroberung zeigt sie den Besitzer der nächsten Flagge.' : ''}`}</div>`);
   } else if (s.k === 'crate') {
     const d = st.map.spawns.map((sp) => Math.round(Math.hypot(sp.x - s.o.x, sp.y - s.o.y)));
@@ -1843,7 +1844,12 @@ function inspectorAction(a) {
     o.kind = kinds[(kinds.indexOf(o.kind) + 1) % kinds.length];
     if (!PROPS.kinds[o.kind].gate) delete o.gate;
     if (!PROPS.kinds[o.kind].flag) delete o.team;
+    if (!PROPS.kinds[o.kind].stack) delete o.stack;
     st.propKind = o.kind;
+  } else if (a === 'pstack') {
+    const n = ((o.stack ?? 1) % (PROPS.kinds[o.kind]?.stack ?? 1)) + 1; // Container: 1, 2, 3 Lagen
+    if (n > 1) o.stack = n;
+    else delete o.stack;
   } else if (a === 'pteam') {
     const t = (o.team ?? -1) + 1;
     if (t >= BALANCE.teamNames.length) delete o.team;

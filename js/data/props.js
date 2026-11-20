@@ -19,6 +19,8 @@
 //   flag      trägt eine Fahne in Teamfarbe (map: team −1 … 3, PROPS.flagReach)
 //   conceal   Tarnnetz: Einheiten darunter sind getarnt
 //   blast     fliegt bei Zerstörung durch Beschuss in die Luft { r, damage je Panzerklasse }
+//   stack     bis zu so viele Lagen übereinander (map: stack 1 … stack; Container): Trefferpunkte und Sichthöhe je Lage
+//   foot      Teilflächen [[x0, x1, y0, y1] …] (px, wie size gedreht): nur sie sperren (Portalkran: nur die Beine)
 export const PROPS = {
   // Deckung (combat.js): Infanterie höchstens r px vom Rand einer Prop-Zelle, die zwischen ihr und dem Schützen liegt (Winkel zur
   // Schussrichtung höchstens arc, Bogenmaß), nimmt cover weniger Schaden. absorb: Anteil des Schadens gegen die Panzerklasse des Props,
@@ -27,7 +29,7 @@ export const PROPS = {
   // Splash von Granaten und Bomben (combat.impact) trifft Props mit diesem Anteil des Schadens gegen ihre Panzerklasse
   splashMul: 1,
   // Gruppen im Editor (Reihenfolge der Auswahlliste)
-  groups: { fence: 'Zäune und Mauern', mil: 'Militär' },
+  groups: { fence: 'Zäune und Mauern', mil: 'Militär', ind: 'Industrie und Logistik' },
   // Fahnen (Kontrollpunkt, Zelt, Funkmast): in der Eroberung zeigt eine Fahne die Farbe des Besitzers der nächsten Flagge, wenn sie
   // höchstens flagReach px von ihr steht; sonst die im Editor eingestellte Farbe (team) oder weiß (neutral)
   flagReach: 700,
@@ -269,6 +271,145 @@ export const PROPS = {
       blocks: 'veh', // Infanterie duckt sich darunter durch
       crush: true,
       cover: 0,
+      sight: 0,
+      hp: 40,
+      armor: 'light',
+      rubble: null,
+    },
+    // ---------- Industrie und Logistik (Schritt 4) ----------
+    container: {
+      name: 'Container',
+      group: 'ind',
+      size: [42, 17], // 20-Fuß-Container
+      stack: 3,
+      blocks: 'all',
+      crush: false,
+      cover: 0.6,
+      coverVeh: 0.4,
+      sight: 22, // je Lage (zwei Lagen 44): verdeckt, was dahinter steht
+      hp: 400, // je Lage
+      armor: 'heavy',
+      rubble: { blocks: 'all', crush: false, cover: 0.5, sight: 0 }, // aufgerissene Blechkiste
+    },
+    pallets: {
+      name: 'Paletten',
+      group: 'ind',
+      size: [18, 14],
+      blocks: 'none', // flacher Stapel: man steigt und fährt darüber
+      crush: true,
+      cover: 0.1,
+      sight: 0,
+      hp: 30,
+      armor: 'light',
+      rubble: null,
+    },
+    crate_stack: {
+      name: 'Kistenstapel',
+      group: 'ind',
+      size: [24, 18],
+      blocks: 'all',
+      crush: true,
+      cover: 0.3,
+      sight: 0,
+      hp: 60,
+      armor: 'light',
+      rubble: null,
+    },
+    barrels: {
+      name: 'Fässer (stehend)',
+      group: 'ind',
+      size: [18, 18],
+      blocks: 'all',
+      crush: true,
+      cover: 0.3,
+      sight: 0,
+      hp: 50,
+      armor: 'light',
+      blast: { r: 50, damage: { inf: 35, light: 30, heavy: 8, struct: 30 } }, // Öl, Treibstoff
+      rubble: null,
+    },
+    barrels_lying: {
+      name: 'Fässer (liegend)',
+      group: 'ind',
+      size: [26, 12],
+      blocks: 'all',
+      crush: true,
+      cover: 0.25,
+      sight: 0,
+      hp: 50,
+      armor: 'light',
+      blast: { r: 50, damage: { inf: 35, light: 30, heavy: 8, struct: 30 } },
+      rubble: null,
+    },
+    tyres: {
+      name: 'Reifenstapel',
+      group: 'ind',
+      size: [16, 16],
+      blocks: 'all',
+      crush: true,
+      cover: 0.3,
+      sight: 0,
+      hp: 80,
+      armor: 'light',
+      rubble: null,
+    },
+    forklift: {
+      name: 'Gabelstapler',
+      group: 'ind',
+      size: [22, 11],
+      blocks: 'all',
+      crush: true,
+      cover: 0.3,
+      sight: 0,
+      hp: 120,
+      armor: 'light',
+      rubble: { blocks: 'all', crush: true, cover: 0.3, sight: 0 }, // Wrack
+    },
+    gantry_crane: {
+      name: 'Portalkran',
+      group: 'ind',
+      size: [128, 44],
+      foot: [[-64, -52, -22, 22], [52, 64, -22, 22]], // nur die Beine sperren, darunter fährt man durch
+      blocks: 'all',
+      crush: false,
+      cover: 0.2,
+      sight: 0,
+      hp: 1500,
+      armor: 'heavy',
+      rubble: { blocks: 'all', crush: false, cover: 0.4, sight: 0 }, // eingestürzt: Trümmer an den Beinen sperren weiter
+    },
+    loading_dock: {
+      name: 'Laderampe',
+      group: 'ind',
+      size: [64, 24],
+      blocks: 'veh', // Infanterie klettert hinauf
+      crush: false,
+      cover: 0.45,
+      coverVeh: 0.2,
+      sight: 0,
+      hp: 800,
+      armor: 'struct',
+      rubble: { blocks: 'none', crush: true, cover: 0.2, sight: 0 },
+    },
+    street_lamp: {
+      name: 'Laternenmast',
+      group: 'ind',
+      size: [6, 6],
+      blocks: 'none', // dünner Mast
+      crush: true,
+      cover: 0,
+      sight: 0,
+      hp: 30,
+      armor: 'light',
+      rubble: { blocks: 'none', crush: true, cover: 0, sight: 0 }, // umgeknickt
+    },
+    power_box: {
+      name: 'Stromverteiler',
+      group: 'ind',
+      size: [12, 6],
+      blocks: 'none', // schmaler Schrank
+      crush: true,
+      cover: 0.15,
       sight: 0,
       hp: 40,
       armor: 'light',

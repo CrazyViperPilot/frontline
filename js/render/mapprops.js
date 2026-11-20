@@ -11,6 +11,7 @@ import { BALANCE } from '../data/balance.js';
 import { propIndex, forgetPropIndex, PROP_STATE, GATE } from '../game/props.js';
 import { fenceModel, isFenceKind, LINE_DIRS } from './fences.js';
 import { milModel, isMilSingle } from './milprops.js';
+import { indModel, isIndSingle } from './indprops.js';
 
 const { paintSolids, boundsOf, viewAngle, sectorOf } = PAINT;
 const TAU = Math.PI * 2;
@@ -70,7 +71,7 @@ export function propLooksOf(props, st = null, version = 0) {
     // Einzelstücke: Drehung a (Bogenmaß, Achtel), Fahne (flag) mit eingestellter Farbe team
     list.push({
       i, x: p.x, y: p.y, kind: p.kind, mask, along, gate: p.gate ?? 0, rubble: s === PROP_STATE.rubble, v, d: hashXY(p.x, p.y) % DETAILS,
-      single: !K.line, a: K.line ? 0 : ((p.rot ?? 0) * TAU) / EIGHTHS, flag: !!K.flag, team: p.team ?? -1,
+      single: !K.line, a: K.line ? 0 : ((p.rot ?? 0) * TAU) / EIGHTHS, flag: !!K.flag, team: p.team ?? -1, stack: p.stack ?? 1,
     });
   });
   lookCache.set(props, { st, v: version, list });
@@ -92,7 +93,7 @@ export const propLooks = (g) => propLooksOf(g.map.props, g.propSt ?? null, g.pro
 const models = new Map(); // Schlüssel → { S }
 
 function lookKey(o, season, flag) {
-  return `${o.kind}|${o.mask}|${o.along}|${o.gate}|${o.rubble ? 1 : 0}|${o.v}|${o.d}|${season === 'winter' ? 'w' : 's'}|${flag ?? ''}`;
+  return `${o.kind}|${o.mask}|${o.along}|${o.gate}|${o.rubble ? 1 : 0}|${o.v}|${o.d}|${o.stack}|${season === 'winter' ? 'w' : 's'}|${flag ?? ''}`;
 }
 
 function modelOf(o, season, flag = null) {
@@ -103,6 +104,7 @@ function modelOf(o, season, flag = null) {
     let S = [];
     if (isFenceKind(o.kind)) S = fenceModel(o.kind, o.mask, o.along, o.gate, o.rubble, o.v, o.d, w);
     else if (isMilSingle(o.kind)) S = milModel(o.kind, o.v, o.d, w, o.rubble, flag, o.gate === GATE.open);
+    else if (isIndSingle(o.kind)) S = indModel(o.kind, o.v, o.d, w, o.rubble, o.stack);
     m = { S, key };
     models.set(key, m);
   }

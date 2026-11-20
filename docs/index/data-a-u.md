@@ -135,10 +135,10 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - IMPORTS – Rohwaren (Paket „Import“): kommen von außerhalb der Karte über eine eigene Stra…
 - IMPORT_GOODS – Rohwaren in der Reihenfolge des Registers
 
-## mapgen.js (26 KB)
+## mapgen.js (27 KB)
 - MAPGEN – Werte des Kartengenerators (js/game/map.js, landscape.js, relief.js, river.js,…
 
-## props.js (9.1 KB)
+## props.js (13 KB)
 - PROPS – Props der Karte (Deko und Gelände: Zäune, Mauern, später Sandsäcke, Container,…
 
 ## research.js (12 KB)

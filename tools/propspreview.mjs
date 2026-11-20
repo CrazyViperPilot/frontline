@@ -72,7 +72,7 @@ try {
           ];
           set.forEach((o, k) => {
             if (o.rubble && !K.rubble && !K.gate) return;
-            props.push({ kind, x: (X0 + at[k][0]) * T, y: (Y0 + at[k][1]) * T, rot: o.rot, ...(o.team >= 0 ? { team: o.team } : {}), ...(o.gate ? { gate: o.gate } : {}) });
+            props.push({ kind, x: (X0 + at[k][0]) * T, y: (Y0 + at[k][1]) * T, rot: o.rot, ...(K.stack ? { stack: (k % K.stack) + 1 } : {}), ...(o.team >= 0 ? { team: o.team } : {}), ...(o.gate ? { gate: o.gate } : {}) });
             st.push(o.rubble && K.rubble ? 1 : 0);
           });
         } else PLAN.forEach((row, r) => [...row].forEach((ch, c) => {

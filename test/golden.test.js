@@ -33,11 +33,11 @@ const PLAY_S = 120; // Länge des Laufs mit allen Schaltern (vorher sind beide S
 const FULL = { weather: 'random', research: true, river: true }; // wie BALANCE.menuDefaults
 
 // prettier-ignore
-// Läufe (play) neu gesetzt mit v5.61 (Review-Paket P8: Wegsuche mit Budget je Schritt, unerreichbare Ziele, lange Suchen); Paket K1: KI bildet Unterstützer aus; Paket K2: KI bildet Artillerie aus und lässt sie feuern; Start und Läufe: Paket „Startaufstellung mit Stadt“ (Einheiten nach dem Startviertel aufgestellt); Karten und Läufe: Paket „Zäune und Mauern“ (Props an Äckern, Wege je Bewegungsklasse), Militär-Props (Feldlager an Kisten)
+// Läufe (play) neu gesetzt mit v5.61 (Review-Paket P8: Wegsuche mit Budget je Schritt, unerreichbare Ziele, lange Suchen); Paket K1: KI bildet Unterstützer aus; Paket K2: KI bildet Artillerie aus und lässt sie feuern; Start und Läufe: Paket „Startaufstellung mit Stadt“ (Einheiten nach dem Startviertel aufgestellt); Karten und Läufe: Paket „Zäune und Mauern“ (Props an Äckern, Wege je Bewegungsklasse), Militär-Props (Feldlager an Kisten), Industrie-Props (Lagerhöfe an Hallen)
 const GOLDEN = {
-  2: { map: '6f6266155af3', river: '57649ac70a0d', start: '22569bcc0b96', play: ['6c3fd99ac74f', '00d74d0dbd5c', 'a97bf152b5a1', '614654dfa92a'] },
-  3: { map: '43cd4caf0608', river: 'ffb249300842', start: 'edc66d25a734', play: ['a3faaa55f84e', '282952d5606f', 'fc2d63d94445', 'cf5bff776b9d'] },
-  7: { map: '257ca8fdc85c', river: '5fbb526affe0', start: 'eb52cc8c8cf9', play: ['a55670896ed0', '3686c10c3832', 'eb3ca5e20bee', '47e28b82ad4f'] },
+  2: { map: '10c0b37a2a72', river: '08a3936798e5', start: '22569bcc0b96', play: ['6c3fd99ac74f', '00d74d0dbd5c', 'a97bf152b5a1', '614654dfa92a'] },
+  3: { map: '31d42d67488a', river: '3cda634e42f5', start: 'edc66d25a734', play: ['a3faaa55f84e', '282952d5606f', 'fc2d63d94445', 'cf5bff776b9d'] },
+  7: { map: 'a71b1278286c', river: '4b43d1c337ef', start: 'eb52cc8c8cf9', play: ['a55670896ed0', '3686c10c3832', 'eb3ca5e20bee', '47e28b82ad4f'] },
 };
 
 /** Prüfsumme (12 Hex-Zeichen) über einen Wert: Zahlen exakt (String), Typed Arrays als Bytes, Objekte mit sortierten Schlüsseln. */

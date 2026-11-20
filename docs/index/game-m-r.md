@@ -83,7 +83,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - pathPending(u) – Art des Wartens auf einen Weg ('queue': Wegbudget aufgebraucht, 'long': lange S…
 - planPending(game) – Plant zurückgestellte Wege: erst ein Stück der langen Suche (je Schritt BALANCE…
 
-## props.js (11 KB)
+## props.js (12 KB)
 - PROP_STATE – Zustand eines Props im Spiel
 - GATE – Tor einer Kachel (map.props[i].gate)
 - propKind(p) – Art eines Props (Eintrag in PROPS.kinds) oder undefined

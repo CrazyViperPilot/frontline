@@ -329,5 +329,13 @@ export const MAPGEN = {
     campKinds: ['tent', 'ammo_stack', 'sandbag_nest'], // Teile eines Lagers, im Kreis um die Kiste verteilt
     campTries: 6, // Versuche je Teil (Richtung, Abstand)
     campJitter: 0.6, // Richtung der Teile streut um so viel Bogenmaß (gleichmäßig im Kreis verteilt)
+    // Lagerhof an freistehenden Hallen: eine Reihe Teile entlang einer Längsseite, quer zur Halle ausgerichtet
+    yard: 0.5, // Anteil der Hallenpaare mit Hof
+    yardGap: 34, // Abstand (px) der Reihe von der Hallenwand (Mitte der Teile)
+    yardKinds: [['container', 0.35], ['pallets', 0.5], ['crate_stack', 0.62], ['barrels', 0.74], ['barrels_lying', 0.82], ['tyres', 0.88], ['forklift', 0.94], ['power_box', 1]], // Auswahl je Platz
+    yardStep: 48, // Abstand (px) der Plätze entlang der Wand
+    yardFill: 0.5, // Anteil der Plätze, die belegt werden
+    stackMax: 2, // höchstens so viele Lagen Container im Hof
+    lampAt: 0.5, // Anteil der Höfe mit Laternenmast an der Hallenecke
   },
 };

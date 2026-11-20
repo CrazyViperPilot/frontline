@@ -1,1 +1,0 @@
-**Kampfhubschrauber an der Front** (§6, §10): Der Kampfhubschrauber hat 200 statt 70 Treibstoff (250 s Flug) und erreicht die Zone; die KI setzt ihn von ihrem Heliport aus als Luftnahunterstützung über die ganze Zone ein. Die Stadt-KI legt ihren Fliegerhorst schon ab 450 BM im Hauptlager an (vorher 800, mit Lagerhalle nie erreicht).

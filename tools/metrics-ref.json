@@ -1,27 +1,27 @@
 {
  "3": [
   {
-   "steel": 2601,
-   "mun": 2881,
-   "trained": 30,
-   "kills": 59,
+   "steel": 3205,
+   "mun": 3758,
+   "trained": 34,
+   "kills": 60,
    "fobs": 5,
-   "cells": 488,
-   "houses": 4,
-   "storms": 8,
-   "workRoutes": 0,
-   "airDef": 0,
-   "points": 13
-  },
-  {
-   "steel": 2283,
-   "mun": 3417,
-   "trained": 30,
-   "kills": 48,
-   "fobs": 5,
-   "cells": 625,
+   "cells": 556,
    "houses": 5,
    "storms": 3,
+   "workRoutes": 0,
+   "airDef": 0,
+   "points": 14
+  },
+  {
+   "steel": 1153,
+   "mun": 1379,
+   "trained": 33,
+   "kills": 49,
+   "fobs": 4,
+   "cells": 625,
+   "houses": 4,
+   "storms": 5,
    "workRoutes": 1,
    "airDef": 0,
    "points": 9
@@ -29,58 +29,58 @@
  ],
  "7": [
   {
-   "steel": 2957,
-   "mun": 3817,
-   "trained": 29,
-   "kills": 55,
+   "steel": 2868,
+   "mun": 3655,
+   "trained": 30,
+   "kills": 61,
    "fobs": 5,
-   "cells": 615,
-   "houses": 4,
-   "storms": 6,
+   "cells": 514,
+   "houses": 3,
+   "storms": 3,
    "workRoutes": 1,
    "airDef": 0,
-   "points": 6
+   "points": 13
   },
   {
-   "steel": 1593,
-   "mun": 3053,
-   "trained": 27,
+   "steel": 1500,
+   "mun": 2798,
+   "trained": 25,
    "kills": 57,
    "fobs": 5,
-   "cells": 526,
-   "houses": 6,
-   "storms": 5,
+   "cells": 698,
+   "houses": 4,
+   "storms": 4,
    "workRoutes": 1,
    "airDef": 0,
-   "points": 17
+   "points": 10
   }
  ],
  "11": [
   {
-   "steel": 2999,
-   "mun": 4326,
-   "trained": 35,
-   "kills": 66,
+   "steel": 3159,
+   "mun": 4289,
+   "trained": 26,
+   "kills": 58,
    "fobs": 5,
-   "cells": 627,
-   "houses": 4,
-   "storms": 1,
+   "cells": 678,
+   "houses": 3,
+   "storms": 4,
    "workRoutes": 0,
    "airDef": 0,
-   "points": 12
+   "points": 15
   },
   {
-   "steel": 2083,
-   "mun": 2476,
-   "trained": 32,
-   "kills": 71,
+   "steel": 1785,
+   "mun": 2457,
+   "trained": 25,
+   "kills": 65,
    "fobs": 5,
-   "cells": 593,
-   "houses": 5,
+   "cells": 521,
+   "houses": 4,
    "storms": 0,
-   "workRoutes": 0,
+   "workRoutes": 1,
    "airDef": 0,
-   "points": 8
+   "points": 7
   }
  ]
 }

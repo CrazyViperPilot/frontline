@@ -1,1 +1,0 @@
-**Deckung: Feldstellungen** (§7 „Zäune und Mauern“, §10 „Deckung“): Infanterie und Baufahrzeuge bauen im Baumenü überall Sandsack-Stellungen, Sandsackwälle, Hesco-Barrieren und Betonsperren (Baumaterial bei Fertigstellung, eigene Kettenfahrzeuge walzen sie nicht); die KI gräbt sich in der Zone damit ein und besetzt ihre Stellungen.

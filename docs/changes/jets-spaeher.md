@@ -1,1 +1,0 @@
-**Jets und Späher der KI** (§10): Die KI kauft ihre Jets vor den Bodentruppen und spart bis zum zweiten (Schwer dritten) Jet, die F-22 nur nach gesehenen Luftfahrzeugen, die U-2 erst nach einem Kampfjet; Späher und Drohne halten Abstand zu gesehener Flugabwehr, weichen aus und landen angeschlagen am Heliport.

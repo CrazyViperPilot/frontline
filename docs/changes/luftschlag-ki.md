@@ -1,1 +1,0 @@
-**Aufklären und Luftschlag der KI** (§10): Die U-2 der KI fliegt fast ständig reihum über Zone, gegnerische Hauptstadt und gesehene FOBs; Jets mit Bodenwaffen fliegen Luftschläge auf die wertvollste gesehene Gruppe (Feindkontakt zählt mehr, nie unter gesehener Flugabwehr), sonst auf eine gesehene FOB, und landen danach statt über der Zone zu kreisen.

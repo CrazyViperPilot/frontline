@@ -114,3 +114,38 @@ test('KI bildet Scharfschützen aus, wenn viele Soldaten sichtbar sind', () => {
   }
   assert.ok(has(g, 1, 'sniper'), 'Scharfschütze in Ausbildung oder fertig');
 });
+
+// Paket „Jets und Späher“: Späher und Drohne halten Abstand zu gesehener Flugabwehr und landen angeschlagen
+test('Späher: Reichweite gegen Luftziele, Ausweichen aus der Reichweite, angeschlagen zum Heliport', async () => {
+  const { airReach } = await import('../js/ai/army/combat.js');
+  const { SCOUT_MARGIN, SCOUT_HP } = await import('../js/data/ai.js');
+  assert.equal(airReach(UNITS.flak), UNITS.flak.weapons.find((w) => w.id === 'flak').range);
+  assert.equal(airReach(UNITS.tank), 220, 'MG des Panzers trifft Hubschrauber, die Kanone nicht');
+  assert.equal(airReach(UNITS.littlebird), 0);
+  const g = new Game({ seed: 7 });
+  const ai = new AI(g, 1, 'normal');
+  const s0 = ai.snapshot();
+  const mx = (s0.ax + s0.zone.x) / 2;
+  const my = (s0.ay + s0.zone.y) / 2;
+  const bird = g.spawnUnit('littlebird', 1, mx, my);
+  const flak = { x: mx + 100, y: my, def: UNITS.flak, alive: true };
+  const s = { ...ai.snapshot(), enemies: [flak] };
+  assert.equal(ai.threatAt(s, bird.x, bird.y), true);
+  assert.equal(ai.airSafety(s, bird, 'scout'), true);
+  assert.equal(bird.order.type, 'move');
+  const d = Math.hypot(bird.order.x - flak.x, bird.order.y - flak.y);
+  assert.ok(d > airReach(UNITS.flak) + SCOUT_MARGIN, `Ausweichpunkt ${Math.round(d)} px von der Flak`);
+  // ohne Gefahr kein Befehl
+  assert.equal(ai.airSafety({ ...s, enemies: [] }, bird, 'scout'), false);
+  // angeschlagen mit Heliport: Landebefehl
+  const pad = { id: -1, alive: true };
+  bird.heli = { home: 'pad', phase: 'air' };
+  const get = g.getEntity.bind(g);
+  g.getEntity = (id) => (id === 'pad' ? pad : get(id));
+  bird.hp = bird.maxHp * (SCOUT_HP - 0.1);
+  const sent = [];
+  const issue = g.issue.bind(g);
+  g.issue = (t, cmd) => (sent.push(cmd.type), issue(t, cmd));
+  assert.equal(ai.airSafety({ ...s, enemies: [] }, bird, 'scout'), true);
+  assert.deepEqual(sent, ['land']);
+});

@@ -10,7 +10,7 @@ import { BALANCE } from '../../data/balance.js';
 import { UNITS } from '../../data/units.js';
 import { canGarrison } from '../../game/garrison.js';
 import { weatherSight } from '../../game/weather.js';
-import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, JET_ARMOR_RANGE, FIELD_MUL, CMD_ARRIVED, ART_COLS, GUNSHIPS, GUN_FROM, GUN_RESERVE } from '../../data/ai.js';
+import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, JET_ARMOR_RANGE, FIELD_MUL, CMD_ARRIVED, ART_COLS, GUNSHIPS, GUN_FROM, GUN_RESERVE, SCOUT_HP, SCOUT_HP_BACK, SCOUT_MARGIN, SCOUT_STEP, SCOUT_FLEE_EVERY } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
 import { inZone as inZoneOf } from '../../game/zonegeo.js';
 import { nearestOf } from '../../game/teams.js';
@@ -60,6 +60,17 @@ export function needA10(heavy, a10Have, total) {
 
 const SCOUT_MONEY = UNITS.littlebird.cost.money; // Geld, ab dem ein Späher ausgebildet wird
 
+/** Größte Reichweite (px) der Waffen von def, die Luftziele treffen (0 = keine); Waffen mit targets ohne 'air' zählen nicht. */
+export function airReach(def) {
+  let r = 0;
+  for (const w of def?.weapons ?? []) {
+    const hitsAir = w.targets ? w.targets.includes('air') : (w.damage?.air ?? 0) > 0;
+    if (hitsAir && (w.range ?? 0) > r) r = w.range;
+  }
+  if (!def?.weapons && (def?.damage?.air ?? 0) > 0) r = Math.max(r, def.range ?? 0);
+  return r;
+}
+
 export const combatMethods = {
   /**
    * Kampfhubschrauber (Paket „KI-Einheiten“): hält GUNSHIPS[Schwierigkeit] ab GUN_FROM Kampfeinheiten (Heliport der Stadt), nur aus
@@ -75,6 +86,7 @@ export const combatMethods = {
     if (s.own.some((b) => b.type === 'tower' && b.built) && !s.helis.length && !this.queued(s, 'transporter')) return;
     const b = this.pickProducer(s, 'gunship', BALANCE.queueMax, false);
     if (!b) return;
+    if (this.saveForJet) return; // Sparen auf den nächsten Jet geht vor (Paket „Jets und Späher“)
     if (g.teams[this.team].res.money >= UNITS.gunship.cost.money + GUN_RESERVE) this.trainOrWant(b, 'gunship');
   },
 
@@ -107,7 +119,10 @@ export const combatMethods = {
     if (total < want) {
       // F-22, solange ihr Anteil unter CITY.ai.f22Share liegt und Geld für sie und die Reserve da ist; sonst F-16
       // Ist eine F-22 fällig, spart die KI auf sie, sobald sie schon einen Jet hat (sonst käme sie nie zur teureren F-22)
-      const due = f22Have < CITY.ai.f22Share * total;
+      // Seit Paket „Jets und Späher“ nur, wenn sie gegnerische Luftfahrzeuge gesehen hat (gemerkt AIR_MEMORY s): sonst ist eine F-22
+      // ohne Ziel, und die teure Bestellung blockierte jeden weiteren Jet
+      const airSeen = this.rememberSeen('heli', s.enemies.filter((e) => e.def.air && !e.def.jet).length) + this.rememberSeen('jet', s.enemies.filter((e) => e.def.jet).length);
+      const due = airSeen > 0 && f22Have < CITY.ai.f22Share * total;
       const a10Due = needA10(heavy, a10Have, total);
       let type = due && total > 0 ? 'f22' : a10Due ? 'a10' : 'f16';
       // Su-27 (Paket „KI-Einheiten“): F-16 und Su-27 im Wechsel; Teams mit ungerader Nummer (Rot, Gelb) beginnen mit der Su-27, die
@@ -163,7 +178,9 @@ export const combatMethods = {
     const ports = standsOf(g, t);
     const queued = ports.reduce((n, p) => n + p.queue.filter((e) => (e.unit ?? e) === 'u2').length, 0);
     const have = s.units.filter((u) => u.def.highAlt).length + queued;
-    if (have < A.reconMax && g.teams[t].res.money >= UNITS.u2.cost.money + A.jetReserve) {
+    // Erst ein Kampfjet (Paket „Jets und Späher“): sonst kaufte sie mit dem Geld, auf das jets() spart, die etwas billigere U-2
+    const fighters = s.units.filter((u) => u.def.jet && !u.def.highAlt).length;
+    if (have < A.reconMax && fighters > 0 && g.teams[t].res.money >= UNITS.u2.cost.money + A.jetReserve) {
       const b = ports.filter((p) => p.queue.length < JET_QUEUE && freeSpace(g, p) >= UNITS.u2.standSlots && supplied(g, p)).sort((p, q) => p.queue.length - q.queue.length || p.id - q.id)[0];
       if (b && steelFor(g, t, 'u2')) g.issue(t, { type: 'train', buildingId: b.id, unit: 'u2' });
     }
@@ -375,6 +392,47 @@ export const combatMethods = {
    * Ein Fünftel der ausrückenden Gruppe (ab 5 Einheiten) bleibt als Reserve an der Hauptstadt.
    */
   /**
+   * Sicherheit eines unbewaffneten Aufklärers (Späher, Drohne; Paket „Jets und Späher“): unter SCOUT_HP Trefferpunkten landet er am
+   * eigenen Heliport (dort wird er repariert) und startet erst ab SCOUT_HP_BACK wieder; steht er in Reichweite einer gesehenen Waffe
+   * gegen Luftziele (plus SCOUT_MARGIN), weicht er Richtung Hauptstadt aus. true, wenn damit ein Befehl gegeben ist (oder er wartet).
+   */
+  airSafety(s, u, key) {
+    const g = this.game;
+    const hp = u.hp / u.maxHp;
+    const pad = u.heli ? g.getEntity(u.heli.home) : null;
+    if (pad?.alive && (hp < SCOUT_HP || (this[`${key}Hurt`] && hp < SCOUT_HP_BACK))) {
+      this[`${key}Hurt`] = true;
+      if (u.heli.phase === 'air' && u.order.type !== 'land' && this.once(`${key}-pad`, SCOUT_HOME_EVERY)) g.issue(this.team, { type: 'land', ids: [u.id], airportId: pad.id });
+      return true;
+    }
+    this[`${key}Hurt`] = false;
+    if (!this.threatAt(s, u.x, u.y)) return false;
+    const p = this.safeSpot(s, u.x, u.y);
+    if (this.once(`${key}-flee`, SCOUT_FLEE_EVERY)) g.issue(this.team, { type: 'move', ids: [u.id], x: p.x, y: p.y });
+    return true;
+  },
+
+  /** Steht (x, y) in Reichweite einer gesehenen gegnerischen Waffe gegen Luftziele (plus SCOUT_MARGIN)? */
+  threatAt(s, x, y) {
+    return s.enemies.some((e) => {
+      const r = airReach(e.def);
+      return r > 0 && dist(e.x, e.y, x, y) <= r + SCOUT_MARGIN;
+    });
+  },
+
+  /** Punkt auf dem Weg von (x, y) zur eigenen Hauptstadt, je SCOUT_STEP px zurück, bis keine gesehene Flugabwehr ihn erreicht. */
+  safeSpot(s, x, y) {
+    const v = unitVec(s.ax - x, s.ay - y);
+    const far = dist(x, y, s.ax, s.ay);
+    for (let d = 0; d < far; d += SCOUT_STEP) {
+      const px = x + v.x * d;
+      const py = y + v.y * d;
+      if (!this.threatAt(s, px, py)) return { x: px, y: py };
+    }
+    return { x: s.ax, y: s.ay };
+  },
+
+  /**
    * Späher (Little Bird, unbewaffnet): fliegt an den Zonenrand auf der Gegnerseite, damit die Besatzung der Zone sichtbar wird
    * (army schätzt die Gegnerstärke dann aus dem Wert der gesehenen Einheiten). Tank fast leer → heim, auftanken, wieder los.
    */
@@ -391,6 +449,7 @@ export const combatMethods = {
       const minArmy = bad ? WX_SCOUT_ARMY : SCOUT_MIN_ARMY;
       if (!s.home || s.combat.length < minArmy || g.time < (bad ? WX_SCOUT_FROM : SCOUT_FROM) || this.queued(s, 'littlebird')) return;
       if (!s.producers.some((b) => b.produces.includes('littlebird'))) return; // Stadt ohne Heliport: kein Späher, nicht dafür sparen
+      if (this.saveForJet) return; // Sparen auf den nächsten Jet geht vor (Paket „Jets und Späher“)
       if (g.teams[t].res.money < SCOUT_MONEY) {
         this.saveForScout = true; // produce spart, bis der Späher bezahlbar ist
         return;
@@ -406,6 +465,7 @@ export const combatMethods = {
       return;
     }
     this.scoutHome = false;
+    if (this.airSafety(s, bird, 'scout')) return; // angeschlagen landen, aus Reichweite der Flugabwehr ausweichen (Paket „Jets und Späher“)
     // Umland erkunden (Paket „KI-Fliegerhorst“): findet die Stadt-KI keinen Platz für die Bahn, weil das Land nahe der Hauptstadt unerkundet
     // ist, deckt der Späher es zuerst auf (cityMem.exploreAt aus aiAirport); danach wieder an die Zone
     const ex = this.cityMem.exploreAt;
@@ -417,9 +477,8 @@ export const combatMethods = {
     // Zielpunkt: Zonenrand zur Gegnerseite (vom eigenen Zonenrand aus gesehen auf der anderen Seite)
     const foe = g.foeSpawn(t);
     const v = unitVec(foe.x - z.x, foe.y - z.y);
-    const x = z.x + v.x * z.r * SCOUT_EDGE;
-    const y = z.y + v.y * z.r * SCOUT_EDGE;
-    if (dist(bird.x, bird.y, x, y) > SCOUT_MOVE && this.once('scout-go', SCOUT_EVERY)) g.issue(t, { type: 'move', ids: [bird.id], x, y });
+    const p = this.safeSpot(s, z.x + v.x * z.r * SCOUT_EDGE, z.y + v.y * z.r * SCOUT_EDGE);
+    if (dist(bird.x, bird.y, p.x, p.y) > SCOUT_MOVE && this.once('scout-go', SCOUT_EVERY)) g.issue(t, { type: 'move', ids: [bird.id], x: p.x, y: p.y });
   },
 
   /**
@@ -436,7 +495,7 @@ export const combatMethods = {
       if (!s.home || s.combat.length < DRONE_ARMY || g.time < DRONE_FROM || this.queued(s, 'drone')) return;
       // Der Festungs-Hubschrauber belegt denselben Ausbildungsplatz am Heliport: steht ein Turm und fehlt er, kommt er zuerst (seit v5.164)
       const heliWanted = g.buildings.some((b) => b.alive && b.team === t && b.type === 'tower' && b.built) && !g.units.some((u) => u.alive && u.team === t && u.type === 'transporter');
-      if (heliWanted) return;
+      if (heliWanted || this.saveForJet) return; // Sparen auf den nächsten Jet geht vor (Paket „Jets und Späher“)
       if (g.teams[t].res.money < UNITS.drone.cost.money + DRONE_MONEY) return;
       const b = this.pickProducer(s, 'drone', BALANCE.queueMax - 1, false);
       if (b) g.issue(t, { type: 'train', buildingId: b.id, unit: 'drone' });
@@ -449,11 +508,11 @@ export const combatMethods = {
       return;
     }
     this.droneHome = false;
+    if (this.airSafety(s, dr, 'drone')) return;
     const foe = g.foeSpawn(t);
     const v = unitVec(foe.x - z.x, foe.y - z.y);
-    const x = z.x + v.x * z.r * SCOUT_EDGE;
-    const y = z.y + v.y * z.r * SCOUT_EDGE;
-    if (dist(dr.x, dr.y, x, y) > SCOUT_MOVE && this.once('drone-go', SCOUT_EVERY)) g.issue(t, { type: 'move', ids: [dr.id], x, y });
+    const p = this.safeSpot(s, z.x + v.x * z.r * SCOUT_EDGE, z.y + v.y * z.r * SCOUT_EDGE);
+    if (dist(dr.x, dr.y, p.x, p.y) > SCOUT_MOVE && this.once('drone-go', SCOUT_EVERY)) g.issue(t, { type: 'move', ids: [dr.id], x: p.x, y: p.y });
   },
 
   /**

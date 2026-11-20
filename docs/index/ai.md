@@ -2,7 +2,7 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/ai/`. Pfade relativ zu `js/ai/`.
 
-## ai.js (10 KB)
+## ai.js (11 KB)
 - class AI
   - constructor(game, team, difficulty)
   - update(dt)

@@ -26,7 +26,10 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   Ging lange keine Welle los, sinkt die geforderte Stärke bis auf 60 % (nach 10 min).
   Für die Stärke einer Welle zählt nur, wer noch nicht in der Zone steht.
 - **Späher:** Ab 3 min Spielzeit und mit mindestens 10 Kampfeinheiten spart die KI auf einen Little Bird (unbewaffnet).
-  Er hält am Zonenrand auf der Gegnerseite, damit die Besatzung der Zone sichtbar wird;
+  Er hält am Zonenrand auf der Gegnerseite, damit die Besatzung der Zone sichtbar wird; seit Paket „Jets und Späher“ aber außer Reichweite
+  gesehener Waffen gegen Luftziele (plus `SCOUT_MARGIN`; der Beobachtungspunkt rückt je `SCOUT_STEP` Richtung Hauptstadt), weicht aus, sobald
+  eine solche Waffe ihn erreicht, und landet unter `SCOUT_HP` Trefferpunkten am Heliport (Reparatur, Start ab `SCOUT_HP_BACK`). Ebenso
+  die Aufklärungsdrohne. Gemessen (Seed 7, 25 min): vorher 28 Späher verloren (Lebensdauer im Mittel 55 s), danach einer;
   ist ein Großteil der Besatzer (70 %) zu sehen, schätzt die KI die Stärke aus deren echtem Geldwert statt aus Anzahl × 150 (klassisch; der Späher fliegt in beiden Modi).
   Unter 35 % Treibstoff fliegt er heim und tankt auf 90 %.
 - **Nicht gebaut:** Die KI baut keinen Bagger (nicht in `MIX`): Ihre Stadt plant auf freiem Bauland, und Straßen der Zone zu zerstören hilft ihr nicht.
@@ -183,9 +186,9 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   dessen Hauptstadt der eigenen am nächsten liegt (bei Gleichstand das Team mit der kleineren Nummer; mit zwei Teams gibt es nur einen); in der Eroberung nur Städte mit offenem Viertel.
   Gegner bestimmt `enemiesOf` (`js/game/teams.js`), ausgeschiedene Teams zählen nicht.
 - **F-22 und U-2 (seit v5.83):** Von ihren Kampfflugzeugen (`CITY.ai.jets`) bestellt die KI den Anteil `CITY.ai.f22Share` (0,4) als F-22, wenn Geld für F-22 und `jetReserve` da ist,
-  sonst F-16 (`jets()` in `js/ai/army/combat.js`).
+  sonst F-16 (`jets()` in `js/ai/army/combat.js`). Seit Paket „Jets und Späher“ nur, wenn sie gegnerische Luftfahrzeuge gesehen hat.
   F-22 fliegen nur gegen Luftziele (Hubschrauber, Flugzeuge, U-2), sonst patrouillieren sie über die Zone.
-  Die U-2 (`recon()`) kauft sie höchstens einmal gleichzeitig (`reconMax`), ab `reconFrom` (Leicht nie), nur auf einem ganz freien Stellplatz und mit `jetReserve` danach;
+  Die U-2 (`recon()`) kauft sie höchstens einmal gleichzeitig (`reconMax`), ab `reconFrom` (Leicht nie), erst mit einem Kampfjet, nur auf einem ganz freien Stellplatz und mit `jetReserve` danach;
   die Stadt-KI hält dafür einen Stellplatz frei.
   Startbereit fliegt sie im Wechsel über die Konfliktzone und die gegnerische Hauptstadt und kreist dort; höchstens alle `reconEvery` s ein Flug.
 - **Fliegerhorst mit Anschlusspflicht (Baugebiet):** Die Bahn braucht keinen Anschluss (Paket „Fliegerhorst-Anschluss“; der frühere Schalter `CITY.ai.runwayLink` ist entfallen).
@@ -249,10 +252,14 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
   trennt, lag über 5000 px hinter der eigenen Front; mit 48 px/s kam er nie an), Brückenleger (in KI-Partien bricht keine Brücke, zerstörte baut
   das Baufahrzeug wieder auf), C-130 mit Fallschirmjägern (3000 Geld und 380 Stahl ohne Ladung; das Geld der KI blieb unter 1700, Sparen
   darauf ließe die Armee verhungern wie beim Kampfhubschrauber).
-- **Sparen auf Kampfflugzeuge (Paket „Luftwaffe der KI“):** Hat die KI weniger als `CITY.ai.jetSave` Jets (Leicht 0, Normal 1, Schwer 2), einen
+- **Sparen auf Kampfflugzeuge (Paket „Luftwaffe der KI“):** Hat die KI weniger als `CITY.ai.jetSave` Jets (Leicht 0, Normal 2, Schwer 3), einen
   freien versorgten Stellplatz und zu wenig Geld für den Jet mit `jetReserve`, bildet sie keine Bodentruppen aus, bis er bezahlt ist (`saveForJet`,
   wie beim Späher); die Stadt baut weiter. Weitere Jets nur aus Überschuss. Gemessen: Stadt nach 30 min gleich groß (−2 %),
   rund 20 % weniger ausgebildete Bodeneinheiten (der Preis des Jets).
+  Paket „Jets und Späher“: `jets()` und `recon()` laufen vor `produce()`, beim Sparen warten auch Späher, Drohne und Kampfhubschrauber,
+  `jetSave` Normal 1 → 2, Schwer 2 → 3. Gemessen (25 min, Seeds 3, 7, 11): vorher je KI höchstens ein Jet (eine F-16 kostet 2600 Geld,
+  danach wollte sie meist eine F-22 für 3500 und kam nie hin), danach meist zwei bis drei Flugzeuge mit 4 bis 10 Einsätzen. Das Kerosin
+  im Stadtlager steht oft auf 0, weil alles in die Kerosintanks fließt; die Tanks waren in keiner Probe leer (kein Engpass).
 - **Fliegerhorst und F-16:** Seit v5.35 baut die KI statt des Flughafens einen Fliegerhorst (Bahn 2 × 10, Stellplätze, Tower, Kerosintank, Munitionslager, §15 „Fliegerhorst“).
   Bis v5.34: Ab 14 Arbeitsstätten und freigeschalteter F-16 baut die KI einen Flughafen (`CITY.ai.airportFrom`; weil er selten zwischen ihre Straßenreihen passt,
   sucht sie das nächste freie 10 × 10-Quadrat bis 60 Zellen um die Hauptstadt, `airportReach`, und legt an der Seite zur Hauptstadt eine Straße an, ohne etwas zu überbauen),
@@ -296,6 +303,7 @@ je Zeile mit Kommentar; die Tabelle nennt nur die wichtigsten.
 | Armeemischung | Schützen / PAK / SPz / KPz (`MIX`) | 50 / 20 / 20 / 10 % |
 | Konter-Mix | Mindestzahl gesehener Gegner / Gewicht / Mindestanteil (`COUNTER_MIN`, `COUNTER_WEIGHT`, `COUNTER_FLOOR`) | 8 / 0,8 / 5 % |
 | Späher | Start ab / Mindestarmee / Heimflug unter / Tankziel / Flugbefehl alle (`SCOUT_EVERY`) ab Abstand (`SCOUT_MOVE`) | 180 s / 10 Einheiten / 35 % / 90 % / 8 s ab 120 px |
+| Späher, Drohne | landet unter `SCOUT_HP`, startet ab `SCOUT_HP_BACK` · Abstand über Flugabwehr `SCOUT_MARGIN` · Rückzugsschritt `SCOUT_STEP` · Ausweichen alle `SCOUT_FLEE_EVERY` | 60 % / 95 % · 80 px · 100 px · 2 s |
 | Wetter | schlechte Sicht unter (`WX_SCOUT_SIGHT`): Späher ab / Mindestarmee · Nebel bis (`WX_FOG_SIGHT`): Wellenstärke | 90 % : 90 s / 5 Einheiten · 70 % : 85 % |
 | Forschung | ab Spielzeit (`research[0]`) · doppelte Reserve ohne `upgrades` | Leicht 240 s · Normal 150 s · Schwer 90 s · Leicht doppelt |
 | Forschung | Reserve danach (`UPGRADE_RESERVE`) · Reihenfolge der Äste (`UPGRADES`) | 400 Geld · Kampfpanzer, Infanterie, Schützenpanzer/Flugabwehr, Elektronik, Stellungen, Luftwaffe, Logistik |

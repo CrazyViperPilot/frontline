@@ -3,6 +3,11 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/data/`. Pfade relativ zu `js/data/`.
 
 ## ai.js (Fortsetzung)
+- MORTAR_MAX – höchstens so viele Mörsertrupps (Infanterie, Kaserne)
+- MLRS_MAX – höchstens so viele Raketenwerfer (Fabrikhalle)
+- ARTY_MONEY – Geld, das nach dem Kauf übrig bleiben muss, bevor die KI Artillerie (Mörsertrup…
+- ARTY_FIRE_TYPES – Einheiten, die die KI auf Ziele schießen lässt (Befehl mortarTarget)
+- ARTY_FIRE_EVERY – s zwischen zwei Zielwahlen je Artillerie-Einheit (sie wählt neu oder schweigt)
 - ARTY_GROUP – sichtbare gegnerische Einheiten innerhalb ARTY_GROUP_R, ab denen die Gruppe ein…
 - ARTY_GROUP_R – px Umkreis, in dem Gegner als eine Gruppe zählen
 - DRONE_ARMY – Luft (Paket K3, nicht auf Leicht): Aufklärungsdrohne am Heliport, Kamikazedrohn…

@@ -47,6 +47,8 @@ export class AI {
     this.saveForResearch = false; // ebenso, bis die nächste Stufe bezahlt ist
     this.saveForJet = false; // ebenso, bis der nächste Jet bezahlt ist (CITY.ai.jetSave, combat.js jets)
     this.scoutHome = false; // Späher fliegt zum Auftanken heim
+    this.scoutHurt = false; // Späher angeschlagen: landet am Heliport, bis er repariert ist (airSafety)
+    this.droneHurt = false; // ebenso die Aufklärungsdrohne
     this.seenFobs = new Map(); // Gebäude-ID -> gesehene gegnerische FOB
     this.fallbackUntil = 0; // bis dahin greift army nicht an (Gruppen-Rückzug läuft)
     this.raid = null; // laufender Flankenangriff { ids, targetId }
@@ -87,9 +89,9 @@ export class AI {
     this.replaceCommander(s);
     this.research(s); // vor produce: die nächste Stufe bekommt das Geld zuerst
     this.gunships(s); // vor produce: der erste Kampfhubschrauber bekommt das Geld zuerst (Paket „KI-Einheiten“)
-    this.produce(s);
-    this.jets(s); // Fliegerhorst: F-16 kaufen und losschicken (seit v5.03)
+    this.jets(s); // Fliegerhorst: Jets kaufen und losschicken (seit v5.03); vor produce, sonst bekommen die Bodentruppen alles Geld (Paket „Jets und Späher“)
     this.recon(s); // Fliegerhorst: U-2 zur Aufklärung (seit v5.83)
+    this.produce(s);
     this.artillery(s); // Panzerhaubitzen hinter der Armee in Stellung (seit v5.26)
     this.artilleryFire(s); // Mörsertrupps und Raketenwerfer feuern auf Ziele (K2)
     this.buildDefense(s);

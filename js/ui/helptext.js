@@ -7,6 +7,7 @@ import { UNITS } from '../data/units.js';
 import { BUILDINGS } from '../data/buildings.js';
 import { RESEARCH } from '../data/research.js';
 import { canBuild } from '../game/construction.js';
+import { PROPS } from '../data/props.js';
 
 const GK = BALANCE.garrison.kinds;
 const WX = BALANCE.weather;
@@ -74,6 +75,9 @@ export const KEYS = [
     `Winterboden um ${less(WX.winter)} % · das Wetter wechselt alle paar Minuten (Anzeige oben, antippen erklärt es) · bei schlechter Sicht lohnt ein Späher`],
   ['J', 'Nächstes Baufahrzeug wählen und Kamera darauf (auch Knopf „Bauer“ rechts oben); wiederholt = reihum durch alle'],
   ['B', `Baumenü: Baufahrzeug alles (${keyList(BUILD_MENU)}) · Soldaten nur ${keyList(BUILD_MENU.filter((k) => canBuild({ builder: 'fort' }, k)))} · FOBs baut das FOB-Fahrzeug`],
+  ['Feldstellung', `Baumenü (B): ${Object.entries(PROPS.field.kinds).map(([k, f]) => `${f.hotkey} ${PROPS.kinds[k].name} (${f.bm} BM, ${f.time} s${f.who === 'all' ? ', nur Baufahrzeug' : ''})`).join(' · ')} · ` +
+    'überall auf der Karte, Baumaterial erst bei Fertigstellung (eigene Ladung, sonst FOB-Lager oder LKW in der Nähe) · Kacheln: ein Klick je Feld, Shift = mehrfach · ' +
+    'Infanterie in der Sandsack-Stellung hat Deckung nach allen Seiten · eigene Kettenfahrzeuge walzen eigene Feldstellungen nicht nieder'],
   ['D', `FOB-Fahrzeug gewählt: Aufbauen – wird an seiner Stelle sofort zur fertigen FOB mit ${pct(FOB.startStock)} % Lager je Sorte (${FOB.startStock * BALANCE.logistics.storeCap} ` +
     `Baumaterial, Munition, Treibstoff) · höchstens ${FOB.max} FOBs, Bauradien dürfen sich nicht überlappen`],
   ['Festung', `FOB gewählt: I = zur Festung ausbauen (Mauerring mit vier Toren (je 2 Felder breit), zwei Gefechtstürme an den Ecken zum Gegner) · Soldaten gewählt: ` +

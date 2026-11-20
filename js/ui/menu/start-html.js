@@ -21,7 +21,7 @@ function howtoHtml() {
         <li>FOB-Fahrzeug (B): fahr es an die Front und drück Aufbauen (D), dann steht sofort eine neue FOB mit 20 % Lager (bis zu 10 FOBs, ohne überlappende Bauradien).</li>
         <li>Baufahrzeug (R): Mörser, Flak, Phalanx (Nahbereichsschutz gegen Hubschrauber und Mörsergranaten, Reichweite halber FOB-Radius, 2 min Bauzeit, ` +
         `frisst Munition und Geld) und Bohrer. ` +
-        `Soldaten bauen aus wenig getragenem Baumaterial Mauern und Tore (ein Tor ist 2 Felder breit).</li>
+        `Soldaten bauen aus wenig getragenem Baumaterial Mauern und Tore (ein Tor ist 2 Felder breit) und überall Sandsack-Stellungen (Deckung, Baumenü G).</li>
         <li>Ist oben Fluss an, liegt vor den Startecken von Blau und Rot ein Fluss: über drei Brücken oder langsam durch zwei Furten. Brücken lassen sich sprengen (A, ` +
         `dann Brücke anklicken) und von Baufahrzeugen wieder aufbauen.</li>
         <li>Einfuhr: Rohmaterial, Eisen, Öl und Sprengstoff kommen von außerhalb der Karte und kosten Geld je angekommener Einheit; sie werden nicht gelagert. ` +

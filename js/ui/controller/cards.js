@@ -11,6 +11,7 @@ import { BALANCE } from '../../data/balance.js';
 import { UNITS } from '../../data/units.js';
 import { BUILDINGS } from '../../data/buildings.js';
 import { canBuild } from '../../game/construction.js';
+import { PROPS } from '../../data/props.js';
 import { canGarrison } from '../../game/garrison.js';
 import { FORMATION_NAMES } from '../../game/formation.js';
 import { hasCommander } from '../../game/commander.js';
@@ -159,6 +160,19 @@ export const cardMethods = {
             enabled: !reason,
             reason,
             action: () => this.beginPlacement(key),
+          }),
+        );
+      }
+      // Feldstellungen (Paket „Deckung“, js/game/fieldwork.js): Props mit Deckung, überall auf der Karte
+      for (const [key, FK] of Object.entries(PROPS.field.kinds)) {
+        if (FK.who === 'all' && perm.level !== 'all') continue;
+        const K = PROPS.kinds[key];
+        card.push(
+          entry(FK.short, FK.hotkey, {
+            cost: `${FK.bm} BM`,
+            tip: `${K.name} (Feldstellung): ${FK.bm} Baumaterial (eigene Ladung, sonst FOB-Lager oder LKW in der Nähe), ${FK.time} s Arbeit, ` +
+              `Deckung ${Math.round(K.cover * 100)} %${K.line ? ' · Kachel: Klick je Feld, Shift = mehrfach' : ' · Infanterie darin hat Deckung nach allen Seiten'}`,
+            action: () => this.beginFieldwork(key),
           }),
         );
       }

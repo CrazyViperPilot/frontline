@@ -34,6 +34,7 @@ import { updateMedics } from './medic.js'; // Sanitäter heilen (Paket E1)
 import { updateRecovery } from './recovery.js'; // Bergepanzer repariert Fahrzeuge (Paket E7)
 import { updateFpv } from './fpv.js'; // Kamikazedrohnen explodieren am Ziel (Paket E11)
 import { createMines, updateMines } from './mines.js'; // Pionier-Minen (Paket E8)
+import { updateFieldwork } from './fieldwork.js'; // Feldstellungen bauen (Paket „Deckung“)
 import { createResearch, updateResearch } from './research.js';
 import { createBridges, updateBridges, updateBridgeLayers, bridgeUnder } from './river.js';
 import { createRoads } from './roads.js';
@@ -779,6 +780,7 @@ export class Game {
     updateCrates(this, dt);
     updateLogistics(this, dt);
     updateConstruction(this, dt);
+    updateFieldwork(this, dt); // Feldstellungen: Bauer arbeiten, fertige Props auf die Karte (Paket „Deckung“)
     updateDig(this, dt); // Bagger räumen Stadtzellen (seit v5.35)
     updateRoadWar(this, dt); // Straßen beschießen, Schutt räumen (Paket „Straßen“)
     updatePropFire(this, dt); // Props gezielt beschießen (propfire.js)

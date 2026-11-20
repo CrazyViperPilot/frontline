@@ -113,6 +113,12 @@ eine laufende Route ab Werk endet nach `ROUTE_HOLD`, wenn das Werk nicht mehr li
 - **Häuserkampf:** Bis zu 40 % der Infanterie in der Zone besetzen Häuser in der Nähe und halten sie (§7).
   Seit v5.67 stürmt sie besetzte gegnerische Häuser in der Zone (seit „KI stürmt Häuser wirklich“ auch mit Infanterie,
   die gerade in einer Welle in die Zone marschiert) und baut eigene Besatzungshäuser aus (Sandsäcke, Stacheldraht, MG-Nest), nicht auf Leicht.
+- **Deckung (Paket „Deckung“, `js/ai/army/cover.js`):** Nach den Armeebefehlen gräbt sich untätige Infanterie im umkämpften Gebiet
+  (klassisch Konfliktzone, Eroberung Flaggenquadrat) ein: Steht im Umkreis `FIELD_R` keine eigene Sandsack-Stellung, baut ein Soldat mit
+  genug getragenem Baumaterial eine `FIELD_AHEAD` vor sich Richtung Feind (nächster gesehener Gegner, sonst weg von der Hauptstadt),
+  einer nach dem anderen, alle `FIELD_EVERY` s, höchstens `FIELD_MAX` Stellungen. Untätige Infanterie bis `COVER_R` an einer eigenen
+  Stellung mit freiem Platz (`COVER_SEATS`) geht hinein. Gemessen (25 min KI gegen KI, Seeds 3, 7, 11): schießende Infanterie hatte vorher
+  nie Prop-Deckung, danach je Team 1 bis 19 % der Zeit; die Props der Karte liegen meist über 400 px vom Kampf entfernt.
 - **Versorgungskisten:** Alle 6 s (nach den Angriffsbefehlen) schickt die KI freie Soldaten (untätig oder auf dem Weg zum Sammelpunkt,
   nicht in Häusern oder beim Überfall) zu Kisten aus ihrem Lagebild (§7) im Umkreis von 5500 px; Soldaten in der Zone gelten als 800 px weiter weg (sie verdienen dort Geld).
   Kisten mit sichtbaren Gegnern in der Nähe lässt sie liegen.
@@ -279,6 +285,9 @@ je Zeile mit Kommentar; die Tabelle nennt nur die wichtigsten.
 | Angriff | `attackStrength` (Wert der angreifenden Einheiten in Geld) | Leicht 2500 · Normal 2000 · Schwer 1600 |
 | Angriff | Verhältnis zur Zonenbesatzung (`WAVE_ODDS`) | 1,2 |
 | Angriff | Geduld bis zur Untergrenze (`WAVE_PATIENCE` / `WAVE_MIN`) | 600 s / 60 % |
+| Deckung (`cover.js`) | Bauauftrag alle `FIELD_EVERY` · höchstens `FIELD_MAX` Stellungen · Umkreis ohne Stellung `FIELD_R` | 8 s · 12 · 220 px |
+| Deckung (`cover.js`) | vor dem Bauer `FIELD_AHEAD` · Richtungen `FIELD_TRIES` im Fächer `FIELD_FAN` · Feind bis `FIELD_FOE_R` | 48 px · 5 · 0,6 rad · 1500 px |
+| Deckung (`cover.js`) | „in die Stellung“ alle `COVER_EVERY` · bis `COVER_R` · Plätze `COVER_SEATS` · sitzt ab `COVER_SEAT_R` · Platz `COVER_SEAT_OFF` | 4 s · 180 px · 2 · 16 px · 10 px |
 | Eroberung (§7 „Eroberung“, `js/ai/army/conquest.js`) | Wache je eingenommener Flagge `CQ_HOLD` · Takt der Marschbefehle `CQ_EVERY` · Flagge des Führenden wirkt näher `CQ_LEADER` | 2 · 6 s · 1500 px |
 | Eroberung (§7 „Eroberung“, `js/ai/army/conquest.js`) | neutrale Flagge näher `CQ_NEUTRAL` · Zuschlag je gegnerischer Einheit im Gebiet `CQ_GUARD` · Takt der Wahl des Erscheinungsorts `CQ_SPAWN_EVERY` | 1000 px · 220 px · 15 s |
 | Angriff | Reserve an der Hauptstadt (`RESERVE`, ab `RESERVE_FROM` Einheiten) · Welle bei neutraler Zone schon ab (`WAVE_NEUTRAL`) | 20 % ab 5 · 60 % der Stärke |

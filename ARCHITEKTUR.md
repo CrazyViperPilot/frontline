@@ -138,6 +138,7 @@ Neue Befehle: Rezept `docs/rezepte/neuer-befehl.md`.
 | `layBridge` | `ids, c, r` | `river.js` `cmdLayBridge` | Brückenleger legt auf einer Flusszelle am Ufer eine Behelfsbrücke (E14); Schritt `updateBridgeLayers` (nach `updateBridges`) |
 | `dig` | `ids, c0, r0, c1, r1, append?` | `excavator.js` `cmdDig` | Bagger räumen die Zellen des Rechtecks nacheinander (Zonenstraße, Bäume, Häuser, eigene Gebäude, Schutt und gegnerische Straßen) |
 | `shellRoad` | `ids, c0, r0, c1?, r1?` | `roadwar.js` `cmdShellRoad` | Einheiten mit Granaten oder Raketen beschießen die Straßenzellen des Rechtecks, bis sie zu Schutt werden (Paket „Straßen“, Teil 3) |
+| `fieldwork` | `ids, kind, x, y, rot?, x2?, y2?` | `fieldwork.js` `cmdFieldwork` | Bauer laufen hin und errichten eine Feldstellung (Prop aus `PROPS.field`); Baumaterial bei Fertigstellung |
 | `attackProp` | `ids, x, y` | `propfire.js` `cmdAttackProp` | Einheiten beschießen das Prop unter (x, y) (Zaun, Mauer, Container …) mit ihrer stärksten Waffe gegen seine Panzerklasse, bis es Trümmer oder weg ist |
 | `clearRubble` | `ids, c0, r0, c1?, r1?` | `roadwar.js` `cmdClearRubble` | Baufahrzeuge räumen Schutt eigener Straßen und Stadtstraßen, die Straße ist wieder da (Paket „Straßen“, Teil 3) |
 | `storm`, `fortifyHouse` | `ids, houseId` (Sturm) / `houseId, work` (ausbauen) | `garrison.js` `cmdStorm`, `cmdFortifyHouse` | Besetztes gegnerisches Haus stürmen / ein eigenes Haus zur Stellung ausbauen |
@@ -226,6 +227,7 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Natur: Bäume, Büsche, Felsen | `zone-gelaende` | `render/nature.js` | `render/layers/relief.js` | `nature` |
 | Versorgungskisten | `zone-gelaende` | `game/crates.js` | KI `ai/army/logistics.js`; Bild `render/props.js` | `crates` |
 | Props: Zäune, Militär, Industrie, Zivil, Kriegsspuren (Sperren je Klasse, Deckung, Sicht) | `zone-gelaende` | `game/props.js` | Werte `data/props.js`; Bild `render/mapprops.js` u. a. | `mapprops` |
+| Feldstellungen bauen, KI gräbt sich ein | `zone-gelaende`, `ki` | `game/fieldwork.js` | KI `ai/army/cover.js`; Werte `PROPS.field`, `FIELD_*` | `fieldwork` |
 | Häuserkampf | `haeuserkampf` | `game/garrison.js` | KI `ai/army/combat.js`; Bild `render/layers/garrison.js` | `garrison`, `housefight` |
 | Festung: Gefechtsturm, Dachaufbau | `ressourcen-bau` | `game/tower.js` | KI `ai/army/build.js` | `tower`, `fortress-ai` |
 | Wetter und Jahreszeiten | `wetter-forschung` | `game/weather.js` | Bild `render/weatherfx.js` | `weather` |

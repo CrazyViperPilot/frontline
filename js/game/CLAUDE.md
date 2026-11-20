@@ -22,11 +22,11 @@ Regeln: PRD.md und `docs/prd/`, Werte `js/data/`. Stadt: `city/CLAUDE.md`. Jede 
 - `scramble.js` – Alarmrotte: Jets in Bereitschaft starten selbst gegen Luftziele. `updateScramble`, `cmdScramble`, `alertOn`
 - `airstrike.js` – Luftschlag: startbereite Jets mit Bodenwaffen auf Ziel oder Punkt, danach Landung. `cmdAirstrike`, `strikeJets`
 - `abilities.js`, `mines.js` – Nebel, Minen, Selbstheilung (Forschung); Pionier-Minen. `cmdAbility`, `cmdLayMine`
-- `medic.js`, `recovery.js`, `fpv.js` – Einheiten mit eigener Logik: Sanitäter, Bergepanzer, Kamikazedrohne
-- `fog.js` – Nebel des Krieges, `version` zählt Neuberechnungen. `Fog`
+- `medic.js`, `recovery.js`, `fpv.js` – eigene Logik: Sanitäter, Bergepanzer, Kamikazedrohne
+- `fog.js` – Nebel des Krieges, `version` zählt Neuberechnungen
 - `map.js`, `landscape.js`, `relief.js`, `mapdata.js` – Zufallskarte, Gelände, Höhenraster, Kartenformat. `generateMap`, `Relief`
-- `props.js`, `propfire.js` – Props: Sperren je Klasse (`grid.moverOf`), Deckung, Sicht, Tore; Beschuss. `updateProps`
-- `scars.js`, `animals.js` – Wracks und Krater, Tiere (nur Optik, aber Simulation)
+- `props.js`, `propfire.js`, `fieldwork.js` – Props: Sperren, Deckung, Sicht, Tore; Beschuss; Feldstellungen bauen. `updateProps`, `cmdFieldwork`
+- `scars.js`, `animals.js` – Wracks und Krater, Tiere (Optik, aber Simulation)
 - `savegame.js` – Spielstand als JSON. `snapshotGame`, `restoreGame`
 - `ledger.js` – Kassenbuch je Team: Geld mit Grund buchen. `earn`, `spend`, `IN_KEYS`, `OUT_KEYS`
 

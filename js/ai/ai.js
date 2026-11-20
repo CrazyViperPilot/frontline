@@ -16,6 +16,7 @@ import { produceMethods } from './army/produce.js';
 import { logisticsMethods } from './army/logistics.js';
 import { combatMethods } from './army/combat.js';
 import { conquestMethods } from './army/conquest.js';
+import { coverMethods } from './army/cover.js';
 
 export class AI {
   constructor(game, team, difficulty = 'normal') {
@@ -107,6 +108,8 @@ export class AI {
     this.stormHouses(s); // Häuser stürmen (seit v5.67)
     this.fortifyHouses(); // eigene Besatzungshäuser ausbauen (seit v5.67)
     this[this.game.mode.aiArmy](s); // Armee je Spielart (modes.js: army bzw. conquestArmy)
+    this.digIn(s); // nach der Armee: wer untätig bleibt, gräbt sich ein (Paket „Deckung“, cover.js)
+    this.takeCover(s); // und besetzt freie eigene Sandsack-Stellungen
     this.guardCommander(s);
     this.collectCrates(s); // nach der Welle: Kisten holen nur, die zurückbleiben (Reserve, Nachschub)
   }
@@ -184,4 +187,4 @@ export class AI {
   }
 }
 
-Object.assign(AI.prototype, buildMethods, produceMethods, logisticsMethods, combatMethods, conquestMethods);
+Object.assign(AI.prototype, buildMethods, produceMethods, logisticsMethods, combatMethods, conquestMethods, coverMethods);

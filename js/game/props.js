@@ -1,6 +1,6 @@
 // Props der Karte (Deko und Gelände, Werte js/data/props.js): Grundfläche, Sperren je Bewegungsklasse im Raster (grid.prop),
 // Sichthöhe (grid.propH, Nebel), Deckung, Schaden durch Beschuss (Trümmer) und Überfahren durch Kettenfahrzeuge (danach weg).
-// Die Karte hält die Props unverändert (map.props); der Zustand je Prop liegt im Spiel: game.propHp (Trefferpunkte),
+// Die Karte hält die Props (map.props; im Spiel kommen nur gebaute Feldstellungen hinzu, addProp); der Zustand je Prop liegt im Spiel: game.propHp (Trefferpunkte),
 // game.propSt (PROP_STATE) und game.propVersion (zählt Änderungen, Nebel und Darstellung). Kein DOM.
 import { PROPS } from '../data/props.js';
 import { BALANCE } from '../data/balance.js';
@@ -8,6 +8,16 @@ import { PROP_INF, PROP_VEH, PROP_CRUSH } from './grid.js';
 
 const TILE = BALANCE.map.tile;
 const EIGHTH = Math.PI / 4;
+const TURN = Math.round((2 * Math.PI) / EIGHTH); // Drehungen je Umlauf (Achtel)
+
+/** Drehung rot (Achtel, 0 … 7) aus einer beliebigen ganzen Zahl. */
+export const normRot = (r) => ((Math.round(r) % TURN) + TURN) % TURN;
+
+/** Drehung rot (Achtel), deren Längsachse quer zur Richtung a (Bogenmaß) liegt: die Längsseite zeigt zum Feind. */
+export const rotAcross = (a) => normRot((a + Math.PI / 2) / EIGHTH);
+
+/** Richtung der Längsachse (Bogenmaß) eines Props mit Drehung rot. */
+export const rotAngle = (rot) => (rot ?? 0) * EIGHTH;
 const CV = PROPS.cover;
 
 /** Zustand eines Props im Spiel (game.propSt, untere zwei Bits). */
@@ -118,7 +128,7 @@ export function propIndex(props, cols, rows) {
   return ix;
 }
 
-/** Zellindex einer Prop-Liste verwerfen, nachdem sie sich geändert hat (Editor; im Spiel ändert sich map.props nie). */
+/** Zellindex einer Prop-Liste verwerfen, nachdem sie sich geändert hat (Editor; im Spiel nur durch neue Feldstellungen, addProp). */
 export function forgetPropIndex(props) {
   if (props) indexes.delete(props);
 }
@@ -165,6 +175,35 @@ export function createProps(game) {
   game.propGateT = new Float32Array(props.length); // Sekunden ohne Einheit im offenen Tor (schließt nach PROPS.gateClose)
   initPropIntel(game);
   game.propVersion = 0;
+}
+
+/** Typisiertes Feld um einen Eintrag v verlängern (Zustand je Prop). */
+function grow(arr, v) {
+  const out = new arr.constructor(arr.length + 1);
+  out.set(arr);
+  out[arr.length] = v;
+  return out;
+}
+
+/**
+ * Neues Prop p ({ kind, x, y, rot?, team? }) im laufenden Spiel (Feldstellung, fieldwork.js): hängt es an map.props, verlängert
+ * Trefferpunkte, Zustand und Lagebild und schreibt seine Zellen ins Raster. Teams außer p.team kennen es erst, wenn sie es sehen
+ * (Lagebild „weg“). Liefert den Index des Props.
+ */
+export function addProp(game, p) {
+  const props = (game.map.props ??= []);
+  const i = props.length;
+  props.push(p);
+  forgetPropIndex(props);
+  game.propHp = grow(game.propHp ?? new Float32Array(0), (PROPS.kinds[p.kind]?.hp ?? 0) * (p.stack ?? 1));
+  game.propSt = grow(game.propSt ?? new Uint8Array(0), PROP_STATE.gone); // erst „weg“, setPropValue schreibt das Raster
+  game.propGateT = grow(game.propGateT ?? new Float32Array(0), 0);
+  if (game.propSeen) {
+    game.propSeen = game.propSeen.map((s, t) => grow(s, t === p.team ? PROP_STATE.ok : PROP_STATE.gone));
+    game.propSeenV = game.propSeenV.map((v) => v + 1);
+  }
+  setPropValue(game, i, PROP_STATE.ok);
+  return i;
 }
 
 /** Setzt Prop i in den Zustand st (das Tor-Bit bleibt) und schreibt seine Zellen neu ins Raster. */
@@ -315,7 +354,8 @@ const gatesOf = (props) => {
 };
 
 /**
- * Nach der Bewegung: Kettenfahrzeuge (def.crush) überfahren die Props in ihrer Zelle (überfahrbare sind danach weg); Bodeneinheiten
+ * Nach der Bewegung: Kettenfahrzeuge (def.crush) überfahren die Props in ihrer Zelle (überfahrbare sind danach weg; eigene Feldstellungen
+ * nicht); Bodeneinheiten
  * öffnen Tore, durch die sie gehen; Tore, die zu waren, schließen nach PROPS.gateClose s ohne Einheit in ihrer Zelle wieder.
  */
 export function updateProps(game, dt = 0) {
@@ -336,7 +376,8 @@ export function updateProps(game, dt = 0) {
         busy.add(i);
         setGateOpen(game, i, true);
       }
-      if (!u.def.crush) continue;
+      // Eigene Feldstellungen (p.built, p.team; fieldwork.js) überfahren eigene Kettenfahrzeuge nicht (sie fahren vorsichtig darüber)
+      if (!u.def.crush || (props[i].built && props[i].team === u.team)) continue;
       const R = propRules(props[i], game.propSt[i]);
       if (R && R.crush) setPropState(game, i, PROP_STATE.gone);
     }

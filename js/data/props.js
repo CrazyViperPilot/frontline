@@ -40,6 +40,21 @@ export const PROPS = {
   // Verschlossene Tore (gate 3) sperren wie die Kachel; offene (gate 2) bleiben offen.
   gateClose: 4,
   gateCost: 15,
+  // Feldstellungen (Paket „Deckung“, js/game/fieldwork.js, Befehl fieldwork): Bauer errichten diese Props im Spiel. Je Art: bm =
+  // Baumaterial (aus der eigenen Ladung des Bauers, sonst aus dem FOB-Lager im Bauradius, sonst aus einem LKW in Reichweite),
+  // time = Arbeitszeit in s, who = wer baut ('fort' Infanterie und Baufahrzeug, 'all' nur Baufahrzeug: schweres Gerät),
+  // short/hotkey = Knopf und Taste im Baumenü.
+  // reach: so nah (px, Mitte des Props) arbeitet der Bauer; lineMax: höchstens so viele Kacheln je Befehl (Linie).
+  field: {
+    reach: 40,
+    lineMax: 12,
+    kinds: {
+      sandbag_nest: { bm: 20, time: 10, who: 'fort', short: 'Stellung', hotkey: 'G' },
+      sandbag: { bm: 8, time: 4, who: 'fort', short: 'Sandsäcke', hotkey: 'H' },
+      hesco: { bm: 20, time: 6, who: 'all', short: 'Hesco', hotkey: 'K' },
+      jersey: { bm: 15, time: 5, who: 'all', short: 'Betonsperre', hotkey: 'L' },
+    },
+  },
   // Tarnung unter Tarnnetzen (conceal): Einheiten darunter sieht der Gegner nur aus der Nähe (BALANCE.stealth.detectRange), bis sie
   // schießen (BALANCE.stealth.revealTime), wie Scharfschützen
   kinds: {

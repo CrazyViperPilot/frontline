@@ -3,6 +3,7 @@
 
 import { BUILDINGS } from '../../data/buildings.js';
 import { WALL_MAX } from './util.js';
+import { PROPS } from '../../data/props.js';
 
 /**
  * UI-Modi der Steuerung (Review E-04, seit v5.63): je Modus der Hinweis oben (hint) und was ein Linksklick auf die Karte tut (click).
@@ -13,6 +14,12 @@ import { WALL_MAX } from './util.js';
 export const MODES = {
   build: {
     hint: (c) => (c.buildPermission().level === 'fort' ? 'Baumenü Infanterie: nur Mauer und Tor' : 'Baumenü: Gebäude wählen (Baufahrzeug)'),
+  },
+  field: {
+    target: true,
+    hint: (c) => `${PROPS.kinds[c.fieldKind]?.name || 'Feldstellung'}: Klick baut (Baumaterial erst bei Fertigstellung) · Shift = mehrfach · Esc bricht ab`,
+    click: (c, wx, wy, shift) => c.confirmFieldwork(wx, wy, shift),
+    preview: (c, wx, wy) => c.fieldPreview(wx, wy),
   },
   place: {
     target: true,

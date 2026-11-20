@@ -6,6 +6,7 @@
 // FOB-Fahrzeug, Heliport, Stellplatz, getragene Kiste, Bohrer, Gefechtsturm …). Damit ist jeder Befehl außer dem veralteten buildFob
 // (lehnt immer ab) mindestens einmal angenommen. Fester Seed (makeRng): ein Fund ist wiederholbar. FUZZ_STATS=1 zeigt die Zahlen je Befehl.
 import test from 'node:test';
+import { PROPS } from '../js/data/props.js';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/game.js';
 import { COMMANDS } from '../js/game/commands.js';
@@ -52,6 +53,7 @@ const TEMPLATES = {
   setPreset: { ids: 'ids', preset: 'preset' },
   mortarTarget: { ids: 'ids', x: 'x', y: 'y' },
   layMine: { ids: 'ids', x: 'x', y: 'y' },
+  fieldwork: { ids: 'ids', kind: 'fieldKind', x: 'x', y: 'y', rot: 'rot8', x2: 'x', y2: 'y' },
   layBridge: { ids: 'ids', c: 'col', r: 'row' },
   land: { ids: 'ids', airportId: 'cityEnt' },
   scramble: { ids: 'ids', on: 'bool' },
@@ -161,6 +163,8 @@ function makeGen(g, dead, rng) {
     formation: () => choose(['wedge', 'line', 'loose', undefined]),
     difficulty: () => choose(['easy', 'normal', 'hard']),
     small: () => choose([1, 2]),
+    fieldKind: () => choose([...Object.keys(PROPS.field.kinds), 'fence_wood']),
+    rot8: () => choose([0, 3, 7, 9, -1, 2.5]),
     bool: () => rng.next() < 0.5,
     junk: () => choose(JUNK),
   };

@@ -41,6 +41,7 @@ export class Controller {
       groups: {},
     };
     this.placeType = null; // Gebäudetyp im Modus place
+    this.fieldKind = null; // Art der Feldstellung im Modus field (PROPS.field.kinds)
     this.wall = null; // Startzelle {c, r} eines Mauerzugs (während der Maus gedrückt ist)
     this.routeFromId = null; // Start-FOB beim Pendeln (Modus routeTo)
     this.routeFromWork = null; // Start-Werk beim Pendeln ab einem Werk mit Ausgangslager (Zellindex, seit v5.70; sonst null)

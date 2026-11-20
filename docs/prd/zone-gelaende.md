@@ -302,6 +302,21 @@ Werte je Art in `js/data/props.js` (Tabelle unten), Regeln in `js/game/props.js`
   ein Stück von 4 bis 9 Kacheln (Bruchsteinmauer, Holzzaun oder Maschendraht, lange Zäune mit offenem Tor), punktsymmetrisch, abseits
   von Straßen, Feldwegen, Bauland, Zone, Kisten und Brückenzufahrten. Weiden haben schon ihren gemalten Koppelzaun. Sperrt das die
   Verbindung der Startpunkte, entfallen die Props.
+- **Feldstellungen** (Paket „Deckung“, `js/game/fieldwork.js`, Werte `PROPS.field`): Im Baumenü (B) bauen Infanterie und Baufahrzeug
+  Props mit Deckung überall auf der Karte, auch außerhalb des FOB-Bauradius. Der Bauer läuft hin (bis 40 px), arbeitet und zahlt das
+  Baumaterial erst bei Fertigstellung: aus seiner eigenen Ladung (Soldaten tragen 50), sonst aus dem FOB-Lager im Bauradius, sonst aus
+  einem eigenen LKW in Reichweite. Stehen eigene Einheiten auf einer Zelle, die das fertige Prop sperren würde, wartet er.
+
+  | Feldstellung | Taste | Baumaterial | Arbeit | wer baut |
+  |---|---|---|---|---|
+  | Sandsack-Stellung (Halbkreis; darin Deckung nach allen Seiten) | G | 20 | 10 s | Infanterie, Baufahrzeug |
+  | Sandsackwall (Kachel) | H | 8 | 4 s | Infanterie, Baufahrzeug |
+  | Hesco-Barriere (Kachel) | K | 20 | 6 s | nur Baufahrzeug |
+  | Betonsperre (Kachel) | L | 15 | 5 s | nur Baufahrzeug |
+
+  Kacheln: ein Klick je Feld (Shift hält den Modus), der Befehl nimmt auch Linien bis 12 Kacheln (`x2`, `y2`). Die Stellung dreht sich
+  mit der Längsseite quer zur Richtung Bauer → Klick. Gebaute Feldstellungen gehören dem Team: eigene Kettenfahrzeuge walzen sie nicht
+  nieder, gegnerische schon. Gegner kennen sie erst, wenn sie sie sehen. Die KI gräbt sich damit ein (§10 „Deckung“).
 - **Bild:** Gleicher Painter und gleiches Licht wie Einheiten und Gebäude, Schatten scharf nach links unten (2D nach rechts unten),
   Schnee auf den Oberkanten im Winter, Farbe je Gebiet, Einzelheiten je Kachel. Vorschau: `node tools/propspreview.mjs`.
 

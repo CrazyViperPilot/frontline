@@ -10,6 +10,7 @@ Die Stadt-KI liegt in `js/ai/city/` (eigene Datei dort).
 - `army/produce.js` – Ausbildung in Kaserne, Fabrikhalle, Heliport der Stadt, Gegenmischung, Forschung, Kommandeur. `produceMethods`
 - `army/logistics.js` – LKW-Rollen, Lieferant, Pendler, Versorger, Kisten einsammeln. `logisticsMethods`
 - `army/combat.js` – Armee `army()` (klassisch), Angriffswellen, Rückzug, Artillerie, Späher, Flankenangriff, Häuserkampf, Jets. `combatMethods`, `needA10`
+- `army/cover.js` – Deckung: Infanterie gräbt sich in der Zone mit Sandsack-Stellungen ein und besetzt sie. `coverMethods`
 - `army/conquest.js` – Eroberung: `conquestArmy` statt `army()`, Flaggenziele, Erscheinungsort per `spawnAt`. `conquestMethods`
 - `army/util.js` – gemeinsame Konstanten und Hilfen der Armee-Module. `DEF_RANGE`, `ZONE_FOB_R`, `dist`, `unitVec`
 

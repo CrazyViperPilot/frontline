@@ -258,3 +258,16 @@ export const CQ_SPAWN_EVERY = 15; // s, so oft wählt die KI die Flagge, an der 
 export const CQ_TAKEN_MALUS = 2; // Vielfaches der Zonengröße: eine Flagge, die eine andere Gruppe schon anfliegt, wirkt so viel weiter weg (verteilen)
 export const CQ_CONTACT = 300; // px: Kontaktradius; wer im Gebiet ohne Gegner in diesem Umkreis steht, rückt auf sie zu
 export const CQ_MAST_SHARE = 0.35; // Anteil der Zonengröße: wer weiter als das vom Fahnenmast der Flagge steht, rückt zum Einnehmen heran
+// Deckung (Paket „Deckung“, js/ai/army/cover.js, PRD §10): Infanterie gräbt sich in der Zone mit Sandsack-Stellungen ein und besetzt sie
+export const FIELD_EVERY = 8; // s zwischen zwei Bauaufträgen für Sandsack-Stellungen
+export const FIELD_MAX = 12; // so viele eigene Sandsack-Stellungen hält die KI höchstens (alle Teile der Karte zusammen)
+export const FIELD_R = 220; // px: steht im Umkreis einer untätigen Infanterie in der Zone keine eigene Stellung, baut sie eine
+export const FIELD_AHEAD = 48; // px: so weit vor dem Bauer, Richtung Feind, entsteht die Stellung
+export const FIELD_TRIES = 5; // so viele Plätze (gefächert um die Feindrichtung) probiert sie, wenn der erste belegt ist
+export const FIELD_FAN = 0.6; // Bogenmaß zwischen zwei probierten Richtungen
+export const FIELD_FOE_R = 1500; // px: der nächste gesehene Gegner bestimmt die Feindrichtung, sonst die Richtung weg von der Hauptstadt
+export const COVER_EVERY = 4; // s zwischen zwei Befehlen „in die Stellung“
+export const COVER_R = 180; // px: untätige Infanterie so nah an einer freien eigenen Stellung geht hinein
+export const COVER_SEATS = 2; // so viele Soldaten passen in eine Sandsack-Stellung
+export const COVER_SEAT_R = 16; // px um die Mitte: wer so nah steht, sitzt schon in der Stellung
+export const COVER_SEAT_OFF = 10; // px: zwei Plätze links und rechts der Mitte, entlang der Längsseite

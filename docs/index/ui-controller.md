@@ -2,7 +2,7 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/ui/controller/`. Pfade relativ zu `js/ui/controller/`.
 
-## cards.js (34 KB)
+## cards.js (35 KB)
 - costText(cost) – Kosten kurz für Schaltflächen: "400 BM"
 - cardMethods
   - buildPermission() – Wer darf bauen: 'all' (Baufahrzeug), 'fort' (nur Infanterie: Mauer/Tor) oder nu…
@@ -19,10 +19,10 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - trainEntries(blds) – Ausbildungs-Einträge der Befehlskarte für die gewählten Gebäude (Hauptstadt bzw…
   - buildingCard(blds)
 
-## modes.js (4.9 KB)
+## modes.js (5.2 KB)
 - MODES – UI-Modi der Steuerung (Review E-04): je Modus der Hinweis oben (hint) und was e…
 
-## targets.js (16 KB)
+## targets.js (18 KB)
 - targetMethods
   - confirmPlace(wx, wy, shift)
   - confirmAttackMove(wx, wy, shift)
@@ -48,6 +48,11 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - beginPlacement(type)
   - beginWall(wx, wy) – Maus gedrückt im Modus wall: Startpunkt setzen
   - endWall(wx, wy, shift) – Maus losgelassen im Modus wall: Mauerzug bauen (die gewählten Bauer gehen mit)
+  - beginFieldwork(kind) – Feldstellung wählen (Baumenü): Zielmodus „field“ mit der Art (PROPS.field.kinds)
+  - fieldBuilders() – Bauer der Auswahl für die gewählte Feldstellung
+  - fieldPlan(wx, wy) – Geplantes Prop der Feldstellung an (wx, wy): Kacheln auf die Zellmitte, Einzels…
+  - fieldPreview(wx, wy) – Vorschau der Feldstellung: Zellen des Props, grün oder rot mit Grund
+  - confirmFieldwork(wx, wy, shift) – Feldstellung bauen (Befehl fieldwork); Shift hält den Modus für weitere Stücke
   - placementFor(type, wx, wy)
   - wallPreview(wx, wy)
 

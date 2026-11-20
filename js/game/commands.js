@@ -25,6 +25,7 @@ import { cmdDig } from './excavator.js';
 import { cmdShellRoad, cmdClearRubble } from './roadwar.js';
 import { cmdAttackProp } from './propfire.js';
 import { cmdLayMine } from './mines.js';
+import { cmdFieldwork } from './fieldwork.js';
 import { cmdParadrop } from './paradrop.js';
 import { setWeather, WEATHER_NAMES } from './weather.js';
 import { cmdMove, cmdAttack, cmdDeploy, cmdMortarTarget, cmdRally, cmdSpawnAt } from './cmd/units.js';
@@ -83,6 +84,7 @@ export const COMMANDS = {
   setPreset: { run: cmdSetPreset },
   mortarTarget: { run: cmdMortarTarget, sound: true },
   layMine: { run: cmdLayMine, drives: true, sound: true },
+  fieldwork: { run: cmdFieldwork, drives: true, sound: true }, // Feldstellung bauen (Paket „Deckung“)
   board: { run: cmdBoard, drives: true, sound: true },
   garrison: { run: cmdGarrison, drives: true, sound: true },
   ungarrison: { run: cmdUngarrison, sound: true },

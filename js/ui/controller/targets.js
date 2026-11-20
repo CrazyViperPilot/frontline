@@ -12,6 +12,8 @@ import { canGarrison, canEnter } from '../../game/garrison.js';
 import { WALL_MAX, isCarrier } from './util.js';
 import { propAt } from '../../game/propfire.js';
 import { PROPS } from '../../data/props.js';
+import { canFieldwork, fieldSpotWhy } from '../../game/fieldwork.js';
+import { propCells, rotAcross } from '../../game/props.js';
 
 /** Mauerzug von Start- zu Endzelle, höchstens WALL_MAX Zellen. */
 function wallLine(a, b) {
@@ -366,6 +368,47 @@ export const targetMethods = {
     });
     if (r.ok && !shift) this.setMode('normal');
     else if (this.pointer) this.updatePointer(this.pointer.x, this.pointer.y);
+  },
+
+  /** Feldstellung wählen (Baumenü): Zielmodus „field“ mit der Art (PROPS.field.kinds). */
+  beginFieldwork(kind) {
+    this.fieldKind = kind;
+    this.setMode('field');
+  },
+
+  /** Bauer der Auswahl für die gewählte Feldstellung. */
+  fieldBuilders() {
+    return this.selectedUnits().filter((u) => canFieldwork(u.def, this.fieldKind));
+  },
+
+  /** Geplantes Prop der Feldstellung an (wx, wy): Kacheln auf die Zellmitte, Einzelstück quer zur Richtung Bauer → Klick. */
+  fieldPlan(wx, wy) {
+    const g = this.game.grid;
+    const K = PROPS.kinds[this.fieldKind];
+    if (K?.line) return { kind: this.fieldKind, x: g.center(g.toCell(wx)), y: g.center(g.toCell(wy)), rot: 0 };
+    const us = this.fieldBuilders();
+    const cx = us.length ? us.reduce((a, u) => a + u.x, 0) / us.length : wx;
+    const cy = us.length ? us.reduce((a, u) => a + u.y, 0) / us.length : wy - 1;
+    return { kind: this.fieldKind, x: wx, y: wy, rot: rotAcross(Math.atan2(wy - cy, wx - cx)) };
+  },
+
+  /** Vorschau der Feldstellung: Zellen des Props, grün oder rot mit Grund. */
+  fieldPreview(wx, wy) {
+    const p = this.fieldPlan(wx, wy);
+    const g = this.game.grid;
+    const reason = this.fieldBuilders().length ? fieldSpotWhy(this.game, this.team, p) : 'Kein passender Bauer gewählt';
+    const cells = propCells(p, g.cols, g.rows).map((i) => ({ cx: i % g.cols, cy: Math.floor(i / g.cols), ok: !reason }));
+    return { type: 'field', x: p.x, y: p.y, ok: !reason, reason, cells };
+  },
+
+  /** Feldstellung bauen (Befehl fieldwork); Shift hält den Modus für weitere Stücke. */
+  confirmFieldwork(wx, wy, shift) {
+    const p = this.fieldPlan(wx, wy);
+    const r = this.issue({ type: 'fieldwork', ids: this.fieldBuilders().map((u) => u.id), kind: p.kind, x: p.x, y: p.y, rot: p.rot });
+    if (!r.ok) return;
+    this.moveMarker(p.x, p.y);
+    if (shift) this.updatePointer(wx, wy);
+    else this.setMode('normal');
   },
 
   placementFor(type, wx, wy) {

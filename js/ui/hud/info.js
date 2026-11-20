@@ -77,7 +77,7 @@ export const infoMethods = {
     }
     if (u.def.bmCap) {
       h += gauge('Baumaterial', Math.floor(u.cargo.bm), u.def.bmCap, COLOR.bm);
-      h += `<div class="muted small">Baut Mauern und Tore aus getragenem Baumaterial (nachladen in einer FOB)</div>`;
+      h += `<div class="muted small">Baut Mauern, Tore und Feldstellungen aus getragenem Baumaterial (nachladen in einer FOB)</div>`;
     }
     if (u.def.fuelMax) {
       h += gauge('Treibstoff', u.fuel, u.def.fuelMax, COLOR.fuel);

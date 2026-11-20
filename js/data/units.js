@@ -533,7 +533,7 @@ export const UNITS = {
     cost: { money: 1700 }, // seit Paket Balance-Preise (vorher 900)
     buildTime: 28,
     fuelPerSec: 0.8,
-    fuelMax: 70,
+    fuelMax: 200, // seit Paket „Kampfhubschrauber an der Front“ (vorher 70): 250 s Flug, genug für Hin- und Rückflug zur Zone mit Kampf
     hotkey: 'G',
   },
   // Kampfflugzeug (seit v5.03, PRD §6 „F-16“): nur mit Stadt, im Flughafen ausgebildet und dort stationiert (jet). Fliegt immer (kann

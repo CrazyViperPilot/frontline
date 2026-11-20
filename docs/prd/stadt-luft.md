@@ -32,7 +32,8 @@
     Erdanschüttung an den Seiten) für 700 Geld + 300 BM + 150 Stahl.
     Die Dächer sind halb durchsichtig gezeichnet, das abgestellte Flugzeug ist darunter zu sehen (2D und Iso).
     Die KI baut ihre Stellplätze aus, wenn danach 1200 Geld (`upgradeAiReserve`) sowie 200 BM und 200 Stahl (`CITY.ai.upgradeBuffer`) übrig bleiben; einen weiteren Stellplatz legt sie an,
-    wenn danach 100 BM bleiben (`standBuffer`), den Fliegerhorst ab 900 Geld über ihrer Reserve und 800 BM (`airportMoney`, `airportBm`) mit einer Bahn von 10 Zellen (`runwayLen`).
+    wenn danach 100 BM bleiben (`standBuffer`), den Fliegerhorst ab 900 Geld über ihrer Reserve und 450 BM (`airportMoney`, `airportBm`;
+    vorher 800, aber eine Lagerhalle lässt nur 500 im Hauptlager) mit einer Bahn von 10 Zellen (`runwayLen`).
     Vorher (v5.35 bis v5.38) wuchs der Stellplatz wie andere Gebäude, Stufe 2 waren Erdwälle.
     Abgestellte Jets sind **angreifbar**, der Schaden wird je Stufe mit 1 / 0,5 / 0,15 multipliziert (`shelter`); fällt der Stellplatz, ist sein Jet verloren.
     Er braucht eine **Verbindung zur Startbahn** (Bau-Regel, immer, auch ohne Baugebiet;

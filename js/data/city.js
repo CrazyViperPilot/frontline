@@ -356,7 +356,8 @@ export const CITY = {
     airportFrom: 14, // Arbeitsstätten, ab denen sie einen Fliegerhorst baut (seit v5.35 aus Bahn, Stellplätzen, Tower, Kerosintank, Munitionslager; einer reicht)
     airportReach: 60, // so viele Zellen um die Hauptstadt sucht sie Platz für die Bahn mit ihren Bauten (runwayLen × 4 Zellen plus Rand)
     airportMoney: 900, // Geld über der Reserve, ab dem sie den Fliegerhorst anlegt
-    airportBm: 800, // … und Baumaterial im Lager der Hauptstadt
+    airportBm: 450, // … und Baumaterial im Lager der Hauptstadt (seit Paket „Kampfhubschrauber an der Front“, vorher 800: unter warehouse.keep,
+    // sonst baute eine KI mit Lagerhalle nie einen Fliegerhorst; die Bahn kostet 300, Stellplätze und Lager prüfen ihr Baumaterial selbst)
     // Sparen auf den Fliegerhorst (Paket „KI-Fliegerhorst“): hat sie genug Arbeitsstätten und Baumaterial, aber zu wenig Geld für die Bahn,
     // bildet die Armee keine Kampfeinheiten aus, bis airportMoney über der Reserve liegt (sonst gab sie alles laufend aus und baute nie eine
     // Bahn). Findet die Suche danach keinen Platz, spart sie airportWait s lang nicht.

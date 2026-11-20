@@ -3,8 +3,6 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/data/`. Pfade relativ zu `js/data/`.
 
 ## citykinds.js (Fortsetzung)
-- KIND_NAME
-- WORKS – Werke (Verarbeitung nach CITY.chain)
 - SUPPLIER_KINDS – Lieferanten (Förderung und Werke): ihr Ausstoß fährt über die Straße zu einem W…
 - WORKPLACE_KINDS – Arbeitsstätten mit Pendlerweg (alle Arten mit Arbeitsplätzen)
 - FLAT_KINDS – Flache Zellen (Straße, Bahn, Rollfeld): sofort fertig, kein Gebäude

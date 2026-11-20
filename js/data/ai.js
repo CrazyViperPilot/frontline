@@ -258,10 +258,9 @@ export const GUN_HP = 0.5; // unter diesem Anteil der Trefferpunkte landet er am
 export const GUN_HP_BACK = 0.9; // und startet erst ab diesem Anteil wieder
 export const GUN_FUEL = 0.9; // startet erst mit so viel Treibstoff (Anteil)
 export const GUN_MIN = 300; // Geldwert der gegnerischen Gruppe mit Kontakt zu eigenen Truppen, ab dem er startet
-export const GUN_REACH = 0.4; // Einsatzradius vom Heliport: Anteil seiner Reichweite (Tempo × Flugzeit), Hin- und Rückflug mit Kampf
+export const GUN_REACH = 0.4; // Einsatzradius vom Heliport: Anteil seiner Reichweite (Tempo × Flugzeit = Treibstoff ÷ Verbrauch), Hin- und Rückflug mit Kampf
 export const GUN_AA_MARGIN = 100; // px über die Reichweite gesehener reiner Flugabwehr (Flak, SAM, Gepard, Fliegerfaust) hinaus: Ziele darin greift er nicht an
 export const GUN_HOME_R = 600; // px: Gegner so nah an eigenen Gebäuden (FOB, Stadt) gelten als Kontakt, auch ohne eigene Truppen daneben
-export const GUN_RAID_R = 1500; // px: sieht sie Gegner so nah an ihrer Stadt oder ihren FOBs (gemerkt AIR_MEMORY s), kauft sie Kampfhubschrauber
 export const GUN_CHASE = 800; // px: in der Luft ohne Ziel greift er die nächste Gruppe so nah an, sonst landet er
 export const STRIKE_EVERY = 20; // s zwischen zwei Luftschlägen
 export const STRIKE_MIN = 800; // Geldwert der Gegner um das Ziel, ab dem sich ein Luftschlag lohnt

@@ -194,7 +194,7 @@ Ein Test meldet, wenn sie nicht mehr zur Config passen.
 | Aufklärungsdrohne | R | 1 | 120 | 130 | 450 | – | 300 Geld | 12 s | 40 / 0,5 | 50 | 1 | Heliport |
 | Kamikazedrohne | X | 1 | 60 | 190 | 250 | 15 | 300 Geld | 12 s | 40 / 0,5 | 50 | 1 | Heliport |
 | Transporthubschrauber | F | 1 | 500 | 130 | 320 | – | 900 Geld | 20 s | 90 / 0,7 | 120 | 2 | Heliport |
-| Kampfhubschrauber | G | 1 | 650 | 150 | 400 | 340 | 1700 Geld | 28 s | 70 / 0,8 | 250 | 2 | Heliport |
+| Kampfhubschrauber | G | 1 | 650 | 150 | 400 | 340 | 1700 Geld | 28 s | 200 / 0,8 | 250 | 2 | Heliport |
 | F-16 | K | 3 | 450 | 420 | 560 | 640 | 2600 Geld | 40 s | 55 / 1 | 320 | 2 | Stellplatz |
 | F-22 | I | 3 | 500 | 460 | 600 | 700 | 3500 Geld | 55 s | 55 / 1 | 450 | 2 | Stellplatz |
 | A-10 | D | 3 | 700 | 252 | 560 | 340 | 2800 Geld | 45 s | 90 / 1 | 360 | 2 | Stellplatz |

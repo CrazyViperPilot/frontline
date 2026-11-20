@@ -10,7 +10,7 @@ import { BALANCE } from '../../data/balance.js';
 import { UNITS } from '../../data/units.js';
 import { canGarrison } from '../../game/garrison.js';
 import { weatherSight } from '../../game/weather.js';
-import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, FIELD_MUL, CMD_ARRIVED, ART_COLS, GUNSHIPS, GUN_FROM, GUN_RESERVE, SCOUT_HP, SCOUT_HP_BACK, SCOUT_MARGIN, SCOUT_STEP, SCOUT_FLEE_EVERY, STRIKE_EVERY, STRIKE_MIN, STRIKE_CLUSTER_R, STRIKE_CONTACT_R, STRIKE_CONTACT_MUL, STRIKE_AA_MARGIN, STRIKE_AA_DMG, RECON_FOBS, GUN_EVERY, GUN_HP, GUN_HP_BACK, GUN_FUEL, GUN_MIN, GUN_REACH, GUN_AA_MARGIN, GUN_CHASE, GUN_HOME_R, GUN_RAID_R } from '../../data/ai.js';
+import { DRONE_ARMY, DRONE_FROM, DRONE_MONEY, FPV_ARMY, FPV_MAX, FPV_MONEY, FPV_NEAR, FPV_EVERY, RESERVE_FROM, WAVE_NEUTRAL, SCOUT_EVERY, SCOUT_MOVE, JET_GROUP, JET_EVERY, JET_QUEUE, THREAT_RANGE, THREAT_DANGER, GATHER_DIST, ZONE_GATHER_DIST, RALLY_MOVE, RESERVE, DRY, THREAT_PER_UNIT, WAVE_ODDS, WAVE_PATIENCE, WAVE_MIN, SCOUT_MIN_ARMY, SCOUT_FROM, SCOUT_FUEL, SCOUT_REFILL, WX_SCOUT_SIGHT, WX_SCOUT_ARMY, WX_SCOUT_FROM, WX_FOG_SIGHT, WX_FOG_WAVE, RAID_MIN, RAID_SHARE, FALLBACK_ODDS, FALLBACK_MIN_FOES, FALLBACK_DIST, FALLBACK_HOLD, ART_BEHIND, ART_EVERY, GARRISON_SHARE, GARRISON_RANGE, GARRISON_EVERY, STORM_EVERY, STORM_RANGE, STORM_RATIO, STORM_WIRE, STORM_MIN, STORM_MAX, STORM_MARCH, HOUSE_WORK_EVERY, HOUSE_WORK_ORDER, HOUSE_WORK_RESERVE, CMD_BEHIND, CMD_DANGER, CMD_MOVE, ARTY_FIRE_TYPES, ARTY_FIRE_EVERY, ARTY_GROUP, ARTY_GROUP_R, SAPPER_ARMY, SAPPER_MAX, SAPPER_MONEY, MINE_EVERY, MINE_FROM, MINE_TO, MINE_SPREAD, MINE_ROAD, MINE_BLDG, MINE_TRIES, DEFEND_NEAR, LONE_CONTACT, GATHER_HIGH_R, RETREAT_MIN, RETREAT_AMPLE, RETREAT_EMPTY_PEN, RETREAT_SPREAD, RETREAT_OFFSET, SCOUT_EDGE, SCOUT_HOME_EVERY, DRONE_HOME_EVERY, ART_NEAR, ART_SPACING, RAID_FAR, FALLBACK_GROUP_EXTRA, CMD_FRONT, CMD_FIELD_MIN, WAVE_SEEN_SHARE, CLUMP_DIST, CLUMP_GROUPS, CLUMP_RING, CLUMP_HIGH_R, CLUMP_MIN, JET_STEEL_LOTS, FIELD_MUL, CMD_ARRIVED, ART_COLS, GUNSHIPS, GUN_FROM, GUN_RESERVE, SCOUT_HP, SCOUT_HP_BACK, SCOUT_MARGIN, SCOUT_STEP, SCOUT_FLEE_EVERY, STRIKE_EVERY, STRIKE_MIN, STRIKE_CLUSTER_R, STRIKE_CONTACT_R, STRIKE_CONTACT_MUL, STRIKE_AA_MARGIN, STRIKE_AA_DMG, RECON_FOBS, GUN_EVERY, GUN_HP, GUN_HP_BACK, GUN_FUEL, GUN_MIN, GUN_REACH, GUN_AA_MARGIN, GUN_CHASE, GUN_HOME_R } from '../../data/ai.js';
 import { DEF_RANGE, ZONE_FOB_R, TWO_PI, dist, unitVec } from './util.js';
 import { inZone as inZoneOf } from '../../game/zonegeo.js';
 import { nearestOf } from '../../game/teams.js';
@@ -82,8 +82,7 @@ export function airReach(def, cls = 'air', min = Number.MIN_VALUE) {
 export const combatMethods = {
   /**
    * Kampfhubschrauber (Paket „KI-Einheiten“): hält GUNSHIPS[Schwierigkeit] ab GUN_FROM Kampfeinheiten (Heliport der Stadt), nur aus
-   * Überschuss (Sparen ließ die Armee minutenlang ohne Nachschub). Einsatz: gunshipOps (seit „Hubschrauber im Gefecht“ nicht mehr mit den Wellen,
-   * gekauft nur nach gesehenen Gegnern nahe Stadt oder FOBs).
+   * Überschuss (Sparen ließ die Armee minutenlang ohne Nachschub). Einsatz: gunshipOps (seit „Hubschrauber im Gefecht“ nicht mehr mit den Wellen).
    */
   gunships(s) {
     const g = this.game;
@@ -91,10 +90,6 @@ export const combatMethods = {
     if (!want || (s.combat?.length ?? 0) < GUN_FROM) return;
     const have = s.units.filter((u) => u.type === 'gunship').length + this.queued(s, 'gunship');
     if (have >= want) return;
-    // Paket „Hubschrauber im Gefecht“: nur, wenn sie kürzlich Gegner nahe ihrer Stadt oder FOBs gesehen hat (bis GUN_RAID_R, gemerkt
-    // AIR_MEMORY s); die Zone liegt außerhalb seiner Reichweite (gunshipOps)
-    const raid = s.enemies.filter((e) => !e.def.air && (this.nearCity(e.x, e.y, GUN_RAID_R) || s.own.some((b) => dist(b.x, b.y, e.x, e.y) <= GUN_RAID_R))).length;
-    if (!this.rememberSeen('raid', raid)) return;
     // Der Festungs-Hubschrauber geht vor (wie bei der Drohne): steht ein Turm und fehlt er, wartet der Kampfhubschrauber
     if (s.own.some((b) => b.type === 'tower' && b.built) && !s.helis.length && !this.queued(s, 'transporter')) return;
     const b = this.pickProducer(s, 'gunship', BALANCE.queueMax, false);
@@ -104,9 +99,8 @@ export const combatMethods = {
   },
 
   /**
-   * Einsatz der Kampfhubschrauber (Paket „Hubschrauber im Gefecht“): Sein Tank reicht nur gut eine Minute (gemessen: die Kämpfe in der
-   * Zone liegen 8500 bis 12000 px vom Heliport, mehr als Hin- und Rückflug), darum fliegt er nicht mehr mit den Wellen, sondern wartet
-   * am Heliport und verteidigt den Umkreis. Alle GUN_EVERY s: gelandet und betankt (ab GUN_FUEL) startet er gegen die beste gesehene
+   * Einsatz der Kampfhubschrauber (Paket „Hubschrauber im Gefecht“, Reichweite seit „Kampfhubschrauber an der Front“): Luftnahunterstützung
+   * vom Heliport aus statt mit den Wellen (dort hing er ohne Ziel in der Luft); die Kämpfe in der Zone liegen 8500 bis 12000 px vom Heliport. Alle GUN_EVERY s: gelandet und betankt (ab GUN_FUEL) startet er gegen die beste gesehene
    * Gruppe mit Kontakt zu eigenen Truppen (bestGroup, ab GUN_MIN, bis GUN_REACH × Reichweite vom Heliport, nicht unter reiner
    * Flugabwehr wie Flak, SAM, Gepard, Fliegerfaust plus GUN_AA_MARGIN; Gewehre, MG und RPG nimmt er in Kauf). In der Luft ohne Ziel: nächste Gruppe bis GUN_CHASE px, sonst Landung. Unter GUN_HP
    * Trefferpunkten landet er (Reparatur am Heliport, Start erst ab GUN_HP_BACK).
@@ -128,7 +122,7 @@ export const combatMethods = {
       }
       if (u.heli.phase === 'landed') {
         if (u.fuel < u.def.fuelMax * GUN_FUEL || u.order.type !== 'idle') continue;
-        const tg = this.bestGroup(s, { ...aa, low: GUN_MIN, fx: pad.x, fy: pad.y, reach: u.def.speed * u.def.fuelMax * GUN_REACH, contact: true });
+        const tg = this.bestGroup(s, { ...aa, low: GUN_MIN, fx: pad.x, fy: pad.y, reach: ((u.def.speed * u.def.fuelMax) / u.def.fuelPerSec) * GUN_REACH, contact: true });
         if (tg) g.issue(this.team, { type: 'attack', ids: [u.id], targetId: tg.id });
         continue;
       }

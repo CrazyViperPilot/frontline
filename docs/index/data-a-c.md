@@ -98,10 +98,9 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - GUN_HP_BACK – und startet erst ab diesem Anteil wieder
 - GUN_FUEL – startet erst mit so viel Treibstoff (Anteil)
 - GUN_MIN – Geldwert der gegnerischen Gruppe mit Kontakt zu eigenen Truppen, ab dem er star…
-- GUN_REACH – Einsatzradius vom Heliport: Anteil seiner Reichweite (Tempo × Flugzeit), Hin- u…
+- GUN_REACH – Einsatzradius vom Heliport: Anteil seiner Reichweite (Tempo × Flugzeit = Treibs…
 - GUN_AA_MARGIN – px über die Reichweite gesehener reiner Flugabwehr (Flak, SAM, Gepard, Fliegerf…
 - GUN_HOME_R – px: Gegner so nah an eigenen Gebäuden (FOB, Stadt) gelten als Kontakt, auch ohn…
-- GUN_RAID_R – px: sieht sie Gegner so nah an ihrer Stadt oder ihren FOBs (gemerkt AIR_MEMORY…
 - GUN_CHASE – px: in der Luft ohne Ziel greift er die nächste Gruppe so nah an, sonst landet…
 - STRIKE_EVERY – s zwischen zwei Luftschlägen
 - STRIKE_MIN – Geldwert der Gegner um das Ziel, ab dem sich ein Luftschlag lohnt
@@ -141,7 +140,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## buildings.js (6.1 KB)
 - BUILDINGS
 
-## city.js (44 KB)
+## city.js (45 KB)
 - CITY
 
 ## citykinds.js (16 KB)
@@ -149,3 +148,5 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - KIND – Eintrag je Schlüssel (auch das Werkzeug Räumen)
 - KINDS – Zellenarten nach Code (Code = Index + 1; 0 = leer)
 - KIND_ID
+- KIND_NAME
+- WORKS – Werke (Verarbeitung nach CITY.chain)

@@ -208,9 +208,6 @@ test('KI bildet ab GUN_FROM Kampfeinheiten aus Überschuss einen Kampfhubschraub
   easy.gunships(easy.snapshot());
   assert.ok(!queued(), 'Leicht: keiner');
   ai.gunships(ai.snapshot());
-  assert.ok(!queued(), 'ohne gesehene Gegner nahe Stadt oder FOBs: keiner (Paket „Hubschrauber im Gefecht“)');
-  const raider = g.spawnUnit('rifleman', 1, m.x + 300, m.y + 300);
-  ai.gunships({ ...ai.snapshot(), enemies: [raider] });
   assert.ok(queued(), 'Normal: Kampfhubschrauber in Ausbildung');
 });
 

@@ -2,6 +2,7 @@
 // Die Arbeitsspeicher (Typed Arrays, Binärheap) werden pro Grid-Größe wiederverwendet. Einheiten planen über findUnitPath
 // (unerreichbare Ziele billig, lange Suchen über mehrere Schritte, seit v5.61), Kartenbau über findPath.
 import { BALANCE } from '../data/balance.js';
+import { moverTeam, moverBlock } from './grid.js';
 
 const SQRT2 = Math.SQRT2;
 const H_WEIGHT = BALANCE.path.hWeight; // Gewicht der Heuristik bei Hangkosten
@@ -203,6 +204,7 @@ export function gridHash(grid) {
   mix(grid.terrain);
   mix(grid.struct);
   mix(grid.gateTeam);
+  if (grid.prop) mix(grid.prop);
   return h >>> 0;
 }
 
@@ -353,12 +355,14 @@ function advance(st, n) {
   if (w.stamp !== stamp) throw new Error('Wegsuche: Arbeitsspeicher wurde von einer anderen Suche benutzt');
   const cols = grid.cols;
   const rows = grid.rows;
-  const { tc, tr, team } = q;
+  const { tc, tr } = q;
+  const team = moverTeam(q.team); // q.team ist Team oder Mover (Bewegungsklasse, grid.moverOf)
+  const block = moverBlock(q.team);
   const cost = grid.cost; // Hänge kosten mehr (Zehntel je Zelle)
   const { g, parent, seen, closed } = w;
-  const { terrain, struct, gateTeam } = grid;
-  // Passierbar für das Team; die Startzelle gilt immer als passierbar (wie grid.passable, ohne Feldprüfung)
-  const isOpen = (j) => j === startI || (terrain[j] === 0 && (struct[j] === 0 || gateTeam[j] === team));
+  const { terrain, struct, gateTeam, prop } = grid;
+  // Passierbar für das Team; die Startzelle gilt immer als passierbar (wie grid.passable, ohne Feldprüfung); Props je Bewegungsklasse
+  const isOpen = (j) => j === startI || (terrain[j] === 0 && (prop === null || (prop[j] & block) === 0) && (struct[j] === 0 || gateTeam[j] === team));
   let best = st.best;
   let bestD = st.bestD;
   let expanded = st.expanded;

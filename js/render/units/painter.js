@@ -10,7 +10,7 @@ const VIEW_ISO = [1, 1, K]; // Blickrichtung zum Betrachter (isokit: Fläche sic
 const CHAR = '#2a2623';
 
 /**
- * Malt Körper um yaw gedreht. view: { iso, s (Gerätepixel je Einheit), charred, shadow (nur Umriss schwarz) }.
+ * Malt Körper um yaw gedreht. view: { iso, s (Gerätepixel je Einheit), charred, shadow (nur Umriss schwarz) }. Körper mit alpha scheinen durch.
  * Reihenfolge: Körper nach der Tiefe ihrer Mitte, aufgesetzte Teile direkt nach ihrem Träger; Rückseiten fallen weg.
  */
 function paintSolids(ctx, solids, yaw, view) {
@@ -43,7 +43,9 @@ function paintSolids(ctx, solids, yaw, view) {
   list.sort((a, b) => a.k - b.k || a.lift - b.lift || a.own - b.own || a.i - b.i);
   ctx.lineJoin = 'round';
   ctx.lineWidth = Math.min(0.9, 0.28 * s);
+  const a0 = ctx.globalAlpha;
   for (const { so } of list) {
+    if (so.alpha !== undefined) ctx.globalAlpha = a0 * so.alpha; // durchscheinende Körper (Maschendraht, fences.js)
     let col = so.col;
     if (view.charred) col = mix(col, CHAR, 0.78);
     const rgb = rgbOf(col);
@@ -112,6 +114,7 @@ function paintSolids(ctx, solids, yaw, view) {
         ctx.stroke();
       }
     }
+    if (so.alpha !== undefined) ctx.globalAlpha = a0;
   }
 }
 

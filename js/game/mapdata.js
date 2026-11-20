@@ -8,6 +8,8 @@ import { countRoutes } from './landscape.js';
 import { openBridges } from './river.js';
 import { sideOf } from './zonegeo.js';
 import { FIXED_MAPS } from '../data/maps/index.js';
+import { PROPS } from '../data/props.js';
+import { rasterizeProps, propCells, GATE } from './props.js';
 
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;
@@ -27,6 +29,7 @@ export const MAX_BRIDGES = 24; // Brücken je Karte
 export const BRIDGE_LEN = [96, 900]; // kürzeste und längste Brücke (px)
 export const MAX_SPAWNS = 4; // Startpunkte je Karte (2 bis 4; Team i startet am Startpunkt i)
 export const MAX_FLAGS = BALANCE.conquest.names.length; // eigene Flaggen je Karte (Eroberung)
+export const MAX_PROPS = 6000; // Props je Karte (Zaunkacheln einzeln gezählt)
 export const PYLON_LINES = 32; // Leitungen je Karte: Strommasten mit gleicher `line` sind in Listenreihenfolge verbunden
 
 /** Leere Karte: nur Startpunkte in den Ecken und die Konfliktzone in der Mitte. */
@@ -81,6 +84,7 @@ function fitSize(src) {
     ...(src.flags ? { flags: pts(src.flags) } : {}),
     zone: src.zone && typeof src.zone === 'object' ? { ...src.zone, x: mx(src.zone.x), y: my(src.zone.y) } : { x: w0 / 2 + dx, y: h0 / 2 + dy, r: BALANCE.zone.r },
     crates: pts(src.crates),
+    ...(src.props ? { props: pts(src.props) } : {}),
     town: {
       ...town,
       roads: segs(town.roads, true),
@@ -156,6 +160,7 @@ export function normalizeMap(raw) {
       w: clamp(num(r.w, WALK_W), 8, 64),
     }))
     .filter((r) => Math.hypot(r.x2 - r.x1, r.y2 - r.y1) >= 1);
+  const props = normProps(arr(src.props));
   return {
     name: String(src.name ?? 'Karte').slice(0, 40),
     width: W,
@@ -203,12 +208,45 @@ export function normalizeMap(raw) {
     ...(flags.length ? { flags } : {}),
     ...(src.layout === 'sides' ? { layout: 'sides' } : {}),
     crates: arr(src.crates).slice(0, MAX_CRATES).map(pt), // Versorgungskisten (crates.js); ältere Karten haben keine
+    // Props (Deko und Gelände, game/props.js): Kacheln (Zäune, Mauern) mittig in ihrer Rasterzelle; Karten ohne Props haben das Feld nicht
+    ...(props.length ? { props } : {}),
     // Furten und Brücken über Flüsse (river.js); Karten ohne Fluss haben die Felder nicht
     ...(fords.length ? { fords } : {}),
     ...(bridges.length ? { bridges } : {}),
     // Höhengelände (relief.js) als Text; fehlt es oder ist es kaputt, ist die Karte flach
     ...(typeof src.relief === 'string' && Relief.decode(src.relief) ? { relief: src.relief } : {}),
   };
+}
+
+/** Props prüfen: bekannte Art, im Feld; Kacheln mittig in ihre Zelle, Drehung in Achteln (0 … 7), Tor nur bei Arten mit Tor. */
+function normProps(list) {
+  const seen = new Set(); // je Zelle höchstens eine Kachel
+  const out = [];
+  for (const p of list) {
+    const K = p && PROPS.kinds[p.kind];
+    if (!K || !Number.isFinite(p.x) || !Number.isFinite(p.y) || out.length >= MAX_PROPS) continue;
+    let x = clamp(p.x, 0, W - 1);
+    let y = clamp(p.y, 0, H - 1);
+    if (K.line) {
+      x = Math.floor(x / TILE) * TILE + TILE / 2;
+      y = Math.floor(y / TILE) * TILE + TILE / 2;
+      const key = `${x},${y}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+    } else {
+      x = Math.round(x);
+      y = Math.round(y);
+    }
+    const rot = Math.round(num(p.rot, 0)) & 7;
+    out.push({
+      kind: p.kind,
+      x,
+      y,
+      ...(rot ? { rot } : {}),
+      ...(K.gate && (p.gate === GATE.closed || p.gate === GATE.open) ? { gate: p.gate } : {}),
+    });
+  }
+  return out;
 }
 
 export const cloneMap = (m) => normalizeMap(JSON.parse(JSON.stringify(m)));
@@ -242,6 +280,13 @@ export function checkMap(map) {
     for (const o of map.obstacles) if (Math.hypot(o.x - x, o.y - y) < o.r + r) return true;
     for (const b of blockers(map.town.buildings)) if (Math.abs(b.x - x) < b.w / 2 + r && Math.abs(b.y - y) < b.h / 2 + r) return true;
     for (const t of [...map.town.trees, ...map.trees]) if (Math.hypot(t.x - x, t.y - y) < t.r + r) return true;
+    for (const p of map.props ?? []) {
+      for (const j of propCells(p, W / TILE, H / TILE)) {
+        const cx = (j % (W / TILE) + 0.5) * TILE;
+        const cy = (Math.floor(j / (W / TILE)) + 0.5) * TILE;
+        if (Math.abs(cx - x) < TILE / 2 + r && Math.abs(cy - y) < TILE / 2 + r) return true;
+      }
+    }
     return false;
   };
   map.spawns.forEach((s, i) => {
@@ -333,6 +378,7 @@ export function terrainGrid(map, relief = reliefOf(map)) {
   grid.rasterizeRects(blockers(map.town?.buildings ?? []));
   grid.rasterizeTrees([...(map.town?.trees ?? []), ...(map.trees ?? [])]);
   grid.rasterizeRelief(relief, map.fords ?? []);
+  rasterizeProps(grid, map.props); // Zäune, Mauern … (game/props.js)
   return grid;
 }
 

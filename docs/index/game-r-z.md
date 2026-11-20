@@ -1,8 +1,38 @@
-# Symbol-Index game (Teil 4 von 4, scars.js bis zonegeo.js)
+# Symbol-Index game (Teil 4 von 4, roads.js bis zonegeo.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
 
-## scars.js (Fortsetzung)
+## roads.js (Fortsetzung)
+- createRoads(game) – Stadtstraßen der Karte anlegen (`game.roads`): Zonenstraßen über die Zellen, de…
+- laneGrid(cols, rows, isRoad, maxLanes) – Mehrspurige Straßen (Daniels Wunsch „2 Straßenlinien nebeneinander“): Straßenze…
+
+## roadwar.js (9.1 KB)
+- cellCenter(game, i) – Mitte der Zelle i (Weltkoordinaten)
+- roadTarget(game, i) – Ist Zelle i eine Straße, die man beschießen kann? { owner } (Team der eigenen S…
+- isRubble(game, i) – Liegt auf Zelle i Schutt einer zerstörten Straße?
+- roadWeapon(u) – Waffe einer Einheit, mit der sie Straßen beschießt: die stärkste gegen Bauten (…
+- canShellRoads(u) – Kann die Einheit Straßen beschießen (Waffe vorhanden, Vorrat egal)?
+- destroyRoad(game, i) – Straße auf Zelle i wird zu Schutt (Meldung an den Besitzer, Krater)
+- damageRoad(game, i, dmg) – Schaden `dmg` auf die Straße in Zelle i; bei 0 Trefferpunkten Schutt
+- clearRubble(game, i) – Schutt auf Zelle i räumen: die Straße ist wieder da (eigene Straße des Besitzer…
+- clearable(game, team, i) – Darf `team` den Schutt auf Zelle i räumen? Eigene Straßen und Stadtstraßen der…
+- cmdShellRoad(game, team, cmd) – Befehl `{ type: 'shellRoad', ids, c0, r0, c1?, r1? }`: gewählte Einheiten mit G…
+- cmdClearRubble(game, team, cmd) – Befehl `{ type: 'clearRubble', ids, c0, r0, c1?, r1? }`: gewählte Baufahrzeuge…
+- updateRoadWar(game, dt) – Ein Schritt: Einheiten beim Beschuss von Straßen und Baufahrzeuge beim Räumen (…
+
+## savegame.js (5.2 KB)
+- SAVE_FORMAT – 2 seit v5.14: größere Karte (11072 px)
+- snapshotGame(game, ai) – Spielstand als JSON-Abbild
+- restoreGame(data)
+
+## scars.js (3.2 KB)
+- createScars(game)
+- addCrater(game, x, y, r) – Krater bzw. Brandfleck mit Radius r
+- addUnitWreck(game, u) – Wrack einer zerstörten Einheit (Fahrzeug oder Hubschrauber; Infanterie hinterlä…
+- addBuildingWreck(game, b) – Trümmer eines zerstörten (nicht abgerissenen) Gebäudes auf seiner Grundfläche,…
+- clearWrecksUnder(game, b) – Ein neues Gebäude räumt die Trümmer auf seiner Fläche weg
+- updateScarIntel(game) – Sichtstand der Narben nach jeder Nebelrechnung
+- updateScars(game) – Abgelaufene Narben entfernen
 - scarAlpha(s, time, life, fade) – Deckkraft einer Narbe (1 → 0 in den letzten fade Sekunden ihres Lebens)
 
 ## scramble.js (7.3 KB)

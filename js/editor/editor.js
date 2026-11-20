@@ -10,7 +10,7 @@ import { Renderer } from '../render/renderer.js';
 import { setIsoGround, TOWN_H } from '../render/iso.js';
 import { ISO_K } from '../render/camera.js';
 import { Game } from '../game/game.js';
-import { createEmptyMap, normalizeMap, checkMap, accessRoutes, describeMap, loadMap, saveMap, isFixedMap, MAX_SPAWNS, MAX_FLAGS, PYLON_LINES, MAX_CRATES, MAX_FIELDS, FIELD_CROPS, MAX_FORDS, MAX_BRIDGES, BRIDGE_LEN, MAX_PAVING, PLAZA_SIZE, WALK_W } from '../game/mapdata.js';
+import { createEmptyMap, normalizeMap, checkMap, accessRoutes, describeMap, loadMap, saveMap, isFixedMap, MAX_SPAWNS, MAX_FLAGS, PYLON_LINES, MAX_CRATES, MAX_FIELDS, FIELD_CROPS, MAX_FORDS, MAX_BRIDGES, BRIDGE_LEN, MAX_PAVING, PLAZA_SIZE, WALK_W, MAX_PROPS } from '../game/mapdata.js';
 import { drawMapIso } from '../render/maptown.js';
 import { RIVER_SIZE, riverHeight } from '../game/landscape.js';
 import { bridgeShape } from '../game/river.js';
@@ -19,6 +19,9 @@ import { invalidateWays } from '../render/ways.js';
 import { drawBridgeTop, fordPosts, drawFordPostTop } from '../render/bridge.js';
 import { drawCrate } from '../render/sprites.js';
 import { drawPowerLines } from '../render/mappreview.js';
+import { PROPS } from '../data/props.js';
+import { GATE } from '../game/props.js';
+import { propLooksOf, forgetPropLooks, drawPropsTop } from '../render/mapprops.js';
 import { Relief, RELIEF, COARSE_N, reliefOf, setRelief } from '../game/relief.js';
 import { reliefTiles, updateReliefTiles, drawReliefTiles } from '../render/reliefimg.js';
 
@@ -57,6 +60,7 @@ const TOOLS = [
   ['forest', 'Wald', 'Natur', '♠', 'Tippen setzt einen Wald (blockiert)'],
   ['rock', 'Fels', 'Natur', '●', 'Tippen setzt einen Felsen (blockiert)'],
   ['car', 'Auto', 'Natur', '▰', 'Tippen setzt ein geparktes Auto (Dekoration)'],
+  ['prop', 'Zaun, Mauer', 'Deko', '⧉', 'Rechts die Art wählen. Tippen setzt eine Kachel, Ziehen eine Linie mit Ecke; Kacheln verbinden sich von selbst (Ecke, T-Stück, Kreuz, Ende). Tor: Kachel wählen, „Tor“'],
   ['raise', 'Heben', 'Gelände', '▲', 'Gedrückt halten oder ziehen hebt das Gelände (Pinsel rechts einstellen)'],
   ['lower', 'Senken', 'Gelände', '▼', 'Gedrückt halten oder ziehen senkt das Gelände, unter dem Wasserspiegel entsteht ein See'],
   ['smooth', 'Glätten', 'Gelände', '∿', 'Ziehen glättet Kanten und steile Hänge'],
@@ -125,6 +129,9 @@ const st = {
   touches: new Map(),
   pinch: null,
   carVertical: false,
+  propKind: 'fence_wood', // Art für das Werkzeug „Zaun, Mauer“ (js/data/props.js)
+  propSig: '', // Prüfsumme der Props: ändert sie sich, werden Zellindex und Aussehen neu berechnet (propSync)
+  propVer: 0,
   fieldCrop: 'wheat', // Frucht für das nächste neue Feld (wheat, green, soil, rape oder pasture)
   brush: { size: 2, power: 1 }, // Indizes in BRUSH_SIZES und BRUSH_POWER
   reliefImg: null, // { relief, canvas }: Geländebild der 2D-Ansicht
@@ -133,6 +140,66 @@ const st = {
 // ---- Kleinkram -------------------------------------------------------------------
 
 const snap = (v) => Math.round(v / SNAP) * SNAP;
+const TILE_PX = BALANCE.map.tile; // Rasterzelle: Kacheln der Zäune und Mauern
+
+/** Zellen einer Zaunlinie von Zelle a nach b: erst entlang der längeren Achse, dann quer (höchstens eine Ecke). */
+function propPath(a, b) {
+  const out = [];
+  const dc = Math.sign(b.c - a.c);
+  const dr = Math.sign(b.r - a.r);
+  const xFirst = Math.abs(b.c - a.c) >= Math.abs(b.r - a.r);
+  let c = a.c;
+  let r = a.r;
+  out.push({ c, r });
+  if (xFirst) while (c !== b.c) out.push({ c: (c += dc), r });
+  while (r !== b.r) out.push({ c, r: (r += dr) });
+  if (!xFirst) while (c !== b.c) out.push({ c: (c += dc), r });
+  return out;
+}
+
+const cellAt = (x, y) => ({ c: clamp(Math.floor(x / TILE_PX), 0, W / TILE_PX - 1), r: clamp(Math.floor(y / TILE_PX), 0, H / TILE_PX - 1) });
+
+/** Kacheln der gewählten Art entlang der Linie a → b setzen (vorhandene Kacheln bekommen die neue Art). Liefert die letzte. */
+function placePropLine(a, b) {
+  const list = listOf('prop');
+  const cells = propPath(a, b);
+  let last = null;
+  for (const { c, r } of cells) {
+    const x = c * TILE_PX + TILE_PX / 2;
+    const y = r * TILE_PX + TILE_PX / 2;
+    let o = list.find((p) => p.x === x && p.y === y);
+    if (o) o.kind = st.propKind;
+    else if (list.length >= MAX_PROPS) {
+      say(`Höchstens ${MAX_PROPS} Kacheln je Karte`, true);
+      break;
+    } else list.push((o = { kind: st.propKind, x, y }));
+    if (cells.length === 1 && b.along === 'y') o.rot = 2; // einzelne Kachel quer
+    last = o;
+  }
+  return last;
+}
+
+/** Hat sich die Prop-Liste geändert, Zellindex und Aussehen verwerfen (Spiel-Renderer und 2D zeichnen sonst den alten Stand). */
+function propSync() {
+  const list = st.map.props ?? [];
+  let h = list.length;
+  for (const p of list) h = (Math.imul(h, 31) + p.x * 7 + p.y * 13 + (p.gate ?? 0) + (p.rot ?? 0) * 3 + p.kind.length) | 0;
+  const sig = `${list.length}|${h}|${list.map((p) => p.kind[0]).join('')}`;
+  if (sig === st.propSig) return;
+  st.propSig = sig;
+  st.propVer++;
+  forgetPropLooks(list);
+}
+
+/** Spielwerte einer Prop-Art in einem Satz (Inspektor). */
+function propRulesText(K) {
+  const who = { all: 'alle', veh: 'Fahrzeuge', inf: 'Infanterie', none: 'niemanden' }[K.blocks];
+  const parts = [`Hält ${who} auf${K.crush ? ', Kettenfahrzeuge überfahren sie (danach weg)' : ''}.`];
+  if (K.cover) parts.push(`Deckung ${Math.round(K.cover * 100)} %${K.coverVeh ? ` (Fahrzeuge ${Math.round(K.coverVeh * 100)} %)` : ''}.`);
+  if (K.sight) parts.push('Verdeckt die Sicht.');
+  parts.push(`${K.hp} Trefferpunkte, ${K.rubble ? 'danach Trümmer' : 'zerstört weg'}.`);
+  return parts.join(' ');
+}
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 function resize() {
@@ -254,6 +321,7 @@ function listOf(k) {
     case 'townTree': return m.town.trees;
     case 'obstacle': return m.obstacles;
     case 'crate': return m.crates;
+    case 'prop': return (m.props ??= []);
     case 'ford': return (m.fords ??= []);
     case 'bridge': return (m.bridges ??= []);
     case 'flag': return (m.flags ??= []);
@@ -294,6 +362,13 @@ function pickAt(wx, wy, sx = null, sy = null) {
     if (Math.hypot(m.crates[i].x - wx, m.crates[i].y - wy) < 18 + tol) return { k: 'crate', o: m.crates[i] };
   }
   for (const b of m.bridges ?? []) if (distToSeg(wx, wy, b) <= BALANCE.river.deck / 2 + tol) return { k: 'bridge', o: b };
+  // Props: Kachel in der Zelle unter dem Zeiger (Zäune und Mauern sind schmal, die ganze Zelle zählt)
+  const pc = Math.floor(wx / TILE_PX);
+  const pr = Math.floor(wy / TILE_PX);
+  for (let i = (m.props ?? []).length - 1; i >= 0; i--) {
+    const o = m.props[i];
+    if (Math.floor(o.x / TILE_PX) === pc && Math.floor(o.y / TILE_PX) === pr) return { k: 'prop', o };
+  }
   const circ = (k, list, grow = 0) => {
     for (let i = list.length - 1; i >= 0; i--) {
       const o = list[i];
@@ -595,6 +670,14 @@ function moveObj(sel, dx, dy) {
   }
 }
 
+/** Nach dem Verschieben: Kacheln der Zäune und Mauern zurück in die Mitte ihrer Zelle. */
+function settleProp(sel) {
+  if (sel?.k !== 'prop' || !PROPS.kinds[sel.o.kind]?.line) return;
+  const { c, r } = cellAt(sel.o.x, sel.o.y);
+  sel.o.x = c * TILE_PX + TILE_PX / 2;
+  sel.o.y = r * TILE_PX + TILE_PX / 2;
+}
+
 // ---- Zeichnen --------------------------------------------------------------------
 
 /** Hilfsspiel nur mit Karte: der Spiel-Renderer zeichnet damit die isometrische Ansicht (ohne Einheiten und Gebäude des Spiels). */
@@ -622,6 +705,9 @@ function syncGhost() {
   g.zone.y = m.zone.y;
   g.zone.r = m.zone.r;
   g.hot.x = g.hot.y = -1e6; // Hot Zone gibt es erst im Spiel
+  propSync();
+  g.propSt = null; // Editor: alle Props heil
+  g.propVersion = st.propVer;
   g.bridges = (m.bridges ?? []).map((src, k) => bridgeShape(src, reliefOf(m), -10000 - k)); // Brücken folgen der Karte
   r.deco = null;
   // Boden (Straßen, Parks, Bahn, Hindernisse) neu backen, aber nicht während des Ziehens
@@ -668,6 +754,14 @@ function draw() {
     };
     if (tiles) relief2d('mat');
     drawMapObjects(ctx, m, z, false, makeRng(77));
+    propSync();
+    const vx0 = cam.x - vw / 2 / z;
+    const vy0 = cam.y - vh / 2 / z;
+    const inView = (x, y, r) => x + r > vx0 && y + r > vy0 && x - r < vx0 + vw / z && y - r < vy0 + vh / z;
+    ctx.save();
+    ctx.scale(z, z);
+    drawPropsTop(ctx, propLooksOf(m.props, null, st.propVer), inView, z); // Zäune, Mauern (mapprops.js)
+    ctx.restore();
     if (tiles) {
       ctx.globalCompositeOperation = 'soft-light';
       relief2d('shade');
@@ -752,6 +846,16 @@ function draw() {
     drawSelection(st.sel, px);
   }
   drawGhost(world, px);
+  // Vorschau einer Zaunlinie: die Zellen, die entstehen
+  const pg = st.gesture?.type === 'propline' ? propPath(st.gesture.a, st.gesture.b) : st.tool === 'prop' && st.hover && st.pointer && !st.gesture ? [cellAt(st.pointer.x, st.pointer.y)] : [];
+  for (const { c, r } of pg) {
+    world(c * TILE_PX + TILE_PX / 2, r * TILE_PX + TILE_PX / 2);
+    ctx.fillStyle = 'rgba(255,230,150,0.35)';
+    ctx.strokeStyle = 'rgba(255,230,150,0.9)';
+    ctx.lineWidth = px;
+    ctx.fillRect(c * TILE_PX, r * TILE_PX, TILE_PX, TILE_PX);
+    ctx.strokeRect(c * TILE_PX, r * TILE_PX, TILE_PX, TILE_PX);
+  }
   // Vorschau eines Linien-Ziehens
   const g = st.gesture;
   if (g && g.type === 'line') {
@@ -1094,6 +1198,11 @@ function drawSelection(sel, px) {
   ctx.lineWidth = 2 * px;
   ctx.setLineDash([6 * px, 4 * px]);
   const pad = 3 * px;
+  if (sel.k === 'prop') {
+    ctx.strokeRect(Math.floor(o.x / TILE_PX) * TILE_PX - pad, Math.floor(o.y / TILE_PX) * TILE_PX - pad, TILE_PX + 2 * pad, TILE_PX + 2 * pad);
+    ctx.setLineDash([]);
+    return;
+  }
   if (sel.k === 'building' || sel.k === 'field' || sel.k === 'plaza') {
     ctx.save();
     ctx.translate(o.x, o.y);
@@ -1280,6 +1389,10 @@ canvas.addEventListener('pointerdown', (e) => {
     const a = t === 'river' ? { x: Math.round(w.x), y: Math.round(w.y) } : snapRoad(w.x, w.y, t);
     const lw = lineWidth(t);
     st.gesture = { type: 'line', kind: t, dirt: t === 'dirt', w: lw, x1: a.x, y1: a.y, x2: a.x, y2: a.y };
+  } else if (t === 'prop') {
+    const a = cellAt(w.x, w.y);
+    st.gesture = { type: 'propline', a, b: a };
+    st.needDraw = true;
   } else if (TERRAIN_TOOLS.has(t)) {
     pushHistory();
     const relief = ensureRelief();
@@ -1380,6 +1493,12 @@ window.addEventListener('pointermove', (e) => {
     g.y = w.y;
     st.needDraw = true;
     updateInfo();
+  } else if (g.type === 'propline') {
+    const b = cellAt(w.x, w.y);
+    if (b.c !== g.b.c || b.r !== g.b.r) {
+      g.b = b;
+      st.needDraw = true;
+    }
   } else if (g.type === 'brush') {
     if (Math.hypot(w.x - g.x, w.y - g.y) >= 34) {
       place(g.tool, w.x, w.y);
@@ -1418,6 +1537,15 @@ function endPointer(e) {
   const g = cancelGesture();
   st.needDraw = true; // Boden der Iso-Ansicht wird erst ohne laufende Geste neu gebacken
   if (!g) return;
+  if (g.type === 'move' || g.type === 'place') settleProp(st.sel);
+  if (g.type === 'propline' && e.type !== 'pointercancel') {
+    pushHistory();
+    placePropLine(g.a, g.b);
+    st.sel = null; // Auswahl der Art bleibt sichtbar; eine Kachel bearbeiten: Werkzeug „Wählen“
+    showInspector();
+    updateInfo();
+    return;
+  }
   if (g.type === 'line' && e.type !== 'pointercancel' && (g.kind === 'river' || g.kind === 'bridge')) {
     finishWaterLine(g);
   } else if (g.type === 'line' && e.type !== 'pointercancel') {
@@ -1513,6 +1641,7 @@ const SEL_NAMES = {
   zone: 'Konfliktzone',
   flag: 'Flagge',
   crate: 'Versorgungskiste',
+  prop: 'Deko',
   field: 'Feld',
   bridge: 'Brücke',
   ford: 'Furt',
@@ -1539,11 +1668,22 @@ function showInspector() {
     el.hidden = false;
     return;
   }
+  if (!s && st.tool === 'prop') {
+    const K = PROPS.kinds[st.propKind];
+    const groups = Object.entries(PROPS.groups).map(([gk, gname]) => {
+      const btns = Object.entries(PROPS.kinds).filter(([, k]) => k.group === gk).map(([id, k]) => `<button data-p="${id}" aria-pressed="${id === st.propKind}">${k.name}</button>`);
+      return `<div class="muted small">${gname}</div><div class="row wrap">${btns.join('')}</div>`;
+    });
+    el.innerHTML = `<h3>Zaun, Mauer: ${K.name}</h3>${groups.join('')}<div class="muted small">${propRulesText(K)}</div>`;
+    el.hidden = false;
+    return;
+  }
   if (!s) {
     el.hidden = true;
     return;
   }
   let title = SEL_NAMES[s.k];
+  if (s.k === 'prop') title = PROPS.kinds[s.o.kind]?.name ?? title;
   if (s.k === 'building') title = KIND_NAMES[s.o.kind] || title;
   if (s.k === 'obstacle') title = Math.round(s.o.r) % 2 === 0 ? 'Wald' : 'Fels';
   if (s.k === 'spawn') title = `Start ${BALANCE.teamNames[s.i]}`;
@@ -1602,6 +1742,11 @@ function showInspector() {
     rows.push(`<div class="muted small">Länge ${len} px (${BRIDGE_LEN[0]}–${BRIDGE_LEN[1]}). Enden ziehen, um die Brücke zu ändern; beide Enden gehören auf festen Grund. Im Spiel zerstörbar (A + Klick), ein Baufahrzeug baut sie für ${BALANCE.river.rebuildCost} Geld wieder auf.</div>`);
   } else if (s.k === 'ford') {
     rows.push(`<div class="muted small">Seichtes Wasser im Kreis (Radius ${s.o.r} px): Bodeneinheiten kommen mit halbem Tempo hindurch. Rot-weiße Stangen markieren die Furt im Spiel.</div>`);
+  } else if (s.k === 'prop') {
+    const K = PROPS.kinds[s.o.kind];
+    const gate = { 0: 'kein Tor', [GATE.closed]: 'Tor zu', [GATE.open]: 'Tor offen' }[s.o.gate ?? 0];
+    rows.push(`<div class="row">${K?.gate ? `<button data-i="gate">${gate}</button>` : ''}<button data-i="turn">Drehen</button><button data-i="pkind">Art</button></div>`);
+    rows.push(`<div class="muted small">${K ? propRulesText(K) : ''} Tor nur in geraden Stücken; offen hält es niemanden auf. „Drehen“ gilt für einzelne Kacheln ohne Nachbarn.</div>`);
   } else if (s.k === 'crate') {
     const d = st.map.spawns.map((sp) => Math.round(Math.hypot(sp.x - s.o.x, sp.y - s.o.y)));
     rows.push(`<div class="muted small">Ziehen verschiebt die Kiste. Abstand zu den Starts: ${d[0]} / ${d[1]} px. Auf freien Boden setzen (sonst rückt sie im Spiel zur nächsten freien Stelle).</div>`);
@@ -1637,7 +1782,19 @@ function inspectorAction(a) {
   else if (a === 'w-') o.w = Math.max(24, o.w - 16);
   else if (a === 'h+') o.h = Math.min(600, o.h + 16);
   else if (a === 'h-') o.h = Math.max(24, o.h - 16);
-  else if (a === 'turn') {
+  else if (a === 'gate') {
+    const next = { 0: GATE.closed, [GATE.closed]: GATE.open, [GATE.open]: 0 }[o.gate ?? 0];
+    if (next) o.gate = next;
+    else delete o.gate;
+  } else if (a === 'pkind') {
+    const kinds = Object.keys(PROPS.kinds).filter((k) => PROPS.kinds[k].group === PROPS.kinds[o.kind]?.group);
+    o.kind = kinds[(kinds.indexOf(o.kind) + 1) % kinds.length];
+    if (!PROPS.kinds[o.kind].gate) delete o.gate;
+    st.propKind = o.kind;
+  } else if (a === 'turn' && s.k === 'prop') {
+    o.rot = ((o.rot ?? 0) + 2) & 7; // Achtel: um 90°
+    if (!o.rot) delete o.rot;
+  } else if (a === 'turn') {
     if (s.k === 'car') o.vertical = !o.vertical;
     else [o.w, o.h] = [o.h, o.w];
   } else if (a === 'kind') {
@@ -1704,6 +1861,11 @@ $('[data-insp]').addEventListener('click', (e) => {
   if (b) inspectorAction(b.dataset.i);
   const p = e.target.closest('[data-b]');
   if (p) brushAction(p.dataset.b);
+  const k = e.target.closest('[data-p]');
+  if (k && PROPS.kinds[k.dataset.p]) {
+    st.propKind = k.dataset.p; // Art für das Werkzeug „Zaun, Mauer“
+    showInspector();
+  }
 });
 
 function brushAction(a) {
@@ -1729,7 +1891,7 @@ $('[data-tools]').addEventListener('click', (e) => {
 function updateInfo() {
   const d = describeMap(st.map);
   $('[data-msg]').classList.remove('bad');
-  $('[data-info]').textContent = `${d.buildings} Gebäude · ${d.roads} Straßen · ${d.trees} Bäume · ${d.obstacles} Hindernisse · ${st.map.town.fields.length} Felder · ${st.map.crates.length} Kisten`;
+  $('[data-info]').textContent = `${d.buildings} Gebäude · ${d.roads} Straßen · ${d.trees} Bäume · ${d.obstacles} Hindernisse · ${st.map.town.fields.length} Felder · ${st.map.crates.length} Kisten · ${(st.map.props ?? []).length} Zaun- und Mauerkacheln`;
 }
 
 function setMap(map, { keepId = false } = {}) {

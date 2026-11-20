@@ -21,6 +21,8 @@ npm run smoke                     # Browser-Rundgang (Playwright): Start, 2D, Is
 npm run smoke -- --device all     # dasselbe als desktop, tablet (iPad quer, Tippen) und phone (Android quer); einzeln: --device phone
 npm run smoke -- --long 30        # langer Lauf: 30 Spielminuten bei 10× Tempo, beide Seiten KI, Kamera über Basis/Front/Städte, 2D und Iso; meldet Browserfehler und Einfrieren
 node tools/unitpreview.mjs f22    # Einheiten-Modelle als Bild (8 Richtungen, 2D, Spielgröße) neben f16 und tank: .preview/units.png (Rezept docs/rezept-einheiten.md)
+
+ode tools/propspreview.mjs          # Props der Karte (Zäune, Mauern) in Sommer/Winter, Zoom 3 und 1,6, 2D, neben Panzer und Soldaten: .preview/props.png
 npm run release                   # Versionen vergeben (nur beim Zusammenführen auf main, siehe „Zusammenarbeit“)
 npm run metrics                   # KI-Kennzahlen: 3 Seeds × 15 min KI gegen KI (~30 s), warnt bei groben Ausreißern; auch in der CI
 npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminuten (tools/econ.mjs, Optionen im Dateikopf); compare a.json b.json

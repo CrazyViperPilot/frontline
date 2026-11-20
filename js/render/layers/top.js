@@ -14,6 +14,7 @@ import { drawWeather } from '../weatherfx.js';
 import { drawMood } from '../mood.js';
 import { drawBridgeTop, drawBridgeBar, bridgeBar, fordPosts, drawFordPostTop } from '../bridge.js';
 import { drawMapTown2D, drawMapCars2D } from '../maptown.js';
+import { propLooks, drawPropsTop } from '../mapprops.js';
 import { drawPaving } from '../paving.js';
 import { drawHouseWorksTop, drawHouseFlagTop } from '../stronghold.js';
 import { drawUnitTop } from '../unitpaint.js';
@@ -69,6 +70,7 @@ export const topMethods = {
     this.drawScars(ctx, inRect, z);
     drawCityGround(this, ctx, team, known, inRect); // Stadt: Straßen und Grundstücke
     drawMapCars2D(ctx, g.map.town, inRect, z, this.season); // Autos der Karte auf den Straßen (seit v5.23 sichtbar, seit v5.43 gemalt)
+    drawPropsTop(ctx, propLooks(g), inRect, z, this.season); // Zäune, Mauern … (mapprops.js)
     drawCityTop(this, ctx, team, known, inRect); // Stadt: Dächer
     this.drawNatureTop(ctx, inRect, z); // Felsen, Büsche und Bäume von oben (seit v5.28 gemalt, nicht mehr im Geländebild)
     drawCityBadges(this, ctx, team, known, inRect, false); // Stadt: Schilder (Funktion, privat/kommerziell)

@@ -10,6 +10,7 @@ import { houseYardTrees, houseYardIso } from '../maptown.js';
 import { drawUnitSprite, drawWreckSprite } from '../isosprites.js';
 import { drawMapCarIso, drawMapCarShadowIso, drawBenchIso, drawBenchShadowIso, drawCrateIso, drawBaleIso, drawBaleShadowIso } from '../props.js';
 import { fieldBales } from '../fields.js';
+import { propLooks, drawPropIso, drawPropShadowIso } from '../mapprops.js';
 import { drawTreeIso, drawBushIso, drawRockIso, natureShadowIso, drawAnimalIso } from '../nature.js';
 import { scarAlpha } from '../../game/scars.js';
 import { setRoofSnow } from '../season.js';
@@ -24,7 +25,7 @@ export const isoItemMethods = {
   /**
    * Iso: Objekte mit Höhe, nach Tiefe (x + y) sortiert → { items: [{ k, t, o }], air: fliegende Einheiten (zuletzt) }.
    * t: 0 Stadtgebäude, 1 Baum, 2 Fels, 4 Militärgebäude, 5 Einheit, 6 Auto, 7 Bank, 8 Kiste, 9/10 Wrack (Fahrzeug/Gebäude),
-   * 11 Tier, 12 Furtstange, 13 Busch, 14 Ballen, 15 Gruppe des Regierungsviertels.
+   * 11 Tier, 12 Furtstange, 13 Busch, 14 Ballen, 15 Gruppe des Regierungsviertels, 16 Prop der Karte (Zaun, Mauer …; mapprops.js).
    */
   isoItems(f) {
     const { g, cam, team, z, relief, inRect, seen, known, shown } = f;
@@ -64,6 +65,7 @@ export const isoItemMethods = {
       }
     }
     for (const o of this.deco.rocks) if (inRect(o.x, o.y, PAD)) items.push({ k: cam.depth(o.x, o.y), t: 2, o });
+    for (const o of propLooks(g)) if (inRect(o.x, o.y, 40)) items.push({ k: cam.depth(o.x, o.y), t: 16, o }); // Zäune, Mauern … (mapprops.js)
     const small = z < 0.6; // weit herausgezoomt: Unterholz im Wald weglassen (winzig, unter den Kronen)
     for (const b of this.deco.bushes) if (inRect(b.x, b.y, 40) && !(small && b.under) && !gone(b.x, b.y)) items.push({ k: cam.depth(b.x, b.y), t: 13, o: b });
     for (const b of g.buildings) {
@@ -88,7 +90,7 @@ export const isoItemMethods = {
     return { items, air };
   },
 
-  /** Iso, Schatten am Boden vor allen Objekten: Bäume, Büsche und Felsen in einem Zug, dann Autos, Bänke und Ballen. */
+  /** Iso, Schatten am Boden vor allen Objekten: Bäume, Büsche und Felsen in einem Zug, dann Autos, Bänke, Ballen und Props der Karte. */
   isoShadows(f, items) {
     const { ctx, cam, dpr, relief } = f;
     // Schatten der Bäume, Büsche und Felsen in einem Zug auf den Boden (seit v5.28): fallen nie über andere Dinge
@@ -104,10 +106,11 @@ export const isoItemMethods = {
     ctx.fill();
     // Schatten der geparkten Autos, Bänke (seit v5.43) und Ballen (seit v5.44): Umriss von oben am Boden (props.js)
     for (const it of items) {
-      if (it.t !== 6 && it.t !== 7 && it.t !== 14) continue;
+      if (it.t !== 6 && it.t !== 7 && it.t !== 14 && it.t !== 16) continue;
       if (relief) cam.pin(this.baseHeight(it));
       if (it.t === 6) drawMapCarShadowIso(ctx, cam, it.o, dpr);
       else if (it.t === 7) drawBenchShadowIso(ctx, cam, it.o, dpr);
+      else if (it.t === 16) drawPropShadowIso(ctx, cam, it.o, this.season); // scharf nach links unten (mapprops.js)
       else drawBaleShadowIso(ctx, cam, it.o, dpr);
       cam.unpin();
     }
@@ -130,6 +133,7 @@ export const isoItemMethods = {
       else if (it.t === 6) { if (!drawMapCarIso(ctx, cam, it.o, this.season)) drawCar(ctx, cam, it.o); } // gemalt (props.js, seit v5.43)
       else if (it.t === 7) { if (!drawBenchIso(ctx, cam, it.o, this.season)) drawBench(ctx, cam, it.o); }
       else if (it.t === 14) drawBaleIso(ctx, cam, it.o, this.season);
+      else if (it.t === 16) drawPropIso(ctx, cam, it.o, this.season); // Zäune, Mauern … (mapprops.js)
       else if (it.t === 8) {
         const s = it.o.ground ? 16 : 13;
         if (!drawCrateIso(ctx, cam, it.o.x, it.o.y, s, 0, it.o.ground ? glow : 0)) drawCrate(ctx, cam, it.o.x, it.o.y, s, 0, it.o.ground ? glow : 0);

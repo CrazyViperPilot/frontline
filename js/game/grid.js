@@ -3,6 +3,34 @@ import { BALANCE } from '../data/balance.js';
 import { RELIEF } from './relief.js';
 
 const RELIEF_WATER = RELIEF.water;
+
+// Props (Deko und Gelände, game/props.js) sperren je Bewegungsklasse: Bits im Feld `prop` je Zelle.
+export const PROP_INF = 1; // sperrt Infanterie
+export const PROP_VEH = 1 << 1; // sperrt Radfahrzeuge
+export const PROP_CRUSH = 1 << 2; // sperrt auch gepanzerte Kettenfahrzeuge (nicht überfahrbar)
+const PROP_ALL = PROP_INF | PROP_VEH | PROP_CRUSH;
+
+/**
+ * Bewegungsklassen: Wegsuche und Bewegung bekommen statt des Teams einen „Mover“ = Team + Klasse × 16. Eine reine Teamzahl
+ * (0 … 15, wie bisher überall) ist Klasse 0: jedes Prop sperrt (Bauplatz, KI-Prüfungen, Kartenprüfung). Gemeinsame Wege und
+ * lange Suchen (pathplan.js) vergleichen den Mover, also teilen nur Einheiten derselben Klasse einen Weg.
+ */
+export const MOVE_CLASS = { all: 0, inf: 1, veh: 2, crush: 3 };
+const TEAM_BITS = 4;
+const TEAM_MASK = (1 << TEAM_BITS) - 1;
+const CLASS_BLOCK = [PROP_ALL, PROP_INF, PROP_VEH, PROP_CRUSH]; // Bits, die die Klasse sperren
+
+/** Mover einer Bodeneinheit: Infanterie, Radfahrzeug oder gepanzertes Kettenfahrzeug (def.crush: überfährt kleine Props). */
+export function moverOf(u) {
+  const cls = u.def.armor === 'inf' ? MOVE_CLASS.inf : u.def.crush ? MOVE_CLASS.crush : MOVE_CLASS.veh;
+  return u.team + (cls << TEAM_BITS);
+}
+
+/** Team eines Movers (negative Werte bleiben, wie sie sind). */
+export const moverTeam = (who) => (who > TEAM_MASK ? who & TEAM_MASK : who);
+
+/** Prop-Bits, die einen Mover sperren. */
+export const moverBlock = (who) => (who > TEAM_MASK ? CLASS_BLOCK[who >> TEAM_BITS] : PROP_ALL);
 const RELIEF_STEEP = RELIEF.steep;
 
 /**
@@ -53,6 +81,8 @@ export class Grid {
     this.deck = null; // 1 = unter einer Brückenfahrbahn (river.createBridges); null = keine Brücken
     this.lock = null; // Eroberung (conquest.bindLock): Viertel je Zelle (Team-Index, 9 = ohne Spieler, -1 = Konfliktzone); null = keine Sperre
     this.lockOpen = null; // je Viertel: true = Sperre gefallen
+    this.prop = null; // Sperr-Bits der Props je Zelle (PROP_INF, PROP_VEH, PROP_CRUSH; game/props.js); null = keine Props
+    this.propH = null; // Sichthöhe der Props je Zelle (Nebel, fog.js; Höhe wie Gelände); null = keine sichtsperrenden Props
   }
 
   idx(c, r) {
@@ -73,11 +103,13 @@ export class Grid {
     return c * this.tile + this.tile / 2;
   }
 
-  /** Begehbar für `team`: im Feld, kein Terrain, und kein Gebäude oder eigenes Tor. */
-  passable(c, r, team) {
+  /** Begehbar für `who` (Team oder Mover, siehe moverOf): im Feld, kein Terrain, kein sperrendes Prop, kein Gebäude oder eigenes Tor. */
+  passable(c, r, who) {
     if (!this.inBounds(c, r)) return false;
     const i = this.idx(c, r);
     if (this.terrain[i]) return false;
+    if (this.prop !== null && this.prop[i] & moverBlock(who)) return false;
+    const team = moverTeam(who);
     if (this.lock !== null && team >= 0) {
       const q = this.lock[i]; // fremdes Viertel mit stehender Sperre: nicht begehbar
       if (q >= 0 && q !== team && !this.lockOpen[q]) return false;
@@ -86,11 +118,11 @@ export class Grid {
     return this.gateTeam[i] === team;
   }
 
-  /** Frei für Bau: im Feld, kein Terrain, kein Gebäude. */
+  /** Frei für Bau: im Feld, kein Terrain, kein sperrendes Prop, kein Gebäude. */
   free(c, r) {
     if (!this.inBounds(c, r)) return false;
     const i = this.idx(c, r);
-    return this.terrain[i] === 0 && this.struct[i] === 0;
+    return this.terrain[i] === 0 && this.struct[i] === 0 && (this.prop === null || this.prop[i] === 0);
   }
 
   /** Markiert Zellen als Hindernis, deren Mittelpunkt im Kreis liegt. */

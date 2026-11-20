@@ -37,7 +37,7 @@ export const SAVE_FORMAT = 6;
 const bases = new WeakMap(); // Karte → { key, grid }
 
 function baseGrid(map, relief) {
-  const lists = [map.obstacles, map.town?.buildings, map.town?.trees, map.trees, map.fords];
+  const lists = [map.obstacles, map.town?.buildings, map.town?.trees, map.trees, map.fords, map.props];
   const key = [relief, ...lists, ...lists.map((l) => l?.length)];
   let b = bases.get(map);
   if (!b || b.key.some((v, i) => v !== key[i])) bases.set(map, (b = { key, grid: terrainGrid(map, relief) }));

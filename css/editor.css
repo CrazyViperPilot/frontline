@@ -31,6 +31,8 @@ body.ed { overflow: hidden; touch-action: none; }
 }
 .edinsp h3 { margin: 0 0 2px; font-size: 14px; }
 .edinsp .row { display: flex; gap: 6px; }
+.edinsp .row.wrap { flex-wrap: wrap; }
+.edinsp [data-p][aria-pressed="true"] { outline: 2px solid #ffd24a; }
 .edinsp .row button { flex: 1; padding: 0 6px; }
 .edinsp .danger { border-color: #8a3a3a; color: var(--bad); }
 .edstatus {

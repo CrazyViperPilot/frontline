@@ -7,6 +7,10 @@
 //   (Einstieg und Ausstieg per freier Sichtlinie), statt selbst zu suchen.
 // Alles hängt nur vom Spielzustand ab (gleicher Seed = gleiche Partie; Laden und Weiterspielen bleibt gleich). Kein DOM.
 import { BALANCE } from '../data/balance.js';
+import { moverOf } from './grid.js';
+
+/** Schlüssel für gemeinsame Wege: ohne Props das Team (alle Klassen gehen dieselben Wege), sonst Team und Bewegungsklasse. */
+const shareKey = (game, u) => (game.grid.prop ? moverOf(u) : u.team);
 import { findUnitPath, adoptLong, startLong, stepLong, longPath, longValid, gridHash, lineOfSight, pathStats } from './pathfinding.js';
 
 const near = (ax, ay, bx, by, r) => (ax - bx) * (ax - bx) + (ay - by) * (ay - by) <= r * r;
@@ -39,7 +43,7 @@ function searchPath(game, u, x, y) {
     return;
   }
   const n0 = pathStats.nodes;
-  const path = findUnitPath(game.grid, u.x, u.y, x, y, u.team, BALANCE.path);
+  const path = findUnitPath(game.grid, u.x, u.y, x, y, moverOf(u), BALANCE.path);
   game.pathWork = (game.pathWork || 0) + pathStats.nodes - n0;
   if (path) {
     u.path = path;
@@ -93,7 +97,7 @@ function advanceLong(game, n) {
     if (h !== L.hash) L = game.pathLong = { id: u.id, sx: u.x, sy: u.y, x: L.x, y: L.y, done: 0, hash: h }; // Gelände geändert: neu
   }
   if (!live || live.desc !== L || !longValid(live.st)) {
-    live = { desc: L, st: startLong(game.grid, L.sx, L.sy, L.x, L.y, u.team, P) };
+    live = { desc: L, st: startLong(game.grid, L.sx, L.sy, L.x, L.y, moverOf(u), P) };
     if (L.done > 0) stepLong(live.st, L.done); // bis zum gespeicherten Stand nachrechnen
   }
   const over = stepLong(live.st, n);
@@ -107,7 +111,7 @@ function advanceLong(game, n) {
   remember(game, u, L.x, L.y, path, L.sx, L.sy);
   // Wer auf einen ähnlichen Weg wartet, übernimmt ihn
   for (const v of game.units) {
-    if (v === u || !v.alive || pathPending(v) !== 'long' || v.team !== u.team) continue;
+    if (v === u || !v.alive || pathPending(v) !== 'long' || shareKey(game, v) !== shareKey(game, u)) continue;
     const p = sharePath(game, v, v.path[0].x, v.path[0].y);
     if (p) {
       v.path = p;
@@ -121,7 +125,7 @@ function advanceLong(game, n) {
 function remember(game, u, x, y, path, sx = u.x, sy = u.y) {
   if (path.length < 2) return; // kurze Wege lohnen das Teilen nicht
   const list = (game.pathShare ??= []);
-  list.push({ team: u.team, sx, sy, x, y, path });
+  list.push({ team: shareKey(game, u), sx, sy, x, y, path }); // team: Schlüssel (shareKey)
   if (list.length > BALANCE.path.shareKeep) list.shift();
 }
 
@@ -129,7 +133,7 @@ function remember(game, u, x, y, path, sx = u.x, sy = u.y) {
 function similarLong(game, u, x, y) {
   const P = BALANCE.path;
   for (const v of game.units) {
-    if (v === u || !v.alive || v.team !== u.team || pathPending(v) !== 'long') continue;
+    if (v === u || !v.alive || shareKey(game, v) !== shareKey(game, u) || pathPending(v) !== 'long') continue;
     const L = game.pathLong?.id === v.id ? game.pathLong : null;
     if (near(L ? L.sx : v.x, L ? L.sy : v.y, u.x, u.y, P.shareStart) && near(v.path[0].x, v.path[0].y, x, y, P.shareGoal)) return true;
   }
@@ -140,7 +144,7 @@ function similarLong(game, u, x, y) {
 function sharePath(game, u, x, y) {
   const P = BALANCE.path;
   for (const e of game.pathShare ?? []) {
-    if (e.team !== u.team || !near(e.sx, e.sy, u.x, u.y, P.shareStart) || !near(e.x, e.y, x, y, P.shareGoal)) continue;
+    if (e.team !== shareKey(game, u) || !near(e.sx, e.sy, u.x, u.y, P.shareStart) || !near(e.x, e.y, x, y, P.shareGoal)) continue;
     const p = joinPath(game.grid, u, x, y, e.path);
     if (p) return p;
   }
@@ -152,7 +156,7 @@ function sharePath(game, u, x, y) {
  * Ausstieg: der letzte Wegpunkt ab dort mit freier Sicht zum eigenen Ziel. Wegpunkte werden kopiert (kein geteiltes Objekt).
  */
 function joinPath(grid, u, x, y, path) {
-  const vis = (a, b) => lineOfSight(grid, a.x, a.y, b.x, b.y, u.team);
+  const vis = (a, b) => lineOfSight(grid, a.x, a.y, b.x, b.y, moverOf(u));
   let j = -1;
   for (let k = 0; k < path.length && k < BALANCE.path.joinLook && j < 0; k++) if (vis(u, path[k])) j = k;
   if (j < 0) return null;

@@ -310,4 +310,18 @@ export const MAPGEN = {
     trackDetour: 1.15, // Anbindung an ein Nachbargehöft zählt um diesen Faktor länger (Straße ist bevorzugt)
     trackCands: 8, // Anbindung: so viele der nächsten Ziele werden höchstens versucht
   },
+  // Props der Zufallskarten (Zäune, Mauern; js/data/props.js), sparsam und mit eigenem Zufall (Seed + salt): an einer Seite
+  // gerader Äcker ein Stück Mauer oder Zaun, punktsymmetrisch gespiegelt (Weiden haben schon ihren gemalten Koppelzaun). Sperrt danach die Verbindung der Startpunkte,
+  // entfallen alle Props der Karte.
+  props: {
+    salt: 7919, // eigener Zufallsstrom: alle übrigen Zufallszahlen der Karte bleiben je Seed gleich
+    field: 0.3, // Anteil der geraden Äcker mit einem Stück Mauer oder Zaun an einer Seite
+    len: [4, 9], // Kacheln je Stück (ganze Zahl, Zufallsbereich); kürzere Reste entfallen
+    minLen: 3, // so viele Kacheln braucht ein Stück mindestens
+    kinds: [['wall_stone', 0.5], ['fence_wood', 0.85], ['fence_wire', 1]], // Arten (kumulierte Wahrscheinlichkeit)
+    gateMin: 7, // ab so vielen Kacheln hat ein Zaun in der Mitte ein offenes Tor
+    roadGap: 6, // Abstand (px) vom Straßen- und Feldwegrand
+    spawnGap: 900, // Abstand (px) zu den Startpunkten (Bauland bleibt frei)
+    crateGap: 80, // Abstand (px) zu Versorgungskisten
+  },
 };

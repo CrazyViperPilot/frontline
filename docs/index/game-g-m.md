@@ -1,4 +1,4 @@
-# Symbol-Index game (Teil 2 von 4, game.js bis mapdata.js)
+# Symbol-Index game (Teil 2 von 4, game.js bis map.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
 
@@ -75,7 +75,14 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - dropOccupant(game, u) – Tote Einheit aus ihrem Haus streichen (Game.cleanup)
 - updateGarrison(game, dt) – Ein Schritt (vor der Bewegung): Besatzer mit einem anderen Auftrag als Bereit/A…
 
-## grid.js (8.4 KB)
+## grid.js (10 KB)
+- PROP_INF – Props (Deko und Gelände, game/props.js) sperren je Bewegungsklasse: Bits im Fel…
+- PROP_VEH – sperrt Radfahrzeuge
+- PROP_CRUSH – sperrt auch gepanzerte Kettenfahrzeuge (nicht überfahrbar)
+- MOVE_CLASS – Bewegungsklassen: Wegsuche und Bewegung bekommen statt des Teams einen „Mover“…
+- moverOf(u) – Mover einer Bodeneinheit: Infanterie, Radfahrzeug oder gepanzertes Kettenfahrze…
+- moverTeam(who) – Team eines Movers (negative Werte bleiben, wie sie sind)
+- moverBlock(who) – Prop-Bits, die einen Mover sperren
 - lineCells(c0, r0, c1, r1) – Zellen einer Geraden zwischen zwei Zellen (Bresenham, inklusive Endpunkte)
 - class Grid
   - constructor(cols, rows, tile)
@@ -83,8 +90,8 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - inBounds(c, r)
   - toCell(v) – Weltkoordinate -> Zellenindex (Spalte oder Zeile)
   - center(c) – Weltmitte einer Zellenkoordinate
-  - passable(c, r, team) – Begehbar für `team`: im Feld, kein Terrain, und kein Gebäude oder eigenes Tor
-  - free(c, r) – Frei für Bau: im Feld, kein Terrain, kein Gebäude
+  - passable(c, r, who) – Begehbar für `who` (Team oder Mover, siehe moverOf): im Feld, kein Terrain, kei…
+  - free(c, r) – Frei für Bau: im Feld, kein Terrain, kein sperrendes Prop, kein Gebäude
   - rasterizeObstacles(obstacles) – Markiert Zellen als Hindernis, deren Mittelpunkt im Kreis liegt
   - rasterizeRects(rects) – Markiert Zellen als Hindernis, deren Mittelpunkt im Rechteck {x,y,w,h} (Mitte,…
   - rasterizeRelief(relief, fords) – Gelände (relief.js): zu steile Hänge und Seen sind Hindernisse; Hänge kosten di…
@@ -139,17 +146,5 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - cmdDropoff(game, team, cmd) – { type: 'dropoff', ids, x, y }: Hubschrauber fliegt zum Punkt und setzt alle Pa…
 - updateLogistics(game, dt) – Logistik-Schritt: LKW-Aufträge fahren und laden, alle resupplyInterval s Nachfü…
 
-## map.js (40 KB)
+## map.js (44 KB)
 - generateMap(seed, { river = false, players = 2 }) – Erzeugt eine Karte
-- townBigBlocks() – Innenflächen der großen Blöcke der Zonenstadt in px {x0, y0, x1, y1, empty} (Te…
-
-## mapdata.js (21 KB)
-- MAX_CRATES – Versorgungskisten je Karte
-- FIELD_CROPS – Ackerarten: Weizen, junge Saat, gepflügt, Raps
-- MAX_FIELDS – Felder und Weiden je Karte
-- MAX_PAVING – Plätze und Bürgersteige je Karte (je Liste)
-- PLAZA_SIZE – Kantenlänge eines neuen Platzes (px, eine Stadtzelle)
-- WALK_W – Breite eines neuen Bürgersteigs (px)
-- MAX_FORDS – Furten je Karte (Fluss, river.js)
-- MAX_BRIDGES – Brücken je Karte
-- BRIDGE_LEN – kürzeste und längste Brücke (px)

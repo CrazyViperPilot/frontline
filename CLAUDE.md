@@ -83,7 +83,8 @@ URL-Parameter, Smoke-Varianten, Prüfsummen und Prüftests: `docs/testen.md`.
   Speichern und Laden: `docs/architektur/spielstand.md`.
 - Einen Spielwert ändern, Schlüssel finden → `docs/wo-aendern.md`, dann `docs/rezepte/wert-aendern.md`.
 - Neue Einheit anlegen → `docs/rezepte/neue-einheit.md`; ihr Aussehen (3D-Modell) → `docs/rezept-einheiten.md`.
-- Neues Militärgebäude (Baumenü des Baufahrzeugs) → `docs/rezepte/neues-gebaeude.md`.
+- Neues Militärgebäude (Baumenü) → `docs/rezepte/neues-gebaeude.md`.
+- Neuer Prop (Zaun, Mauer …) → `docs/rezepte/neuer-prop.md`.
 - Neue Zellenart der Stadt (Wohnen, Werk, Großbau) → `docs/rezepte/neue-stadtzellenart.md`.
 - Neue Ware eines Werks, Überblick über die Stadt-Ressourcen (Regel 11) → `docs/rezepte/neue-ware.md`.
 - Neue Rohware für die Einfuhr → `docs/rezepte/neue-rohware.md`.
@@ -95,4 +96,4 @@ URL-Parameter, Smoke-Varianten, Prüfsummen und Prüftests: `docs/testen.md`.
 - KI verhält sich falsch (greift zu früh an, baut zu wenig …) → `docs/rezepte/ki-verhalten.md`.
 - Test schlägt fehl, neuer Test, Browserfehler nachstellen, URL-Parameter → `docs/testen.md`.
 - CI, Deploy auf den Webspace, Secrets → `docs/betrieb.md`.
-- Änderungsverlauf (nur bei Bedarf): `docs/changelog.md`; alter Umsetzungsplan und erledigte Pläne: `docs/archiv/`.
+- Änderungsverlauf (nur bei Bedarf): `docs/changelog.md`; erledigte Pläne: `docs/archiv/`.

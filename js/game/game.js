@@ -22,6 +22,7 @@ import { updateConstruction } from './construction.js';
 import { updateTowers, ejectCrew } from './tower.js';
 import { createHouses, updateGarrison, dropOccupant } from './garrison.js';
 import { createCrates, updateCrates, updateCrateIntel } from './crates.js';
+import { createProps, updateProps } from './props.js';
 import { createScars, updateScars, updateScarIntel, addUnitWreck, addBuildingWreck, clearWrecksUnder } from './scars.js';
 import { createAnimals, updateAnimals } from './animals.js';
 import { updateFormations } from './formation.js';
@@ -136,6 +137,7 @@ export class Game {
     this.relief = reliefOf(this.map); // Höhengelände oder null (flache Karte); im Spielstand nur das Grobraster (savegame.js)
     // Raster: Hindernisse, Häuser, Bäume, steile Hänge, Seen und Flüsse (Furten passierbar), Hangkosten; im Spielstand nur der Unterschied dazu
     this.grid = terrainGrid(this.map, this.relief);
+    createProps(this); // Zustand der Props (Zäune, Mauern …): Trefferpunkte, heil/Trümmer/weg (props.js)
 
     this.time = 0;
     this.nextId = 1;
@@ -238,6 +240,7 @@ export class Game {
     }
     this.statTimer = this.statTimer || 0;
     this.fogTimers ??= [0, BALANCE.fogInterval / 2];
+    if (!this.propSt) createProps(this); // Stände vor den Props
     this.mode.restore(this); // Eroberung: Viertel-Sperre wieder ins Wegeraster hängen // Stände vor v5.93 hatten einen gemeinsamen fogTimer
     // Ruinenliste fehlt in Ständen vor v5.66: aus den eingestürzten Häusern neu aufbauen
     if (!this.ruins) this.ruins = (this.houses || []).filter((h) => h.ruined);
@@ -760,6 +763,7 @@ export class Game {
     updateTowers(this, dt);
     updateFormations(this);
     updateMovement(this, dt, OWN_DRIVERS);
+    updateProps(this); // Kettenfahrzeuge überfahren Zäune, Draht … (props.js)
     updateParadrop(this, dt); // Absetzen: C-130 im Anflug, Fallschirm-Zeiten (Paket E13 b)
     updateScramble(this); // Alarmrotte: Jets in Bereitschaft starten gegen Luftziele am Fliegerhorst (Paket „Alarmrotte“)
     updateAirstrike(this); // Luftschlag: Jets nach dem Einsatz heimschicken (Paket „Luftschlag“)

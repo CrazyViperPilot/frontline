@@ -270,6 +270,7 @@ export const UNITS = {
     hp: 350,
     speed: 60,
     radius: 12,
+    crush: true, // Kettenfahrzeug: überfährt kleine Props (Zäune, Draht, Kisten …), sie sind danach weg (js/data/props.js)
     sight: 260,
     range: 0,
     cooldown: 0,
@@ -325,6 +326,7 @@ export const UNITS = {
     hp: 600,
     speed: 46,
     radius: 13,
+    crush: true, // Kettenfahrzeug: überfährt kleine Props (Zäune, Draht, Kisten …), sie sind danach weg (js/data/props.js)
     sight: 240,
     bridgelayer: true,
     layTime: 8,
@@ -344,6 +346,7 @@ export const UNITS = {
     hp: 650,
     speed: 48,
     radius: 13,
+    crush: true, // Kettenfahrzeug: überfährt kleine Props (Zäune, Draht, Kisten …), sie sind danach weg (js/data/props.js)
     sight: 240,
     digger: true,
     weapons: [
@@ -387,6 +390,7 @@ export const UNITS = {
     hp: 450,
     speed: 85,
     radius: 12,
+    crush: true, // Kettenfahrzeug: überfährt kleine Props (Zäune, Draht, Kisten …), sie sind danach weg (js/data/props.js)
     sight: 300,
     // Granatwerfer: 60 Granaten à 10 Munition; MG: 300 Schuss à 5
     weapons: [
@@ -409,6 +413,7 @@ export const UNITS = {
     hp: 1100,
     speed: 60,
     radius: 15,
+    crush: true, // Kettenfahrzeug: überfährt kleine Props (Zäune, Draht, Kisten …), sie sind danach weg (js/data/props.js)
     sight: 320,
     // Hauptkanone: 30 Schuss à 20 Munition, 6 s Nachladezeit; MG: 300 Schuss à 5
     weapons: [
@@ -694,6 +699,7 @@ export const UNITS = {
     hp: 300,
     speed: 70,
     radius: 11,
+    crush: true, // Kettenfahrzeug: überfährt kleine Props (Zäune, Draht, Kisten …), sie sind danach weg (js/data/props.js)
     sight: 380,
     weapons: [
       { id: 'flak', name: 'Flak', range: 330, cooldown: 0.8, rounds: 30, munCost: 20, hitChance: 0.85, speedRef: 120, damage: { air: 40 } },
@@ -734,6 +740,7 @@ export const UNITS = {
     hp: 450,
     speed: 62,
     radius: 13,
+    crush: true, // Kettenfahrzeug: überfährt kleine Props (Zäune, Draht, Kisten …), sie sind danach weg (js/data/props.js)
     sight: 480,
     weapons: [
       { id: 'twin35', name: 'Zwillingskanone 35 mm', range: 420, cooldown: 0.35, rounds: 80, munCost: 8, hitChance: 0.8, speedRef: 400, targets: ['air'], damage: { inf: 8, light: 14, heavy: 2, struct: 6, air: 32, jet: 32 } },
@@ -755,6 +762,7 @@ export const UNITS = {
     hp: 500,
     speed: 50,
     radius: 14,
+    crush: true, // Kettenfahrzeug: überfährt kleine Props (Zäune, Draht, Kisten …), sie sind danach weg (js/data/props.js)
     sight: 280,
     indirect: true, // Zielsuche über die Reichweite (Sicht des Teams), nicht über die eigene Sicht
     weapons: [
@@ -777,6 +785,7 @@ export const UNITS = {
     hp: 500,
     speed: 50,
     radius: 14,
+    crush: true, // Kettenfahrzeug: überfährt kleine Props (Zäune, Draht, Kisten …), sie sind danach weg (js/data/props.js)
     sight: 280,
     indirect: true, // Zielsuche über die Reichweite (Sicht des Teams), wie die Panzerhaubitze
     weapons: [

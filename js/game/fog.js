@@ -28,6 +28,7 @@ function eyeOf(e) {
 
 // Zwischenspeicher, nicht im Spielstand (seit v5.62, Review-Paket P9):
 const scratch = new WeakMap(); // Fog → { seen: Uint32Array, tick } (Doppelte in losCells erkennen)
+const blocks = new WeakMap(); // Fog → sichtsperrende Props { h, cols, rows, tile, v } oder null (aus update, nicht im Spielstand)
 const sightCells = new WeakMap(); // Entity → { key, relief, version, cells } (Sichtfeld aus markEntity)
 
 export class Fog {
@@ -69,11 +70,13 @@ export class Fog {
    */
   losCells(relief, x, y, eye, r) {
     const { cell, cols, rows } = this;
-    const F = relief.fine;
+    const blk = blocks.get(this) ?? null; // sichtsperrende Props (Mauern; grid.propH) oder null
+    const F = relief?.fine;
     const step = RELIEF.step;
     const water = RELIEF.water;
     const lim = FINE_N - 1.000001;
     const h = (px, py) => {
+      if (!F) return 0; // flache Karte (nur Props verdecken)
       // bilinear wie relief.heightAt (nächster Punkt erzeugt Stufen, die wie Kuppen verdecken)
       const u = Math.min(lim, Math.max(0, px / step));
       const v = Math.min(lim, Math.max(0, py / step));
@@ -85,7 +88,7 @@ export class Fog {
       const z = (F[k] * (1 - fu) + F[k + 1] * fu) * (1 - fv) + (F[k + FINE_N] * (1 - fu) + F[k + FINE_N + 1] * fu) * fv;
       return z < water ? water : z;
     };
-    const h0 = relief.displayAt(x, y) + eye;
+    const h0 = (relief ? relief.displayAt(x, y) : 0) + eye;
     const out = [];
     let w = scratch.get(this);
     if (!w) scratch.set(this, (w = { seen: new Uint32Array(cols * rows), tick: 0 }));
@@ -115,6 +118,13 @@ export class Fog {
         if ((ht + SH.target - h0) / d >= maxSlope) add(px, py);
         const sg = (ht - h0) / d;
         if (d >= SH.near && sg > maxSlope) maxSlope = sg;
+        if (blk) {
+          // Mauer: verdeckt ab ihrer Zelle, auch ganz nah (die Zelle selbst bleibt sichtbar)
+          const bc = Math.floor(px / blk.tile);
+          const br = Math.floor(py / blk.tile);
+          const bh = bc >= 0 && br >= 0 && bc < blk.cols && br < blk.rows ? blk.h[br * blk.cols + bc] : 0;
+          if (bh && (ht + bh - h0) / d > maxSlope) maxSlope = (ht + bh - h0) / d;
+        }
       }
     }
     return out;
@@ -126,24 +136,25 @@ export class Fog {
    * Berechnung e.fogAt = [x, y, Sichtweite]: nach dem Laden entstehen daraus genau dieselben Zellen wie vor dem Speichern.
    */
   markEntity(relief, e, sight) {
-    if (!relief || (e.kind === 'unit' && e.def.air)) {
+    const blk = blocks.get(this) ?? null;
+    if ((!relief && !blk) || (e.kind === 'unit' && e.def.air)) {
       this.mark(e.x, e.y, sight);
       return;
     }
     const r = sightAt(relief, e.x, e.y, sight);
-    const key = `${Math.round(e.x / 8)},${Math.round(e.y / 8)},${Math.round(r)},${e.house ? 1 : 0}`;
+    const key = `${Math.round(e.x / 8)},${Math.round(e.y / 8)},${Math.round(r)},${e.house ? 1 : 0}${blk ? `,${blk.v}` : ''}`; // v: Zustand der Props (nur mit Mauern)
     const hit = sightCells.get(e);
     let cells = null;
     if (e.fogKey === key && e.fogAt) {
       if (!hit) cells = this.losCells(relief, e.fogAt[0], e.fogAt[1], eyeOf(e), e.fogAt[2]); // nach dem Laden: am gemerkten Ort
-      else if (hit.key === key && hit.relief === relief && hit.version === relief.version) cells = hit.cells;
+      else if (hit.key === key && hit.relief === relief && hit.version === relief?.version) cells = hit.cells;
     }
     if (!cells) {
       cells = this.losCells(relief, e.x, e.y, eyeOf(e), r);
       e.fogKey = key;
       e.fogAt = [e.x, e.y, r];
     }
-    if (cells !== hit?.cells) sightCells.set(e, { key, relief, version: relief.version, cells });
+    if (cells !== hit?.cells) sightCells.set(e, { key, relief, version: relief?.version, cells });
     for (const i of cells) {
       this.visible[i] = 1;
       this.explored[i] = 1;
@@ -158,6 +169,9 @@ export class Fog {
     this.visible.fill(0);
     this.version++;
     const relief = game.relief ?? null;
+    const G = game.grid;
+    // sichtsperrende Props (Mauern, game/props.js): Höhe je Rasterzelle; v ändert den Schlüssel der zwischengespeicherten Sichtfelder
+    blocks.set(this, G?.propH ? { h: G.propH, cols: G.cols, rows: G.rows, tile: G.tile, v: game.propVersion ?? 0 } : null);
     const m = weatherSight(game);
     const mu = m;
     for (const u of game.units) {

@@ -154,7 +154,7 @@ export function cellFree(game, c, col, row) {
   let ok = true;
   eachTile(game, c, col, row, (x, y) => {
     const i = game.grid.idx(x, y);
-    if (game.grid.terrain[i] || (game.grid.struct[i] && game.grid.struct[i] !== c.gridId)) ok = false;
+    if (game.grid.terrain[i] || game.grid.prop?.[i] || (game.grid.struct[i] && game.grid.struct[i] !== c.gridId)) ok = false; // Props sperren (game/props.js)
   });
   return ok;
 }

@@ -47,6 +47,9 @@ export const KEYS = [
     `Z Sandsäcke, N MG-Nest, W Stacheldraht · Ein besetztes Haus zählt in der Konfliktzone zusätzlich zu den Besatzern wie 2 Soldaten (in der Hot Zone 4) · ` +
     `Besatzer sehen 25 % weiter · Infanterie an einer Ruine (bis 40 px vom Rand) nimmt nur 70 % Schaden · Besatzer schießen nur zur Straßenseite des Hauses (Fenster zur Straße, ` +
     `Seiten ohne Straße in der Nähe sind blind)`],
+  ['Zäune und Mauern', 'Halten Infanterie und Radfahrzeuge auf; Kettenfahrzeuge (Panzer, Schützenpanzer …) walzen Zäune und Bruchsteinmauern nieder, Betonmauern nicht · ' +
+    'Infanterie dahinter nimmt weniger Schaden, wenn die Mauer zwischen ihr und dem Schützen liegt (Mörser und Luftangriffe ausgenommen) · Betonmauern verdecken die Sicht · ' +
+    'Beschuss und Granaten zerstören sie, Mauern hinterlassen Trümmer · offene Tore lassen alle durch'],
   ['Rechtsklick auf FOB', 'LKW: leer laden, beladen entladen · Baufahrzeug: an Baustelle helfen, beschädigtes Gebäude reparieren'],
   ['Rechtsklick auf Werk', 'LKW holen die Ware aus dem Ausgangslager des Werks (BM-Werk, Munitionswerk, Raffinerie), bis es leer ist oder der LKW voll · ' +
     'Solange ein LKW dorthin unterwegs ist, legt das Werk die Hälfte seines Ausstoßes ins Ausgangslager (bis 400)'],

@@ -6,6 +6,7 @@ import { damageHouse, houseFire, ruinCoverMul, houseCanFire } from './garrison.j
 import { addCrater } from './scars.js';
 import { auraCooldown } from './commander.js';
 import { weatherSight } from './weather.js';
+import { coverHit, splashProps } from './props.js';
 import { armorMul, modOf, rangeMul, sightMul, dealtMul, smokeMul, hasUnlock } from './research.js';
 
 /** Forschung „Autonome Türme“: Dachaufbauten feuern ohne Besatzung. */
@@ -208,7 +209,7 @@ function fireDirect(game, s, t, w) {
     game.addEffect('tracer', s.x, s.y, s.team, t.x, t.y, w.snd ?? 'base');
   }
   s.cooldown = w.cooldown * modOf(game, s, 'rof');
-  hit(game, t, dmg, 1, s.team);
+  hit(game, t, dmg * coverHit(game, t, s.x, s.y, w.damage), 1, s.team); // Zäune, Mauern: Deckung (props.js)
 }
 
 /**
@@ -276,7 +277,8 @@ function fireWeapon(game, u, w, t) {
   if (u.def.stealth || u.def.stillCamo) u.revealedUntil = game.time + BALANCE.stealth.revealTime; // ein Schuss verrät die Stellung
   // Flak und SAM: Treffer nur mit Wurf (Trefferchance, siehe unitHitChance); daneben geht der Schuss, der Schaden bleibt aus
   if (w.spec.hitChance !== undefined && !(game.rng.next() < unitHitChance(u, t, w.spec) * modOf(game, u, 'acc') * modOf(game, t, 'evade') * jamFactor(game, t, w.spec))) return; // Forschung: Zünder, Radar; Flares, Störsender des Ziels
-  const dmg = shotDamage(w.spec, u, t, heightMult(game, u, t)) * dealtMul(game, u, t);
+  let dmg = shotDamage(w.spec, u, t, heightMult(game, u, t)) * dealtMul(game, u, t);
+  if (!u.def.air) dmg *= coverHit(game, t, u.x, u.y, w.spec.damage); // Deckung hinter Zäunen und Mauern (props.js); aus der Luft keine
   hit(game, t, dmg, w.spec.occupantMul ?? 1, u.team);
   if (w.spec.splash) flameSplash(game, u, t, w.spec.splash, dmg);
 }
@@ -475,6 +477,7 @@ export function impact(game, p) {
     hit(game, e, dmg, 1, p.team);
   };
   for (const list of [game.units, game.buildings]) for (const e of list) splash(e);
+  splashProps(game, p.tx, p.ty, R, p.damage, p.mul ?? 1); // Zäune, Mauern … (props.js)
   forEnemyCity(game, p.team, p.tx, p.ty, R, splash); // Gebäude der gegnerischen Stadt
 }
 

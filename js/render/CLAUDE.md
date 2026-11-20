@@ -20,6 +20,7 @@ Gemalte Bilder laufen über `spritecache.js`, Bauteile aus `isokit.js`. Ebenen d
 - `landmarks.js`, `mappreview.js` – große Fabrikhalle, Strommast und Leitungen fester Karten; Kartenvorschau fürs Startmenü. `pylonNet`, `drawMapPreview`
 - `paving.js` – Pflaster der Karte: graue Plätze und Bürgersteige (nur Boden). `drawPaving`, `drawPlaza`, `drawWalk`
 - `maptown.js`, `props.js`, `stronghold.js` – Kartenstadt, Kleinkram (Autos, Bänke, Kisten, Ballen), Besatzungsfahnen und Ausbauten
+- `mapprops.js`, `fences.js` – Props der Karte: Aussehen, Iso/2D, Schatten in Lichtrichtung; Kacheln der Zäune und Mauern. `propLooks`, `drawPropIso`, `fenceModel`
 - `nature.js` – Bäume, Büsche, Felsen, Tiere. `drawTreeIso`, `drawRockIso`, `forestKind`
 - `ground.js`, `reliefimg.js`, `terrain.js` – WebGL-Boden samt Nebel, Geländebild, Kartenbild. `getGround`, `buildTerrain`
 - `ways.js`, `fields.js` – Feldwege, Gleise, Straßenmuster; Äcker und Weiden. `drawWays`, `buildFields`, `fieldBales`

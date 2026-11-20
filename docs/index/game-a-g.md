@@ -124,7 +124,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - fmtFlow(v)
 - resourceFlow(game, team, rates) – Graph der Flussanzeige für `team` (null ohne Stadt)
 
-## fog.js (8.5 KB)
+## fog.js (9.6 KB)
 - sightAt(relief, x, y, sight) – Sichtweite mit Weitsicht von oben: + (Höhe − base) / per, höchstens + max.
 - class Fog
   - constructor(width, height, cell)

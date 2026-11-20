@@ -193,6 +193,40 @@
   Danach zählt, was es gesehen hat: Sieht es eine Stelle ohne Kiste, verschwindet das Quadrat; eine Kiste am Boden in Sicht wird vermerkt.
   Auf der Karte erscheinen Kisten am Boden nur in erkundeten Zellen (schimmernd), getragene auf dem Rücken des Trägers.
 
+### Zäune und Mauern
+
+Props der Karte: Kacheln von je einer Rasterzelle (32 px), die sich mit Nachbarn zu Gerade, Ecke, T-Stück, Kreuz und Ende verbinden.
+Werte je Art in `js/data/props.js` (Tabelle unten), Regeln in `js/game/props.js`.
+
+| Art | hält auf | Kette walzt nieder | Deckung Inf. / Fz. | verdeckt Sicht | Treffer­punkte | danach |
+|---|---|---|---|---|---|---|
+| Holzzaun | alle | ja | 15 % / – | nein | 60 | weg |
+| Metallzaun (Sockel, Gitter) | alle | ja | 30 % / – | nein | 120 | Trümmer: Sockelrest, 10 % Deckung |
+| Maschendraht mit Stacheldraht | alle | ja | – | nein | 50 | weg |
+| Betonmauer | alle | nein | 60 % / 30 % | ja | 600 | Schuttwall: hält Radfahrzeuge auf, 35 % Deckung |
+| Bruchsteinmauer | alle | ja | 50 % / 15 % | nein | 300 | Trümmer: 25 % Deckung |
+
+- **Bewegung:** Infanterie, Radfahrzeuge und Kettenfahrzeuge (`crush` in `units.js`: Kampfpanzer, Schützenpanzer, Bergepanzer,
+  Flakpanzer, Gepard, Panzerhaubitze, Raketenwerfer, Bagger, Brückenleger) suchen getrennte Wege. Ein Kettenfahrzeug fährt durch
+  überfahrbare Kacheln, die Kachel ist danach weg (die Lücke ist für alle frei). Luftfahrzeuge kümmern sich nicht darum.
+  Bauplätze, Stadtzellen und Startformationen meiden jede Kachel.
+- **Tore:** Eine gerade Kachel kann ein Tor sein: zu (wie die Kachel) oder offen (hält niemanden auf, keine Deckung).
+- **Deckung:** Direktfeuer auf eine Einheit, die höchstens 24 px neben einer Kachel steht, wobei die Kachel zwischen ihr und dem
+  Schützen liegt (Winkel höchstens 63°), macht entsprechend weniger Schaden; die Kachel nimmt die Hälfte des abgefangenen Schadens
+  (gegen ihre Panzerklasse: Holz und Draht „leicht“, Mauern „Bauwerk“). Steilfeuer, Granaten und Angriffe aus der Luft kennen keine Deckung.
+- **Sicht:** Betonmauern (Höhe 26) verdecken im Nebel, was dahinter steht, für Infanterie (Augen 16) und Fahrzeuge (20); Gebäude
+  und Besatzer (30) sehen darüber. Auch auf flachen Karten.
+- **Zerstörung:** Granaten, Raketen und Bomben treffen Kacheln im Umkreis wie Gebäude (Splash). Ohne Trefferpunkte wird die Kachel
+  zu Trümmern (Werte oben) oder ist weg. Spielstände speichern den Zustand.
+- **Editor:** Werkzeug „Zaun, Mauer“ (Gruppe Deko): rechts die Art wählen, tippen setzt eine Kachel, ziehen eine Linie mit höchstens
+  einer Ecke. Mit „Wählen“: Tor (keins, zu, offen), Drehen (einzelne Kachel), Art wechseln. Höchstens 6000 Kacheln je Karte.
+- **Zufallskarten:** Mit eigenem Zufall (die übrige Karte eines Seeds bleibt gleich) bekommen 30 % der geraden Äcker an einer Seite
+  ein Stück von 4 bis 9 Kacheln (Bruchsteinmauer, Holzzaun oder Maschendraht, lange Zäune mit offenem Tor), punktsymmetrisch, abseits
+  von Straßen, Feldwegen, Bauland, Zone, Kisten und Brückenzufahrten. Weiden haben schon ihren gemalten Koppelzaun. Sperrt das die
+  Verbindung der Startpunkte, entfallen die Props. Im Mittel rund 27 Kacheln je Karte.
+- **Bild:** Gleicher Painter und gleiches Licht wie Einheiten und Gebäude, Schatten scharf nach links unten (2D nach rechts unten),
+  Schnee auf den Oberkanten im Winter, Farbe je Gebiet, Einzelheiten je Kachel. Vorschau: `node tools/propspreview.mjs`.
+
 ### Hot Zone
 - Kleiner Kreis (Radius 300 px) **innerhalb** der Konfliktzone, orange; auch auf der Minimap.
   In der Eroberung wandert er im eingeschriebenen Kreis des Quadrats.

@@ -29,12 +29,13 @@ const ALLOWED = {
   'game/formation.js': ['4', '3'], // Rangfolge der Einheitenarten
   'game/game.js': ['180', '1e9', '1e9'], // Grad in Bogenmaß, „lange her“
   'game/garrison.js': ['4', '1e9'], // Geometrie, „lange her“
-  'game/grid.js': ['255', '255'], // Byte-Grenze
+  'game/props.js': ['4'], // Achtel einer Drehung (rot, π / 4)
+  'game/grid.js': ['255', '255', '3', '4'], // Byte-Grenze; Bewegungsklasse 3 (Kette) und 4 Bits fürs Team im Mover (moverOf)
   'game/hotzone.js': ['1e-6'], // Rechengenauigkeit
   'game/landscape.js': ['3', '512', '256', '256', '255', '256', '256', '255', '255', '3', '3', '2654435761', '90', '3', '3', '5', '3', '5', '3', '118', '372', '1.001', '1.001', '2246822519', '180', '1e-9', '1e-9', '118', '8', '8', '8', '10'], // Rauschen (Permutation, Glättung), Seed-Mischung, Abtastschritte, Speicherbereich der Höhen, Spiegelphasen der Seen
   'game/logistics.js': ['1e-9'], // Rechengenauigkeit
-  'game/map.js': ['8', '1.5', '1.5', '1.5', '40', '40', '2654435761', '30', '100', '100', '3', '3'], // Abtastschritte, Blockgeometrie, Seed-Mischung, Rundung, Viertelseiten
-  'game/mapdata.js': ['24', '300', '4', '32', '24', '24', '24', '96', '900', '200', '4000', '60', '400', '40', '20', '400', '64', '20', '200', '90', '24', '600', '70', '24', '600', '1e-3', '40', '400', '9', '6', '40', '300', '60', '900', '220', '60', '900', '1e-3', '6', '40', '2000', '64', '20', '16', '600', '16', '600', '1e-3', '8', '64'], // Ladegrenzen und Vorgaben für Editor-Karten (Prüfung, keine Spielwerte); Startpunkte, Leitungen, Namenslänge (feste Karten); Pflaster: Plätze und Bürgersteige
+  'game/map.js': ['8', '1.5', '1.5', '1.5', '40', '40', '2654435761', '30', '100', '100', '3', '3', '4'], // Abtastschritte, Blockgeometrie, Seed-Mischung, Rundung, Viertelseiten, vier Feldseiten (Zäune)
+  'game/mapdata.js': ['24', '300', '4', '32', '24', '24', '24', '96', '900', '200', '4000', '60', '400', '40', '20', '400', '64', '20', '200', '90', '24', '600', '70', '24', '600', '1e-3', '40', '400', '9', '6', '40', '300', '60', '900', '220', '60', '900', '1e-3', '6', '40', '2000', '64', '20', '16', '600', '16', '600', '1e-3', '8', '64', '6000', '7'], // Ladegrenzen und Vorgaben für Editor-Karten (Prüfung, keine Spielwerte); Startpunkte, Leitungen, Namenslänge (feste Karten); Pflaster: Plätze und Bürgersteige
   'game/movement.js': ['128', '2.39996', '1e-6', '1e-6', '100003', '1e-9', '1e-9', '1e-6', '1e-9', '1e-6', '37', '91', '360', '180', '256'], // Hash, goldener Winkel, Rechengenauigkeit
   'game/pathfinding.js': ['1024', '20000', '4', '4', '16777619', '4', '16777619', '4', '8', '4', '4', '1e-9'], // Speichergrößen, FNV-Hash, 4/8 Nachbarn
   'game/relief.js': ['64', '128', '9', '9', '16', '3', '3', '3', '3', '1.000001', '1.000001', '16', '4', '255'], // Speicherformat, Interpolation, Rechengenauigkeit, Abtastschritt

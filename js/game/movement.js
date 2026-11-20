@@ -1,6 +1,7 @@
 // Bewegung: Wegfolgen, Verfolgung, Fahrhelfer für LKW/Bauer und Trennung (docs/archiv/verlauf.md §5, §11). Kein DOM.
 import { BALANCE } from '../data/balance.js';
 import { lineOfSight } from './pathfinding.js';
+import { moverOf } from './grid.js';
 import { planUnitPath, pathPending, planPending } from './pathplan.js';
 import { inRange, resolveTarget, isFoe, canAttack } from './entities.js';
 import { weatherSpeed } from './weather.js';
@@ -40,7 +41,7 @@ export function exitHouse(game, u, tx = null, ty = null) {
   const wall = Math.min(Math.abs(c) > 1e-6 ? h.pw / 2 / Math.abs(c) : Infinity, Math.abs(s) > 1e-6 ? h.ph / 2 / Math.abs(s) : Infinity);
   const ox = h.x + c * (wall + M.exitGap);
   const oy = h.y + s * (wall + M.exitGap);
-  const p = nearestPassable(game.grid, ox, oy, u.team) || { x: ox, y: oy };
+  const p = nearestPassable(game.grid, ox, oy, moverOf(u)) || { x: ox, y: oy };
   u.x = p.x;
   u.y = p.y;
   u.anchorX = p.x;
@@ -79,7 +80,7 @@ export function footDist(x, y, b) {
   return Math.hypot(dx, dy);
 }
 
-/** Nächste passierbare Zellmitte für `team` (Ringsuche). null, wenn keine gefunden. */
+/** Nächste passierbare Zellmitte für `team` (oder Mover, grid.moverOf; Ringsuche). null, wenn keine gefunden. */
 export function nearestPassable(grid, x, y, team) {
   const c0 = grid.toCell(x);
   const r0 = grid.toCell(y);
@@ -134,7 +135,7 @@ export function nearby(hash, x, y, r, cell = HASH_CELL) {
 
 /** Verschiebt nur, wenn die Zielzelle für das Team passierbar ist. */
 function tryMove(grid, u, x, y) {
-  if (grid.passable(grid.toCell(x), grid.toCell(y), u.team)) {
+  if (grid.passable(grid.toCell(x), grid.toCell(y), moverOf(u))) {
     u.x = x;
     u.y = y;
     return true;
@@ -211,7 +212,7 @@ function followPath(game, u, dt) {
   }
   while (budget > 1e-9 && u.pathIndex < u.path.length) {
     const wp = u.path[u.pathIndex];
-    if (!grid.passable(grid.toCell(wp.x), grid.toCell(wp.y), u.team)) return false;
+    if (!grid.passable(grid.toCell(wp.x), grid.toCell(wp.y), moverOf(u))) return false;
     const final = u.pathIndex === u.path.length - 1;
     const d = dist(wp.x, wp.y, u.x, u.y);
     if (d < (final ? FINAL_ARRIVE : ARRIVE)) {
@@ -221,7 +222,7 @@ function followPath(game, u, dt) {
     // Ecke abkürzen: drängeln sich viele Einheiten um denselben Eckpunkt, erreicht ihn sonst keine genau
     if (!final && d < CORNER) {
       const nx = u.path[u.pathIndex + 1];
-      if (lineOfSight(grid, u.x, u.y, nx.x, nx.y, u.team)) {
+      if (lineOfSight(grid, u.x, u.y, nx.x, nx.y, moverOf(u))) {
         u.pathIndex++;
         continue;
       }
@@ -376,8 +377,8 @@ export function separate(game) {
 
   // Einheiten in unpassierbaren Zellen (z. B. durch neue Gebäude) zur nächsten freien Zelle schieben
   for (const u of list) {
-    if (!grid.passable(grid.toCell(u.x), grid.toCell(u.y), u.team)) {
-      const p = nearestPassable(grid, u.x, u.y, u.team);
+    if (!grid.passable(grid.toCell(u.x), grid.toCell(u.y), moverOf(u))) {
+      const p = nearestPassable(grid, u.x, u.y, moverOf(u));
       if (p) {
         u.x = p.x;
         u.y = p.y;

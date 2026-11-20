@@ -8,6 +8,7 @@ import { setRelief, RELIEF } from './relief.js';
 import { buildLandscape, groundOk, countRoutes, RIVER_SIZE } from './landscape.js';
 import { openBridges } from './river.js';
 import { zoneDist } from './zonegeo.js';
+import { rasterizeProps, GATE } from './props.js';
 
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;
@@ -109,6 +110,12 @@ function tryBuild(seed, river = false) {
   const crates = placeCrates(rng, grid);
   // 4. Äcker, Weiden und Feldwege mit eigenem Zufall (nur Boden): auch die Kisten bleiben je Seed, wo sie waren
   placeFarms(seed, town, outposts.buildings, obstacles, trees, relief);
+  // 5. Zäune und Mauern an Feldern, ebenfalls mit eigenem Zufall (MAPGEN.props); sperren sie die Verbindung, entfallen sie
+  const props = placeProps(seed, town, grid, crates, cleared);
+  if (props.length) {
+    rasterizeProps(grid, props);
+    if (!isConnected(grid)) props.length = 0;
+  }
 
   const map = {
     width: W,
@@ -120,6 +127,7 @@ function tryBuild(seed, river = false) {
     spawns: SPAWNS.map((s) => ({ x: s.x, y: s.y })),
     zone: { x: CX, y: CY, r: ZONE_R },
     crates,
+    ...(props.length ? { props } : {}),
     ...(river ? { fords, bridges } : {}),
   };
   setRelief(map, relief);
@@ -863,4 +871,65 @@ function placeFarms(seed, town, outpostBuildings, obstacles, trees, relief) {
 /** Innenflächen der großen Blöcke der Zonenstadt in px {x0, y0, x1, y1, empty} (Tests, seit v5.16). */
 export function townBigBlocks() {
   return BIG_BLOCKS.map((g) => ({ ...bigRect(g), empty: g.empty }));
+}
+
+const PG = MAPGEN.props;
+
+/** Kumulierte Auswahl [[Wert, Schwelle] …] mit einer Zufallszahl 0 … 1. */
+const pick = (table, u) => table.find(([, t]) => u <= t)?.[0] ?? table[table.length - 1][0];
+
+/**
+ * Zäune und Mauern der Zufallskarte (MAPGEN.props): an einer Seite einiger gerader Äcker ein Stück Kacheln, in der
+ * Rasterzelle direkt außerhalb des Feldrands, nur auf freiem Boden (grid), abseits von Straßen, Feldwegen, Startpunkten, Zone,
+ * Kisten und Brückenzufahrten. Felder liegen paarweise (Original, Spiegelbild); jedes Stück wird punktsymmetrisch gespiegelt.
+ */
+function placeProps(seed, town, grid, crates, cleared) {
+  const rng = makeRng(seed + PG.salt);
+  const props = [];
+  const taken = new Set();
+  const roads = town.roads;
+  const free = (x, y) => {
+    const c = grid.toCell(x);
+    const r = grid.toCell(y);
+    if (!grid.passable(c, r, 0) || !grid.passable(grid.toCell(W - x), grid.toCell(H - y), 0)) return false;
+    if (taken.has(`${c},${r}`)) return false;
+    if (zd(x, y) < ZONE_R || inRail(y, TILE) || cleared(x, y, TILE)) return false;
+    if (SPAWNS.some((s) => dist(x, y, s.x, s.y) < PG.spawnGap || dist(W - x, H - y, s.x, s.y) < PG.spawnGap)) return false;
+    if (crates.some((k) => dist(x, y, k.x, k.y) < PG.crateGap)) return false;
+    return !roads.some((rd) => segDist(x, y, rd.x1, rd.y1, rd.x2, rd.y2).d < rd.w / 2 + PG.roadGap + TILE / 2);
+  };
+  for (let i = 0; i < town.fields.length; i += 2) {
+    const f = town.fields[i];
+    const roll = rng.next();
+    const side = Math.floor(rng.next() * 4);
+    const n = Math.round(rng.range(...PG.len));
+    const u0 = rng.next();
+    const kind = pick(PG.kinds, rng.next());
+    if (f.angle || f.kind === 'pasture' || roll > PG.field) continue; // Weiden haben ihren gemalten Koppelzaun
+    // Linie in der Zelle direkt vor der Seite side (0 oben, 1 rechts, 2 unten, 3 links)
+    const along = side % 2 === 0;
+    const len = Math.floor((along ? f.w : f.h) / TILE);
+    if (len < PG.minLen) continue;
+    const start = Math.floor(u0 * Math.max(0, len - n));
+    const fx0 = f.x - f.w / 2;
+    const fy0 = f.y - f.h / 2;
+    const cells = [];
+    for (let k = start; k < Math.min(len, start + n); k++) {
+      const x = along ? grid.toCell(fx0 + (k + 0.5) * TILE) : grid.toCell(side === 1 ? f.x + f.w / 2 + TILE / 2 : fx0 - TILE / 2);
+      const y = along ? grid.toCell(side === 2 ? f.y + f.h / 2 + TILE / 2 : fy0 - TILE / 2) : grid.toCell(fy0 + (k + 0.5) * TILE);
+      const px = (x + 0.5) * TILE;
+      const py = (y + 0.5) * TILE;
+      if (!free(px, py)) break; // nur der zusammenhängende Anfang
+      cells.push({ x: px, y: py });
+    }
+    if (cells.length < PG.minLen) continue;
+    const gateAt = kind !== 'wall_stone' && cells.length >= PG.gateMin ? cells.length >> 1 : -1;
+    cells.forEach((p, k) => {
+      const o = { kind, x: p.x, y: p.y, ...(k === gateAt ? { gate: GATE.open } : {}) };
+      props.push(o, { ...o, x: W - p.x, y: H - p.y });
+      taken.add(`${grid.toCell(p.x)},${grid.toCell(p.y)}`);
+      taken.add(`${grid.toCell(W - p.x)},${grid.toCell(H - p.y)}`);
+    });
+  }
+  return props;
 }

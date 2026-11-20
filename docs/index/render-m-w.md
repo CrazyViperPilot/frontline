@@ -1,6 +1,16 @@
-# Symbol-Index render (Teil 3 von 4, minimap.js bis works.js)
+# Symbol-Index render (Teil 3 von 4, marks.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
+
+## marks.js (Fortsetzung)
+- drawArrowHead(ctx, x, y, ang, s, color, px) – Pfeilspitze am Boden: Spitze bei (x, y) in Richtung ang, Länge s; Füllung mit d…
+- drawFootRing(ctx, x, y, r, color, px) – Ring am Boden um einen Punkt (Anfang einer Route, Fuß des Sammelpunkts): dunkle…
+- drawRallyFlag(ctx, x, y, f) – Sammelpunkt-Fahne (einmal gemalt, Bildschirmpixel): Mast mit Knauf und ein gold…
+
+## milbuild.js (48 KB)
+- setMilWalls(list) – Mauern und Tore merken (je Bild, für die Verbindungen zu den Nachbarn)
+- drawMilIso(ctx, cam, b, color) – Iso-Bild eines Militärgebäudes (Ankerpunkt = Mitte des Grundrisses)
+- drawMilTop(ctx, b, color, zoom) – 2D von oben (Kamera-Transformation gesetzt, Weltkoordinaten)
 
 ## minimap.js (11 KB)
 - class Minimap
@@ -160,9 +170,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - WORKS_KINDS
 - WORKS_GROUND – Boden unter dem fertigen Werk (sichtbar am Rand des Grundstücks)
 - shadowRound(g, u, v, r, h, a) – Schatten eines runden Bauteils nach links unten (wie shadow() für Quader, nach…
-- gate(g, face, plane, a, w, h, col) – Rolltor mit Rahmen und Lamellen in einer Wand (Mitte a, Breite w, Höhe h)
-- strip(g, face, plane, a0, a1, h0, h1, step, glow) – Durchgehendes Fensterband mit Pfosten (a0…a1, Höhe h0…h1); glow = warm beleucht…
-- walls(g, u0, u1, v0, v1, H, wall, o) – Wände einer Halle mit Schatten und Sockel (o.ribs: Wellblech, o.band: Band unte…
-- tank(g, u, v, r, H, o) – Lagertank: Mantel mit Nähten, Band in Teamfarbe, Treppe außen, Kegeldach oder (…
-- bund(g, u0, u1, v0, v1, part, h) – Auffangwanne (niedrige Betonmauer) um [u0,u1]×[v0,v1]: part 'back' hintere Seit…
-- pipe(g, pts, d, col) – Rohr als Linienzug durch Punkte [u, v, h] mit Glanzlinie (d = Durchmesser)

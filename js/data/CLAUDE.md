@@ -8,6 +8,7 @@ Nach jeder Änderung `npm run docs` und `npm run test:quick`; PRD-Text und Hilfe
 - `buildings.js` – Gebäude (Größe, HP, Kosten, Bauzeit, Waffe, Flugabwehr, Taste im Baumenü). `BUILDINGS`
 - `research.js` – Forschungsbaum: Stufen, Äste, Preise, Zeiten, Wirkung je Einheitengruppe. `RESEARCH`
 - `ai.js` – Armee-KI-Werte (Wellen, Späher, Expansion, Kisten, Eroberung `CQ_*`), eine Konstante je Zeile. `MAX_PLACE`, `THREAT_RANGE`, `RESERVE`
+- `props.js` – Props der Karte (Zäune, Mauern …): je Art Sperren, Überfahren, Deckung, Sicht, Trefferpunkte, Trümmer. `PROPS`
 - `mapgen.js` – Kartengenerator (Hügel, Seen, Fluss, Stadt, Häuser, Felder, Kisten-Abstände). `MAPGEN`
 - `maps/index.js`, `maps/east-europe-railway.js` – feste Karten (Startmenü „Feste Karten“): Register `FIXED_MAPS`, je Karte eine Datei (erzeugt von `tools/maps/`). `FIXED_MAPS`
 - `city.js` – Stadt: Gebiet, Einwohner, Wachstum, Transport, Markt, Fliegerhorst, Ressourcenkette, Stadt-KI. `CITY` (`CITY.chain`, `CITY.ai`)

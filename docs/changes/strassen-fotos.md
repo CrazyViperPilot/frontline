@@ -1,0 +1,1 @@
+**Straßen als Foto** (stadt-aussehen §„Auf der Karte“, nur Bild): Asphalt und Gehwegplatten der Stadtstraßen und Brücken sind jetzt Fotos (CC0, `textures/`), je Jahreszeit umgefärbt; Herbst mit Laub, Winter mit Schneeflecken, Salz und Reif.

@@ -23,9 +23,9 @@ Gemalte Bilder laufen über `spritecache.js`, Bauteile aus `isokit.js`. Ebenen d
 - `mapprops.js`, `fences.js`, `milprops.js`, `indprops.js`, `refprops.js`, `civprops.js` – Props: Aussehen, Schatten; Zäune, Militär, Industrie, Raffinerie, Zivil. `propLooks`
 - `nature.js` – Bäume, Büsche, Felsen, Tiere. `drawTreeIso`, `drawRockIso`, `forestKind`
 - `ground.js`, `reliefimg.js`, `terrain.js` – WebGL-Boden samt Nebel, Geländebild, Kartenbild. `getGround`, `buildTerrain`
-- `ways.js`, `fields.js` – Feldwege, Gleise, Straßenmuster; Äcker und Weiden. `drawWays`, `buildFields`, `fieldBales`
+- `ways.js`, `fields.js` – Feldwege, Gleise, Straßenmuster (Fotos `textures/`); Äcker, Weiden. `drawWays`, `buildFields`, `fieldBales`
 - `bridge.js`, `season.js` – Brücken und Furtstangen; Jahreszeitenfarben. `drawBridgeIso`, `seasonal`
-- `mood.js`, `weatherfx.js` – Tageslicht (nur Optik), Regen, Schnee, Nebelbänke. `drawMood`, `drawWeather`
+- `mood.js`, `weatherfx.js` – Tageslicht, Regen, Schnee, Nebelbänke. `drawMood`, `drawWeather`
 - `minimap.js` – Minimap. `Minimap`
 
 ## Besonderheiten

@@ -1,6 +1,7 @@
 // Offline-Liste (seit v5.55, Review-Paket P2; CLAUDE.md Regel 6): jede Datei, die der Browser lädt, steht in sw.js unter ASSETS.
 // Geladen = von index.html und editor.html verlinkt (Skript, Stylesheet, Manifest, Icon), Icons im Manifest und jedes Modul,
-// das von js/main.js bzw. js/editor/editor.js aus über `import`/`export … from`/`import()` erreichbar ist.
+// das von js/main.js bzw. js/editor/editor.js aus über `import`/`export … from`/`import()` erreichbar ist, und jede Datei, die ein
+// solches Modul über `new URL('…', import.meta.url)` lädt (Fotos der Straßen).
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
@@ -17,7 +18,8 @@ function assets() {
   return [...block.matchAll(/'([^']+)'/g)].map((m) => m[1].replace(/^\.\//, '')).filter(Boolean);
 }
 
-/** Alle Module, die von den Einstiegen aus erreichbar sind (relative Pfade). */
+/** Alle Module, die von den Einstiegen aus erreichbar sind (relative Pfade), samt der Dateien aus `new URL(…, import.meta.url)`. */
+const files = new Set();
 function modules(entries) {
   const out = new Set();
   const todo = [...entries];
@@ -27,6 +29,11 @@ function modules(entries) {
     out.add(f);
     const src = read(f);
     const specs = [...src.matchAll(/(?:import|export)\s[^'"`;]*?from\s*['"]([^'"]+)['"]|import\s*\(\s*['"]([^'"]+)['"]\s*\)|import\s+['"]([^'"]+)['"]/g)];
+    for (const m of src.matchAll(/new URL\(\s*['"]([^'"]+)['"]\s*,\s*import\.meta\.url\s*\)/g)) {
+      const target = rel(normalize(join(ROOT, dirname(f), m[1])));
+      assert.ok(existsSync(join(ROOT, target)), `${f}: Datei '${m[1]}' fehlt`);
+      if (!m[1].endsWith('/')) files.add(target); // Bilder u. Ä., die ein Modul selbst lädt (Ordner wie saves.js' Basis nicht)
+    }
     for (const m of specs) {
       const spec = m[1] ?? m[2] ?? m[3];
       assert.ok(spec.startsWith('.'), `${f}: Import '${spec}' nicht relativ (Regel 5)`);
@@ -54,6 +61,7 @@ test('sw.js: jede vom Browser geladene Datei steht in ASSETS, jeder Eintrag exis
   for (const icon of JSON.parse(read('manifest.json')).icons) loaded.add(icon.src);
   assert.ok(entries.includes('js/main.js') && entries.includes('js/editor/editor.js'), `Einstiege: ${entries.join(', ')}`);
   for (const m of modules(entries)) loaded.add(m);
+  for (const f of files) loaded.add(f);
   const missing = [...loaded].filter((f) => !list.includes(f));
   assert.deepEqual(missing, [], 'fehlen in sw.js ASSETS (offline nicht verfügbar)');
 });

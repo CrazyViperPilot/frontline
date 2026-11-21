@@ -172,11 +172,118 @@ function paintTile(cols, seed, stones, size, leaves) {
 }
 
 /** Asphalt: feine Körnung mit hellem Splitt, geflickte Stellen, Haarrisse. */
-function paintAsphalt(base, season) {
+// ---------- Fotos für Straßen (seit Straßentexturen) ----------
+
+// Asphalt und Gehwegplatten als Foto (CC0 von ambientCG, Herkunft in textures/CLAUDE.md). Bis die Bilder geladen sind oder ohne
+// Browser gelten die gemalten Kacheln; danach werden die Muster einmal neu erzeugt.
+const PHOTO = { asphalt: null, pavers: null };
+const PHOTO_URL = typeof Image === 'undefined' ? null : {
+  asphalt: new URL('../../textures/asphalt.jpg', import.meta.url),
+  pavers: new URL('../../textures/pavers.jpg', import.meta.url),
+};
+if (PHOTO_URL) {
+  for (const kind of Object.keys(PHOTO)) {
+    const img = new Image();
+    img.onload = () => {
+      PHOTO[kind] = img;
+      for (const k of [...patterns.keys()]) if (k.startsWith(`${kind}|`)) patterns.delete(k);
+    };
+    img.src = PHOTO_URL[kind].href;
+  }
+}
+
+/**
+ * Foto als Kachel, auf die Grundfarbe der Jahreszeit umgefärbt: nur die Helligkeitsabweichung vom Mittel bleibt (mal contrast),
+ * so passt das Foto zu den gemalten Farben und wird im Winter heller, im Herbst dunkler. null ohne Canvas.
+ */
+function photoTile(img, base, contrast) {
   const c = makeCanvas(TEX_PX, TEX_PX);
   if (!c) return null;
   const g = c.getContext('2d');
+  g.drawImage(img, 0, 0, TEX_PX, TEX_PX);
+  let d;
+  try {
+    d = g.getImageData(0, 0, TEX_PX, TEX_PX);
+  } catch {
+    return null; // ohne Lesezugriff (z. B. file://) bleibt die gemalte Kachel
+  }
+  const px = d.data;
+  const n = px.length / 4;
+  let mean = 0;
+  for (let i = 0; i < px.length; i += 4) mean += px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114;
+  mean /= n;
+  const br = parseInt(base.slice(1, 3), 16);
+  const bg = parseInt(base.slice(3, 5), 16);
+  const bb = parseInt(base.slice(5, 7), 16);
+  for (let i = 0; i < px.length; i += 4) {
+    const dv = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114 - mean) * contrast;
+    px[i] = br + dv;
+    px[i + 1] = bg + dv;
+    px[i + 2] = bb + dv;
+  }
+  g.putImageData(d, 0, 0);
+  return c;
+}
+
+/** Laub verstreut (Herbst), nahtlos. */
+function scatterLeaves(g, r, leaves, count) {
+  for (let i = 0; i < count; i++) {
+    const x = r() * TEX_PX;
+    const y = r() * TEX_PX;
+    const col = leaves[Math.floor(r() * leaves.length)];
+    const a = r() * Math.PI;
+    wrap(x, y, 4, (px, py) => {
+      g.fillStyle = col;
+      g.beginPath();
+      g.ellipse(px, py, 3, 1.5, a, 0, Math.PI * 2);
+      g.fill();
+    });
+  }
+}
+
+/** Weiche helle Flecken (festgefahrener Schnee, Reif), nahtlos. */
+function snowPatches(g, r, count, alpha) {
+  g.fillStyle = '#eef2f5';
+  for (let i = 0; i < count; i++) {
+    const x = r() * TEX_PX;
+    const y = r() * TEX_PX;
+    const w = 20 + r() * 50;
+    const h = 10 + r() * 26;
+    const a = r() * Math.PI;
+    wrap(x, y, w, (px, py) => {
+      for (let k = 0; k < 4; k++) {
+        g.globalAlpha = alpha;
+        g.beginPath();
+        g.ellipse(px, py, w * (1 - k * 0.2), h * (1 - k * 0.2), a, 0, Math.PI * 2);
+        g.fill();
+      }
+    });
+  }
+  g.globalAlpha = 1;
+}
+
+/** Asphalt: Foto (sonst gemalt mit Abrieb, Körnung, Rissen); Herbst mit etwas Laub, Winter mit Schneeflecken, Salz und Reif. */
+function paintAsphalt(base, season, leaves) {
+  const photo = PHOTO.asphalt ? photoTile(PHOTO.asphalt, base, 0.7) : null;
+  const c = photo ?? makeCanvas(TEX_PX, TEX_PX);
+  if (!c) return null;
+  const g = c.getContext('2d');
   const r = rng32(71);
+  if (photo) {
+    if (leaves) scatterLeaves(g, r, leaves, 18);
+    if (season === 'winter') snowPatches(g, r, 7, 0.09);
+  } else {
+    paintAsphaltBase(g, r, base);
+  }
+  if (season === 'winter') {
+    g.fillStyle = 'rgba(235,240,244,0.5)'; // Salzränder und Reif
+    for (let i = 0; i < 900; i++) g.fillRect(r() * TEX_PX, r() * TEX_PX, 1.4, 1.4);
+  }
+  return c;
+}
+
+/** Gemalter Asphalt ohne Foto. */
+function paintAsphaltBase(g, r, base) {
   g.fillStyle = base;
   g.fillRect(0, 0, TEX_PX, TEX_PX);
   for (let i = 0; i < 12; i++) {
@@ -218,58 +325,44 @@ function paintAsphalt(base, season) {
     }
     g.stroke();
   }
-  if (season === 'winter') {
-    g.fillStyle = 'rgba(235,240,244,0.5)'; // Salzränder und Reif
-    for (let i = 0; i < 900; i++) g.fillRect(r() * TEX_PX, r() * TEX_PX, 1.4, 1.4);
-  }
-  return c;
 }
 
-/** Gehwegplatten (4 Weltpixel), je Platte leicht anders getönt, Fugen; Winter verschneit, Herbst mit Laub. */
+/** Gehwegplatten (4 Weltpixel): Foto oder gemalt, je Platte leicht anders getönt, Fugen; Winter verschneit, Herbst mit Laub. */
 function paintPavers(base, joint, season, leaves) {
-  const c = makeCanvas(TEX_PX, TEX_PX);
+  const photo = PHOTO.pavers ? photoTile(PHOTO.pavers, base, 1.6) : null;
+  const c = photo ?? makeCanvas(TEX_PX, TEX_PX);
   if (!c) return null;
   const g = c.getContext('2d');
   const r = rng32(97);
-  g.fillStyle = joint;
-  g.fillRect(0, 0, TEX_PX, TEX_PX);
-  const n = 16;
-  const q = TEX_PX / n;
-  for (let i = 0; i < n; i++) {
-    for (let j = 0; j < n; j++) {
-      const t = (r() - 0.5) * 0.12;
-      g.fillStyle = base;
-      g.fillRect(i * q + 1, j * q + 1, q - 2, q - 2);
-      g.fillStyle = t < 0 ? `rgba(0,0,0,${-t})` : `rgba(255,255,255,${t})`;
-      g.fillRect(i * q + 1, j * q + 1, q - 2, q - 2);
-      g.fillStyle = 'rgba(255,255,255,0.1)'; // Licht von links oben
-      g.fillRect(i * q + 1, j * q + 1, q - 2, 1);
+  if (!photo) {
+    g.fillStyle = joint;
+    g.fillRect(0, 0, TEX_PX, TEX_PX);
+    const n = 16;
+    const q = TEX_PX / n;
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        const t = (r() - 0.5) * 0.12;
+        g.fillStyle = base;
+        g.fillRect(i * q + 1, j * q + 1, q - 2, q - 2);
+        g.fillStyle = t < 0 ? `rgba(0,0,0,${-t})` : `rgba(255,255,255,${t})`;
+        g.fillRect(i * q + 1, j * q + 1, q - 2, q - 2);
+        g.fillStyle = 'rgba(255,255,255,0.1)'; // Licht von links oben
+        g.fillRect(i * q + 1, j * q + 1, q - 2, 1);
+      }
+    }
+    for (let i = 0; i < 1400; i++) {
+      g.fillStyle = r() < 0.5 ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)';
+      g.fillRect(r() * TEX_PX, r() * TEX_PX, 1, 1);
     }
   }
-  for (let i = 0; i < 1400; i++) {
-    g.fillStyle = r() < 0.5 ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)';
-    g.fillRect(r() * TEX_PX, r() * TEX_PX, 1, 1);
-  }
   if (season === 'winter') {
-    g.globalAlpha = 0.55;
+    g.globalAlpha = photo ? 0.4 : 0.55; // das Foto behält etwas mehr Fugen unter dem Schnee
     g.fillStyle = '#eef2f5';
     g.fillRect(0, 0, TEX_PX, TEX_PX);
     g.globalAlpha = 1;
+    if (photo) snowPatches(g, r, 6, 0.12);
   }
-  if (leaves) {
-    for (let i = 0; i < 46; i++) {
-      const x = r() * TEX_PX;
-      const y = r() * TEX_PX;
-      const col = leaves[Math.floor(r() * leaves.length)];
-      const a = r() * Math.PI;
-      wrap(x, y, 4, (px, py) => {
-        g.fillStyle = col;
-        g.beginPath();
-        g.ellipse(px, py, 3, 1.5, a, 0, Math.PI * 2);
-        g.fill();
-      });
-    }
-  }
+  if (leaves) scatterLeaves(g, r, leaves, 46);
   return c;
 }
 
@@ -304,7 +397,7 @@ function patternOf(ctx, kind, season) {
   else if (kind === 'rut') tile = paintTile(P.rut, 23, 0.08, 1.8, null);
   else if (kind === 'gravel') tile = paintTile(P.gravel, 37, 0.5, 2.4, P.leaves);
   else if (kind === 'ballast') tile = paintTile(P.ballast, 53, 1.6, 3.2, null);
-  else if (kind === 'asphalt') tile = paintAsphalt((STREET[season] ?? STREET.summer).asphalt, season);
+  else if (kind === 'asphalt') tile = paintAsphalt((STREET[season] ?? STREET.summer).asphalt, season, P.leaves);
   else if (kind === 'pavers') tile = paintPavers((STREET[season] ?? STREET.summer).pavers, (STREET[season] ?? STREET.summer).joint, season, P.leaves);
   const pat = tile && ctx.createPattern ? ctx.createPattern(tile, 'repeat') : null;
   patterns.set(key, pat);

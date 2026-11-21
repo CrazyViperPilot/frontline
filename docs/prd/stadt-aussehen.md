@@ -62,6 +62,8 @@
 - **Auf der Karte:** Straßen, Grundstücke und Gebäude sind in 2D und isometrisch zu sehen (Wohnen als Wohnhäuser, Gewerbe als Hallen, Werke seit v5.08 als eigene 2 × 2-Anlagen; Größe nach Stufe).
   **Straßen ** sehen je nach Nachbarzellen wie Straßen aus: Asphalt mit Gehweg an den Seiten ohne Anschluss, weiße gestrichelte Mittellinie (gerade, in Kurven gebogen, in Sackgassen bis zur Mitte),
   Kurven mit runder Außenkante, T-Stücke und Kreuzungen frei mit Gehwegecken und Zebrastreifen in den Zellen davor; breite Straßenflächen (2 Zellen und mehr) bleiben ohne Linien.
+  Asphalt und Gehwegplatten (auch auf Brücken) sind **Fotos** (CC0, `textures/`), je Jahreszeit umgefärbt:
+  Herbst mit Laub, Winter heller mit Schneeflecken, Salz und Reif; bis die Bilder geladen sind, gelten gemalte Muster.
   Fertige Gebäude sind Hindernisse wie Häuser, Straßen und nur ausgewiesene Grundstücke sind begehbar.
   Steht beim Bau eine eigene oder fremde Bodeneinheit auf der Zelle, rückt sie zum nächsten freien Platz; steht ein anderes Gebäude dort, wartet die Zelle.
   Zellen unter und um jede Hauptstadt (64 px Rand, dort erscheinen neue Einheiten) und auf Bäumen, Wasser oder Häusern sind gesperrt;

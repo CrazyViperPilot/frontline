@@ -20,6 +20,8 @@ const ASSETS = [
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
+  './textures/asphalt.jpg',
+  './textures/pavers.jpg',
   './js/version.js',
   './js/main.js',
   './js/audio/sound.js',

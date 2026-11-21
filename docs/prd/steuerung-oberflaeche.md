@@ -259,7 +259,8 @@
   (Straßen, Gleise, Plätze, Felder, Parks) und Spielmarken zählen nicht; Tarnnetz und Krater dürfen über allem liegen. Zaunlinien lassen
   belegte Kacheln aus. Stapelbare Deko (Container, Paletten, Kisten, Reifen, Holz) auf ein Stück derselben Art gesetzt wird eine Lage höher.
   Ein Zugteil auf einen Zug gesetzt hängt sich an dessen Ende.
-  Gewähltes Objekt: verschieben, Größe/Breite/Höhe, drehen, Art/Farbe, Kopie (neben das Original, auf freien Platz), Löschen; Straßenenden ziehbar.
+  Gewähltes Objekt: verschieben, Größe/Breite/Höhe, drehen, Art/Farbe, Kopie (neben das Original, auf freien Platz), Löschen, **Abwählen** (wie Esc: Auswahl weg, Werkzeug „Wählen“); Straßenenden ziehbar.
+  Deko-Einzelstück: „Drehen“ im Werkzeug Deko dreht das zuletzt gesetzte Stück mit (sonst Wählen → Drehen); „Abwählen“ beendet das Setzen.
   Rückgängig/Wiederholen (60 Schritte, Strg+Z/Y), Zoom (Rad, Zwei-Finger), Verschieben (Hand, rechte Maustaste, ein Finger auf leerem Grund), Zufallskarte als Ausgangspunkt, Leer,
   Import/Export als Datei, Speichern, **Spielen**.
 - **Geländepinsel:** Gedrückt halten oder ziehen; Heben/Senken mit 150 Höhe/s in der Pinselmitte (Stärke sanft ×0,45, mittel ×1, stark ×2), Glätten gleicht an die Nachbarn an,

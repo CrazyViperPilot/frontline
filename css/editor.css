@@ -26,7 +26,7 @@ body.ed { overflow: hidden; touch-action: none; }
 .edtools button[aria-pressed="true"] { border-color: var(--accent); background: #3a3520; color: #f5e6b0; }
 .edtools .ic { width: 16px; text-align: center; flex: none; }
 .edinsp {
-  position: fixed; right: 10px; top: 66px; z-index: 2; width: 220px; padding: 10px;
+  position: fixed; right: 10px; top: 66px; z-index: 2; width: 220px; padding: 10px; max-height: calc(100vh - 106px); overflow-y: auto;
   background: #0f130fee; border: 1px solid var(--line-2); border-radius: 10px; display: grid; gap: 6px;
 }
 .edinsp h3 { margin: 0 0 2px; font-size: 14px; }

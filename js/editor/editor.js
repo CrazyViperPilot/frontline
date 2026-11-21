@@ -134,6 +134,7 @@ const st = {
   propKind: 'fence_wood', // Art für das Werkzeug „Deko“ (js/data/props.js)
   propSig: '', // Prüfsumme der Props: ändert sie sich, werden Zellindex und Aussehen neu berechnet (propSync)
   propVer: 0,
+  lastProp: null, // zuletzt gesetztes Einzelstück (Werkzeug „Deko“), „Drehen“ dreht es mit
   propRot: 0, // Drehung des nächsten Einzelstücks in Achteln (45°)
   fieldCrop: 'wheat', // Frucht für das nächste neue Feld (wheat, green, soil, rape oder pasture)
   brush: { size: 2, power: 1 }, // Indizes in BRUSH_SIZES und BRUSH_POWER
@@ -1515,6 +1516,7 @@ canvas.addEventListener('pointerdown', (e) => {
     else if (roomFor('prop', o)) {
       pushHistory();
       list.push(o);
+      st.lastProp = o; // „Drehen“ im Deko-Werkzeug dreht dieses Stück mit
       st.gesture = { type: 'propmove', o, x: w.x, y: w.y };
       updateInfo();
     }
@@ -1740,12 +1742,8 @@ window.addEventListener('keydown', (e) => {
   if (k === 'Delete' || k === 'Backspace') {
     e.preventDefault();
     deleteSelected();
-  } else if (k === 'Escape') {
-    st.sel = null;
-    setTool('select');
-    showInspector();
-    st.needDraw = true;
-  } else if (k.startsWith('Arrow')) {
+  } else if (k === 'Escape') deselect();
+  else if (k.startsWith('Arrow')) {
     e.preventDefault();
     const s = 120 * st.cam.zoom;
     panBy(k === 'ArrowLeft' ? s : k === 'ArrowRight' ? -s : 0, k === 'ArrowUp' ? s : k === 'ArrowDown' ? -s : 0);
@@ -1772,7 +1770,17 @@ function buildTools() {
   $('[data-tools]').innerHTML = html;
 }
 
+/** Auswahl aufheben und zum Werkzeug „Wählen“ (Knopf „Abwählen“, Esc): danach setzt ein Tippen nichts mehr. */
+function deselect() {
+  st.sel = null;
+  st.lastProp = null;
+  setTool('select');
+  showInspector();
+  st.needDraw = true;
+}
+
 function setTool(t) {
+  if (t !== st.tool) st.lastProp = null;
   st.tool = t;
   if (TERRAIN_TOOLS.has(t)) st.sel = null;
   if (st.map) showInspector();
@@ -1828,8 +1836,9 @@ function showInspector() {
       const btns = Object.entries(PROPS.kinds).filter(([, k]) => k.group === gk).map(([id, k]) => `<button data-p="${id}" aria-pressed="${id === st.propKind}">${k.name}</button>`);
       return `<div class="muted small">${gname}</div><div class="row wrap">${btns.join('')}</div>`;
     });
-    const turn = K.line ? '' : `<div class="row"><button data-b="prot">Drehen: ${st.propRot * 45}°</button></div>`;
-    el.innerHTML = `<h3>Deko: ${K.name}</h3>${groups.join('')}${turn}<div class="muted small">${propRulesText(K)}</div>`;
+    const turn = K.line ? '' : `<button data-b="prot">Drehen: ${st.propRot * 45}°</button>`;
+    const hint = K.line ? '' : ' „Drehen“ dreht das zuletzt gesetzte Stück und alle folgenden.';
+    el.innerHTML = `<h3>Deko: ${K.name}</h3><div class="row">${turn}<button data-b="desel">Abwählen</button></div><div class="muted small">${propRulesText(K)}${hint}</div>${groups.join('')}`;
     el.hidden = false;
     return;
   }
@@ -1913,6 +1922,7 @@ function showInspector() {
   if (s.k !== 'spawn' && s.k !== 'zone') {
     rows.push(`<div class="row"><button data-i="dup">Kopie</button><button data-i="del" class="danger">Löschen</button></div>`);
   } else if (spawnRemovable(s)) rows.push('<div class="row"><button data-i="del" class="danger">Löschen</button></div>');
+  rows.push('<div class="row"><button data-i="desel">Abwählen</button></div>');
   el.innerHTML = `<h3>${title}</h3>${rows.join('')}`;
   el.hidden = false;
 }
@@ -1932,6 +1942,7 @@ function inspectorAction(a) {
   if (!s) return;
   const o = s.o;
   if (a === 'del') return deleteSelected();
+  if (a === 'desel') return deselect();
   pushHistory();
   const before = JSON.stringify(o);
   if (s.k === 'plaza' && /^[wh][+-]$/.test(a)) {
@@ -2050,9 +2061,25 @@ $('[data-insp]').addEventListener('click', (e) => {
   }
 });
 
+/** Das zuletzt mit „Deko“ gesetzte Einzelstück auf die eingestellte Drehung bringen; passt es gedreht nicht, bleibt es stehen. */
+function turnLastProp() {
+  const o = st.lastProp;
+  if (!o || o.kind !== st.propKind || !(st.map.props ?? []).includes(o)) return;
+  const old = o.rot;
+  pushHistory();
+  if (st.propRot) o.rot = st.propRot;
+  else delete o.rot;
+  if (roomFor('prop', o)) return;
+  if (old) o.rot = old;
+  else delete o.rot;
+  st.hist.pop();
+}
+
 function brushAction(a) {
+  if (a === 'desel') return deselect();
   if (a === 'prot') {
     st.propRot = (st.propRot + (PROPS.kinds[st.propKind]?.rotStep ?? 1)) & 7; // nächstes Einzelstück um 45° (Autos 90°) weiter gedreht
+    turnLastProp();
     showInspector();
     st.needDraw = true;
     return;

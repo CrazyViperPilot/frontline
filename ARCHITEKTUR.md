@@ -226,7 +226,7 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Fluss, Brücken, Furten | `zone-gelaende` | `game/river.js` | Bild `render/bridge.js` | `river` |
 | Natur: Bäume, Büsche, Felsen | `zone-gelaende` | `render/nature.js` | `render/layers/relief.js` | `nature` |
 | Versorgungskisten | `zone-gelaende` | `game/crates.js` | KI `ai/army/logistics.js`; Bild `render/props.js` | `crates` |
-| Props: Zäune, Militär, Industrie, Zivil, Kriegsspuren (Sperren je Klasse, Deckung, Sicht) | `zone-gelaende` | `game/props.js` | Werte `data/props.js`; Bild `render/mapprops.js` u. a. | `mapprops` |
+| Props: Zäune, Militär, Industrie, Raffinerie, Zivil, Kriegsspuren (Sperren je Klasse, Deckung, Sicht) | `zone-gelaende` | `game/props.js` | Werte `data/props.js`; Bild `render/mapprops.js` u. a. | `mapprops` |
 | Feldstellungen bauen, KI gräbt sich ein | `zone-gelaende`, `ki` | `game/fieldwork.js` | KI `ai/army/cover.js`; Werte `PROPS.field`, `FIELD_*` | `fieldwork` |
 | Häuserkampf | `haeuserkampf` | `game/garrison.js` | KI `ai/army/combat.js`; Bild `render/layers/garrison.js` | `garrison`, `housefight` |
 | Festung: Gefechtsturm, Dachaufbau | `ressourcen-bau` | `game/tower.js` | KI `ai/army/build.js` | `tower`, `fortress-ai` |

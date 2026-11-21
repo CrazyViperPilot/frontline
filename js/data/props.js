@@ -33,7 +33,7 @@ export const PROPS = {
   // Splash von Granaten und Bomben (combat.impact) trifft Props mit diesem Anteil des Schadens gegen ihre Panzerklasse
   splashMul: 1,
   // Gruppen im Editor (Reihenfolge der Auswahlliste)
-  groups: { fence: 'Zäune und Mauern', mil: 'Militär', ind: 'Industrie und Logistik', civ: 'Zivil und Natur', war: 'Kriegsspuren' },
+  groups: { fence: 'Zäune und Mauern', mil: 'Militär', ind: 'Industrie und Logistik', ref: 'Raffinerie und Ölfeld', civ: 'Zivil und Natur', war: 'Kriegsspuren' },
   // Fahnen (Kontrollpunkt, Zelt, Funkmast): in der Eroberung zeigt eine Fahne die Farbe des Besitzers der nächsten Flagge, wenn sie
   // höchstens flagReach px von ihr steht; sonst die im Editor eingestellte Farbe (team) oder weiß (neutral)
   flagReach: 700,
@@ -442,6 +442,178 @@ export const PROPS = {
       hp: 40,
       armor: 'light',
       rubble: null,
+    },
+    // ---------- Raffinerie und Ölfeld (Kacheln Rohrleitung, Rohrbrücke; sonst Einzelstücke, Bild js/render/refprops.js) ----------
+    pipeline: {
+      name: 'Rohrleitung',
+      group: 'ref',
+      line: true,
+      blocks: 'veh', // zwei dicke Rohre auf Schwellen: Infanterie klettert darüber, Fahrzeuge nicht
+      crush: false,
+      cover: 0.4,
+      coverVeh: 0.2,
+      sight: 0,
+      hp: 400,
+      armor: 'heavy',
+      rubble: { blocks: 'none', crush: true, cover: 0.15, sight: 0 }, // geborstene Rohre in einer Öllache
+    },
+    pipe_rack: {
+      name: 'Rohrbrücke',
+      group: 'ref',
+      line: true,
+      blocks: 'none', // hohes Stahlportal: darunter fahren und laufen alle durch
+      crush: false,
+      cover: 0.1,
+      sight: 0,
+      hp: 800,
+      armor: 'heavy',
+      rubble: { blocks: 'veh', crush: false, cover: 0.35, sight: 0 }, // eingestürzt: Träger und Rohre am Boden
+    },
+    tank_float: {
+      name: 'Großtank (Schwimmdach)',
+      group: 'ref',
+      size: [112, 112],
+      blocks: 'all',
+      crush: false,
+      cover: 0.6,
+      coverVeh: 0.5,
+      sight: 36, // verdeckt, was dahinter steht
+      hp: 4000,
+      armor: 'struct',
+      blast: { r: 200, damage: { inf: 120, light: 120, heavy: 45, struct: 150 } }, // Rohöl: großer Feuerball, Kettenreaktion im Tanklager
+      rubble: { blocks: 'all', crush: false, cover: 0.5, sight: 0 }, // ausgebrannte Hülle
+    },
+    tank_fixed: {
+      name: 'Festdachtank',
+      group: 'ref',
+      size: [64, 64],
+      blocks: 'all',
+      crush: false,
+      cover: 0.6,
+      coverVeh: 0.5,
+      sight: 34,
+      hp: 2500,
+      armor: 'struct',
+      blast: { r: 150, damage: { inf: 100, light: 100, heavy: 35, struct: 120 } },
+      rubble: { blocks: 'all', crush: false, cover: 0.5, sight: 0 },
+    },
+    tank_sphere: {
+      name: 'Kugeltank (Gas)',
+      group: 'ref',
+      size: [60, 60],
+      blocks: 'all',
+      crush: false,
+      cover: 0.4,
+      coverVeh: 0.3,
+      sight: 40, // Kugel auf Stützen, hoch über dem Boden
+      hp: 2000,
+      armor: 'struct',
+      blast: { r: 220, damage: { inf: 130, light: 130, heavy: 50, struct: 160 } }, // Flüssiggas: stärkste Explosion
+      rubble: { blocks: 'all', crush: false, cover: 0.4, sight: 0 },
+    },
+    distill_column: {
+      name: 'Destillationskolonne',
+      group: 'ref',
+      size: [40, 40],
+      blocks: 'all',
+      crush: false,
+      cover: 0.5,
+      coverVeh: 0.3,
+      sight: 0, // schlanke Türme: man sieht vorbei
+      hp: 2500,
+      armor: 'struct',
+      rubble: { blocks: 'all', crush: false, cover: 0.5, sight: 0 }, // umgestürzter Turm
+    },
+    process_unit: {
+      name: 'Prozessanlage',
+      group: 'ref',
+      size: [96, 64],
+      blocks: 'all',
+      crush: false,
+      cover: 0.5,
+      coverVeh: 0.3,
+      sight: 30, // dichtes Stahlgerüst mit Behältern
+      hp: 4000,
+      armor: 'struct',
+      rubble: { blocks: 'all', crush: false, cover: 0.45, sight: 0 },
+    },
+    flare_stack: {
+      name: 'Fackelturm',
+      group: 'ref',
+      size: [24, 24],
+      blocks: 'all',
+      crush: false,
+      cover: 0.2,
+      sight: 0,
+      hp: 1000,
+      armor: 'heavy',
+      rubble: { blocks: 'all', crush: false, cover: 0.3, sight: 0 }, // abgeknickter Schlot
+    },
+    chimney: {
+      name: 'Schornstein',
+      group: 'ref',
+      size: [28, 28],
+      blocks: 'all',
+      crush: false,
+      cover: 0.4,
+      coverVeh: 0.2,
+      sight: 0,
+      hp: 2000,
+      armor: 'struct',
+      rubble: { blocks: 'all', crush: false, cover: 0.4, sight: 0 }, // Stumpf und umgestürzter Schaft
+    },
+    pump_jack: {
+      name: 'Pferdekopfpumpe',
+      group: 'ref',
+      size: [44, 16],
+      blocks: 'all',
+      crush: false,
+      cover: 0.3,
+      coverVeh: 0.1,
+      sight: 0,
+      hp: 300,
+      armor: 'heavy',
+      rubble: { blocks: 'all', crush: true, cover: 0.25, sight: 0 }, // Wrack: Panzer walzen es nieder
+    },
+    pressure_vessels: {
+      name: 'Druckbehälter',
+      group: 'ref',
+      size: [56, 40],
+      blocks: 'all',
+      crush: false,
+      cover: 0.5,
+      coverVeh: 0.35,
+      sight: 0,
+      hp: 1200,
+      armor: 'heavy',
+      blast: { r: 120, damage: { inf: 80, light: 80, heavy: 25, struct: 90 } },
+      rubble: { blocks: 'all', crush: false, cover: 0.4, sight: 0 },
+    },
+    valve_station: {
+      name: 'Schieberstation',
+      group: 'ref',
+      size: [40, 28],
+      blocks: 'veh', // niedrige Rohre mit Schiebern: Infanterie steigt darüber
+      crush: false,
+      cover: 0.45,
+      coverVeh: 0.2,
+      sight: 0,
+      hp: 500,
+      armor: 'heavy',
+      rubble: { blocks: 'none', crush: true, cover: 0.2, sight: 0 },
+    },
+    control_room: {
+      name: 'Leitstand',
+      group: 'ref',
+      size: [72, 48],
+      blocks: 'all',
+      crush: false,
+      cover: 0.6,
+      coverVeh: 0.4,
+      sight: 30,
+      hp: 3000,
+      armor: 'struct',
+      rubble: { blocks: 'veh', crush: false, cover: 0.4, sight: 0 }, // Mauerreste: Infanterie klettert hinein
     },
     // ---------- Zivil und Natur (Schritt 5) ----------
     civ_car: {

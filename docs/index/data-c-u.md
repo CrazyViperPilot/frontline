@@ -24,7 +24,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## mapgen.js (27 KB)
 - MAPGEN – Werte des Kartengenerators (js/game/map.js, landscape.js, relief.js, river.js,…
 
-## props.js (19 KB)
+## props.js (24 KB)
 - PROPS – Props der Karte (Deko und Gelände: Zäune, Mauern, später Sandsäcke, Container,…
 
 ## research.js (12 KB)

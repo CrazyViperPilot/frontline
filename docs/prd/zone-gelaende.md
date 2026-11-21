@@ -254,6 +254,30 @@ Werte je Art in `js/data/props.js` (Tabelle unten), Regeln in `js/game/props.js`
   Kisten, Fässer, Reifen, Gabelstapler oder Stromverteiler 34 px vor einer Längsseite, dazu oft ein Laternenmast an der Ecke; gespiegelt.
   Fabrikhöfe bleiben frei (Umfahrung innerhalb der Mauer).
 
+**Raffinerie und Ölfeld** (Gruppe „Raffinerie und Ölfeld“ im Editor; Rohrleitung und Rohrbrücke als Kacheln, sonst Einzelstücke mit
+Drehung in 45°-Schritten; Bild `js/render/refprops.js`). Bausteine für große Raffinerien und Tanklager in Wüstenoptik:
+
+| Art | hält auf | Kette walzt nieder | Deckung Inf. / Fz. | verdeckt Sicht | Treffer­punkte | danach / Besonderes |
+|---|---|---|---|---|---|---|
+| Rohrleitung (Kachel) | Fahrzeuge | nein | 40 % / 20 % | nein | 400 | geborstene Rohre in einer Öllache, 15 % Deckung |
+| Rohrbrücke (Kachel) | niemanden | nein | 10 % / – | nein | 800 | darunter fahren alle durch; eingestürzt hält sie Fahrzeuge auf |
+| Großtank (Schwimmdach), 112 × 112 px | alle | nein | 60 % / 50 % | ja (Höhe 36) | 4000 | explodiert (200 px); ausgebrannte Hülle sperrt weiter |
+| Festdachtank, 64 × 64 px | alle | nein | 60 % / 50 % | ja (Höhe 34) | 2500 | explodiert (150 px); ausgebrannte Hülle |
+| Kugeltank (Gas), 60 × 60 px | alle | nein | 40 % / 30 % | ja (Höhe 40) | 2000 | explodiert (220 px); eingesackte Kugel |
+| Destillationskolonne | alle | nein | 50 % / 30 % | nein | 2500 | umgestürzter Turm |
+| Prozessanlage, 96 × 64 px | alle | nein | 50 % / 30 % | ja (Höhe 30) | 4000 | Stahlgerüst am Boden |
+| Fackelturm (mit Flamme) | alle | nein | 20 % / – | nein | 1000 | abgeknickter Schlot |
+| Schornstein | alle | nein | 40 % / 20 % | nein | 2000 | Stumpf und umgestürzter Schaft |
+| Pferdekopfpumpe | alle | nein | 30 % / 10 % | nein | 300 | Wrack, Kette walzt es nieder |
+| Druckbehälter | alle | nein | 50 % / 35 % | nein | 1200 | explodiert (120 px) |
+| Schieberstation | Fahrzeuge | nein | 45 % / 20 % | nein | 500 | Trümmer, 20 % Deckung |
+| Leitstand, 72 × 48 px | alle | nein | 60 % / 40 % | ja (Höhe 30) | 3000 | Mauerreste halten Fahrzeuge auf |
+
+- **Kettenreaktion:** Tanks, Kugeltank und Druckbehälter explodieren wie Treibstofftank und Fässer und treffen dabei andere Props;
+  ein dichtes Tanklager kann so nacheinander in Flammen aufgehen.
+- **Bauen:** Tanks hinter Betonmauern (Auffangbecken), dazwischen Rohrleitungen am Boden und Rohrbrücken über den Wegen;
+  Farbe (weiß, sandbeige, silbergrau) und Einzelheiten wechseln je Stück.
+
 **Zivil und Natur, Kriegsspuren** (Gruppen „Zivil und Natur“, „Kriegsspuren“; Hecke als Kachel, sonst Einzelstücke):
 
 | Art | hält auf | Kette walzt nieder | Deckung Inf. / Fz. | verdeckt Sicht | Treffer­punkte | danach / Besonderes |

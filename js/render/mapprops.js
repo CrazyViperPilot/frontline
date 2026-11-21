@@ -13,6 +13,7 @@ import { fenceModel, isFenceKind, LINE_DIRS } from './fences.js';
 import { milModel, isMilSingle } from './milprops.js';
 import { indModel, isIndSingle } from './indprops.js';
 import { civModel, isCivSingle, DELEGATE } from './civprops.js';
+import { refModel, isRefSingle } from './refprops.js';
 
 const { paintSolids, boundsOf, viewAngle, sectorOf } = PAINT;
 const TAU = Math.PI * 2;
@@ -140,6 +141,7 @@ function modelOf(o, season, flag = null) {
     else if (isMilSingle(o.kind)) S = milModel(o.kind, o.v, o.d, w, o.rubble, flag, o.gate === GATE.open);
     else if (o.kind === 'container') S = indModel(o.kind, o.v, o.d, w, o.rubble, o.stack); // Container: Farbe je Lage
     else if (isIndSingle(o.kind)) S = stacked(o, (l, top) => indModel(o.kind, o.v, (o.d + l) % DETAILS, w && top, o.rubble));
+    else if (isRefSingle(o.kind)) S = refModel(o.kind, o.v, o.d, w, o.rubble);
     else if (isCivSingle(o.kind)) S = stacked(o, (l, top) => civModel(o.kind, o.v, (o.d + l) % DETAILS, top || season !== 'winter' ? season : 'autumn', o.rubble));
     m = { S, key };
     models.set(key, m);

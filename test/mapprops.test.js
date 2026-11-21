@@ -160,6 +160,7 @@ test('Bild: jede Art (Kacheln in jeder Verbindung, mit Toren, Einzelstücke in j
   const { milModel } = await import('../js/render/milprops.js'); // meldet die Kacheln der Militär-Props an
   const { indModel, isIndSingle } = await import('../js/render/indprops.js');
   const { civModel, isCivSingle, DELEGATE } = await import('../js/render/civprops.js'); // meldet die Hecke an
+  const { refModel, isRefSingle } = await import('../js/render/refprops.js'); // meldet Rohrleitung und Rohrbrücke an
   for (const kind of Object.keys(PROPS.kinds).filter((k) => !PROPS.kinds[k].line)) {
     for (let rot = 0; rot < 8; rot++) {
       for (const [rubble, open] of [[false, false], [true, false], [false, true]]) {
@@ -169,7 +170,9 @@ test('Bild: jede Art (Kacheln in jeder Verbindung, mit Toren, Einzelstücke in j
           ? indModel(kind, rot % 3, rot, rot % 2 === 0, rubble, (rot % 3) + 1)
           : isCivSingle(kind)
             ? civModel(kind, rot % 3, rot, season, rubble)
-            : milModel(kind, rot % 3, rot, rot % 2 === 0, rubble, '#3d8bfd', open);
+            : isRefSingle(kind)
+              ? refModel(kind, rot % 3, rot, rot % 2 === 0, rubble)
+              : milModel(kind, rot % 3, rot, rot % 2 === 0, rubble, '#3d8bfd', open);
         assert.ok(S.length > 0 || (rubble && !PROPS.kinds[kind].rubble), `${kind}: Bild`);
         for (const so of S) for (const f of so.faces) for (const p of f) assert.ok(p.every(Number.isFinite), `${kind}: Koordinate`);
       }

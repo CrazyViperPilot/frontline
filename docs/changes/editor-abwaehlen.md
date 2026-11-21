@@ -1,1 +1,0 @@
-**Editor: Abwählen, Drehen gesetzter Deko** (PRD Steuerung „Editor“): Knopf „Abwählen“ im Inspektor; „Drehen“ im Werkzeug Deko dreht auch das gerade gesetzte Einzelstück (z. B. Sandsack-Stellung); Inspektor scrollt bei langer Liste.

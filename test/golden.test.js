@@ -37,7 +37,7 @@ const FULL = { weather: 'random', research: true, river: true }; // wie BALANCE.
 const GOLDEN = {
   2: { map: 'd6ac9a39354b', river: 'fb126771b3fa', start: '22569bcc0b96', play: ['6c3fd99ac74f', '00d74d0dbd5c', 'a97bf152b5a1', '614654dfa92a'] },
   3: { map: '1e484afad6dd', river: '1e9ceb1e6039', start: 'edc66d25a734', play: ['a3faaa55f84e', '282952d5606f', 'fc2d63d94445', 'cf5bff776b9d'] },
-  7: { map: '64731b43c2ab', river: '7085f4df1117', start: 'eb52cc8c8cf9', play: ['a55670896ed0', '3686c10c3832', 'eb3ca5e20bee', '47e28b82ad4f'] },
+  7: { map: '64731b43c2ab', river: '7085f4df1117', start: 'eb52cc8c8cf9', play: ['a55670896ed0', '3686c10c3832', 'eb3ca5e20bee', 'da1f81caf698'] }, // Paket „Mauern“: Mauern halten Direktfeuer auf
 };
 
 /** Prüfsumme (12 Hex-Zeichen) über einen Wert: Zahlen exakt (String), Typed Arrays als Bytes, Objekte mit sortierten Schlüsseln. */

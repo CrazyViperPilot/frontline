@@ -220,11 +220,11 @@ export const infoMethods = {
     const tech = this.game.teams[team].tech;
     const items = RESEARCH.items;
     const n = tech.done.length;
-    let h = `<div class="small research">Stufe ${tech.tier} von ${RESEARCH.tiers}${n ? ` · ${n} erforscht` : ''}${tech.queue?.length ? ` · ${tech.queue.length} warten` : ''}</div>`;
+    let h = `<div class="small sel-tech">Stufe ${tech.tier} von ${RESEARCH.tiers}${n ? ` · ${n} erforscht` : ''}${tech.queue?.length ? ` · ${tech.queue.length} warten` : ''}</div>`;
     const cur = tech.cur;
     if (cur) {
       const it = items[cur.key];
-      h += `<div class="small">Forschung ${esc(it.name)}: ${Math.min(it.time, cur.t).toFixed(0)} / ${it.time} s</div>${bar(cur.t / it.time, 'prog research')}`;
+      h += `<div class="small">Forschung ${esc(it.name)}: ${Math.min(it.time, cur.t).toFixed(0)} / ${it.time} s</div>${bar(cur.t / it.time, 'prog sel-tech')}`;
     } else {
       h += '<div class="muted small">U = Forschungsbaum (10 Stufen, Verbesserungen je Einheit)</div>';
     }

@@ -30,7 +30,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - f16
 - su27
 
-## painter.js (7.0 KB)
+## painter.js (7.6 KB)
 - paintSolids
 - boundsOf
 

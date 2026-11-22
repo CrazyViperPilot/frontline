@@ -9,6 +9,6 @@ Alle Bilder: CC0 von [ambientCG](https://ambientcg.com) (gemeinfrei, ohne Namens
 Materialfotos (`js/render/materials.js`), als Graustufen-Detailkarte (Hochpass, Mittel 128), die Farbe kommt vom Spiel:
 - `plaster.jpg` Plaster003, `brick.jpg` Bricks105, `concrete.jpg` Concrete034, `tile.jpg` RoofingTiles014A,
   `metal.jpg` CorrugatedSteel009, `wood.jpg` Planks023A, `gravel.jpg` Gravel022, `paint.jpg` Metal027,
-  `armor.jpg` (Fahrzeuge) PaintedMetal012 und MetalPlates013 gemischt
+  `armor.jpg` (Fahrzeuge) PaintedMetal012 und MetalPlates013 gemischt, `rock.jpg` (Felsen) Rock030
 
 Neues Bild: in `sw.js` unter `ASSETS` eintragen, im Modul über `new URL('…', import.meta.url)` laden (prüft `test/assets.test.js`).

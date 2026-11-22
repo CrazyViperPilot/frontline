@@ -18,6 +18,7 @@ export const MATS = {
   wood: { url: new URL('../../textures/wood.jpg', import.meta.url), tile: 30, alpha: 0.45 },
   gravel: { url: new URL('../../textures/gravel.jpg', import.meta.url), tile: 48, alpha: 0.32 },
   paint: { url: new URL('../../textures/paint.jpg', import.meta.url), tile: 60, alpha: 0.25 },
+  rock: { url: new URL('../../textures/rock.jpg', import.meta.url), tile: 30, alpha: 0.5 }, // Felsen: Granit mit Adern (ganzer Stein)
   armor: { url: new URL('../../textures/armor.jpg', import.meta.url), tile: 26, alpha: 0.36 }, // Fahrzeuge: Lackabplatzer, Schlieren
 };
 
@@ -155,6 +156,27 @@ export function texture(g, pts, mat, O, X, Y) {
   pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
   ctx.closePath();
   ctx.fill();
+  ctx.restore();
+}
+
+/** Foto über mehrere Flächen auf einmal (polys: Listen von Bildschirmpunkten), z. B. die Silhouette eines Felsens; ohne Mindestgröße. */
+export function texturePolys(ctx, polys, mat, O, X, Y) {
+  const im = mat && img[mat];
+  if (!im || !polys.length || !ctx.createPattern || typeof DOMMatrix === 'undefined') return;
+  const pat = patternOf(ctx, mat);
+  if (!pat) return;
+  const sc = MATS[mat].tile / TEX_PX;
+  pat.setTransform(new DOMMatrix([(X[0] - O[0]) * sc, (X[1] - O[1]) * sc, (Y[0] - O[0]) * sc, (Y[1] - O[1]) * sc, O[0], O[1]]));
+  ctx.save();
+  ctx.globalCompositeOperation = 'overlay';
+  ctx.globalAlpha *= MATS[mat].alpha;
+  ctx.fillStyle = pat;
+  ctx.beginPath();
+  for (const pts of polys) {
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.closePath();
+  }
+  ctx.fill('nonzero');
   ctx.restore();
 }
 

@@ -136,7 +136,8 @@
   **Herbst:** Laub gelb, orange, rot oder olivbraun (je Baum fest), Birken golden, Laub am Boden um den Stamm, Farne braun.
   **Winter:** Laubbäume und Birken kahl (Astwerk mit Schnee auf den Ästen), Fichten mit Schnee auf jedem Stockwerk, Kiefern mit Schnee auf den Büscheln, Sträucher als Rutenbündel mit Schnee,
   Beerensträucher mit roten Hagebutten.
-  **Felsen** sind kleine 3D-Modelle (unregelmäßige Findlinge mit Begleitsteinen, Flächen leicht verschieden hell, Moos auf den Oberseiten, im Winter Schnee),
+  **Felsen** sind kleine 3D-Modelle: verbeulte Blöcke mit flachen Bruchflächen und Begleitsteinen, Ton je Fläche wechselnd, Mulden dunkler,
+  Moos und Flechten fleckig auf Oberseiten, im Winter Schnee auf flachen Oberseiten; darüber ein Gesteinsfoto (CC0, `textures/rock.jpg`),
   isometrisch in jeder Drehung von der passenden Seite.
   Jede Variante wird je Jahreszeit und Maßstab einmal gemalt und danach nur kopiert (`spritecache.js`), darum bleibt es auf Handy und Tablet flüssig.
   Nur Bild: Hindernisse, Wege und Sicht unverändert (das Unterholz ist wie die Büsche nur Optik).

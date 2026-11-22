@@ -2,7 +2,7 @@
 // Einstieg und Verzeichnis: ../unitpaint.js.
 import { K, norm3 } from './shapes.js';
 import { rgbOf, mix } from '../color.js';
-import { texture } from '../materials.js';
+import { texture, texturePolys } from '../materials.js';
 
 // ---------- Renderer ----------
 
@@ -13,7 +13,8 @@ const CHAR = '#2a2623';
 /**
  * Malt Körper um yaw gedreht. view: { iso, s (Gerätepixel je Einheit), charred, shadow (nur Umriss schwarz) }. Körper mit alpha scheinen durch.
  * Reihenfolge: Körper nach der Tiefe ihrer Mitte, aufgesetzte Teile direkt nach ihrem Träger; Rückseiten fallen weg.
- * Körper mit mat (Material, materials.js) bekommen je Fläche das Foto entlang ihrer Ebene (Fugen waagrecht).
+ * Körper mit mat (Material, materials.js) bekommen je Fläche das Foto entlang ihrer Ebene (Fugen waagrecht); mit matWhole einmal über
+ * alle sichtbaren Flächen (richtungsloses Gestein, viele kleine Flächen). fcol: eigene Farbe je Fläche (Felsen: Ton, Moos, Schnee).
  */
 function paintSolids(ctx, solids, yaw, view) {
   const cs = Math.cos(yaw);
@@ -51,6 +52,8 @@ function paintSolids(ctx, solids, yaw, view) {
     let col = so.col;
     if (view.charred) col = mix(col, CHAR, 0.78);
     const rgb = rgbOf(col);
+    const fcols = so.fcol && !view.charred ? (so._fc ??= so.fcol.map(rgbOf)) : null;
+    const whole = so.mat && so.matWhole && !view.shadow && !view.charred ? [] : null;
     const top = so.top && !view.charred ? (so._top ??= rgbOf(so.top.col)) : null; // Oberseiten (Schnee, Moos, seit v5.28)
     const c = so._c;
     for (let fi = 0; fi < so.faces.length; fi++) {
@@ -103,14 +106,15 @@ function paintSolids(ctx, solids, yaw, view) {
       const ao = fz < 7 ? 0.8 + (0.2 * Math.max(0, fz)) / 7 : 1; // bodennahe Flächen etwas dunkler (Umgebungsverdeckung)
       let k = (0.56 + 0.44 * d) * ao;
       if (so.vary) k *= 1 + so.vary * (((Math.imul(fi + 1, 2654435761) >>> 0) % 1000) / 1000 - 0.5); // Flächen leicht verschieden (Fels)
-      let fc = rgb;
+      let fc = fcols ? fcols[fi] : rgb;
+      if (whole) whole.push(pts.map(proj));
       if (top && nz > so.top.at) {
         const t = Math.min(1, (nz - so.top.at) / 0.18);
         fc = [rgb[0] + (top[0] - rgb[0]) * t, rgb[1] + (top[1] - rgb[1]) * t, rgb[2] + (top[2] - rgb[2]) * t];
       }
       ctx.fillStyle = `rgb(${Math.min(255, fc[0] * k) | 0},${Math.min(255, fc[1] * k) | 0},${Math.min(255, fc[2] * k) | 0})`;
       ctx.fill();
-      if (so.mat && !view.charred) {
+      if (so.mat && !so.matWhole && !view.charred) {
         // Bildachsen in der Fläche: x waagrecht, y hangabwärts; waagrechte Flächen nach Welt-x und -y
         let tx = [1, 0, 0];
         let ty = [0, 1, 0];
@@ -138,6 +142,10 @@ function paintSolids(ctx, solids, yaw, view) {
         ctx.strokeStyle = `rgb(${(fc[0] * e) | 0},${(fc[1] * e) | 0},${(fc[2] * e) | 0})`;
         ctx.stroke();
       }
+    }
+    if (whole?.length) {
+      const O = proj(c);
+      texturePolys(ctx, whole, so.mat, O, [O[0] + s, O[1]], [O[0], O[1] + s]); // Bildachsen = Bildschirm, 1 Einheit = s Pixel
     }
     if (so.alpha !== undefined) ctx.globalAlpha = a0;
   }

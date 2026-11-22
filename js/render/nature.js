@@ -925,45 +925,166 @@ export function natureShadowIso(ctx, cam, o, t) {
 }
 
 // ---------- Felsen (3D-Modelle) ----------
+// Natürliche Felsen (Paket „Felsen“): fein unterteilter Ikosaeder ohne Polspitze, mit weichem Rauschen verbeult, flach gedrückt und an
+// einigen Ebenen „abgeschlagen“ (flache Bruchflächen), unten im Boden. Farbe je Fläche: Ton wechselt, Mulden dunkler, Moos und
+// Flechten fleckig auf Oberseiten, im Winter Schnee auf den flachen Oberseiten; darüber das Gesteinsfoto (materials.js, „rock“).
 
 const ROCK_COLS = ['#8e8f88', '#8c8272', '#78797a', '#979080'];
-const ROCK_TOP = { summer: '#6e7c47', autumn: '#7e7445', winter: '#eef2f5' };
+const ROCK_MOSS = { summer: ['#5d6e36', '#71833f'], autumn: ['#6f6a3a', '#827544'], winter: ['#5d6e36', '#71833f'] };
+const LICHEN = ['#b8b28c', '#a8ad8a', '#c6bc8f', '#9aa08c'];
+const ROCK_SNOW = '#eef2f5';
 
-/** Findling: unregelmäßige Kugel (Ecken zufällig verschoben), unten im Boden abgeschnitten, Flächen leicht verschieden hell. */
-function boulder(r, cx, cy, rx, ry, rz, col, top) {
-  const n = 10;
-  const m = 6;
-  const k = [];
-  for (let i = 0; i <= m; i++) for (let j = 0; j < n; j++) k.push(0.74 + r() * 0.46);
-  const P = (i, j) => {
-    const jj = j % n;
-    const th = (i / m) * Math.PI;
-    const ph = (jj / n) * TAU + (i % 2 ? Math.PI / n : 0) * 0.6;
-    const f = k[i * n + jj];
-    const top = Math.cos(th) > 0.55 ? 0.82 : 1; // oben etwas abgeflacht
-    return [cx + Math.sin(th) * Math.cos(ph) * rx * f, cy + Math.sin(th) * Math.sin(ph) * ry * f, Math.max(0, Math.cos(th) * rz * f * top + rz * 0.36)];
+/** Ikosaeder, levels-mal unterteilt (1: 80, 2: 320 Dreiecke, gleichmäßig, ohne Polspitze): Ecken als Einheitsvektoren, Flächen als Indizes. */
+const icosphere = (levels) => {
+  const t = (1 + Math.sqrt(5)) / 2;
+  let V = [[-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0], [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t], [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]];
+  let F = [[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11], [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9], [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]];
+  const unit = (p) => {
+    const l = Math.hypot(...p);
+    return p.map((x) => x / l);
   };
-  const faces = [];
-  for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) faces.push(i === 0 ? [P(0, 0), P(1, j + 1), P(1, j)] : [P(i, j), P(i, j + 1), P(i + 1, j + 1), P(i + 1, j)]);
-  return PAINT.solid(faces, col, [cx, cy, rz * 0.5], { vary: 0.24, smooth: true, ...(top ? { top } : {}) });
+  V = V.map(unit);
+  for (let k = 0; k < levels; k++) {
+    const mid = new Map();
+    const at = (a, b) => {
+      const key = a < b ? `${a},${b}` : `${b},${a}`;
+      if (!mid.has(key)) {
+        V.push(unit([(V[a][0] + V[b][0]) / 2, (V[a][1] + V[b][1]) / 2, (V[a][2] + V[b][2]) / 2]));
+        mid.set(key, V.length - 1);
+      }
+      return mid.get(key);
+    };
+    const G = [];
+    for (const [a, b, c] of F) {
+      const ab = at(a, b);
+      const bc = at(b, c);
+      const ca = at(c, a);
+      G.push([a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]);
+    }
+    F = G;
+  }
+  return { V, F };
+};
+const GEO = [null, icosphere(1), icosphere(2)]; // fein für den Hauptstein, gröber für Begleiter (Malzeit)
+
+/** Weiches Rauschen: Summe von Sinuswellen in festen Zufallsrichtungen (Wellenzahl freq, Ausschlag amp), Werte etwa −amp … amp. */
+function waves(r, n, freq, amp) {
+  const W = [];
+  for (let i = 0; i < n; i++) {
+    const z = r() * 2 - 1;
+    const a = r() * TAU;
+    const q = Math.sqrt(1 - z * z);
+    W.push([q * Math.cos(a), q * Math.sin(a), z, freq * (0.6 + r() * 0.9) * (1 + i * 0.35), r() * TAU, amp / (1 + i * 0.45)]);
+  }
+  const norm = W.reduce((s, w) => s + w[5], 0) / amp;
+  return (p) => {
+    let v = 0;
+    for (const [x, y, z, k, ph, a] of W) v += a * Math.sin(k * (x * p[0] + y * p[1] + z * p[2]) + ph);
+    return v / norm;
+  };
 }
 
+/** Farbe als Hex aus [r, g, b]. */
+const hex3 = (c) => `#${c.map((x) => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join('')}`;
+
+/**
+ * Fels um (cx, cy) mit Halbachsen rx, ry, rz: cuts Bruchflächen, bury Anteil im Boden, moss (0 … 1) Moosmenge, season Jahreszeit.
+ */
+function boulder(r, cx, cy, rx, ry, rz, col, o) {
+  const { cuts = 2, bury = 0.3, moss = 0, season = 'summer', fine = 2 } = o;
+  const geo = GEO[fine];
+  const bump = waves(r, 5, 1.7, 0.14); // große Beulen
+  const grain = waves(r, 4, 6, 0.035); // kleine Höcker
+  const P = geo.V.map((v) => {
+    const f = 1 + bump(v) + grain(v);
+    return [v[0] * rx * f, v[1] * ry * f, v[2] * rz * f];
+  });
+  const dent = geo.V.map((v) => bump(v)); // Mulden (negativ) später dunkler
+  // Bruchflächen: alles jenseits einer Ebene wird auf die Ebene gelegt
+  for (let i = 0; i < cuts; i++) {
+    const z = -0.15 + r() * 0.95;
+    const a = r() * TAU;
+    const q = Math.sqrt(1 - z * z);
+    const n = [q * Math.cos(a), q * Math.sin(a), z];
+    const reach = Math.abs(n[0]) * rx + Math.abs(n[1]) * ry + Math.abs(n[2]) * rz;
+    const d = (0.5 + r() * 0.3) * (reach / (Math.abs(n[0]) + Math.abs(n[1]) + Math.abs(n[2])));
+    for (const p of P) {
+      const e = p[0] * n[0] + p[1] * n[1] + p[2] * n[2] - d;
+      if (e > 0) for (let k = 0; k < 3; k++) p[k] -= e * n[k];
+    }
+  }
+  const lift = rz * (1 - 2 * bury);
+  for (const p of P) {
+    p[0] += cx;
+    p[1] += cy;
+    p[2] = Math.max(0, p[2] + lift);
+  }
+  const base = rgbOf(col);
+  const mossCols = (ROCK_MOSS[season] ?? ROCK_MOSS.summer).map(rgbOf);
+  const tone = waves(r, 3, 2.2, 1);
+  const patch = waves(r, 6, 6.5, 1); // Flecken (Moos, Schnee)
+  const faces = [];
+  const fcol = [];
+  for (const [a, b, c] of geo.F) {
+    const A = P[a];
+    const B = P[b];
+    const C = P[c];
+    if (A[2] === 0 && B[2] === 0 && C[2] === 0) continue; // Boden: unsichtbar
+    const u = [B[0] - A[0], B[1] - A[1], B[2] - A[2]];
+    const w = [C[0] - A[0], C[1] - A[1], C[2] - A[2]];
+    const n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+    const l = Math.hypot(...n);
+    if (l < 1e-6) continue;
+    const m = [(A[0] + B[0] + C[0]) / 3 - cx, (A[1] + B[1] + C[1]) / 3 - cy, (A[2] + B[2] + C[2]) / 3];
+    const nz = (n[2] / l) * Math.sign(n[0] * m[0] + n[1] * m[1] + n[2] * (m[2] - Math.max(0, lift)) || 1); // nach außen
+    const dir = geo.V[a];
+    // Ton: großflächig wechselnd, Mulden dunkler, ganz unten etwas Erde
+    let k = 1 + tone(dir) * 0.09 + Math.min(0, (dent[a] + dent[b] + dent[c]) / 3) * 0.9;
+    let rgb = base.map((x) => x * k);
+    if (m[2] < rz * 0.12) rgb = rgb.map((x, i) => x * 0.86 + [70, 60, 45][i] * 0.14);
+    const pv = patch(dir);
+    if (season === 'winter') {
+      const sv = pv * 0.6 + (nz - 0.55) * 2.2; // flach und Flecken: Schnee bleibt liegen
+      if (sv > 0) rgb = rgbOf(ROCK_SNOW).map((x) => x * (0.95 + 0.05 * pv));
+      else if (sv > -0.35) rgb = rgb.map((x, i) => x * 0.45 + rgbOf(ROCK_SNOW)[i] * 0.55);
+    } else if (moss > 0 && pv * 0.7 + nz * 0.9 > 1.25 - moss) {
+      const mc = mossCols[pv > 0.3 ? 1 : 0];
+      const t = Math.min(0.85, 0.5 + (pv * 0.7 + nz * 0.9 - (1.25 - moss)) * 0.8);
+      rgb = rgb.map((x, i) => x * (1 - t) + mc[i] * t);
+    } else if (nz > -0.1 && r() < 0.05) {
+      const lc = rgbOf(LICHEN[Math.floor(r() * LICHEN.length)]);
+      rgb = rgb.map((x, i) => x * 0.55 + lc[i] * 0.45); // Flechten
+    }
+    faces.push([A, B, C]);
+    fcol.push(hex3(rgb));
+  }
+  return PAINT.solid(faces, col, [cx, cy, rz * 0.4], { fcol, smooth: true, mat: 'rock', matWhole: true });
+}
+
+// Varianten: [Halbachsen x, y, z (× RR), Bruchflächen, Begleiter, Moos]
+const ROCK_SHAPES = [
+  [[1.02, 0.84, 0.5], 6, 2, 0.55], // breite Platte mit zwei Steinen, bemoost
+  [[0.78, 0.66, 0.84], 7, 1, 0], // hoher kantiger Block
+  [[0.94, 0.78, 0.6], 4, 2, 0.4], // runder Granit, etwas Moos
+  [[1.08, 0.7, 0.4], 6, 0, 0.15], // flacher Rücken
+];
+
 const rockModels = new Map();
-/** Fels (Variante v 0 … 3): Hauptblock mit 0 … 2 Begleitern; Moos oder Schnee auf den Oberseiten. */
+/** Fels (Variante v 0 … 3): Hauptblock mit 0 … 2 Begleitern; Moos, Flechten oder Schnee auf den Oberseiten. */
 function rockModel(v, season = 'summer') {
   const key = `${v}|${season}`;
   let m = rockModels.get(key);
   if (m) return m;
   const r = rng(5150 + v * 211);
   const col = ROCK_COLS[v % ROCK_COLS.length];
-  const top = season === 'winter' ? { at: 0.42, col: ROCK_TOP.winter } : v % 2 === 0 ? { at: 0.66, col: ROCK_TOP[season] ?? ROCK_TOP.summer } : null;
-  const S = [boulder(r, 0, 0, RR * (0.88 + r() * 0.14), RR * (0.7 + r() * 0.14), RR * (0.52 + r() * 0.16), col, top)];
-  const extra = [2, 1, 2, 0][v % 4];
+  const [ax, cuts, extra, moss] = ROCK_SHAPES[v % ROCK_SHAPES.length];
+  const S = [boulder(r, 0, 0, RR * ax[0] * (0.92 + r() * 0.12), RR * ax[1] * (0.92 + r() * 0.12), RR * ax[2] * (0.92 + r() * 0.14), col, { cuts, moss, season, bury: 0.28 })];
   for (let i = 0; i < extra; i++) {
     const a = (i ? 2.3 : 0.4) + r() * 1.2;
-    const d = RR * (0.95 + r() * 0.2);
-    const s = 0.3 + r() * 0.16;
-    S.push(boulder(r, Math.cos(a) * d, Math.sin(a) * d, RR * s * 1.12, RR * s, RR * s * 0.78, col, top));
+    const d = RR * (0.9 + r() * 0.2);
+    const sz = 0.28 + r() * 0.16;
+    S.push(boulder(r, Math.cos(a) * d, Math.sin(a) * d, RR * sz * 1.15, RR * sz, RR * sz * 0.72, col, { cuts: 4, moss: moss * 0.7, season, bury: 0.35, fine: 1 }));
   }
   m = { S };
   rockModels.set(key, m);

@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.253: **Natürliche Felsen** (zone-gelaende „Natur“, nur Bild): Felsen sind verbeulte Blöcke mit flachen Bruchflächen statt facettierter Kugeln, Ton je Fläche, dunkle Mulden, fleckiges Moos und Flechten, Schnee nur auf flachen Oberseiten, dazu ein Gesteinsfoto. Cache v308.
 - v5.252: **Materialfotos an Fahrzeugen** (einheiten „Aussehen“, nur Bild): Panzer, Lkw und andere Bodenfahrzeuge mit abgenutztem Lack (Abplatzer, Schlieren), Hubschrauber und Flugzeuge mit leichter Patina, nur auf den Teilen in Teamfarbe. Cache v307.
 - v5.251: **Materialfotos an Großbauten und Props** (stadt-aussehen §15, nur Bild): Kaserne, Fabrikhalle und Güterbahnhof mit Fotos an Wänden und Dächern; Container, Tanks, Autos mit Lack-Patina, Kisten, Paletten, Zäune und Bänke mit Holz, Mauern mit Beton. Cache v306.
 - v5.250: **Materialfotos auf Dächern** (stadt-aussehen §15, nur Bild): Sattel- und Walmdächer mit Dachziegeln, Shed- und Tonnendächer mit Wellblech, graue Flachdächer mit Kies, in Iso und 2D. Cache v306.

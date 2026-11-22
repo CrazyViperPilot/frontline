@@ -1,1 +1,0 @@
-**Natürliche Felsen** (zone-gelaende „Natur“, nur Bild): Felsen sind verbeulte Blöcke mit flachen Bruchflächen statt facettierter Kugeln, Ton je Fläche, dunkle Mulden, fleckiges Moos und Flechten, Schnee nur auf flachen Oberseiten, dazu ein Gesteinsfoto.

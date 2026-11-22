@@ -9,7 +9,7 @@ import { ISO_K } from './camera.js';
 import { poly, box, lit, FACE, OUTLINE, DETAIL, pyramid } from './university.js';
 import { shade, tint } from './sprites.js';
 import { snowy, roofSnowOn } from './season.js';
-import { wallMat, texWall } from './materials.js';
+import { wallMat, roofMat, flatMat, texWall, texFlat, texSlope, texture } from './materials.js';
 
 export { poly, box, lit, FACE, OUTLINE, DETAIL, pyramid, shade, tint, snowy, roofSnowOn };
 
@@ -296,13 +296,17 @@ export function gable(g, axis, u0, u1, v0, v1, h, rh, roof, wall, extra = null, 
     const he = h - (o * rh) / w;
     const a0 = u0 - 0.8;
     const a1 = u1 + 0.8;
-    poly(g, [P(a0, v0 - o, he), P(a1, v0 - o, he), P(a1, vm, h + rh), P(a0, vm, h + rh)], lit(R, 0, -rh, w));
+    const mat = roofMat(roof);
+    const back = [P(a0, v0 - o, he), P(a1, v0 - o, he), P(a1, vm, h + rh), P(a0, vm, h + rh)];
+    poly(g, back, lit(R, 0, -rh, w));
+    texSlope(g, back, mat, [a0, vm, h + rh], [a1, vm, h + rh], [a0, v0 - o, he]);
     extra?.();
     const gt = [P(u1, v0, h), P(u1, v1, h), P(u1, vm, h + rh)];
     poly(g, gt, lit(wall, ...FACE.e));
     texWall(g, gt, 'e', u1, wallMat(wall));
     const front = [P(a0, vm, h + rh), P(a1, vm, h + rh), P(a1, v1 + o, he), P(a0, v1 + o, he)];
     poly(g, front, lit(R, 0, rh, w));
+    texSlope(g, front, mat, [a0, vm, h + rh], [a1, vm, h + rh], [a0, v1 + o, he]);
     if (g.fine) {
       for (const t of [0.25, 0.5, 0.75]) stroke(g, [P(a0, vm + (v1 + o - vm) * t, h + rh - (h + rh - he) * t), P(a1, vm + (v1 + o - vm) * t, h + rh - (h + rh - he) * t)], 'rgba(0,0,0,0.12)', 0.5);
     }
@@ -313,12 +317,17 @@ export function gable(g, axis, u0, u1, v0, v1, h, rh, roof, wall, extra = null, 
     const he = h - (o * rh) / w;
     const b0 = v0 - 0.8;
     const b1 = v1 + 0.8;
-    poly(g, [P(u0 - o, b0, he), P(u0 - o, b1, he), P(um, b1, h + rh), P(um, b0, h + rh)], lit(R, -rh, 0, w));
+    const mat = roofMat(roof);
+    const back = [P(u0 - o, b0, he), P(u0 - o, b1, he), P(um, b1, h + rh), P(um, b0, h + rh)];
+    poly(g, back, lit(R, -rh, 0, w));
+    texSlope(g, back, mat, [um, b0, h + rh], [um, b1, h + rh], [u0 - o, b0, he]);
     extra?.();
     const gt = [P(u0, v1, h), P(u1, v1, h), P(um, v1, h + rh)];
     poly(g, gt, lit(wall, ...FACE.s));
     texWall(g, gt, 's', v1, wallMat(wall));
-    poly(g, [P(um, b0, h + rh), P(um, b1, h + rh), P(u1 + o, b1, he), P(u1 + o, b0, he)], lit(R, rh, 0, w));
+    const front = [P(um, b0, h + rh), P(um, b1, h + rh), P(u1 + o, b1, he), P(u1 + o, b0, he)];
+    poly(g, front, lit(R, rh, 0, w));
+    texSlope(g, front, mat, [um, b0, h + rh], [um, b1, h + rh], [u1 + o, b0, he]);
     if (g.fine) {
       for (const t of [0.25, 0.5, 0.75]) stroke(g, [P(um + (u1 + o - um) * t, b0, h + rh - (h + rh - he) * t), P(um + (u1 + o - um) * t, b1, h + rh - (h + rh - he) * t)], 'rgba(0,0,0,0.12)', 0.5);
     }
@@ -330,6 +339,7 @@ export function gable(g, axis, u0, u1, v0, v1, h, rh, roof, wall, extra = null, 
 export function hip(g, u0, u1, v0, v1, h, rh, roof, extra = null, o = 1.3) {
   const { P } = g;
   const R = snowy(roof);
+  const mat = roofMat(roof);
   u0 -= o;
   u1 += o;
   v0 -= o;
@@ -340,22 +350,34 @@ export function hip(g, u0, u1, v0, v1, h, rh, roof, extra = null, o = 1.3) {
     const vm = (v0 + v1) / 2;
     const r1 = P(u0 + w, vm, h + rh);
     const r2 = P(u1 - w, vm, h + rh);
-    poly(g, [P(u0, v0, he), P(u1, v0, he), r2, r1], lit(R, 0, -rh, w));
-    poly(g, [P(u0, v0, he), r1, P(u0, v1, he)], lit(R, -rh, 0, w));
+    const w1 = [u0 + w, vm, h + rh];
+    const w2 = [u1 - w, vm, h + rh];
+    const f = (pts, col, a, b, c) => {
+      poly(g, pts, col);
+      texSlope(g, pts, mat, a, b, c);
+    };
+    f([P(u0, v0, he), P(u1, v0, he), r2, r1], lit(R, 0, -rh, w), w1, w2, [u0 + w, v0, he]);
+    f([P(u0, v0, he), r1, P(u0, v1, he)], lit(R, -rh, 0, w), w1, [u0 + w, vm + 1, h + rh], [u0, vm, he]);
     extra?.();
-    poly(g, [P(u1, v0, he), P(u1, v1, he), r2], lit(R, rh, 0, w));
-    poly(g, [P(u0, v1, he), r1, r2, P(u1, v1, he)], lit(R, 0, rh, w));
+    f([P(u1, v0, he), P(u1, v1, he), r2], lit(R, rh, 0, w), w2, [u1 - w, vm + 1, h + rh], [u1, vm, he]);
+    f([P(u0, v1, he), r1, r2, P(u1, v1, he)], lit(R, 0, rh, w), w1, w2, [u0 + w, v1, he]);
     stroke(g, [P(u1, v1, he), r2, r1], shade(roof, 0.35), 0.8);
   } else {
     const w = (u1 - u0) / 2;
     const um = (u0 + u1) / 2;
     const r1 = P(um, v0 + w, h + rh);
     const r2 = P(um, v1 - w, h + rh);
-    poly(g, [P(u0, v0, he), P(u0, v1, he), r2, r1], lit(R, -rh, 0, w));
-    poly(g, [P(u0, v0, he), r1, P(u1, v0, he)], lit(R, 0, -rh, w));
+    const w1 = [um, v0 + w, h + rh];
+    const w2 = [um, v1 - w, h + rh];
+    const f = (pts, col, a, b, c) => {
+      poly(g, pts, col);
+      texSlope(g, pts, mat, a, b, c);
+    };
+    f([P(u0, v0, he), P(u0, v1, he), r2, r1], lit(R, -rh, 0, w), w1, w2, [u0, v0 + w, he]);
+    f([P(u0, v0, he), r1, P(u1, v0, he)], lit(R, 0, -rh, w), w1, [um + 1, v0 + w, h + rh], [um, v0, he]);
     extra?.();
-    poly(g, [P(u0, v1, he), P(u1, v1, he), r2], lit(R, 0, rh, w));
-    poly(g, [P(u1, v0, he), r1, r2, P(u1, v1, he)], lit(R, rh, 0, w));
+    f([P(u0, v1, he), P(u1, v1, he), r2], lit(R, 0, rh, w), w2, [um + 1, v1 - w, h + rh], [um, v1, he]);
+    f([P(u1, v0, he), r1, r2, P(u1, v1, he)], lit(R, rh, 0, w), w1, w2, [u1, v0 + w, he]);
     stroke(g, [P(u1, v1, he), r2, r1], shade(roof, 0.35), 0.8);
   }
 }
@@ -368,7 +390,9 @@ export function parapet(g, u0, u1, v0, v1, h, wall, deck = DECK, rim = 1.1) {
   const b0 = v0 + rim;
   const b1 = v1 - rim;
   const d = h - 1.3;
-  poly(g, [P(a0, b0, d), P(a1, b0, d), P(a1, b1, d), P(a0, b1, d)], lit(snowy(deck), ...FACE.top), null);
+  const top = [P(a0, b0, d), P(a1, b0, d), P(a1, b1, d), P(a0, b1, d)];
+  poly(g, top, lit(snowy(deck), ...FACE.top), null);
+  texFlat(g, top, d, flatMat(deck));
   poly(g, [P(a0, b0, d), P(a0, b1, d), P(a0, b1, h), P(a0, b0, h)], lit(wall, ...FACE.e), null);
   poly(g, [P(a0, b0, d), P(a1, b0, d), P(a1, b0, h), P(a0, b0, h)], lit(wall, ...FACE.s), null);
 }
@@ -611,7 +635,13 @@ export function vault(g, axis, u0, u1, v0, v1, h, rh, roof, wall, n = 10) {
     const [cb, hb] = at(w + o, tb);
     const nc = -rh * Math.cos(tm);
     const nh = (w + o) * Math.sin(tm);
-    poly(g, [M(a0 - 0.6, ca, ha), M(a1, ca, ha), M(a1, cb, hb), M(a0 - 0.6, cb, hb)], lit(R, ...(alongU ? [0, nc, nh] : [nc, 0, nh])), null);
+    const seg = [M(a0 - 0.6, ca, ha), M(a1, ca, ha), M(a1, cb, hb), M(a0 - 0.6, cb, hb)];
+    poly(g, seg, lit(R, ...(alongU ? [0, nc, nh] : [nc, 0, nh])), null);
+    const O = M(a0, ca, ha);
+    const X = M(a0, cb, hb); // Wellen quer zum Bogen
+    const l = Math.hypot(cb - ca, hb - ha) || 1;
+    const Y = M(a0 + 1, ca, ha);
+    texture(g, seg, roofMat(roof, 'metal'), O, [O[0] + (X[0] - O[0]) / l, O[1] + (X[1] - O[1]) / l], Y);
     if (g.fine && k % 2) stroke(g, [M(a0 - 0.6, cb, hb), M(a1, cb, hb)], 'rgba(0,0,0,0.1)', 0.45);
   }
   const gab = [M(a1, c0, h), M(a1, c1, h)];
@@ -926,6 +956,9 @@ export function shadowTop(c, x0, y0, x1, y1, h) {
   polyF(c, [[x0, y0], [x1, y0], [x1 + s, y0 + s], [x1 + s, y1 + s], [x0 + s, y1 + s], [x0, y1]], 'rgba(0,0,0,0.26)');
 }
 
+/** Foto auf eine Dachfläche von oben (Kontext in Welteinheiten); turn: Ziegelreihen entlang y statt x. */
+const texTopAxis = (c, pts, mat, turn) => texture({ ctx: c }, pts, mat, [0, 0], turn ? [0, 1] : [1, 0], turn ? [1, 0] : [0, 1]);
+
 /** Satteldach von oben: First entlang x ('u') oder y ('v'); Licht von links oben. */
 export function gableTop(c, x0, y0, x1, y1, axis, roof, o = 1.5) {
   x0 -= o;
@@ -936,6 +969,7 @@ export function gableTop(c, x0, y0, x1, y1, axis, roof, o = 1.5) {
     const ym = (y0 + y1) / 2;
     rectF(c, x0, y0, x1, ym, tint(roof, 0.12));
     rectF(c, x0, ym, x1, y1, shade(roof, 0.2));
+    texTopAxis(c, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], roofMat(roof), false);
     c.strokeStyle = 'rgba(0,0,0,0.12)';
     c.lineWidth = 0.4;
     c.beginPath();
@@ -954,6 +988,7 @@ export function gableTop(c, x0, y0, x1, y1, axis, roof, o = 1.5) {
     const xm = (x0 + x1) / 2;
     rectF(c, x0, y0, xm, y1, tint(roof, 0.12));
     rectF(c, xm, y0, x1, y1, shade(roof, 0.2));
+    texTopAxis(c, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], roofMat(roof), true);
     c.strokeStyle = 'rgba(0,0,0,0.12)';
     c.lineWidth = 0.4;
     c.beginPath();
@@ -988,6 +1023,7 @@ export function hipTop(c, x0, y0, x1, y1, roof, o = 1.3) {
   polyF(c, [[x0, y0], a, [x0, y1]], tint(roof, 0.04));
   polyF(c, [[x1, y0], [x1, y1], b], shade(roof, 0.14));
   polyF(c, [[x0, y1], a, b, [x1, y1]], shade(roof, 0.24));
+  texTopAxis(c, [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], roofMat(roof), false);
   c.strokeStyle = shade(roof, 0.45);
   c.lineWidth = 0.6;
   c.beginPath();
@@ -1009,6 +1045,7 @@ export function hipTop(c, x0, y0, x1, y1, roof, o = 1.3) {
 export function flatTop(c, x0, y0, x1, y1, rim, deck = DECK) {
   rectS(c, x0, y0, x1, y1, tint(rim, 0.1));
   rectF(c, x0 + 1.2, y0 + 1.2, x1 - 1.2, y1 - 1.2, deck);
+  texTopAxis(c, [[x0 + 1.2, y0 + 1.2], [x1 - 1.2, y0 + 1.2], [x1 - 1.2, y1 - 1.2], [x0 + 1.2, y1 - 1.2]], flatMat(deck), false);
   rectF(c, x0 + 1.2, y0 + 1.2, x1 - 1.2, y0 + 2, 'rgba(0,0,0,0.18)');
   rectF(c, x0 + 1.2, y0 + 2, x0 + 2, y1 - 1.2, 'rgba(0,0,0,0.18)');
 }

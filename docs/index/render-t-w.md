@@ -1,8 +1,12 @@
-# Symbol-Index render (Teil 4 von 4, unitpaint.js bis works.js)
+# Symbol-Index render (Teil 4 von 4, townhouses.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## unitpaint.js (Fortsetzung)
+## townhouses.js (Fortsetzung)
+- drawTownTop(ctx, b, zoom) – 2D von oben: Gebäude b als Bild aus dem Zwischenspeicher (Weltkoordinaten, Kame…
+
+## unitpaint.js (20 KB)
+- drawUnitIso(ctx, cam, u, p, aim, lift, now) – Einheit in Iso an Bildpunkt p (Boden), lift = Höhe über dem Boden
 - drawUnitShadowIso(ctx, cam, u, p, dpr, now) – Schatten in Iso: Umriss des Modells von oben, flach auf den Boden gelegt (Boden…
 - drawUnitTop(ctx, u, zoom, aim, now) – Einheit von oben (2D), Weltkoordinaten (Transform des Renderers)
 - drawWreckIso(ctx, cam, w, p) – Wrack in Iso: verkohltes Modell (Wanne und Turm) am Boden

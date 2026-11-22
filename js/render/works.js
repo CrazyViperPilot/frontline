@@ -17,6 +17,7 @@ import {
   vault, vaultTop, wallBand, wins, yellowTop,
 } from './isokit.js';
 import { sprite, blit, spriteDpr } from './spritecache.js';
+import { roofMat, texSlope } from './materials.js';
 
 export const WORKS_KINDS = ['bm', 'mun', 'fuel', 'steel', 'power', 'kero'];
 /** Boden unter dem fertigen Werk (sichtbar am Rand des Grundstücks). */
@@ -95,7 +96,9 @@ function sawRoof(g, u0, u1, v0, v1, h, n, rh, roof, wall) {
   for (let k = 0; k < n; k++) {
     const a = u0 + k * w;
     const b = a + w;
-    poly(g, [P(a, v0, h), P(b, v0, h + rh), P(b, v1, h + rh), P(a, v1, h)], lit(R, -rh, 0, w));
+    const face = [P(a, v0, h), P(b, v0, h + rh), P(b, v1, h + rh), P(a, v1, h)];
+    poly(g, face, lit(R, -rh, 0, w));
+    texSlope(g, face, roofMat(roof, 'metal'), [b, v0, h + rh], [b, v1, h + rh], [a, v0, h]);
     poly(g, [P(b, v0, h), P(b, v0, h + rh), P(b, v1, h + rh), P(b, v1, h)], lit('#86a8c2', ...FACE.e), OUTLINE);
     if (g.fine) for (let t = v0 + 2.4; t < v1 - 0.5; t += 2.4) stroke(g, [P(b, t, h), P(b, t, h + rh)], 'rgba(40,50,60,0.45)', 0.35);
   }

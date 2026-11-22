@@ -13,10 +13,10 @@ export const MATS = {
   plaster: { url: new URL('../../textures/plaster.jpg', import.meta.url), tile: 96, alpha: 0.4 },
   brick: { url: new URL('../../textures/brick.jpg', import.meta.url), tile: 80, alpha: 0.55 },
   concrete: { url: new URL('../../textures/concrete.jpg', import.meta.url), tile: 110, alpha: 0.3 },
-  tile: { url: new URL('../../textures/tile.jpg', import.meta.url), tile: 44, alpha: 0.55 },
+  tile: { url: new URL('../../textures/tile.jpg', import.meta.url), tile: 44, alpha: 0.45 },
   metal: { url: new URL('../../textures/metal.jpg', import.meta.url), tile: 80, alpha: 0.45 },
   wood: { url: new URL('../../textures/wood.jpg', import.meta.url), tile: 30, alpha: 0.45 },
-  gravel: { url: new URL('../../textures/gravel.jpg', import.meta.url), tile: 48, alpha: 0.4 },
+  gravel: { url: new URL('../../textures/gravel.jpg', import.meta.url), tile: 48, alpha: 0.32 },
   paint: { url: new URL('../../textures/paint.jpg', import.meta.url), tile: 60, alpha: 0.25 },
 };
 
@@ -90,11 +90,33 @@ export function wallMat(color) {
   return m;
 }
 
-/** Material eines Dachs aus seiner Farbe: grau und flach Kies, sonst Dachziegel (auch Schiefer); withMat() geht vor. */
-export function roofMat(color) {
-  if (forced !== undefined) return forced === null ? null : forced;
-  if (typeof color !== 'string' || color[0] !== '#' || color.length !== 7) return 'tile';
-  return 'tile';
+let forcedRoof; // wie forced, nur für Dächer (withRoof)
+
+/** fn mit festem Dachmaterial malen (null: ohne Foto), z. B. Blechdächer von Hallen. */
+export function withRoof(mat, fn) {
+  const was = forcedRoof;
+  forcedRoof = mat;
+  try {
+    return fn();
+  } finally {
+    forcedRoof = was;
+  }
+}
+
+/** Material eines geneigten Dachs: Dachziegel (dunkle wirken wie Schiefer), sonst def; withRoof() geht vor. */
+export function roofMat(color, def = 'tile') {
+  if (forcedRoof !== undefined) return forcedRoof;
+  if (forced === null) return null;
+  return def;
+}
+
+/** Material eines Flachdachs: Kies bei grauen Farben, sonst keins (Rasen, Plätze …); withRoof() geht vor. */
+export function flatMat(color) {
+  if (forcedRoof !== undefined) return forcedRoof === 'tile' ? 'gravel' : forcedRoof;
+  if (forced === null) return null;
+  if (typeof color !== 'string' || color[0] !== '#' || color.length !== 7) return null;
+  const [, s, l] = hsl(color);
+  return s < 0.16 && l > 0.25 && l < 0.75 ? 'gravel' : null;
 }
 
 /**

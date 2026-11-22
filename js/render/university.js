@@ -8,7 +8,7 @@
 import { ISO_K } from './camera.js';
 import { shade, tint } from './sprites.js';
 import { snowy } from './season.js';
-import { wallMat, texWall, texFlat } from './materials.js';
+import { wallMat, flatMat, texWall, texFlat } from './materials.js';
 
 const WALL = '#e6d9bb'; // Sandstein
 const STONE = '#f4efe3'; // Säulen, Gesims, Treppen
@@ -80,7 +80,7 @@ export function box(g, u0, u1, v0, v1, h0, h1, wall, top = wall, stroke = OUTLIN
   if (stroke) poly(g, E, 'rgba(0,0,0,0)', stroke);
   const T = [P(u0, v0, h1), P(u1, v0, h1), P(u1, v1, h1), P(u0, v1, h1)];
   poly(g, T, lit(top, ...FACE.top), null);
-  if (top === wall) texFlat(g, T, h1, mat); // Klötze in einer Farbe (Kisten, Sockel …); Dächer im Paket „Dachfotos“
+  texFlat(g, T, h1, top === wall ? mat : flatMat(top)); // Klötze in einer Farbe wie die Wand, sonst graues Flachdach als Kies
   if (stroke) poly(g, T, 'rgba(0,0,0,0)', stroke);
 }
 

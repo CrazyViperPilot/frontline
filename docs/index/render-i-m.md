@@ -20,7 +20,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawRubble(ctx, cam, b, burnt) – Trümmer isometrisch: unregelmäßiger Schuttboden, Schutthügel mit Licht von link…
 - drawWreckBox(ctx, cam, w) – Fahrzeugwrack isometrisch ohne Modellbild: flache, verkohlte Wanne; Panzer und…
 
-## isokit.js (46 KB)
+## isokit.js (49 KB)
 - poly
 - box
 - lit

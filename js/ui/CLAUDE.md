@@ -24,6 +24,7 @@
 - `saves.js` – Spielstände lokal (IndexedDB) und auf dem Webspace, Konto-Anfragen, Kasse. `listSaves`, `storeSave`, `loadSave`, `apiRequest`
 - `match.js` – signierter Match-Start und Endstand (Token, kein DOM). `matchStart`, `finishMatch`, `matchSync`
 - `stats.js` – Spielstatistik des Kontos als HTML, kein DOM. `statsHtml`, `hm`
+- `telemetry.js` – Besucherstatistik: Ereignisse, Herzschlag, Fehler, Feedback, Einwilligung (kein Spielzustand). `installTelemetry`, `getTelemetry`, `createTelemetry`
 - `perfmeter.js` – Messanzeige (F3, `?perf=1`): Messung ohne DOM, Textfeld getrennt. `PerfMeter`, `PerfPanel`, `watchInput`
 - `menu.js` – Einstieg der Overlay-Menüs, nur Re-Exporte aus `menu/`. `showStartMenu`, `showPause`, `showHelp`, `showEnd`
 

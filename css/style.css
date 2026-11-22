@@ -878,3 +878,18 @@ body.flow-open .flow-fab { background: #2e372e; }
   .mm.iso { width: 140px; height: 71px; }
   .mm.iso canvas { width: 138px; height: 69px; }
 }
+
+/* Besucherstatistik (docs/prd/statistik.md): Einwilligung im Startmenü, Feedback in Pause und Ende */
+.consent { margin: 0 0 14px; font-size: 13px; }
+.consent.consent-ask { padding: 10px 12px; border: 1px solid var(--accent); border-radius: 10px; background: var(--panel-2); }
+.consent .consent-q { margin: 0 0 8px; }
+.consent .seg button { height: 34px; font-size: 13px; }
+.consent-info { margin-top: 6px; color: var(--muted, #9aa); font-size: 12px; }
+.consent-info summary { cursor: pointer; }
+.consent-info p { margin: 6px 0 0; }
+.feedback { margin-top: 12px; text-align: center; }
+.fb-form { margin-top: 8px; text-align: left; }
+.fb-form textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 8px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--panel-2); color: inherit; resize: vertical; }
+.fb-thumbs { margin-top: 6px; }
+.fb-form p { margin: 6px 0; }
+.feedback .good { color: var(--good, #7c6); }

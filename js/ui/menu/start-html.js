@@ -55,6 +55,7 @@ export function startHtml() {
   return `<section class="menu start">
       <h1 class="logo">FRONTLINE</h1>
       <section class="account" data-account aria-label="Konto"></section>
+      <section class="consent" data-consent aria-label="Spielstatistik"></section>
       <div class="resume" data-resume hidden></div>
       <section class="saves" data-saves hidden>
         <h3>Spielstände</h3>
@@ -143,7 +144,7 @@ export function startHtml() {
       ${howtoHtml()}
       <p class="muted small center" data-wallet></p>
       <button type="button" class="primary" data-act="start">Start</button>
-      <p class="muted small center">Alle Tasten zeigt F1 im Spiel.</p>
+      <p class="muted small center">Alle Tasten zeigt F1 im Spiel. Feedback geht im Pausenmenü (P) und nach der Partie.</p>
       <p class="muted small center menu-version" title="Ausgelieferte Version (steigt mit jedem Release; so sieht man, ob ein Deploy durch ist)">Version ${GAME_VERSION}</p>
     </section>`;
 }

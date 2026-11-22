@@ -255,6 +255,8 @@ Konten: ohne Cookie 401, jeder sieht nur seine Stände, fremde id beim Speichern
 
 ## Admin-Panel (ADM1)
 
+Reiter „Statistik“ (Besucherstatistik, Feedback) und Spalte `users.stat_id`: [statistik.md](statistik.md).
+
 Benutzerverwaltung für Daniel unter **`/frontline/admin/`** (Adresse des Webspace), Schnittstelle `api/admin.php`.
 Nicht im Offline-Cache (`admin/` steht nicht in `sw.js`), aber im Deploy hochgeladen. Die Seite trägt `noindex`.
 

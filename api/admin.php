@@ -13,6 +13,12 @@
 //   POST admin.php {"action":"premiumhistory","id":N}              → {"history":[{plan,premiumUntil,note,createdAt,changedBy}]} (neueste zuerst)
 //   POST admin.php {"action":"setwallet","id":N,"value":Zahl}      → {"ok":true}: Kasse des Kontos setzen (0 bis walletMax, KA1)
 //   POST admin.php {"action":"delete","id":N}                      → {"ok":true,"saves":n}: Konto, Sitzungen, Links, Spielstände, Partien und Premium-Historie gelöscht
+//                                                                    (dazu die Besucherstatistik seiner Spieler-ID, falls vorhanden)
+//   POST admin.php {"action":"traffic","days":7|30|90}            → Besucherstatistik (docs/prd/statistik.md, traffic_report in api/lib/traffic.php)
+//   POST admin.php {"action":"errors"}                             → {"errors":[{message,file,line,n,firstAt,lastAt,lastVersion,page}]} (häufigste zuerst)
+//   POST admin.php {"action":"feedback"}                           → {"feedback":[{id,createdAt,text,thumb,version,duration,mode,place,device,browser,done}]} (neueste zuerst)
+//   POST admin.php {"action":"feedbackdone","id":N,"done":bool}    → {"ok":true}: Haken „erledigt“
+//   POST admin.php {"action":"feedbackdelete","id":N}              → {"ok":true}: Rückmeldung löschen
 // Fehler: 400 Anfrage, 401 nicht angemeldet (oder Anmeldung falsch bei login → 401 mit eigener Meldung), 404 Konto fehlt, 405 Methode,
 //         429 zu viele Fehlversuche (5 je IP in 15 min), 500 Server/Datenbank, 503 „Admin nicht eingerichtet“.
 // Zugang: admin_user und admin_pass_hash in api/config.php (der Deploy schreibt sie aus den Secrets ADMIN_USER und ADMIN_PASSWORD;
@@ -23,12 +29,16 @@ require_once __DIR__ . '/lib/http.php';
 require_once __DIR__ . '/lib/db.php';
 require_once __DIR__ . '/lib/konto.php';
 require_once __DIR__ . '/lib/match.php';
+require_once __DIR__ . '/lib/track.php';
+require_once __DIR__ . '/lib/traffic.php';
 
 const FL_PATH = '/frontline/';          // Pfad des Spiels auf dem Webspace (Cookie fl_admin)
 const FL_ADMIN_HOURS = 8;               // Admin-Sitzung
 const FL_ADMIN_MAX = 5;                 // Fehlversuche beim Anmelden je IP …
 const FL_ADMIN_WINDOW = 900;            // … in Sekunden (15 min)
 const FL_ADMIN_PASS_MAX = 72;           // Byte: bcrypt liest nur die ersten 72
+const FL_ADMIN_FEEDBACK_MAX = 1000;     // Rückmeldungen in der Liste (neueste)
+const FL_ADMIN_ERRORS_MAX = 300;        // Fehlergruppen in der Liste (häufigste)
 const FL_ADMIN_SCHEMA = [
     'CREATE TABLE IF NOT EXISTS admin_sessions (
             hash CHAR(64) NOT NULL PRIMARY KEY,
@@ -46,7 +56,7 @@ $body = json_decode((string) file_get_contents('php://input'), true);
 if (!is_array($body) || !isset($body['action']) || !is_string($body['action'])) fail(400, 'Ungültige Anfrage');
 
 $cfg = admin_config();
-$pdo = fl_db(array_merge(FL_SCHEMA, FL_ADMIN_SCHEMA, FL_MATCH_SCHEMA));
+$pdo = fl_db(array_merge(FL_SCHEMA, FL_ADMIN_SCHEMA, FL_MATCH_SCHEMA, FL_TRACK_SCHEMA));
 fl_konto_upgrade($pdo);
 $action = $body['action'];
 
@@ -68,6 +78,11 @@ switch ($action) {
     case 'premiumhistory': admin_premium_history($pdo, $body); break;
     case 'setwallet': admin_setwallet($pdo, $body); break;
     case 'delete': admin_delete($pdo, $body); break;
+    case 'traffic': admin_traffic($pdo, $body); break;
+    case 'errors': admin_errors($pdo); break;
+    case 'feedback': admin_feedback($pdo); break;
+    case 'feedbackdone': admin_feedback_done($pdo, $body); break;
+    case 'feedbackdelete': admin_feedback_delete($pdo, $body); break;
     default: fail(400, 'Unbekannte Aktion');
 }
 out(['ok' => true]);
@@ -349,7 +364,7 @@ function admin_setwallet(PDO $pdo, array $body) {
 // Löschen in einer Transaktion: Spielstände, Sitzungen, Links, dann das Konto.
 function admin_delete(PDO $pdo, array $body) {
     $id = admin_id($body);
-    admin_user_row($pdo, $id);
+    $row = admin_user_row($pdo, $id);
     $saves = 0;
     $pdo->beginTransaction();
     try {
@@ -363,6 +378,7 @@ function admin_delete(PDO $pdo, array $body) {
         $pdo->prepare('DELETE FROM match_tokens WHERE user_id = :id')->execute([':id' => $id]);
         $pdo->prepare('DELETE FROM sessions WHERE user_id = :id')->execute([':id' => $id]);
         $pdo->prepare('DELETE FROM tokens WHERE user_id = :id')->execute([':id' => $id]);
+        if (!empty($row['stat_id'])) track_forget($pdo, $row['stat_id']); // Besucherstatistik des Kontos
         $pdo->prepare('DELETE FROM users WHERE id = :id')->execute([':id' => $id]);
         $pdo->commit();
     } catch (Throwable $e) {
@@ -370,6 +386,60 @@ function admin_delete(PDO $pdo, array $body) {
         throw $e;
     }
     out(['ok' => true, 'saves' => $saves]);
+}
+
+// ---- Besucherstatistik (docs/prd/statistik.md) -------------------------------------------------------------
+
+// Bericht über die letzten 7, 30 oder 90 Tage (bis heute, Ortszeit des Servers). Räumt vorher auf, falls heute noch nicht geschehen.
+function admin_traffic(PDO $pdo, array $body) {
+    $days = isset($body['days']) ? (int) $body['days'] : 30;
+    if (!in_array($days, [7, 30, 90], true)) fail(400, 'days muss 7, 30 oder 90 sein');
+    track_daily($pdo);
+    $now = time();
+    $to = track_day($now);
+    $from = date('Y-m-d', strtotime($to . ' -' . ($days - 1) . ' days'));
+    out(traffic_report(traffic_rows($pdo, $from, $to), traffic_player_days($pdo), $from, $to, $now));
+}
+
+function admin_errors(PDO $pdo) {
+    $st = $pdo->query('SELECT message, file, line, n, first_at, last_at, last_version, page FROM tr_errors ORDER BY n DESC, last_at DESC LIMIT ' . FL_ADMIN_ERRORS_MAX);
+    $list = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $list[] = [
+            'message' => $r['message'], 'file' => $r['file'], 'line' => (int) $r['line'], 'n' => (int) $r['n'],
+            'firstAt' => (int) $r['first_at'], 'lastAt' => (int) $r['last_at'], 'lastVersion' => $r['last_version'], 'page' => $r['page'],
+        ];
+    }
+    out(['errors' => $list]);
+}
+
+function admin_feedback(PDO $pdo) {
+    $st = $pdo->query('SELECT id, created_at, text, thumb, version, duration, mode, place, device, browser, done FROM tr_feedback
+        ORDER BY created_at DESC, id DESC LIMIT ' . FL_ADMIN_FEEDBACK_MAX);
+    $list = [];
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $list[] = [
+            'id' => (int) $r['id'], 'createdAt' => (int) $r['created_at'], 'text' => $r['text'],
+            'thumb' => $r['thumb'] === null ? null : (int) $r['thumb'], 'version' => $r['version'],
+            'duration' => $r['duration'] === null ? null : (int) $r['duration'], 'mode' => $r['mode'], 'place' => $r['place'],
+            'device' => $r['device'], 'browser' => $r['browser'], 'done' => (int) $r['done'] === 1,
+        ];
+    }
+    out(['feedback' => $list]);
+}
+
+function admin_feedback_done(PDO $pdo, array $body) {
+    $id = admin_id($body);
+    $st = $pdo->prepare('UPDATE tr_feedback SET done = :d WHERE id = :id');
+    $st->execute([':d' => !empty($body['done']) ? 1 : 0, ':id' => $id]);
+    if ($st->rowCount() === 0) fail(404, 'Rückmeldung nicht gefunden');
+}
+
+function admin_feedback_delete(PDO $pdo, array $body) {
+    $id = admin_id($body);
+    $st = $pdo->prepare('DELETE FROM tr_feedback WHERE id = :id');
+    $st->execute([':id' => $id]);
+    if ($st->rowCount() === 0) fail(404, 'Rückmeldung nicht gefunden');
 }
 
 // Die id aus dem Aufruf (ganze Zahl ab 1), sonst 400.

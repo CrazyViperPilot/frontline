@@ -1,10 +1,12 @@
-// Pausenmenü: Weiter, Speichern unter …, Konto (kompakt), Bildauflösung, Lautstärke, Vollbild. pauseHtml baut den Dialog,
+// Pausenmenü: Weiter, Speichern unter …, Konto (kompakt), Feedback, Bildauflösung, Lautstärke, Vollbild. pauseHtml baut den Dialog,
 // makeCopyAct das „Speichern unter …“; showPause verdrahtet beides. Reines DOM, keine Spiellogik. Export: showPause.
 import { NAME_MAX, accountEmail } from '../saves.js';
 import { matchSync } from '../match.js';
 import { show, hideOverlay, markFullscreen, setFullscreen, volRow } from './common.js';
 import { writeLowRes } from './prefs.js';
 import { wireAccount } from './account.js';
+import { feedbackHtml, wireFeedback } from './feedback.js';
+import { getTelemetry } from '../telemetry.js';
 
 /** Das HTML des Pausenmenüs; saveAs, account, display und audio wie bei showPause (leer = Abschnitt entfällt). */
 function pauseHtml(saveAs, account, display, audio) {
@@ -23,6 +25,7 @@ function pauseHtml(saveAs, account, display, audio) {
         <p class="bad small" data-copyerr></p>
       </div>` : ''}
       ${account ? '<section class="account" data-account aria-label="Konto"></section>' : ''}
+      ${feedbackHtml()}
       ${display ? `<div class="field"><span class="flabel" title="Scharf: volle Pixeldichte (höchstens 2×). Leistung: 1× Pixel, schont schwache Geräte; wirkt sofort">Bildauflösung</span>
         <div class="seg"><button type="button" data-lowres="0">Scharf</button><button type="button" data-lowres="1">Leistung</button></div>
       </div>` : ''}
@@ -116,11 +119,13 @@ export function showPause(root, onResume, onQuit, onSave = null, audio = null, s
       locked: rated ? 'Gewertete Partie: An- und Abmelden erst nach dem Endstand.' : null,
       onSynced: () => {
         matchSync(); // Vorrat für gewertete Partien nach dem Anmelden holen (wirkt auf künftige Partien)
+        getTelemetry().linkAccount(); // Spieler-ID der Statistik ans Konto (nur mit Einwilligung)
       },
     });
   }
   /** „Speichern unter …“: Eingabe zeigen, mit Vorschlag; „Speichern“ legt die Kopie an, das Pausenmenü bleibt offen. */
   const copyAct = makeCopyAct(root, saveAs, setName);
+  wireFeedback(root, 'pause'); // Rückmeldung (menu/feedback.js), eigene Klicks
   if (audio) {
     root.oninput = (e) => {
       const r = e.target.closest?.('[data-vol]');

@@ -2,6 +2,7 @@
 // und hält Kasse und Spielstand-Liste nach An-/Abmelden aktuell. Exporte: wireStartAccount.
 import { matchSync } from '../match.js';
 import { initFromLink, takeAccountLink, wireAccount } from './account.js';
+import { getTelemetry } from '../telemetry.js';
 
 /** Konto im Startmenü: `wallet` und `saves` sind createWallet/createSaves aus start-saves.js. */
 export function wireStartAccount(root, wallet, saves) {
@@ -22,6 +23,7 @@ export function wireStartAccount(root, wallet, saves) {
     onSynced: () => {
       matchSync().then(() => wallet.show());
       saves.changed();
+      getTelemetry().linkAccount(); // Spieler-ID der Statistik ans Konto (nur mit Einwilligung)
     },
   });
   account.ready.then((u) => {
@@ -31,6 +33,7 @@ export function wireStartAccount(root, wallet, saves) {
     if (u) {
       matchSync().then(() => wallet.show()); // Vorrat und wartende Endstände
       saves.changed(); // angemeldet: Stände vom Konto nachladen
+      getTelemetry().linkAccount(); // Spieler-ID der Statistik ans Konto (nur mit Einwilligung)
     }
   });
 }

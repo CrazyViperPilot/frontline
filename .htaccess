@@ -1,2 +1,2 @@
-# Startseite des Spiels (der Webspace sucht sonst nur index.php und antwortet auf /frontline/ mit 403).
-DirectoryIndex index.html
+# Startseite des Spiels: index.php zählt den Aufruf (Besucherstatistik) und liefert index.html aus; ohne PHP gilt index.html.
+DirectoryIndex index.php index.html

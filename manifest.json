@@ -2,7 +2,7 @@
   "name": "Frontline",
   "short_name": "Frontline",
   "description": "Echtzeit-Strategie: FOB bauen, Ressourcen fördern, Konfliktzone halten. Gegen den Computer, offline spielbar.",
-  "start_url": "./index.html",
+  "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
   "orientation": "landscape",

@@ -83,3 +83,5 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
 
 - `?debug=1` (kein Nebel, Taste M = +1000 Geld, bis 10× Tempo), `?seed=N`, `?speed=N`, `?river=0|1`,
   `?gl=0` (ohne WebGL-Boden), `?debug=1&fog=1`, `?debug=1&weather=winter&wx=snow`.
+- `?statistik=1` schaltet die Besucherstatistik lokal ein (sonst aus auf localhost, bei `?debug=1` und in Playwright), `?statistik=0` aus.
+  Gegen `php -S` prüfen: Playwright mit normalem User-Agent, sonst filtert der Server „HeadlessChrome“ als Bot.

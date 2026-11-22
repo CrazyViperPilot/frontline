@@ -26,6 +26,9 @@ import { propLooksOf, forgetPropLooks, drawPropsTop } from '../render/mapprops.j
 import { Relief, RELIEF, COARSE_N, reliefOf, setRelief } from '../game/relief.js';
 import { reliefTiles, updateReliefTiles, drawReliefTiles } from '../render/reliefimg.js';
 import { footprint, overlaps, blockerOf, stackTarget, blockerName } from './space.js';
+import { installTelemetry } from '../ui/telemetry.js';
+
+installTelemetry('editor'); // Besucherstatistik: Seitenaufruf des Editors, Fehler (docs/prd/statistik.md)
 
 const W = BALANCE.map.width;
 const H = BALANCE.map.height;

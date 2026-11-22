@@ -26,6 +26,7 @@ import { GAME_VERSION } from './version.js';
 import { WEATHER_NAMES, WEATHER_SETTINGS } from './game/weather.js';
 import { strikeJets } from './game/airstrike.js';
 import { PerfMeter, PerfPanel, watchInput } from './ui/perfmeter.js';
+import { installTelemetry } from './ui/telemetry.js';
 
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === '1';
@@ -54,6 +55,7 @@ const canvas = document.getElementById('view');
 const hudRoot = document.getElementById('hud');
 const overlay = document.getElementById('overlay');
 
+const tele = installTelemetry('game'); // Besucherstatistik (docs/prd/statistik.md), nur lesend
 const sound = new Sound(); // Ton (PRD §14): ein Sound-Objekt für alle Partien, der AudioContext entsteht erst bei der ersten Geste
 const levelCtl = { get: (kind) => sound.getLevel(kind), set: (kind, v) => sound.setLevel(kind, v) }; // Regler im Pausenmenü (seit v5.68)
 for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => sound.unlock(), { capture: true });
@@ -108,6 +110,7 @@ function stopSession() {
   const s = session;
   if (!s) return;
   session = null;
+  tele.gameEnd('quit'); // ohne laufende Partie (schon beendet) wirkungslos
   sound.detach();
   s.loop.stop();
   s.input.destroy();
@@ -285,6 +288,7 @@ async function resumeGame(rec) {
   buildSession(game, ai, settings, body.view);
   session.match = match;
   if (!DEBUG) session.hud.pushMessage(match ? 'Gewertete Partie: der Endstand zählt für die Kasse.' : 'Fortgesetzte Partien zählen nicht für die Kasse.');
+  statStart(session, true);
   // Die Partie schreibt ab jetzt in diesen Stand
   Object.assign(session, { saveId: rec.meta.id, saveName: rec.meta.name, createdAt: rec.meta.createdAt });
   // Beim Fortsetzen erst pausiert: Zeit zum Umsehen
@@ -416,6 +420,7 @@ const app = {
     }
     if (!overlay.hidden || !session || session.ended) return;
     showHelp(overlay);
+    tele.track('help', { part: 'keys' });
   },
   changeSpeed(dir) {
     const s = session;
@@ -552,6 +557,7 @@ function frame(s) {
   const g = s.game;
   if (g.winner !== null && !s.ended) {
     s.ended = true;
+    tele.gameEnd(g.winner === HUMAN ? 'win' : 'loss');
     if (!DEBUG && s.match) finishMatch(s.match.token, g.teams[HUMAN].res.money, gameInfo(g, s.settings?.difficulty, HUMAN)); // gewertete Partie: Endstand und Partie-Infos (Statistik) an den Server
     if (!DEBUG) saveNow(s, true); // beendete Partie bleibt als Stand (ended, nicht fortsetzbar), wird nicht gelöscht
     sound.end(g.winner === HUMAN);
@@ -600,6 +606,29 @@ function startGame(start) {
   buildSession(game, ai, opts, null);
   session.match = match;
   if (!DEBUG && !match) session.hud.pushMessage(UNRATED_NOTE);
+  statStart(session, false);
+}
+
+/** Besucherstatistik: Partie beginnt (Modus, Gegner, Karte, Schalter); die Spielzeit misst ui/telemetry.js über probe. */
+function statStart(s, resumed) {
+  const o = s.settings ?? {};
+  const g = s.game;
+  const diffs = (o.difficulties?.length ? o.difficulties : [o.difficulty ?? 'normal']).slice(0, s.ai.length);
+  tele.gameStart(
+    {
+      mode: g.conquest ? 'conquest' : 'classic',
+      opp: s.ai.length,
+      diffs,
+      map: o.mapId && o.mapId !== 'random' ? String(o.mapId).slice(0, 40) : 'random',
+      weather: o.weather ?? 'off',
+      research: !!g.research,
+      river: o.river !== false,
+      build: o.buildRules !== false,
+      rated: !!s.match,
+      resumed,
+    },
+    () => ({ paused: s.loop.paused || s.ended || session !== s, minute: g.time / 60 }),
+  );
 }
 
 /** Oberfläche und Schleife um ein (neues oder geladenes) Spiel aufbauen. view = gespeicherte Kameraansicht oder null. */

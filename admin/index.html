@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Frontline · Benutzerverwaltung</title>
+  <title>Frontline · Admin</title>
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
@@ -30,6 +30,7 @@
       <nav class="tabs" aria-label="Ansicht">
         <button type="button" data-view="users" aria-pressed="true">Konten</button>
         <button type="button" data-view="overview" aria-pressed="false">Übersicht</button>
+        <button type="button" data-view="traffic" aria-pressed="false">Statistik</button>
       </nav>
 
       <div id="view-users">
@@ -75,8 +76,39 @@
           </table>
         </div>
       </div>
+
+      <div id="view-traffic" hidden>
+        <div class="tools">
+          <div class="seg" role="group" aria-label="Zeitraum">
+            <button type="button" data-days="7" aria-pressed="false">7 Tage</button>
+            <button type="button" data-days="30" aria-pressed="true">30 Tage</button>
+            <button type="button" data-days="90" aria-pressed="false">90 Tage</button>
+          </div>
+          <button id="reload-traffic" type="button">Neu laden</button>
+        </div>
+        <p id="traffic-msg" class="msg" role="status"></p>
+        <p class="small">Besucher werden je Tag gezählt (Tages-Hash, ohne Cookie); „Besucher“ über mehrere Tage ist die Summe der Tage.
+          Spielzeit je Spieler und Wiederkehr gibt es nur für Spieler mit Einwilligung.</p>
+        <div id="tr-tiles" class="tiles"></div>
+        <div id="tr-charts"></div>
+        <div id="tr-sections"></div>
+        <div id="tr-errors"></div>
+        <h2 class="sub">Feedback</h2>
+        <div class="tools">
+          <select id="fb-status" aria-label="Status">
+            <option value="open">offen</option><option value="done">erledigt</option><option value="all">alle</option>
+          </select>
+          <select id="fb-thumb" aria-label="Daumen">
+            <option value="all">jeder Daumen</option><option value="up">👍</option><option value="down">👎</option><option value="none">ohne</option>
+          </select>
+          <input id="fb-search" type="search" placeholder="Text suchen" aria-label="Feedback durchsuchen" autocomplete="off">
+          <span id="fb-count" class="small"></span>
+        </div>
+        <div id="tr-feedback"></div>
+      </div>
     </section>
   </main>
   <script src="admin.js"></script>
+  <script src="traffic.js"></script>
 </body>
 </html>

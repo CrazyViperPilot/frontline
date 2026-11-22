@@ -68,7 +68,7 @@ function fl_is_token($token) {
 }
 
 // Nachrüsten (idempotent, einmal je Anfrage): Spalten users.blocked (Sperre im Admin-Panel, docs/prd/konto.md) und
-// users.wallet (Kasse am Konto, KA1; Bestandskonten bekommen den Startbetrag), users.nickname und users.active (KO4), dazu die Art
+// users.wallet (Kasse am Konto, KA1; Bestandskonten bekommen den Startbetrag), users.nickname und users.active (KO4), users.stat_id (Besucherstatistik), dazu die Art
 // „deactivate“ der Tabelle tokens (ENUM, Bestandstabellen werden erweitert). Die Abfrage läuft über information_schema,
 // wie fl_saves_upgrade in api/save.php.
 function fl_konto_upgrade(PDO $pdo) {
@@ -78,6 +78,7 @@ function fl_konto_upgrade(PDO $pdo) {
     fl_add_user_column($pdo, 'wallet', 'BIGINT NOT NULL DEFAULT ' . FL_WALLET_START);
     fl_add_user_column($pdo, 'nickname', 'VARCHAR(32) NULL');
     fl_add_user_column($pdo, 'active', 'TINYINT NOT NULL DEFAULT 1');
+    fl_add_user_column($pdo, 'stat_id', 'CHAR(36) NULL'); // Spieler-ID der Besucherstatistik, nur mit Einwilligung (docs/prd/statistik.md)
     fl_token_kind_upgrade($pdo);
     $done = true;
 }

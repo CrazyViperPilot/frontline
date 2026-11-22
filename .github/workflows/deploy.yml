@@ -115,7 +115,7 @@ jobs:
           # Nur, was der Browser braucht, plus das Spielstand-Backend api/ und das Admin-Panel admin/ (nicht im Offline-Cache).
           # Kein --delete: api/data/ (Spielstände) bleibt unberührt.
           mkdir site
-          cp -r .htaccess index.html editor.html manifest.json sw.js css js icons textures api admin site/
+          cp -r .htaccess index.php index.html editor.html manifest.json sw.js css js icons textures api admin site/
           # Doku für Entwickler (CLAUDE.md je Ordner unter js/) nicht hochladen.
           find site -name CLAUDE.md -delete
           ssl=$([ "$FTP_PROTOCOL" = "ftp" ] && echo false || echo true)

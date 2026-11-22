@@ -1,6 +1,7 @@
-// Endbildschirm (Sieg oder Niederlage mit Spielzeit, Punkten bzw. Tickets und Statistik je Team). Reines DOM. Export: showEnd.
+// Endbildschirm (Sieg oder Niederlage mit Spielzeit, Punkten bzw. Tickets und Statistik je Team, Feedback). Reines DOM. Export: showEnd.
 import { BALANCE } from '../../data/balance.js';
 import { esc, fmtTime, show, hideOverlay } from './common.js';
+import { feedbackHtml, wireFeedback } from './feedback.js';
 
 /**
  * Endbildschirm. info = { winner, team (eigenes Team), reason ('points' | 'eliminated' | 'tickets'),
@@ -51,8 +52,10 @@ export function showEnd(root, { winner, team, reason, stats }, onRestart) {
       <p class="center">${esc(why)}</p>
       ${table}
       <div class="stack"><button type="button" class="primary" data-act="again">Nochmal</button></div>
+      ${feedbackHtml()}
     </section>`,
   );
+  wireFeedback(root, 'end'); // Rückmeldung (menu/feedback.js), eigene Klicks
   root.onclick = (e) => {
     if (!e.target.closest('[data-act=again]')) return;
     hideOverlay(root);

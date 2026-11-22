@@ -14,6 +14,8 @@ Start, Pause, Hilfe, Ende und Konto; Einstieg mit Re-Exporten ist `../menu.js`. 
 - `account.js` – Konto-Fenster verdrahten, Link aus der Mail. `wireAccount`, `takeAccountLink`
 - `account-html.js` – HTML des Kontos. `accountHtml`
 - `account-flow.js` – Formulare, Knöpfe, Statistik des Kontos. `makeSubmit`, `makeClick`, `makeRun`
+- `consent.js` – Einwilligung zur Besucherstatistik im Startmenü. `consentHtml`, `wireConsent`
+- `feedback.js` – Feedback-Formular in Pause und Ende. `feedbackHtml`, `wireFeedback`
 - `prefs.js` – gemerkte Einstellungen (localStorage, Schlüssel `frontline-…`). `readFlag`, `writeFlag`, `readChoice`, `readLowRes`
 - `common.js` – Overlay zeigen und schließen, Vollbild, Auswahllisten. `show`, `hideOverlay`, `esc`, `volRow`
 

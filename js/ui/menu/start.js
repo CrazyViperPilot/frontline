@@ -8,6 +8,8 @@ import { readStartState, markStart, applySetting } from './start-state.js';
 import { createWallet, createSaves } from './start-saves.js';
 import { wireStartAccount } from './start-account.js';
 import { renderMapBox, mapChange, mapClick } from './start-maps.js';
+import { wireConsent } from './consent.js';
+import { getTelemetry } from '../telemetry.js';
 
 /**
  * Startmenü: onStart({conquest, difficulty, difficulties (je Computergegner), winPoints, mapId, weather, mood, research, river, buildRules, lowres}) (city immer true) beim Klick auf Start (mapId 'random' oder Karten-ID, lowres = Bildauflösung „Leistung“,
@@ -26,6 +28,8 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
   saves.loadQuick();
   saves.loadSaves();
   wireStartAccount(root, wallet, saves);
+  wireConsent(root.querySelector('[data-consent]')); // Besucherstatistik: Frage bzw. Schalter (menu/consent.js)
+  getTelemetry().track('menu');
   const mark = () => markStart(root, s);
   mark();
   renderMapBox(root, s);
@@ -45,6 +49,7 @@ export function showStartMenu(root, onStart, { resume = null } = {}) {
   };
   root.onclick = (e) => {
     if (e.target.closest('[data-account]')) return; // Konto-Bereich: wireAccount behandelt seine Knöpfe selbst
+    if (e.target.closest('[data-consent]')) return; // Statistik: wireConsent behandelt seine Knöpfe selbst
     const sb = e.target.closest('[data-sact]');
     if (sb) return saves.saveAct(sb);
     const b = e.target.closest('button');

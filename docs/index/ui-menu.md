@@ -30,13 +30,22 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - show(root, kind, html)
 - hideOverlay(root)
 
-## end.js (3.0 KB)
+## consent.js (2.6 KB)
+- consentHtml(c) – HTML des Bereichs; c = Einwilligung ('yes' | 'no' | null = noch nicht gefragt)
+- wireConsent(box, tele) – Bereich `box` füllen und verdrahten
+
+## end.js (3.2 KB)
 - showEnd(root, { winner, team, reason, stats }, onRestart) – Endbildschirm
+
+## feedback.js (3.5 KB)
+- FEEDBACK_MAX
+- feedbackHtml() – HTML des Bereichs (zugeklappt)
+- wireFeedback(root, place, tele) – Bereich in `root` verdrahten (sucht [data-feedback])
 
 ## help.js (0.7 KB)
 - showHelp(root) – Hilfe mit allen Tasten
 
-## pause.js (7.4 KB)
+## pause.js (7.7 KB)
 - showPause(root, onResume, onQuit, onSave, audio, saveAs, account, display) – Pausenmenü: onResume() bei „Weiter“, onQuit() bei „Zum Startmenü“
 
 ## prefs.js (2.8 KB)
@@ -59,7 +68,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - writeChoice(key, v)
 - writeMapSel(v)
 
-## start-account.js (1.7 KB)
+## start-account.js (1.9 KB)
 - wireStartAccount(root, wallet, saves) – Konto im Startmenü: `wallet` und `saves` sind createWallet/createSaves aus star…
 
 ## start-html.js (12 KB)
@@ -79,5 +88,5 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - markStart(root, s) – Knöpfe und Felder des Startmenüs an den Zustand `s` anpassen
 - applySetting(s, b) – Eine Schalter-Wahl nach einem Klick übernehmen und merken
 
-## start.js (3.9 KB)
+## start.js (4.2 KB)
 - showStartMenu(root, onStart, { resume = null }) – Startmenü: onStart({conquest, difficulty, difficulties (je Computergegner), win…

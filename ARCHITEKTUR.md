@@ -269,3 +269,4 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Kasse am Konto | `konto` | `api/auth.php` | UI `ui/menu/start-saves.js` | `kasse` |
 | Signierter Match-Start, Spielstatistik | `konto` | `api/match.php` | `api/lib/match.php`; UI `ui/match.js`, `ui/stats.js` | `match`, `spielstatistik` |
 | Admin-Panel | `konto` | `api/admin.php` | `admin/` | – |
+| Besucherstatistik, Feedback | `statistik` | `ui/telemetry.js` | `api/track.php`, `api/lib/track.php`, `api/lib/traffic.php`, `index.php`; `admin/traffic.js` | `telemetry`, `trackphp` |

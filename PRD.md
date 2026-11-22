@@ -21,6 +21,7 @@ Der Änderungsverlauf steht in [docs/changelog.md](docs/changelog.md) (nur bei B
 | 10 | KI-Gegner | [ki.md](docs/prd/ki.md) | Verhalten der Armee-KI (Wellen, Späher, Expansion, Konter-Mix, Luftabwehr), was sie nicht baut, Tabelle „KI-Konstanten“ |
 | 13 | Geparkte Ideen | [ideen.md](docs/prd/ideen.md) | Ideen, die nur festgehalten werden (nicht bauen, Regel 8 in CLAUDE.md) |
 | 14, 16 | Ton, Musik, Spielstand | [ton-speichern.md](docs/prd/ton-speichern.md) | Synthetisierte Geräusche und Musik, Lautstärke; Speichern und Laden |
+| 17a | Besucherstatistik, Feedback | [statistik.md](docs/prd/statistik.md) | Nutzung zählen ohne Cookie (Tages-Hash), Spieler-ID nur mit Einwilligung, Feedback in Pause und Ende, Reiter „Statistik“ im Admin-Panel |
 | 17 | Benutzerkonten | [konto.md](docs/prd/konto.md) | Gast spielt ohne Konto; (weiter unten) |
 | 15 | Stadt (Kern) | [stadt.md](docs/prd/stadt.md) | Zonenstadt: Startviertel, Ausbildung in Kaserne/Fabrikhalle/Heliport, (weiter unten) |
 | 15 | Stadt: Wirtschaft | [stadt-wirtschaft.md](docs/prd/stadt-wirtschaft.md) | Rohwaren und Import (Einfuhr am Kartenrand und über Güterbahnhof mit Gleis, Preise), Werke als 2 × 2-Großbauten, Ertrag, Stahl, Markt, Straßenkosten, Steuern, Ressourcenanzeige |

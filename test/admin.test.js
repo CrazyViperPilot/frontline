@@ -15,7 +15,7 @@ test('Deploy: Secrets ADMIN_USER und ADMIN_PASSWORD, nur Name und Hash in config
   assert.match(wf, /ADMIN_USER: \$\{\{ secrets\.ADMIN_USER \}\}/);
   assert.match(wf, /ADMIN_PASSWORD: \$\{\{ secrets\.ADMIN_PASSWORD \}\}/);
   assert.match(wf, /"admin_pass_hash" => \$adminPass !== "" \? password_hash\(\$adminPass, PASSWORD_DEFAULT\) : ""/);
-  assert.match(wf, /cp -r \.htaccess index\.html editor\.html manifest\.json sw\.js css js icons textures api admin site\//);
+  assert.match(wf, /cp -r \.htaccess index\.php index\.html editor\.html manifest\.json sw\.js css js icons textures api admin site\//);
   assert.doesNotMatch(wf, /"admin_password"/, 'das Passwort selbst darf nicht in config.php');
 });
 
@@ -48,7 +48,7 @@ test('Doku: Abschnitt „Admin-Panel“ in konto.md mit der Adresse /frontline/a
 test('Übersicht (seit v5.158): Aktion stats, Spalte Spiele, Partien mit dem Konto gelöscht, zwei Reiter', () => {
   const src = read('api/admin.php');
   assert.match(src, /case 'stats': admin_stats\(\$pdo\);/);
-  assert.match(src, /array_merge\(FL_SCHEMA, FL_ADMIN_SCHEMA, FL_MATCH_SCHEMA\)/);
+  assert.match(src, /array_merge\(FL_SCHEMA, FL_ADMIN_SCHEMA, FL_MATCH_SCHEMA, FL_TRACK_SCHEMA\)/);
   assert.match(src, /'games' => \(int\) \$r\['games'\]/);
   assert.match(src, /DELETE FROM matches WHERE user_id = :id/);
   const html = read('admin/index.html');
@@ -56,4 +56,15 @@ test('Übersicht (seit v5.158): Aktion stats, Spalte Spiele, Partien mit dem Kon
   assert.match(html, /id="view-overview" hidden/);
   assert.match(html, /id="player-rows"/);
   assert.match(read('admin/admin.js'), /call\('stats'\)/);
+});
+
+test('Statistik (Besucherstatistik): Aktionen, Reiter, eigene Datei ohne innerHTML, nicht im Offline-Cache', () => {
+  const src = read('api/admin.php');
+  for (const a of ['traffic', 'errors', 'feedback', 'feedbackdone', 'feedbackdelete']) assert.match(src, new RegExp(`case '${a}': admin_`));
+  const html = read('admin/index.html');
+  assert.match(html, /data-view="traffic"/);
+  assert.match(html, /<script src="traffic\.js"><\/script>/);
+  assert.doesNotMatch(read('admin/traffic.js'), /\.innerHTML/);
+  assert.match(read('admin/admin.js'), /window\.flAdmin = \{ call, handle \}/);
+  assert.doesNotMatch(read('sw.js'), /traffic\.js|track\.php/);
 });

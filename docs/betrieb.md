@@ -20,4 +20,6 @@ Lesen, wenn es um Deploy, Secrets oder den Webspace geht.
 - Hochgeladen werden nur die Dateien, die der Browser braucht, plus:
   - `api/`: Spielstand-Backend `api/save.php`, Konten `api/auth.php`, Admin-API `api/admin.php`, gemeinsamer Code `api/lib/` (PHP).
   - `admin/`: Admin-Panel, nicht im Offline-Cache.
+  - `index.php`: Einstieg, zählt den Seitenaufruf (Besucherstatistik, `docs/prd/statistik.md`) und liefert `index.html` aus
+    (`.htaccess`: `DirectoryIndex index.php index.html`). Statistik-Schnittstelle `api/track.php`.
 - `api/data/` auf dem Server wird nie überschrieben oder gelöscht.

@@ -1,5 +1,5 @@
 // Admin-Panel (ADM1, Regeln: docs/prd/konto.md „Admin-Panel“): Anmeldung und Benutzerliste über api/admin.php, seit v5.158
-// die Übersicht (Aktion stats) als zweiter Reiter; seit KO4 Spalte „Aktiv“, Reaktivieren, Premium-Historie je Konto.
+// die Übersicht (Aktion stats) als zweiter Reiter, seit dem Paket „Besucherstatistik“ der Reiter Statistik (admin/traffic.js); seit KO4 Spalte „Aktiv“, Reaktivieren, Premium-Historie je Konto.
 // Kein Modul, kein Framework. Alle Texte aus dem Server laufen über textContent, nie über innerHTML.
 
 (() => {
@@ -160,14 +160,16 @@
 
   // ---- Übersicht (seit v5.158) ------------------------------------------------------------------------
 
-  let view = 'users'; // Reiter: 'users' (Konten) oder 'overview' (Übersicht)
+  let view = 'users'; // Reiter: 'users' (Konten), 'overview' (Übersicht) oder 'traffic' (Statistik, admin/traffic.js)
 
   function setView(name) {
     view = name;
     $('view-users').hidden = name !== 'users';
     $('view-overview').hidden = name !== 'overview';
+    $('view-traffic').hidden = name !== 'traffic';
     document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === name)));
     if (name === 'overview') loadOverview();
+    if (name === 'traffic') window.flTraffic?.load();
   }
 
   function tile(label, value, note = '') {
@@ -392,5 +394,6 @@
   $('search').addEventListener('input', renderRows);
   document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
 
+  window.flAdmin = { call, handle }; // für den Reiter „Statistik“ (admin/traffic.js)
   start();
 })();

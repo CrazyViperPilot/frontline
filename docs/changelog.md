@@ -3,6 +3,9 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.256: **Kein schwarzer Balken mehr über der Hauptstadt** (Oberfläche, nur Bild): Die Forschungszeile im Infofeld der Hauptstadt teilte sich den Klassennamen mit dem Forschungsfenster und erschien deshalb als leerer Balken oben im Bild. Cache v309.
+- v5.255: **Scharfschütze liegt und beobachtet** (einheiten „Liegen und Beobachten“, Befehl sniper): Taste X legt ihn hin (dann sieht ihn der Gegner nur aus 20 px oder mit einem Scharfschützen), Taste O schaltet Beobachten (schießt nicht) oder Feuer frei; sein Tarnanzug passt sich Umgebung und Jahreszeit an. Cache v309.
+- v5.254: **Mauern halten Direktfeuer auf** (zone-gelaende „Zäune und Mauern“, ressourcen-bau „Mauer, Tor“): Durch Betonmauer, Hesco, Mauer und Tor schießt niemand mehr hindurch, nur Steilfeuer und Luftfahrzeuge darüber; Kampfpanzer und Panzerabwehr schießen ein Mauerstück in etwa 20 Schuss auf, ein Tor in etwa 10. Cache v309.
 - v5.253: **Natürliche Felsen** (zone-gelaende „Natur“, nur Bild): Felsen sind verbeulte Blöcke mit flachen Bruchflächen statt facettierter Kugeln, Ton je Fläche, dunkle Mulden, fleckiges Moos und Flechten, Schnee nur auf flachen Oberseiten, dazu ein Gesteinsfoto. Cache v308.
 - v5.252: **Materialfotos an Fahrzeugen** (einheiten „Aussehen“, nur Bild): Panzer, Lkw und andere Bodenfahrzeuge mit abgenutztem Lack (Abplatzer, Schlieren), Hubschrauber und Flugzeuge mit leichter Patina, nur auf den Teilen in Teamfarbe. Cache v307.
 - v5.251: **Materialfotos an Großbauten und Props** (stadt-aussehen §15, nur Bild): Kaserne, Fabrikhalle und Güterbahnhof mit Fotos an Wänden und Dächern; Container, Tanks, Autos mit Lack-Patina, Kisten, Paletten, Zäune und Bänke mit Holz, Mauern mit Beton. Cache v306.

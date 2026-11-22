@@ -1,1 +1,0 @@
-**Mauern halten Direktfeuer auf** (zone-gelaende „Zäune und Mauern“, ressourcen-bau „Mauer, Tor“): Durch Betonmauer, Hesco, Mauer und Tor schießt niemand mehr hindurch, nur Steilfeuer und Luftfahrzeuge darüber; Kampfpanzer und Panzerabwehr schießen ein Mauerstück in etwa 20 Schuss auf, ein Tor in etwa 10.

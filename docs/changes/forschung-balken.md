@@ -1,1 +1,0 @@
-**Kein schwarzer Balken mehr über der Hauptstadt** (Oberfläche, nur Bild): Die Forschungszeile im Infofeld der Hauptstadt teilte sich den Klassennamen mit dem Forschungsfenster und erschien deshalb als leerer Balken oben im Bild.

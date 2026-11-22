@@ -42,6 +42,8 @@ try {
   const res = await page.evaluate(
     async ({ types, scale, list }) => {
       const U = await import('/js/render/unitpaint.js');
+      const MT = await import('/js/render/materials.js');
+      for (let k = 0; k < 100 && !MT.materialsReady(); k++) await new Promise((r) => setTimeout(r, 50)); // Materialfotos abwarten
       const { ISO_K: K } = await import('/js/render/camera.js');
       const { UNITS } = await import('/js/data/units.js');
       const all = U.unitModelTypes();

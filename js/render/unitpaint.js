@@ -36,6 +36,7 @@ import { sprite, blit, spriteDpr, peek } from './spritecache.js';
 import { jetAlt, jetGrounded } from '../game/aircraft.js';
 import { setIsoAt } from './iso.js';
 import { mix } from './color.js';
+import { UNITS } from '../data/units.js';
 
 const ISO_SCALE = 1.35; // Iso: Modelle etwas größer als ihre Grundfläche (wie bisher), damit man sie gut erkennt
 const VEH_SECT = 16; // Richtungen der Fahrzeuge, Hubschrauber und Jets in Iso
@@ -72,6 +73,16 @@ function scaleModel(m, k) {
   }
 }
 
+/**
+ * Materialfoto (materials.js) der Fahrzeuge: alle Körper in Teamfarbe (Wanne, Turm, Aufbauten, Rumpf) bekommen abgenutzten Lack
+ * (Bodenfahrzeuge) bzw. leichte Patina (Luftfahrzeuge); Ketten, Glas, Lampen, Markierungen und Kleinteile bleiben glatt.
+ */
+function wear(m, P, air) {
+  const team = new Set([P.body, P.dark, P.light, P.camo, P.air]);
+  const mat = air ? 'paint' : 'armor';
+  for (const S of [m.S, m.turret?.S ?? []]) for (const so of S) if (!so.fine && so.alpha === undefined && so.mat === undefined && team.has(so.col)) so.mat = mat;
+}
+
 const models = new Map(); // Schlüssel → Modell (Körper und Maße); klein, bleibt
 function modelOf(type, team, o = {}) {
   const key = `${type}|${team}|${o.frame ?? ''}|${o.missiles ?? ''}|${o.gear ? 1 : 0}`;
@@ -81,6 +92,7 @@ function modelOf(type, team, o = {}) {
   m = INFANTRY[type] ? soldier(P, { kind: INFANTRY[type], frame: o.frame ?? 0 }) : MODELS[type]?.(P, o);
   if (!m) return null;
   if (SIZE[type]) scaleModel(m, SIZE[type]);
+  if (!INFANTRY[type]) wear(m, P, UNITS[type]?.air);
   models.set(key, m);
   return m;
 }

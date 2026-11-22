@@ -135,6 +135,8 @@ Iso: Wanne in 16 Richtungen, der Turm getrennt in 16 Richtungen (folgt dem Ziel)
 2D: dieselben Modelle von oben, Turm frei drehbar.
 Rotoren und Nachbrenner laufen live, Wracks sind dasselbe Modell verkohlt.
 Jede Ansicht wird je Maßstab einmal gemalt und danach nur kopiert (`spritecache.js`), darum flüssig auf Handy und Tablet.
+Fahrzeuge tragen ein **Materialfoto** (`js/render/materials.js`, CC0): Bodenfahrzeuge abgenutzten Lack mit Abplatzern und Schlieren,
+Luftfahrzeuge leichte Patina, nur auf den Teilen in Teamfarbe; Ketten, Glas und Kleinteile bleiben glatt, Soldaten ohne Foto.
 Nur Bild, Spielregeln unverändert.
 Code: `js/render/unitpaint.js` (Einstieg), Modelle nach Familien in `js/render/units/`.
 

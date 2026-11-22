@@ -30,6 +30,7 @@ const ASSETS = [
   './textures/wood.jpg',
   './textures/gravel.jpg',
   './textures/paint.jpg',
+  './textures/armor.jpg',
   './js/version.js',
   './js/main.js',
   './js/audio/sound.js',

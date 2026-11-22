@@ -1,0 +1,1 @@
+**Materialfotos an Fahrzeugen** (einheiten „Aussehen“, nur Bild): Panzer, Lkw und andere Bodenfahrzeuge mit abgenutztem Lack (Abplatzer, Schlieren), Hubschrauber und Flugzeuge mit leichter Patina, nur auf den Teilen in Teamfarbe.

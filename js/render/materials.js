@@ -18,6 +18,7 @@ export const MATS = {
   wood: { url: new URL('../../textures/wood.jpg', import.meta.url), tile: 30, alpha: 0.45 },
   gravel: { url: new URL('../../textures/gravel.jpg', import.meta.url), tile: 48, alpha: 0.32 },
   paint: { url: new URL('../../textures/paint.jpg', import.meta.url), tile: 60, alpha: 0.25 },
+  armor: { url: new URL('../../textures/armor.jpg', import.meta.url), tile: 26, alpha: 0.36 }, // Fahrzeuge: Lackabplatzer, Schlieren
 };
 
 const img = {}; // Material → geladenes Bild

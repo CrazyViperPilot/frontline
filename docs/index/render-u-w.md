@@ -1,8 +1,28 @@
-# Symbol-Index render (Teil 4 von 4, university.js bis works.js)
+# Symbol-Index render (Teil 4 von 4, unitpaint.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## university.js (Fortsetzung)
+## unitpaint.js (Fortsetzung)
+- drawUnitShadowIso(ctx, cam, u, p, dpr, now) – Schatten in Iso: Umriss des Modells von oben, flach auf den Boden gelegt (Boden…
+- drawUnitTop(ctx, u, zoom, aim, now) – Einheit von oben (2D), Weltkoordinaten (Transform des Renderers)
+- drawWreckIso(ctx, cam, w, p) – Wrack in Iso: verkohltes Modell (Wanne und Turm) am Boden
+- drawWreckTop(ctx, w, zoom, a) – Wrack von oben (2D): dasselbe verkohlte Modell wie in Iso, gedreht wie das Fahr…
+- unitModelTypes() – Für Tests: alle Modelle bauen lassen (Körper, Maße), ohne zu malen
+- unitModel (= modelOf)
+- unitLook (= lookOf)
+- PAINT – Malwerkzeug für andere gemalte Modelle (Tiere und Felsen in nature.js): Körper,…
+- paintOf
+- teamKey (= keyOf)
+- SHOWROOM
+
+## university.js (20 KB)
+- OUTLINE
+- DETAIL – darunter keine Fenster, Säulen und Rippen (Leistung, zu klein zum Sehen)
+- lit(color, nu, nv, nh)
+- FACE
+- iso(ctx, cam, b) – Zeichenkontext für eine Universität: Projektion lokaler Koordinaten (u, v nach…
+- poly(g, pts, fill, stroke)
+- box(g, u0, u1, v0, v1, h0, h1, wall, top, stroke) – Quader: sichtbar sind die Wand nach +v (links), nach +u (rechts) und das Dach
 - pyramid(g, cu, cv, s, h, rh, color) – Pyramidendach (Turm) über dem Quadrat ±s um (cu, cv) ab Höhe h, Spitze rh höher…
 - tree(g, u, v, s)
 - drawUniversityIso(ctx, cam, b) – Isometrisch: ganze Anlage in einem Zug (hinten nach vorne)

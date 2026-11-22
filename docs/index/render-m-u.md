@@ -1,4 +1,4 @@
-# Symbol-Index render (Teil 3 von 4, marks.js bis university.js)
+# Symbol-Index render (Teil 3 von 4, marks.js bis unitpaint.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
@@ -15,7 +15,19 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawFootRing(ctx, x, y, r, color, px) – Ring am Boden um einen Punkt (Anfang einer Route, Fuß des Sammelpunkts): dunkle…
 - drawRallyFlag(ctx, x, y, f) – Sammelpunkt-Fahne (einmal gemalt, Bildschirmpixel): Mast mit Knauf und ein gold…
 
-## milbuild.js (48 KB)
+## materials.js (6.9 KB)
+- MATS – Material: Datei, Weltpixel je Kachel, Deckkraft des Fotos
+- materialsReady() – Sind die Fotos geladen (sonst malt texture() nichts)?
+- withMat(mat, fn) – fn mit festem Wandmaterial malen (null: ohne Foto), z. B. Holzkisten, Container…
+- wallMat(color) – Material einer Wand aus ihrer Farbe: rötlich-braun Ziegel, hell Putz, sonst Bet…
+- roofMat(color) – Material eines Dachs aus seiner Farbe: grau und flach Kies, sonst Dachziegel (a…
+- texture(g, pts, mat, O, X, Y) – Foto des Materials mat auf die Fläche pts (Bildschirmpunkte, schon in der Fläch…
+- texWall(g, pts, face, plane, mat) – Foto auf eine Iso-Wand: Fläche 's' (Ebene v = plane, Achse u) oder 'e' (Ebene u…
+- texFlat(g, pts, h, mat) – Foto auf eine waagrechte Iso-Fläche in Höhe h
+- texSlope(g, pts, mat, a, b, c) – Foto auf eine schräge Iso-Fläche (Dach): a und b sind zwei Weltpunkte [u, v, h]…
+- texTop(ctx, pts, mat) – Foto auf eine Fläche der 2D-Ansicht (Kontext schon in Welteinheiten skaliert)
+
+## milbuild.js (49 KB)
 - setMilWalls(list) – Mauern und Tore merken (je Bild, für die Verbindungen zu den Nachbarn)
 - drawMilIso(ctx, cam, b, color) – Iso-Bild eines Militärgebäudes (Ankerpunkt = Mitte des Grundrisses)
 - drawMilTop(ctx, b, color, zoom) – 2D von oben (Kamera-Transformation gesetzt, Weltkoordinaten)
@@ -99,9 +111,10 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - roofSnowOn() – Liegt gerade Schnee (Iso-Stadt im Winter)? Für Rasen und Laub der Stadtgebäude…
 - snowy(color) – Dachfarbe unter Schnee (Hex-Farbe); ohne Schnee unverändert
 
-## spritecache.js (6.9 KB)
+## spritecache.js (7.1 KB)
 - spriteDpr() – Gerätepixel je CSS-Pixel des laufenden Bilds (für den Maßstab der Bilder)
 - spriteMissed() – Fehlte in diesem Bild ein Bild (Budget)? Wer nur bei Bedarf neu zeichnet (Edito…
+- clearSprites() – Alle Bilder verwerfen (z. B. wenn die Materialfotos geladen sind, materials.js)…
 - spriteFrame(r) – Zu Beginn jedes Bilds aufrufen (Renderer): merkt die Gerätepixel, setzt das Zei…
 - sprite(key, scale, bounds, paint) – Bild der Variante `key` für `scale` Gerätepixel je Einheit
 - peek(key, scale) – Vorhandenes Bild der Variante `key` (Maßstab am nächsten an `scale`), ohne neu…
@@ -147,23 +160,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 
 ## unitpaint.js (20 KB)
 - drawUnitIso(ctx, cam, u, p, aim, lift, now) – Einheit in Iso an Bildpunkt p (Boden), lift = Höhe über dem Boden
-- drawUnitShadowIso(ctx, cam, u, p, dpr, now) – Schatten in Iso: Umriss des Modells von oben, flach auf den Boden gelegt (Boden…
-- drawUnitTop(ctx, u, zoom, aim, now) – Einheit von oben (2D), Weltkoordinaten (Transform des Renderers)
-- drawWreckIso(ctx, cam, w, p) – Wrack in Iso: verkohltes Modell (Wanne und Turm) am Boden
-- drawWreckTop(ctx, w, zoom, a) – Wrack von oben (2D): dasselbe verkohlte Modell wie in Iso, gedreht wie das Fahr…
-- unitModelTypes() – Für Tests: alle Modelle bauen lassen (Körper, Maße), ohne zu malen
-- unitModel (= modelOf)
-- unitLook (= lookOf)
-- PAINT – Malwerkzeug für andere gemalte Modelle (Tiere und Felsen in nature.js): Körper,…
-- paintOf
-- teamKey (= keyOf)
-- SHOWROOM
-
-## university.js (20 KB)
-- OUTLINE
-- DETAIL – darunter keine Fenster, Säulen und Rippen (Leistung, zu klein zum Sehen)
-- lit(color, nu, nv, nh)
-- FACE
-- iso(ctx, cam, b) – Zeichenkontext für eine Universität: Projektion lokaler Koordinaten (u, v nach…
-- poly(g, pts, fill, stroke)
-- box(g, u0, u1, v0, v1, h0, h1, wall, top, stroke) – Quader: sichtbar sind die Wand nach +v (links), nach +u (rechts) und das Dach

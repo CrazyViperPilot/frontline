@@ -9,6 +9,7 @@ import { ISO_K } from './camera.js';
 import { poly, box, lit, FACE, OUTLINE, DETAIL, pyramid } from './university.js';
 import { shade, tint } from './sprites.js';
 import { snowy, roofSnowOn } from './season.js';
+import { wallMat, texWall } from './materials.js';
 
 export { poly, box, lit, FACE, OUTLINE, DETAIL, pyramid, shade, tint, snowy, roofSnowOn };
 
@@ -297,7 +298,9 @@ export function gable(g, axis, u0, u1, v0, v1, h, rh, roof, wall, extra = null, 
     const a1 = u1 + 0.8;
     poly(g, [P(a0, v0 - o, he), P(a1, v0 - o, he), P(a1, vm, h + rh), P(a0, vm, h + rh)], lit(R, 0, -rh, w));
     extra?.();
-    poly(g, [P(u1, v0, h), P(u1, v1, h), P(u1, vm, h + rh)], lit(wall, ...FACE.e));
+    const gt = [P(u1, v0, h), P(u1, v1, h), P(u1, vm, h + rh)];
+    poly(g, gt, lit(wall, ...FACE.e));
+    texWall(g, gt, 'e', u1, wallMat(wall));
     const front = [P(a0, vm, h + rh), P(a1, vm, h + rh), P(a1, v1 + o, he), P(a0, v1 + o, he)];
     poly(g, front, lit(R, 0, rh, w));
     if (g.fine) {
@@ -312,7 +315,9 @@ export function gable(g, axis, u0, u1, v0, v1, h, rh, roof, wall, extra = null, 
     const b1 = v1 + 0.8;
     poly(g, [P(u0 - o, b0, he), P(u0 - o, b1, he), P(um, b1, h + rh), P(um, b0, h + rh)], lit(R, -rh, 0, w));
     extra?.();
-    poly(g, [P(u0, v1, h), P(u1, v1, h), P(um, v1, h + rh)], lit(wall, ...FACE.s));
+    const gt = [P(u0, v1, h), P(u1, v1, h), P(um, v1, h + rh)];
+    poly(g, gt, lit(wall, ...FACE.s));
+    texWall(g, gt, 's', v1, wallMat(wall));
     poly(g, [P(um, b0, h + rh), P(um, b1, h + rh), P(u1 + o, b1, he), P(u1 + o, b0, he)], lit(R, rh, 0, w));
     if (g.fine) {
       for (const t of [0.25, 0.5, 0.75]) stroke(g, [P(um + (u1 + o - um) * t, b0, h + rh - (h + rh - he) * t), P(um + (u1 + o - um) * t, b1, h + rh - (h + rh - he) * t)], 'rgba(0,0,0,0.12)', 0.5);

@@ -8,6 +8,7 @@
 import { ISO_K } from './camera.js';
 import { shade, tint } from './sprites.js';
 import { snowy } from './season.js';
+import { wallMat, texWall, texFlat } from './materials.js';
 
 const WALL = '#e6d9bb'; // Sandstein
 const STONE = '#f4efe3'; // Säulen, Gesims, Treppen
@@ -68,9 +69,19 @@ export function poly(g, pts, fill, stroke = OUTLINE) {
 /** Quader: sichtbar sind die Wand nach +v (links), nach +u (rechts) und das Dach. */
 export function box(g, u0, u1, v0, v1, h0, h1, wall, top = wall, stroke = OUTLINE) {
   const { P } = g;
-  poly(g, [P(u0, v1, h0), P(u1, v1, h0), P(u1, v1, h1), P(u0, v1, h1)], lit(wall, ...FACE.s), stroke);
-  poly(g, [P(u1, v0, h0), P(u1, v1, h0), P(u1, v1, h1), P(u1, v0, h1)], lit(wall, ...FACE.e), stroke);
-  poly(g, [P(u0, v0, h1), P(u1, v0, h1), P(u1, v1, h1), P(u0, v1, h1)], lit(top, ...FACE.top), stroke);
+  const mat = wallMat(wall);
+  const S = [P(u0, v1, h0), P(u1, v1, h0), P(u1, v1, h1), P(u0, v1, h1)];
+  poly(g, S, lit(wall, ...FACE.s), null);
+  texWall(g, S, 's', v1, mat);
+  if (stroke) poly(g, S, 'rgba(0,0,0,0)', stroke);
+  const E = [P(u1, v0, h0), P(u1, v1, h0), P(u1, v1, h1), P(u1, v0, h1)];
+  poly(g, E, lit(wall, ...FACE.e), null);
+  texWall(g, E, 'e', u1, mat);
+  if (stroke) poly(g, E, 'rgba(0,0,0,0)', stroke);
+  const T = [P(u0, v0, h1), P(u1, v0, h1), P(u1, v1, h1), P(u0, v1, h1)];
+  poly(g, T, lit(top, ...FACE.top), null);
+  if (top === wall) texFlat(g, T, h1, mat); // Klötze in einer Farbe (Kisten, Sockel …); Dächer im Paket „Dachfotos“
+  if (stroke) poly(g, T, 'rgba(0,0,0,0)', stroke);
 }
 
 /** Fensterreihe auf der linken (+v, Ebene v) oder rechten Wand (+u, Ebene u) zwischen a0 und a1. */

@@ -6,10 +6,11 @@ Gemalte Bilder laufen über `spritecache.js`, Bauteile aus `isokit.js`. Ebenen d
 - `camera.js` – Ausschnitt, Zoom, Welt ↔ Bildschirm, Iso-Umrechnung. `Camera`, `ROT`, `ISO_K`
 - `color.js` – Farb- und Rechenhilfen aller Malmodule. `rgbOf`, `mix`, `clamp`, `hashXY`
 - `spritecache.js` – malt jede Bildvariante je Maßstab einmal, danach nur `drawImage`. `sprite`, `peek`, `blit`
+- `materials.js` – Materialfotos (Ziegel, Putz, Dach …) über Flächen. `texWall`, `wallMat`, `withMat`
 - `isokit.js` – gemeinsame Bauteile gemalter Gebäude (Wände, Dächer, Zylinder, Bäume, Fahrzeuge), Iso `G` und 2D `…Top`
 - `sprites.js` – einfache Formen von oben für Einheiten, Gebäude, Kisten, Tiere; Farbhilfen `shade`, `tint`, `hexA`
-- `iso.js`, `isobuild.js`, `isosprites.js` – Iso-Grundkörper, Höhen (`buildingHeight`), Stadt- und Ersatzgebäude, Schutt; `isosprites.js` Hülle um `unitpaint.js`
-- `unitpaint.js` – Einheiten und Wracks als 3D-Modelle (Einstieg; Modelle nach Familien in `units/`). `drawUnitIso`, `drawUnitTop`, `drawWreckIso`
+- `iso.js`, `isobuild.js`, `isosprites.js` – Iso-Grundkörper, Höhen (`buildingHeight`), Ersatzgebäude, Schutt; Hülle um `unitpaint.js`
+- `unitpaint.js` – Einheiten und Wracks als 3D-Modelle (Familien in `units/`). `drawUnitIso`, `drawUnitTop`, `drawWreckIso`
 - `fx.js` – Explosion, Leuchtspur, Geschoss, Rauch, Feuer, Krater, Wrack-Trümmer. `drawEffect`, `drawShell`, `drawWreckRubble`
 - `marks.js` – Auswahlring, Balken, Stern, Befehlsmarken, Sammelpunkt-Fahne. `drawSelectMark`, `drawGauge`, `drawMoveRing`
 - `milbuild.js` – alle Militärgebäude samt Baustellen in 2D und Iso. `drawMilTop`, `drawMilIso`
@@ -17,10 +18,10 @@ Gemalte Bilder laufen über `spritecache.js`, Bauteile aus `isokit.js`. Ebenen d
 - `bigbuild.js`, `airbase.js`, `citysite.js` – Großbauten (Kaserne, Fabrikhalle), Fliegerhorst, Baustellen der Stadt
 - `govquarter.js` – Regierungsviertel um die Hauptstadt als Bodenbild und Iso-Gruppen. `quarterRect`, `quarterItems`
 - `citylayer.js` – Stadt auf der Karte: Straßen, Zonen, Gebäudeliste, Schilder. `cityBuildings`, `drawCityGround`, `drawCityTop`
-- `landmarks.js`, `mappreview.js` – große Fabrikhalle, Strommast und Leitungen fester Karten; Kartenvorschau fürs Startmenü. `pylonNet`, `drawMapPreview`
+- `landmarks.js`, `mappreview.js` – Fabrikhalle, Strommasten fester Karten; Kartenvorschau. `pylonNet`, `drawMapPreview`
 - `paving.js` – Pflaster der Karte: graue Plätze und Bürgersteige (nur Boden). `drawPaving`, `drawPlaza`, `drawWalk`
 - `maptown.js`, `props.js`, `stronghold.js` – Kartenstadt, Kleinkram (Autos, Bänke, Kisten, Ballen), Besatzungsfahnen und Ausbauten
-- `mapprops.js`, `fences.js`, `milprops.js`, `indprops.js`, `refprops.js`, `civprops.js` – Props: Aussehen, Schatten; Zäune, Militär, Industrie, Raffinerie, Zivil. `propLooks`
+- `mapprops.js`, `fences.js`, `milprops.js`, `indprops.js`, `refprops.js`, `civprops.js` – Props: Aussehen, Zäune, Militär, Industrie, Zivil. `propLooks`
 - `nature.js` – Bäume, Büsche, Felsen, Tiere. `drawTreeIso`, `drawRockIso`, `forestKind`
 - `ground.js`, `reliefimg.js`, `terrain.js` – WebGL-Boden samt Nebel, Geländebild, Kartenbild. `getGround`, `buildTerrain`
 - `ways.js`, `fields.js` – Feldwege, Gleise, Straßenmuster (Fotos `textures/`); Äcker, Weiden. `drawWays`, `buildFields`, `fieldBales`

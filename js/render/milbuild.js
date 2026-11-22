@@ -8,6 +8,7 @@ import {
   poly, box, lit, OUTLINE, shade, tint, snowy, roofSnowOn, cyl, cap, circle, ball, G, stroke, flat, shadow, wallBand, wins, door, parapet, vault, flagpole, acUnit, dish, mast, fence, lamp, car, rnd, rectF, rectS, polyF, shadowTop, flatTop, lineT, vaultTop, acTop, dishTop, latticeTop, carTop,
 } from './isokit.js';
 import { sprite, blit, spriteDpr } from './spritecache.js';
+import { wallMat, texture } from './materials.js';
 
 const MIL_TYPES = new Set(['fob', 'wall', 'gate', 'mortar', 'aa', 'phalanx', 'tower', 'drill']);
 
@@ -30,6 +31,7 @@ const RED = '#c0392b';
 function prism(g, pts, h0, h1, color, top = color, line = OUTLINE) {
   const { P } = g;
   const n = pts.length;
+  const mat = wallMat(color);
   let area = 0;
   for (let i = 0; i < n; i++) area += pts[i][0] * pts[(i + 1) % n][1] - pts[(i + 1) % n][0] * pts[i][1];
   const sg = area > 0 ? 1 : -1;
@@ -39,7 +41,10 @@ function prism(g, pts, h0, h1, color, top = color, line = OUTLINE) {
     const nu = (d - b) * sg;
     const nv = -(c - a) * sg;
     if (nu + nv <= 0) continue; // Seite zeigt von der Kamera weg
-    poly(g, [P(a, b, h0), P(c, d, h0), P(c, d, h1), P(a, b, h1)], lit(color, nu, nv, 0), null);
+    const side = [P(a, b, h0), P(c, d, h0), P(c, d, h1), P(a, b, h1)];
+    poly(g, side, lit(color, nu, nv, 0), null);
+    const len = Math.hypot(c - a, d - b) || 1;
+    texture(g, side, mat, P(a, b, 0), P(a + (c - a) / len, b + (d - b) / len, 0), P(a, b, -1)); // Fugen waagrecht
   }
   poly(g, pts.map(([a, b]) => P(a, b, h1)), lit(snowy(top), 0, 0, 1), line);
 }

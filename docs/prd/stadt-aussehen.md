@@ -31,6 +31,8 @@
   Schild und Rauch sitzen über dem höchsten Punkt des jeweiligen Bilds.
   Damit große Städte auf Handy und Tablet flüssig bleiben, wird jede Variante je Maßstab einmal gemalt und danach nur kopiert (`js/render/spritecache.js`:
   höchstens 6 ms Malen je Bild, was fehlt, kommt in den nächsten Bildern; Speicher begrenzt).
+  **Materialfotos** (`js/render/materials.js`, CC0 in `textures/`): Wände aller gemalten Gebäude und Props bekommen Körnung aus einem Foto
+  (Ziegel bei rötlich-braunen, Putz bei hellen, sonst Beton), Farbe und Licht bleiben; zu kleine Flächen bleiben glatt.
   Nur Bild, Spielregeln unverändert.
   Code: `js/render/townhouses.js` (eingehängt in `citylayer.js` und `isobuild.js`).
 - **Baustellen und Ruinen (Aussehen):** Eine ausgewiesene Zelle, die noch wächst, ist eine gemalte **Baustelle**; was man sieht, folgt dem Fortschritt in fünf Bauabschnitten (je 20 %):

@@ -45,6 +45,12 @@ let missed = 0; // Bilder, die in diesem Bild wegen des Zeitbudgets fehlten oder
 /** Fehlte in diesem Bild ein Bild (Budget)? Wer nur bei Bedarf neu zeichnet (Editor), zeichnet dann gleich noch einmal. */
 export const spriteMissed = () => missed > 0;
 
+/** Alle Bilder verwerfen (z. B. wenn die Materialfotos geladen sind, materials.js): sie werden beim nächsten Bedarf neu gemalt. */
+export function clearSprites() {
+  store.clear();
+  pixels = 0;
+}
+
 /** Zu Beginn jedes Bilds aufrufen (Renderer): merkt die Gerätepixel, setzt das Zeitbudget zurück und räumt alte Bilder weg. */
 export function spriteFrame(r = 1) {
   ratio = r || 1;

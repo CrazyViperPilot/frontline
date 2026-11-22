@@ -6,4 +6,8 @@ Alle Bilder: CC0 von [ambientCG](https://ambientcg.com) (gemeinfrei, ohne Namens
 - `asphalt.jpg` – Asphalt015, einmal je Kachel (64 Weltpixel)
 - `pavers.jpg` – Concrete010 (Betonplatten), 2 × 2 je Kachel, also 4 Weltpixel je Platte wie die gemalten
 
+Materialfotos (`js/render/materials.js`), als Graustufen-Detailkarte (Hochpass, Mittel 128), die Farbe kommt vom Spiel:
+- `plaster.jpg` Plaster003, `brick.jpg` Bricks105, `concrete.jpg` Concrete034, `tile.jpg` RoofingTiles014A,
+  `metal.jpg` CorrugatedSteel009, `wood.jpg` Planks023A, `gravel.jpg` Gravel022, `paint.jpg` Metal027
+
 Neues Bild: in `sw.js` unter `ASSETS` eintragen, im Modul über `new URL('…', import.meta.url)` laden (prüft `test/assets.test.js`).

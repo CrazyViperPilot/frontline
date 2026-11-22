@@ -1,0 +1,1 @@
+**Materialfotos an Wänden** (stadt-aussehen §15, nur Bild): Wände der gemalten Gebäude und Props bekommen Körnung aus CC0-Fotos (Ziegel, Putz, Beton); Farbe und Licht bleiben, kleine Flächen bleiben glatt.

@@ -241,6 +241,7 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Anschlusspflicht ans Straßennetz, Straßennetz der Stadt-KI | `stadt` | `game/city/cells.js` | `game/city/roadnet.js`; KI `ai/city/roads.js` | `buildrules`, `citynet` |
 | Großbauten mit gerader Kante | `stadt` | `game/city/cells.js` | KI `ai/city/need.js`; Bild `render/bigbuild.js` | `city`, `bigbuild` |
 | Aussehen der Stadtgebäude, Baustellen, Ruinen | `stadt-aussehen` | `render/townhouses.js` | Bild `render/works.js`, `render/citysite.js` | `citysite` |
+| Materialfotos auf Wänden und Dächern (Ziegel, Putz, Beton, Blech, Holz) | `stadt-aussehen` | `render/materials.js` | Fotos `textures/`, `render/isokit.js` | `assets` |
 | Stadtstraßen der Karte | `stadt-transport` | `game/roads.js` | Bild `render/citylayer.js` | `city` |
 | Straßentransport, Stau, Pendler, Versorgung der Ausbildung | `stadt-transport` | `game/transport.js` | Bild `render/citylayer.js` | `transport`, `supply` |
 | Straße zum Lager (Knopf am Stadtgebäude) | `stadt-transport` | `game/city/commands.js` | Weg `game/city/roadnet.js` `connectPath` | `cityconnect` |

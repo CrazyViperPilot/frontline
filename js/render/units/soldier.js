@@ -1,6 +1,7 @@
 // Einheiten-Modell Soldat (alle Infanterie-Arten über o.kind, Register INFANTRY in ../unitpaint.js).
 import { METAL, GUN, SKIN, OLIVE, BOOT, WHITE, box, cyl, ball, on, fine } from './shapes.js';
 import { mix } from '../color.js';
+import { CAMO } from './camo.js';
 
 // ---------- Modelle: Soldaten ----------
 
@@ -11,9 +12,11 @@ import { mix } from '../color.js';
 function soldier(P, o) {
   const S = [];
   const kind = o.kind;
+  const C = CAMO[o.camo] ?? CAMO.summer; // Tarnanzug des Scharfschützen nach Umgebung und Jahreszeit (camo.js)
+  if (kind === 'sniper' && o.prone) return proneSniper(P, C);
   const ph = o.frame ? ((o.frame - 1) * Math.PI) / 2 : 0;
   const sw = o.frame ? Math.sin(ph) * 1.5 : 0;
-  const uni = kind === 'sniper' ? '#5a5d3c' : '#5b6146';
+  const uni = kind === 'sniper' ? C[0] : '#5b6146';
   for (const side of [-1, 1]) {
     const k = side < 0 ? sw : -sw;
     S.push(cyl([0, side * 0.95, 6.4], [k, side * 0.95, 1.1], 0.78, 0.7, 4, uni)); // Bein
@@ -23,7 +26,7 @@ function soldier(P, o) {
   // Flammenwerfer, Mörsertrupp, Pionier und Sanitäter: Weste in Uniformfarbe (Teamfarbe nur am Helmband)
   const plainVest = kind === 'flamer' || kind === 'mortar' || kind === 'sapper' || kind === 'medic';
   const RED = '#c8202a'; // Sanitätskreuz
-  const vest = box(-1.25, 1.25, -2, 2, 7.2, 11, kind === 'sniper' ? mix(P.vest, '#5a5d3c', 0.5) : plainVest ? '#4d5339' : P.vest);
+  const vest = box(-1.25, 1.25, -2, 2, 7.2, 11, kind === 'sniper' ? mix(P.vest, C[0], 0.85) : plainVest ? '#4d5339' : P.vest);
   S.push(vest);
   S.push(fine(on(vest, box(1.25, 1.4, -1.4, 1.4, 8, 9.4, mix(plainVest ? '#4d5339' : P.vest, '#000000', 0.25), { noLine: true })))); // Taschen
   if (kind === 'flamer') {
@@ -51,7 +54,7 @@ function soldier(P, o) {
     S.push(cyl([0, 0, 13.3], [0, 0, 13.9], 1.45, 1.45, 10, mix(P.mark, '#2a2a2a', 0.35))); // Barett
     S.push(cyl([-2, 1, 10.6], [-2, 1, 18], 0.14, 0.12, 4, '#1b1d1f')); // Funkantenne
   } else {
-    const helmet = ball([0, 0, 12.9], 1.6, 1.5, 1.3, kind === 'sniper' ? '#4f5a35' : OLIVE, { n: 10, m: 3, half: true });
+    const helmet = ball([0, 0, 12.9], 1.6, 1.5, 1.3, kind === 'sniper' ? C[2] : OLIVE, { n: 10, m: 3, half: true });
     S.push(helmet);
     if (kind === 'medic') {
       // Sanitäter: kleines weißes Feld vorn am Helm (über dem Teamband) mit rotem Kreuz
@@ -65,7 +68,7 @@ function soldier(P, o) {
   if (kind === 'sniper') {
     // Tarnanzug: Büschel auf Schultern, Rücken und Kopf
     const tufts = [[-1.4, -1.6, 10.6], [-1.4, 1.6, 10.4], [-2, 0, 11.2], [0.4, -2, 9.4], [0.4, 2, 9.6], [-1, 0, 13.6], [-2.6, -1, 8.6], [-2.6, 1.2, 9]];
-    tufts.forEach(([x, y, z], i) => S.push(ball([x, y, z], 1.1, 1, 0.8, i % 3 ? '#5f6a3a' : '#6e6544', { n: 6, m: 3 })));
+    tufts.forEach(([x, y, z], i) => S.push(ball([x, y, z], 1.1, 1, 0.8, i % 3 ? C[1] : C[2], { n: 6, m: 3 })));
   }
   // Arme zur Waffe (gehend schwingt der freie Arm leicht mit)
   const hand = kind === 'flamer' ? [4, 0.9, 7.9] : [3.4, 0.9, 9.2]; // Flammenwerfer: Hände am Rohr auf Hüfthöhe
@@ -138,6 +141,34 @@ function soldier(P, o) {
     S.push(fine(box(1.6, 2.6, 0.45, 1.1, 7.9, 9, GUN))); // Magazin
   }
   return { S, foot: [-1.6, 1.6, -1.6, 1.6], inf: true };
+}
+
+/**
+ * Liegender Scharfschütze (Paket „Scharfschütze“): flach am Boden, Blick nach +x, Gewehr auf dem Zweibein, Tarnbüschel über Rücken
+ * und Beinen in den Farben C (Grund, hell, dunkel). Teamfarbe nur als schmaler Streifen am Helm, damit er sich nicht verrät.
+ */
+function proneSniper(P, C) {
+  const S = [];
+  for (const side of [-1, 1]) {
+    S.push(cyl([-2.6, side * 0.95, 0.85], [-9, side * 1.35, 0.7], 0.8, 0.7, 4, C[0])); // Bein
+    S.push(box(-10.2, -8.9, side * 1.35 - 0.6, side * 1.35 + 0.6, 0, 1.2, BOOT)); // Stiefel
+    S.push(cyl([1.8, side * 1.7, 1.3], [4.4, side * 0.7, 1.7], 0.55, 0.5, 4, C[0])); // Arm zum Gewehr
+  }
+  const body = box(-2.8, 2.3, -1.9, 1.9, 0, 2.2, C[0]); // Rumpf
+  S.push(body);
+  S.push(on(body, box(-2.3, 1.9, -2, 2, 1.6, 2.7, mix(P.vest, C[0], 0.8)))); // Weste
+  S.push(ball([3.7, 0, 2.2], 1.1, 1.0, 1.05, SKIN, { n: 8, m: 5 })); // Kopf
+  const helmet = ball([3.5, 0, 2.55], 1.45, 1.4, 1.05, C[2], { n: 10, m: 3, half: true });
+  S.push(helmet);
+  S.push(fine(on(helmet, cyl([3.5, 0, 2.5], [3.5, 0, 2.75], 1.47, 1.42, 10, mix(P.mark, C[2], 0.5), { noLine: true })))); // Teamband, gedämpft
+  S.push(cyl([3.4, 0.45, 2], [13.5, 0.35, 2], 0.3, 0.26, 4, GUN)); // langes Gewehr
+  S.push(cyl([4.8, 0.45, 2.7], [7.6, 0.45, 2.7], 0.42, 0.42, 6, '#1c1e20')); // Zielfernrohr
+  for (const side of [-1, 1]) S.push(fine(cyl([11.2, 0.35, 2], [11.6, 0.35 + side * 0.9, 0], 0.12, 0.12, 4, GUN))); // Zweibein
+  // Tarnbüschel über dem ganzen Körper
+  const tufts = [[-9, -1.4, 1.4], [-8, 1.2, 1.5], [-6.5, 0, 1.7], [-5, -1.5, 1.6], [-4.5, 1.6, 1.7], [-3, 0, 2.6], [-1.5, -1.6, 2.6], [-0.5, 1.5, 2.7],
+    [0.8, 0, 3], [2.2, -1.2, 2.6], [2.4, 1.3, 2.6], [3.4, 0, 3.4]];
+  tufts.forEach(([x, y, z], i) => S.push(ball([x, y, z], 1.25, 1.1, 0.75, i % 3 ? C[1] : C[2], { n: 6, m: 3 })));
+  return { S, foot: [-10.2, 4.8, -2, 2], inf: true };
 }
 
 export { soldier };

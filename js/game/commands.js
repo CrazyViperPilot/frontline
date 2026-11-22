@@ -46,6 +46,24 @@ function cmdStop(game, team, cmd) {
   return { ok: true };
 }
 
+/**
+ * Scharfschütze (Paket „Scharfschütze“): prone (true/false) hinlegen oder aufstehen, observe (true/false) beobachten (schießt nicht)
+ * oder normal. Nur Einheiten mit def.prone; Hinlegen hält an (Auftrag idle), ein Marschbefehl lässt ihn wieder aufstehen.
+ */
+function cmdSniper(game, team, cmd) {
+  const units = game.ownUnits(team, cmd.ids).filter((u) => u.def.prone && !u.house);
+  if (!units.length) return fail('Nur Scharfschützen');
+  if (typeof cmd.prone !== 'boolean' && typeof cmd.observe !== 'boolean') return fail('Liegen oder Beobachten angeben');
+  for (const u of units) {
+    if (typeof cmd.observe === 'boolean') u.observe = cmd.observe;
+    if (typeof cmd.prone === 'boolean') {
+      u.prone = cmd.prone;
+      if (u.prone) setIdle(u);
+    }
+  }
+  return { ok: true };
+}
+
 /** KI meldet sich an (seit v5.58, Regel 2): Team als KI markieren, Einkommensfaktor der Schwierigkeit. */
 function cmdSetDifficulty(game, team, cmd) {
   const d = BALANCE.difficulty[cmd.difficulty];
@@ -72,6 +90,7 @@ export const COMMANDS = {
   attackMove: { run: cmdMove, sound: true },
   attack: { run: cmdAttack, sound: true },
   stop: { run: cmdStop },
+  sniper: { run: cmdSniper }, // Scharfschütze: liegen, beobachten (Paket „Scharfschütze“)
   build: { run: cmdBuild, drives: true, sound: true },
   buildWall: { run: cmdBuildWall, sound: true },
   buildFob: { run: () => fail('Baufahrzeuge bauen keine FOB mehr: FOB-Fahrzeug ausbilden und dort aufbauen') },

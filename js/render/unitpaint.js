@@ -37,6 +37,7 @@ import { jetAlt, jetGrounded } from '../game/aircraft.js';
 import { setIsoAt } from './iso.js';
 import { mix } from './color.js';
 import { UNITS } from '../data/units.js';
+import { camoOf } from './units/camo.js';
 
 const ISO_SCALE = 1.35; // Iso: Modelle etwas größer als ihre Grundfläche (wie bisher), damit man sie gut erkennt
 const VEH_SECT = 16; // Richtungen der Fahrzeuge, Hubschrauber und Jets in Iso
@@ -85,11 +86,11 @@ function wear(m, P, air) {
 
 const models = new Map(); // Schlüssel → Modell (Körper und Maße); klein, bleibt
 function modelOf(type, team, o = {}) {
-  const key = `${type}|${team}|${o.frame ?? ''}|${o.missiles ?? ''}|${o.gear ? 1 : 0}`;
+  const key = `${type}|${team}|${o.frame ?? ''}|${o.missiles ?? ''}|${o.gear ? 1 : 0}|${o.camo ?? ''}${o.prone ? 'p' : ''}`;
   let m = models.get(key);
   if (m) return m;
   const P = paintOf(team);
-  m = INFANTRY[type] ? soldier(P, { kind: INFANTRY[type], frame: o.frame ?? 0 }) : MODELS[type]?.(P, o);
+  m = INFANTRY[type] ? soldier(P, { kind: INFANTRY[type], frame: o.frame ?? 0, prone: o.prone, camo: o.camo }) : MODELS[type]?.(P, o);
   if (!m) return null;
   if (SIZE[type]) scaleModel(m, SIZE[type]);
   if (!INFANTRY[type]) wear(m, P, UNITS[type]?.air);
@@ -133,6 +134,7 @@ function nearKeys(make, sec, n) {
 
 /** Zustand, der das Bild ändert: Gehbewegung, Raketen und Fahrwerk der F-16, Su-27 und F-22, Fahrwerk der U-2. */
 function lookOf(u, now) {
+  if (u.def?.prone) return { frame: !u.prone && (u.speedNow ?? 0) > 3 ? 1 + (Math.floor(now / 140 + u.id * 0.37) % 4) : 0, prone: !!u.prone, camo: camoOf(u) }; // Scharfschütze: Tarnung, liegend
   if (INFANTRY[u.type]) return { frame: (u.speedNow ?? 0) > 3 ? 1 + (Math.floor(now / 140 + u.id * 0.37) % 4) : 0 };
   if (u.type === 'f16' || u.type === 'su27') {
     // missiles = Luft-Luft-Raketen + 10 × Luft-Boden-Raketen (je 0 … 2), seit v5.41; die Su-27 wie die F-16 (gleiche Waffen)
@@ -173,7 +175,7 @@ export function drawUnitIso(ctx, cam, u, p, aim = null, lift = 0, now = 0) {
   const va = viewAngle(cam, face);
   const sec = sectorOf(va, n);
   const tk = keyOf(u.team);
-  const base = `ui|${u.type}|${tk}|${look.frame ?? ''}|${look.missiles ?? ''}|${look.gear ? 1 : 0}`;
+  const base = `ui|${u.type}|${tk}|${look.frame ?? ''}|${look.missiles ?? ''}|${look.gear ? 1 : 0}|${look.camo ?? ''}${look.prone ? 'p' : ''}`;
   const make = (k) => `${base}|${k}`;
   const yaw = (k) => (k / n) * TAU;
   const e = getSprite(make(sec), f * dpr, boundsOf(m, m.S, yaw(sec), true), (c, s) => paintSolids(c, m.S, yaw(sec), { iso: true, s }), nearKeys(make, sec, n));
@@ -313,7 +315,7 @@ export function drawUnitTop(ctx, u, zoom, aim = null, now = 0) {
   const m = modelOf(u.type, u.team, { ...look, frame: 0 });
   if (!m) return false;
   const tk = keyOf(u.team);
-  const base = `uo|${u.type}|${tk}|${look.missiles ?? ''}|${look.gear ? 1 : 0}`;
+  const base = `uo|${u.type}|${tk}|${look.missiles ?? ''}|${look.gear ? 1 : 0}|${look.camo ?? ''}${look.prone ? 'p' : ''}`;
   const sc = zoom * spriteDpr();
   const hull = u.angle ?? 0;
   const face = m.inf && aim !== null && aim !== undefined ? aim : hull;

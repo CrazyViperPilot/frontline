@@ -13,4 +13,5 @@ Kein Modul über 20 KB; wer eine Einheit zeichnet, liest `shapes.js` und eine Fa
 - `airparts.js` – Bausteine der Flugzeuge: facettierter Rumpf aus Ringen, Platten. `hull`, `ring`, `slab`, `inset`, `remap`
 - `jets.js`, `f22.js`, `u2.js` – Kampfjets `f16`, `su27`; Tarnkappenjet `f22`; Höhenaufklärer `u2` (dazu `oval`, `arch`, `U2_GLOW`)
 - `planes.js` – große Flugzeuge. `a10`, `c130`
-- `soldier.js` – Soldat für alle Infanterie-Arten (`o.kind`, Register `INFANTRY` in `unitpaint.js`). `soldier`
+- `soldier.js` – Soldat für alle Infanterie-Arten (`o.kind`, Register `INFANTRY` in `unitpaint.js`), liegender Scharfschütze. `soldier`
+- `camo.js` – Tarnfarben des Scharfschützen nach Umgebung und Jahreszeit. `CAMO`, `camoOf`, `setCamoWorld`

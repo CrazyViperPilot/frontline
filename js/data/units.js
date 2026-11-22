@@ -167,6 +167,7 @@ export const UNITS = {
     radius: 5,
     sight: 440,
     stealth: true, // getarnt: Gegner sehen ihn nur nahe (BALANCE.stealth) oder kurz nach einem Schuss
+    prone: true, // kann sich hinlegen und auf Beobachten schalten (Befehl sniper); sieht liegende gegnerische Scharfschützen
     // Scharfschützengewehr: ein Treffer tötet Infanterie, lange Nachladezeit, hohe Reichweite; gegen Fahrzeuge und Gebäude nahezu wirkungslos
     weapons: [
       { id: 'sniper', name: 'Scharfschützengewehr', range: 480, cooldown: 8.0, rounds: 10, munCost: 4, hits: { inf: 1 }, damage: { inf: 200, light: 6, heavy: 1, struct: 2, air: 2, jet: 0 } },

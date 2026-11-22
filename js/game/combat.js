@@ -285,7 +285,7 @@ function fireWeapon(game, u, w, t) {
   } else {
     game.addEffect('tracer', u.x, u.y, u.team, t.x, t.y, w.spec.id);
   }
-  if (u.def.stealth || u.def.stillCamo) u.revealedUntil = game.time + BALANCE.stealth.revealTime; // ein Schuss verrät die Stellung
+  if (u.def.stealth || u.def.stillCamo) u.revealedUntil = game.time + revealFor(u); // ein Schuss verrät die Stellung (liegend nur kurz)
   // Flak und SAM: Treffer nur mit Wurf (Trefferchance, siehe unitHitChance); daneben geht der Schuss, der Schaden bleibt aus
   if (w.spec.hitChance !== undefined && !(game.rng.next() < unitHitChance(u, t, w.spec) * modOf(game, u, 'acc') * modOf(game, t, 'evade') * jamFactor(game, t, w.spec))) return; // Forschung: Zünder, Radar; Flares, Störsender des Ziels
   let dmg = shotDamage(w.spec, u, t, heightMult(game, u, t)) * dealtMul(game, u, t);
@@ -294,12 +294,15 @@ function fireWeapon(game, u, w, t) {
   if (w.spec.splash) flameSplash(game, u, t, w.spec.splash, dmg);
 }
 
+/** So lange verrät ein Schuss den Schützen: liegender Scharfschütze kurz (stealth.proneReveal), sonst stealth.revealTime. */
+const revealFor = (u) => (u.prone ? BALANCE.stealth.proneReveal : BALANCE.stealth.revealTime);
+
 /** Schuss von u mit Waffe w in die Mauer bl (fireBlocker): Bild an der Mauer, Schaden der Klasse wall (Torkachel: gateMul). */
 function wallHit(game, u, w, bl) {
   const p = bl.b ?? game.map.props[bl.prop];
   game.addEffect((w.spec.damage.light || 0) >= BALANCE.combat.cannonDamage ? 'shell' : 'tracer', u.x, u.y, u.team, p.x, p.y, w.spec.id);
   game.addEffect('explosion', p.x, p.y, u.team, p.x, p.y, 'hit');
-  if (u.def.stealth || u.def.stillCamo) u.revealedUntil = game.time + BALANCE.stealth.revealTime;
+  if (u.def.stealth || u.def.stillCamo) u.revealedUntil = game.time + revealFor(u);
   const dmg = wallDamage(w.spec.damage) * modOf(game, u, 'dmg');
   if (bl.b) hit(game, bl.b, dmg, 1, u.team);
   else damageProp(game, bl.prop, dmg * (p.gate ? (PROPS.kinds[p.kind]?.gateMul ?? 1) : 1));
@@ -558,6 +561,7 @@ export function updateCombat(game, dt) {
     if (!u.alive || !u.weapons.length || u.crate || u.chute > 0 || u.parked || jetGrounded(u) || (u.heli && u.heli.phase !== 'air')) continue; // Kistenträger haben die Hände voll, Jets am Boden (Hangar, Rollen, Start, Ausrollen) schießen nicht
     const o = u.order.type;
     if (NO_FIRE.has(o)) continue;
+    if (u.observe) continue; // Scharfschütze auf Beobachten (Befehl sniper): schießt nicht, bleibt unentdeckt
     if (u.fireTarget && o !== 'attack') {
       unitFireAtGround(game, u); // Artillerie: Feuer auf den gewählten Punkt statt Zielsuche
       continue;

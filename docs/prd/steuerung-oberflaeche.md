@@ -58,6 +58,7 @@
 - **Hauptstadt gewählt:** G AH-64 · Z Flakpanzer · N SAM-Startrampe · L Flakpanzer Gepard · O Panzerhaubitze · X Bagger · C Kommandeur (einmalig) ·
   **U Forschung** (wenn eingeschaltet): öffnet das Forschungsmenü (auch Knopf „🔬 Forschung“ rechts oben; Regeln in §7 „Forschung“):
   Antippen einer Forschung zeigt Wirkung, Preis und Voraussetzung, „Erforschen“ bzw. „Einreihen“ startet, ✕ in der Warteschlange bricht ab (Geld zurück), Esc schließt
+- **Scharfschütze gewählt:** X Hinlegen/Aufstehen · O Beobachten/Feuer frei (§ Einheiten „Liegen und Beobachten“)
 - **LKW gewählt:** Ladung Q Gemischt (alle drei Sorten) / W Baumaterial / E Munition / R Treibstoff als Umschalter: jede Taste schaltet ihre Sorte an oder ab,
   so können zwei zugleich gelten (z. B. E + R: Munition und Treibstoff, je zur Hälfte geladen; die Art heißt `bm+mun`, `bm+fuel` oder `mun+fuel`)
 

@@ -41,6 +41,7 @@ const TEMPLATES = {
   attackMove: { ids: 'ids', x: 'x', y: 'y' },
   attack: { ids: 'ids', targetId: 'target' },
   stop: { ids: 'ids' },
+  sniper: { ids: 'ids', prone: 'bool', observe: 'bool' },
   build: { building: 'building', x: 'x', y: 'y', ids: 'ids' },
   buildWall: { building: 'building', x1: 'x', y1: 'y', x2: 'x', y2: 'y', ids: 'ids' },
   buildFob: { ids: 'ids', x: 'x', y: 'y' },

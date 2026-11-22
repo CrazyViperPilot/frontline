@@ -72,6 +72,7 @@ export const KEYS = [
     `im Infofeld „Neue Einheiten erscheinen“ am Gebäude (Standard) oder an einer eigenen Flagge · kein kostenloser Nachschub, Truppen kosten Geld · ` +
     `Einheitenlimit ${CQ.slotCap[2]} Plätze je Team`],
   ['S', 'Stopp'],
+  ['X / O (Scharfschütze)', `Scharfschütze gewählt: X hinlegen/aufstehen (liegend sieht ihn der Gegner nur aus ${BALANCE.stealth.proneDetect} px oder mit einem Scharfschützen; ein Marschbefehl lässt ihn aufstehen) · O Beobachten (schießt nicht, verrät sich nie) oder Feuer frei · sein Tarnanzug passt sich Umgebung und Jahreszeit an`],
   ['F', 'Formation wechseln: Locker, Linie, Keil, Kolonne (Panzer vorn, Gruppe marschiert geschlossen)'],
   ['Wetter', `Falls im Startmenü an: Regen und Schnee −${less(WX.sight.rain)} % Sicht, Nebel −${less(WX.sight.fog)} % · Schneefall bremst Fahrzeuge um ${less(WX.vehicle)} %, ` +
     `Winterboden um ${less(WX.winter)} % · das Wetter wechselt alle paar Minuten (Anzeige oben, antippen erklärt es) · bei schlechter Sicht lohnt ein Späher`],

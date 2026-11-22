@@ -16,6 +16,7 @@ import { zoneMethods } from './zones.js';
 import { radiiMethods } from './radii.js';
 import { garrisonMethods } from './garrison.js';
 import { overlayMethods } from './overlays.js';
+import { setCamoWorld } from '../units/camo.js';
 
 // Detailstufen beim Herauszoomen (nur Darstellung, Simulation unberührt): unter diesem Zoom zeichnet der Renderer Einheiten als
 // Symbol statt als Modell, lässt kleine Effekte weg und zeigt Lebensbalken nur für gewählte oder beschädigte Einheiten.
@@ -88,6 +89,7 @@ export class Renderer {
     beginTownFrame(this.dpr); // Stadtgebäude: Maßstab der Bilder, Zeitbudget fürs Nachmalen (townhouses.js, spritecache.js)
     setMapTown(g.map); // Kartenstadt: Felder für die Gehöfte (maptown.js)
     setMilWalls(g.buildings); // Mauern und Tore: Verbindungen zu den Nachbarn (milbuild.js)
+    setCamoWorld(g); // Tarnanzug der Scharfschützen nach Umgebung und Jahreszeit (units/camo.js)
     if (!this.deco) this.deco = this.buildDeco();
     const f = this.frameOf(v, now);
     if (this.camera.iso) this.renderIso(f);

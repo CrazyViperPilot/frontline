@@ -146,6 +146,12 @@ Unentdeckt wird er nicht angegriffen und ist weder auf der Karte noch auf der Mi
 Er sieht weiter als Infanterie und sein Gewehr reicht bis zu seiner Reichweite (Tabelle), und Einheiten ohne Befehl schießen bis zu dieser Reichweite (nicht nur bis zur Leine von 300 px).
 Ein Schuss verbraucht Munition (Waffen-Tabelle); mit seiner Reichweite und der Tarnung ist er gegen Infanterie stark, gegen Fahrzeuge, Gebäude und Hubschrauber nutzlos.
 Die KI baut ihn auf Normal und Schwer (`SNIPER_SHARE`, PRD §10 „Scharfschützen“) und sieht ihn nach denselben Tarnregeln.
+**Liegen und Beobachten (Paket „Scharfschütze“, Befehl `sniper`):** Taste **X** legt ihn hin bzw. lässt ihn aufstehen, Taste **O** schaltet zwischen
+**Beobachten** (schießt nicht, verrät sich nie, klärt nur auf) und **Feuer frei** (schießt, stehend wie liegend).
+Liegend erkennt ihn der Gegner nur aus **20 px** Nähe (`BALANCE.stealth.proneDetect`) oder mit einem eigenen Scharfschützen, der ihn in seiner Sichtweite hat;
+ein Schuss im Liegen verrät ihn nur **1,5 s** (`proneReveal`). Hinlegen hält ihn an; ein Marschbefehl lässt ihn aufstehen (Schieben im Gedränge nicht).
+Sein Tarnanzug passt sich der Umgebung und der Jahreszeit an (Wiese im Sommer grün, im Herbst ocker, Winter weiß, Wald dunkelgrün, Fels graubraun, Stadt grau;
+`js/render/units/camo.js`), liegend liegt er flach mit dem Gewehr auf dem Zweibein. Die KI nutzt Liegen und Beobachten nicht.
 Er zählt zu den Soldaten für den Nachschub (Abschnitt 3).
 
 **Hubschrauber** fliegen geradeaus über Gelände und Gebäude, brauchen Treibstoff beim Fliegen (ohne: 25 % Tempo) und sind Panzerklasse „Luft“ (Spalte Luft in der Waffen-Tabelle):

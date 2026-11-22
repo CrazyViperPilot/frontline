@@ -16,7 +16,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - ISO_PAD – Iso: Rand um den Ausschnitt, hohe Objekte ragen nach oben ins Bild (Welt-px)
 - SC
 
-## core.js (6.8 KB)
+## core.js (6.9 KB)
 - class Renderer
   - constructor(canvas, game, camera, team)
   - setMaxDpr(max) – Obergrenze der Pixeldichte setzen (Bildauflösung, nur Darstellung) und das Bild…

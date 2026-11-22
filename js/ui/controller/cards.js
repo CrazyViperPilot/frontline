@@ -254,6 +254,27 @@ export const cardMethods = {
           }),
         );
       }
+      // Scharfschütze (Paket „Scharfschütze“): hinlegen (nur aus BALANCE.stealth.proneDetect px oder von Scharfschützen zu sehen) und Beobachten
+      const snipers = units.filter((u) => u.def.prone && !u.house);
+      if (snipers.length) {
+        const down = snipers.every((u) => u.prone);
+        const watch = snipers.every((u) => u.observe);
+        const S = BALANCE.stealth;
+        card.push(
+          entry(down ? 'Aufstehen' : 'Hinlegen', 'X', {
+            tip: down
+              ? `Aufstehen (X): der Scharfschütze steht auf (ein Marschbefehl tut das auch); stehend sieht der Gegner ihn ab ${S.detectRange} px`
+              : `Hinlegen (X): liegend sieht der Gegner ihn nur aus ${S.proneDetect} px Nähe oder mit einem eigenen Scharfschützen; ein Schuss verrät ihn nur ${S.proneReveal} s`,
+            active: down,
+            action: () => this.issue({ type: 'sniper', ids: snipers.map((u) => u.id), prone: !down }),
+          }),
+          entry(watch ? 'Feuer frei' : 'Beobachten', 'O', {
+            tip: watch ? 'Feuer frei (O): der Scharfschütze schießt wieder auf Ziele in Reichweite' : 'Beobachten (O): der Scharfschütze schießt nicht und verrät sich so nie; er klärt nur auf',
+            active: watch,
+            action: () => this.issue({ type: 'sniper', ids: snipers.map((u) => u.id), observe: !watch }),
+          }),
+        );
+      }
       const sappers = units.filter((u) => u.type === 'sapper');
       if (sappers.length) {
         card.push(

@@ -16,6 +16,11 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - sam
 - gepard
 
+## camo.js (2.8 KB)
+- CAMO – Farben je Umgebung: [Grund, Büschel hell, Büschel dunkel]
+- setCamoWorld(game) – Welt des laufenden Bilds (Renderer, je Bild)
+- camoOf(u) – Name der Tarnfarbe (Schlüssel von CAMO) für Einheit u an ihrem Ort
+
 ## f22.js (9.1 KB)
 - F22_MISSILES
 - f22
@@ -80,7 +85,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - lights
 - antenna
 
-## soldier.js (10 KB)
+## soldier.js (12 KB)
 - soldier
 
 ## u2.js (9.0 KB)

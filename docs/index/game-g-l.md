@@ -1,4 +1,4 @@
-# Symbol-Index game (Teil 2 von 4, game.js bis map.js)
+# Symbol-Index game (Teil 2 von 4, game.js bis logistics.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
 
@@ -21,6 +21,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - alwaysVisible(team, e) – Eigene Entity (immer sichtbar, auch im Nebel)
   - isVisible(team, x, y)
   - sees(team, e) – Sieht `team` die Entity e? Eigene immer; fremde, wenn die Zelle im Sichtfeld li…
+  - spotsProne(team, e) – Liegender Scharfschütze (Paket „Scharfschütze“): `team` erkennt ihn nur aus ste…
   - groundHeight(e) – Geländehöhe unter einer Entity (Wasseroberfläche bei Seen, Fahrbahn auf Brücken…
   - isExplored(team, x, y)
   - updateFog()
@@ -145,6 +146,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - cmdBoard(game, team, cmd) – { type: 'board', ids, heliId }: Infanterie/Baufahrzeuge gehen zu einem eigenen…
 - cmdDropoff(game, team, cmd) – { type: 'dropoff', ids, x, y }: Hubschrauber fliegt zum Punkt und setzt alle Pa…
 - updateLogistics(game, dt) – Logistik-Schritt: LKW-Aufträge fahren und laden, alle resupplyInterval s Nachfü…
-
-## map.js (48 KB)
-- generateMap(seed, { river = false, players = 2 }) – Erzeugt eine Karte

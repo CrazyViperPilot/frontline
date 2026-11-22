@@ -120,6 +120,7 @@ Neue Befehle: Rezept `docs/rezepte/neuer-befehl.md`.
 | `move`, `attackMove` | `ids, x, y, formation?` | `cmd/units.js` `cmdMove` | Marsch bzw. Angriffsmarsch, optional in Formation |
 | `attack` | `ids, targetId` | `cmd/units.js` `cmdAttack` | Ziel angreifen (auch Brücken) |
 | `stop` | `ids` | `game.js` | Anhalten |
+| `sniper` | `ids, prone?, observe?` | `commands.js` `cmdSniper` | Scharfschütze hinlegen/aufstehen, Beobachten (schießt nicht) oder normal |
 | `build` | `building, x, y, ids` oder `siteId, ids` | `cmd/build.js` `cmdBuild` | Baustelle setzen bzw. an Baustelle helfen |
 | `buildWall` | `building, x1, y1, x2, y2, ids` | `cmd/build.js` `cmdBuildWall` | Mauer- oder Torlinie (Tor: je 2 Zellen ein Tor aus zwei Hälften `leaf` 0/1; `build` mit `building: 'gate'` setzt ebenfalls ein Zweier-Tor, optional `axis`) |
 | `deploy` | `ids`, optional `x, y` (≤ `fob.deploySnap` vom Fahrzeug) | `cmd/units.js` `cmdDeploy` | FOB-Fahrzeug wird an seiner Stelle (oder der nächsten freien) zur fertigen FOB (`buildFob` antwortet nur mit einem Fehler) |
@@ -217,7 +218,7 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Kampf, Waffen, Schaden, Treffer | `einheiten` | `game/combat.js` | Bild `render/fx.js` | `hits`, `fx` |
 | Flugabwehr (Flak, SAM, Phalanx) | `einheiten` | `game/combat.js` | KI `ai/army/produce.js`; Bild `render/milbuild.js` | `airdefense`, `aiair` |
 | Gepard und Panzerhaubitze | `einheiten` | `game/combat.js` | Bild `render/layers/radii.js` | `artillery`, `aiart` |
-| Scharfschütze, Tarnung | `einheiten` | `game/combat.js` | – | `sniper` |
+| Scharfschütze, Tarnung, Liegen und Beobachten, Tarnanzug nach Umgebung | `einheiten` | `game/game.js` `sees` | `game/commands.js` `cmdSniper`; Bild `render/units/camo.js` | `sniper` |
 | Kommandeur | `einheiten` | `game/commander.js` | – | `commander` |
 | Bagger | `einheiten` | `game/excavator.js` | Bild `render/fx.js` | `fx` |
 | U-2 Höhenaufklärer | `einheiten` | `game/aircraft.js` | KI `ai/army/combat.js` | `u2` |

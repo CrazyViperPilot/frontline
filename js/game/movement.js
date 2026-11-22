@@ -470,6 +470,7 @@ export function updateMovement(game, dt, ownDrivers) {
       u.speedNow = Math.hypot(u.x - u.prevX, u.y - u.prevY) / dt;
       // Stillstandszeit für die Tarnung (def.stillCamo): Schwelle 1 px/s gegen Zittern beim Schieben, kein Balance-Wert
       u.still = u.speedNow > 1 ? 0 : (u.still || 0) + dt;
+      if (u.prone && u.speedNow > 1 && u.order.type !== 'idle' && u.order.type !== 'hold') u.prone = false; // liegender Scharfschütze steht zum Gehen auf (Befehl sniper), Schieben im Gedränge nicht
     }
     u.prevX = u.x;
     u.prevY = u.y;

@@ -347,9 +347,25 @@ export class Game {
     // unter einem Tarnnetz (props.js) wie ein Scharfschütze getarnt
     if (!e.def?.stealth && !(e.def?.stillCamo && (e.still || 0) >= e.def.stillCamo) && !(e.def && !e.def.air && concealed(this, e.x, e.y))) return true;
     if (this.time < (e.revealedUntil || 0)) return true;
+    if (e.prone) return this.spotsProne(team, e);
     const r2 = BALANCE.stealth.detectRange ** 2;
     for (const u of this.units) if (u.alive && u.team === team && (u.x - e.x) ** 2 + (u.y - e.y) ** 2 <= r2) return true;
     for (const b of this.buildings) if (b.alive && b.built && b.team === team && (b.x - e.x) ** 2 + (b.y - e.y) ** 2 <= r2) return true;
+    return false;
+  }
+
+  /**
+   * Liegender Scharfschütze (Paket „Scharfschütze“): `team` erkennt ihn nur aus stealth.proneDetect px Nähe (Einheit oder fertiges
+   * Gebäude) oder mit einem eigenen Scharfschützen (def.prone), der ihn in seiner Sichtweite hat.
+   */
+  spotsProne(team, e) {
+    const near = BALANCE.stealth.proneDetect ** 2;
+    for (const u of this.units) {
+      if (!u.alive || u.team !== team) continue;
+      const d2 = (u.x - e.x) ** 2 + (u.y - e.y) ** 2;
+      if (d2 <= near || (u.def.prone && d2 <= u.def.sight ** 2)) return true;
+    }
+    for (const b of this.buildings) if (b.alive && b.built && b.team === team && (b.x - e.x) ** 2 + (b.y - e.y) ** 2 <= near) return true;
     return false;
   }
 

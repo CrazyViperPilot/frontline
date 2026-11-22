@@ -2,7 +2,7 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/ui/controller/`. Pfade relativ zu `js/ui/controller/`.
 
-## cards.js (35 KB)
+## cards.js (36 KB)
 - costText(cost) – Kosten kurz für Schaltflächen: "400 BM"
 - cardMethods
   - buildPermission() – Wer darf bauen: 'all' (Baufahrzeug), 'fort' (nur Infanterie: Mauer/Tor) oder nu…

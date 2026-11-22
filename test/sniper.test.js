@@ -81,3 +81,63 @@ test('Tarnung: Gegner schießt nicht auf einen unentdeckten Scharfschützen, die
   assert.ok(!foe.alive, 'Gegner gefallen');
   assert.equal(s.hp, s.def.hp, 'Scharfschütze unverletzt');
 });
+
+// ---------- Liegen und Beobachten (Paket „Scharfschütze“, Befehl sniper) ----------
+
+/** Scharfschütze (Team 0) und ein Gegner `foe` (Team 1) im Abstand d, weit weg von beiden Hauptstädten (deren MG schießt mit). */
+function pair(foe, d) {
+  const g = new Game({ seed: 3 });
+  const a = g.mainFob(0);
+  const b = g.mainFob(1);
+  let x = (a.x + b.x) / 2 - 1200;
+  const y = (a.y + b.y) / 2 - 1200;
+  const free = (px, py) => [0, d].every((o) => g.grid.passable(Math.floor((px + o) / 32), Math.floor(py / 32)));
+  for (let k = 0; k < 200 && !free(x, y); k++) x += 32; // freie Zellen für beide
+  const s = g.spawnUnit('sniper', 0, x, y);
+  const e = g.spawnUnit(foe, 1, x + d, y);
+  s.order = { type: 'hold' };
+  e.order = { type: 'hold' };
+  return { g, s, e };
+}
+
+test('Liegend: Gegner sieht ihn nur aus nächster Nähe, ein gegnerischer Scharfschütze in Sichtweite schon', () => {
+  const { g, s } = pair('rifleman', 100);
+  assert.ok(g.issue(0, { type: 'sniper', ids: [s.id], prone: true, observe: true }).ok);
+  run(g, 0.5);
+  assert.equal(g.sees(1, s), false, 'Schütze in 100 px sieht den liegenden Scharfschützen nicht');
+  const near = pair('rifleman', BALANCE.stealth.proneDetect - 5);
+  near.g.issue(0, { type: 'sniper', ids: [near.s.id], prone: true, observe: true });
+  run(near.g, 0.5);
+  near.e.x = near.s.x + BALANCE.stealth.proneDetect - 5; // Einheiten schieben sich auseinander: Abstand für die Prüfung setzen
+  near.e.y = near.s.y;
+  assert.equal(near.g.sees(1, near.s), true, 'aus nächster Nähe erkannt');
+  const duel = pair('sniper', 300);
+  duel.g.issue(0, { type: 'sniper', ids: [duel.s.id], prone: true, observe: true });
+  duel.g.issue(1, { type: 'sniper', ids: [duel.e.id], observe: true });
+  run(duel.g, 0.5);
+  assert.equal(duel.g.sees(1, duel.s), true, 'gegnerischer Scharfschütze sieht ihn');
+});
+
+test('Beobachten: schießt nicht; Feuer frei: schießt (auch liegend), der Schuss verrät ihn nur kurz', () => {
+  const { g, s, e } = pair('rifleman', 300);
+  g.issue(0, { type: 'sniper', ids: [s.id], prone: true, observe: true });
+  run(g, 12);
+  assert.equal(e.hp, e.def.hp, 'beobachtet: kein Schuss');
+  g.issue(0, { type: 'sniper', ids: [s.id], observe: false });
+  run(g, 12);
+  assert.ok(!e.alive || e.hp < e.def.hp, 'Feuer frei: trifft');
+  assert.ok(s.prone, 'bleibt liegen');
+  assert.ok(s.revealedUntil - g.time <= BALANCE.stealth.proneReveal, 'liegend nur kurz verraten');
+});
+
+test('Ein Marschbefehl lässt ihn aufstehen; nur Scharfschützen nehmen den Befehl', () => {
+  const { g, s, e } = pair('rifleman', 300);
+  g.issue(0, { type: 'sniper', ids: [s.id], prone: true });
+  assert.ok(s.prone);
+  g.issue(0, { type: 'move', ids: [s.id], x: s.x - 200, y: s.y });
+  run(g, 2);
+  assert.equal(s.prone, false, 'steht zum Gehen auf');
+  const r = g.spawnUnit('rifleman', 0, s.x, s.y + 40);
+  assert.equal(g.issue(0, { type: 'sniper', ids: [r.id], prone: true }).ok, false, 'Schütze kann das nicht');
+  assert.ok(e.alive);
+});

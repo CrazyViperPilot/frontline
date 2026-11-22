@@ -247,8 +247,10 @@ export const BALANCE = {
   // an den Ecken, die zum Gegner zeigen. ring = Abstand der Mauer von der FOB-Mitte (Zellen); floor = Höhenvorteil der Turmbesatzung (px);
   // ejectDamage = Schaden (Anteil der vollen HP) an der Besatzung, wenn der Turm fällt
   fortress: { ring: 4, towers: 2, floor: 40, ejectDamage: 0.35, towerShift: 3 }, // towerShift: so viele Zellen darf ein Turm nach innen ausweichen, wenn seine Ecke belegt ist (seit v5.03)
-  // Tarnung (Scharfschütze): Gegner sehen die Einheit nur nahe an eigenen Einheiten/Gebäuden oder kurz nach einem Schuss
-  stealth: { detectRange: 160, revealTime: 4 },
+  // Tarnung (Scharfschütze): Gegner sehen die Einheit nur nahe an eigenen Einheiten/Gebäuden oder kurz nach einem Schuss.
+  // Liegend (Paket „Scharfschütze“, Befehl sniper): nur noch aus proneDetect px Nähe oder von einem gegnerischen Scharfschützen in
+  // dessen Sicht; ein Schuss im Liegen verrät ihn nur proneReveal s (flach am Boden kaum Mündungsfeuer)
+  stealth: { detectRange: 160, revealTime: 4, proneDetect: 20, proneReveal: 1.5 },
   // Versorgungskisten (§3, nach den Reliquien aus Age of Empires II): liegen abseits der Zone (pairs Paare, punktsymmetrisch).
   // Ein Soldat hebt eine auf (pickReach), trägt sie mit carrySpeed-Tempo und ohne zu schießen zur nächsten eigenen fertigen FOB
   // (deliverReach zur Wand); jede eingelagerte Kiste bringt dem Team `income` Geld/s. Fällt der Träger oder die FOB, liegt sie wieder am Boden.

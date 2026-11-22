@@ -35,7 +35,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - createAnimals(game)
 - updateAnimals(game, dt) – Bewegung je Schritt; ein Hindernis vor dem Tier beendet den Gang (nächste Entsc…
 
-## combat.js (29 KB)
+## combat.js (30 KB)
 - sectorOf(s, t) – Seite, auf der der Schütze das Ziel trifft: 'front' (±45° zur Fahrtrichtung), '…
 - shotDamage(spec, s, t, mult) – Schaden eines Direkttreffers
 - heightMult(game, s, t) – Höhenvorteil im Direktfeuer (Age of Empires II): steht der Schütze höher, bis +…
@@ -51,7 +51,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - auraCooldown(u, cooldown) – Abklingzeit einer Waffe: in der Aura um fireRate kürzer
 - commanderFallen(game, u) – Ein Kommandeur ist gefallen: Punkte für den Gegner (kann die Partie entscheiden…
 
-## commands.js (6.9 KB)
+## commands.js (7.8 KB)
 - COMMANDS
 - OWN_DRIVERS – Auftragsarten, die ihr Modul selbst fährt (updateMovement lässt sie aus)
 - commandOf(type) – Registereintrag eines Befehlstyps oder null (auch für geerbte Schlüssel wie 'to…

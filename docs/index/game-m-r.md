@@ -2,7 +2,8 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/game/`. Pfade relativ zu `js/game/`.
 
-## map.js (Fortsetzung)
+## map.js (48 KB)
+- generateMap(seed, { river = false, players = 2 }) – Erzeugt eine Karte
 - townBigBlocks() – Innenflächen der großen Blöcke der Zonenstadt in px {x0, y0, x1, y1, empty} (Te…
 
 ## mapdata.js (23 KB)

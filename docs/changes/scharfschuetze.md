@@ -1,0 +1,1 @@
+**Scharfschütze liegt und beobachtet** (einheiten „Liegen und Beobachten“, Befehl sniper): Taste X legt ihn hin (dann sieht ihn der Gegner nur aus 20 px oder mit einem Scharfschützen), Taste O schaltet Beobachten (schießt nicht) oder Feuer frei; sein Tarnanzug passt sich Umgebung und Jahreszeit an.

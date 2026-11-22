@@ -154,6 +154,7 @@ const ASSETS = [
   './js/render/units/shapes.js',
   './js/render/units/painter.js',
   './js/render/units/armor.js',
+  './js/render/units/camo.js',
   './js/render/units/heavy.js',
   './js/render/units/wheeled.js',
   './js/render/units/rotor.js',

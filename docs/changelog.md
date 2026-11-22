@@ -3,6 +3,9 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.251: **Materialfotos an Großbauten und Props** (stadt-aussehen §15, nur Bild): Kaserne, Fabrikhalle und Güterbahnhof mit Fotos an Wänden und Dächern; Container, Tanks, Autos mit Lack-Patina, Kisten, Paletten, Zäune und Bänke mit Holz, Mauern mit Beton. Cache v306.
+- v5.250: **Materialfotos auf Dächern** (stadt-aussehen §15, nur Bild): Sattel- und Walmdächer mit Dachziegeln, Shed- und Tonnendächer mit Wellblech, graue Flachdächer mit Kies, in Iso und 2D. Cache v306.
+- v5.249: **Materialfotos an Wänden** (stadt-aussehen §15, nur Bild): Wände der gemalten Gebäude und Props bekommen Körnung aus CC0-Fotos (Ziegel, Putz, Beton); Farbe und Licht bleiben, kleine Flächen bleiben glatt. Cache v306.
 - v5.248: **Straßen als Foto** (stadt-aussehen §„Auf der Karte“, nur Bild): Asphalt und Gehwegplatten der Stadtstraßen und Brücken sind jetzt Fotos (CC0, `textures/`), je Jahreszeit umgefärbt; Herbst mit Laub, Winter mit Schneeflecken, Salz und Reif. Cache v305.
 - v5.247: **Editor: Abwählen, Drehen gesetzter Deko** (PRD Steuerung „Editor“): Knopf „Abwählen“ im Inspektor; „Drehen“ im Werkzeug Deko dreht auch das gerade gesetzte Einzelstück (z. B. Sandsack-Stellung); Inspektor scrollt bei langer Liste. Cache v304.
 - v5.246: **Raffinerie und Ölfeld im Editor** (PRD „Zone und Gelände“, Props): Neue Deko-Gruppe für große Raffinerien im Wüstenstil: Rohrleitung und Rohrbrücke als Kacheln, Schwimmdach- und Festdachtank, Kugeltank, Destillationskolonne, Prozessanlage, Fackelturm mit Flamme, Schornstein, Pferdekopfpumpe, Druckbehälter, Schieberstation und Leitstand; Tanks explodieren mit großem Radius (Kettenreaktion). Cache v303.

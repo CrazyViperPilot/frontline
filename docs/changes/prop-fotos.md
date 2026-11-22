@@ -1,1 +1,0 @@
-**Materialfotos an Großbauten und Props** (stadt-aussehen §15, nur Bild): Kaserne, Fabrikhalle und Güterbahnhof mit Fotos an Wänden und Dächern; Container, Tanks, Autos mit Lack-Patina, Kisten, Paletten, Zäune und Bänke mit Holz, Mauern mit Beton.

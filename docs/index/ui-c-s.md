@@ -85,7 +85,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - draw(f) – Graph als SVG: Spaltenköpfe, Linien (Breite = Menge je s), Knoten
   - destroy()
 
-## helptext.js (28 KB)
+## helptext.js (29 KB)
 - KEYS
 
 ## hud.js (0.8 KB)

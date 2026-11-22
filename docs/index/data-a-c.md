@@ -137,7 +137,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - QUICK – == SCHNELLEINSTELLUNGEN == Hier ändern; BALANCE unten liest diese Werte
 - BALANCE
 
-## buildings.js (6.1 KB)
+## buildings.js (6.6 KB)
 - BUILDINGS
 
 ## city.js (45 KB)

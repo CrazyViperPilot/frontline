@@ -128,7 +128,7 @@ export const UNITS = {
     sight: 260,
     indirect: true,
     weapons: [
-      { id: 'mortar', name: 'Leichter Mörser', range: 700, minRange: 150, cooldown: 5, rounds: 20, munCost: 2, shell: true, splash: 60, damage: { inf: 60, light: 50, heavy: 25, struct: 80 } },
+      { id: 'mortar', name: 'Leichter Mörser', range: 700, minRange: 150, cooldown: 5, rounds: 20, munCost: 2, shell: true, splash: 60, damage: { inf: 60, light: 50, heavy: 25, struct: 80, wall: 80 } },
     ],
     cost: { money: 90 }, // Infanterie-Preis zwischen Schütze und Flammenwerfer
     buildTime: 8,
@@ -148,7 +148,7 @@ export const UNITS = {
     sight: 260,
     // Panzerfaust/RPG: 5 Schuss à 10 Munition, auch gegen Hubschrauber
     weapons: [
-      { id: 'rpg', name: 'RPG', range: 240, cooldown: 3.0, rounds: 5, munCost: 10, hits: { inf: 1, tank: SIDES(6, 4, 3), ifv: SIDES(4, 3, 2), light: 2 }, damage: { inf: 10, light: 90, heavy: 120, struct: 60, air: 40, jet: 0 } },
+      { id: 'rpg', name: 'RPG', range: 240, cooldown: 3.0, rounds: 5, munCost: 10, hits: { inf: 1, tank: SIDES(6, 4, 3), ifv: SIDES(4, 3, 2), light: 2 }, damage: { inf: 10, light: 90, heavy: 120, struct: 60, wall: 120, air: 40, jet: 0 } },
     ],
     cost: { money: 120 },
     buildTime: 8,
@@ -417,7 +417,7 @@ export const UNITS = {
     sight: 320,
     // Hauptkanone: 30 Schuss à 20 Munition, 6 s Nachladezeit; MG: 300 Schuss à 5
     weapons: [
-      { id: 'cannon', name: 'Hauptkanone', range: 300, cooldown: 6, rounds: 30, munCost: 20, targets: ['light', 'heavy', 'struct'], hits: { inf: 1, tank: SIDES(4, 3, 2), ifv: SIDES(3, 3, 2), light: 2 }, damage: { inf: 45, light: 120, heavy: 150, struct: 120 } },
+      { id: 'cannon', name: 'Hauptkanone', range: 300, cooldown: 6, rounds: 30, munCost: 20, targets: ['light', 'heavy', 'struct'], hits: { inf: 1, tank: SIDES(4, 3, 2), ifv: SIDES(3, 3, 2), light: 2 }, damage: { inf: 45, light: 120, heavy: 150, struct: 120, wall: 120 } },
       { id: 'mg', name: 'MG', range: 220, cooldown: 0.25, rounds: 300, munCost: 5, hits: { inf: 2 }, damage: { inf: 10, light: 3, heavy: 0, struct: 2, air: 3, jet: 1 } },
     ],
     cost: { money: 1000 }, // seit Paket Balance-Preise (vorher 500)
@@ -766,7 +766,7 @@ export const UNITS = {
     sight: 280,
     indirect: true, // Zielsuche über die Reichweite (Sicht des Teams), nicht über die eigene Sicht
     weapons: [
-      { id: 'howitzer', name: 'Haubitze 155 mm', range: 1400, minRange: 260, cooldown: 7, rounds: 30, munCost: 25, shell: true, splash: 75, spread: 70, shellSpeed: 480, damage: { inf: 90, light: 110, heavy: 80, struct: 140 } },
+      { id: 'howitzer', name: 'Haubitze 155 mm', range: 1400, minRange: 260, cooldown: 7, rounds: 30, munCost: 25, shell: true, splash: 75, spread: 70, shellSpeed: 480, damage: { inf: 90, light: 110, heavy: 80, struct: 140, wall: 140 } },
     ],
     cost: { money: 1500 }, // seit Paket Balance-Preise (vorher 900)
     buildTime: 22,
@@ -789,7 +789,7 @@ export const UNITS = {
     sight: 280,
     indirect: true, // Zielsuche über die Reichweite (Sicht des Teams), wie die Panzerhaubitze
     weapons: [
-      { id: 'rockets', name: 'Raketenwerfer 227 mm', range: 1600, minRange: 400, cooldown: 30, rounds: 36, munCost: 15, shell: true, splash: 60, spread: 120, shellSpeed: 480, salvo: { count: 12, gap: 0.25, reload: 30 }, damage: { inf: 70, light: 90, heavy: 60, struct: 110 } },
+      { id: 'rockets', name: 'Raketenwerfer 227 mm', range: 1600, minRange: 400, cooldown: 30, rounds: 36, munCost: 15, shell: true, splash: 60, spread: 120, shellSpeed: 480, salvo: { count: 12, gap: 0.25, reload: 30 }, damage: { inf: 70, light: 90, heavy: 60, struct: 110, wall: 110 } },
     ],
     cost: { money: 1700 }, // seit Paket Balance-Preise (vorher 1000)
     buildTime: 26,

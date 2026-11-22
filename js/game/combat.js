@@ -6,7 +6,9 @@ import { damageHouse, houseFire, ruinCoverMul, houseCanFire } from './garrison.j
 import { addCrater } from './scars.js';
 import { auraCooldown } from './commander.js';
 import { weatherSight } from './weather.js';
-import { coverHit, splashProps } from './props.js';
+import { coverHit, splashProps, damageProp } from './props.js';
+import { fireBlocker, wallDamage } from './walls.js';
+import { PROPS } from '../data/props.js';
 import { armorMul, modOf, rangeMul, sightMul, dealtMul, smokeMul, hasUnlock } from './research.js';
 
 /** Forschung „Autonome Türme“: Dachaufbauten feuern ohne Besatzung. */
@@ -29,20 +31,22 @@ function weaponOf(e) {
   return e.kind === 'unit' ? null : (e.def.weapon ?? null);
 }
 
-const dmgKey = (e) => (e.kind === 'building' ? 'struct' : e.def.jet ? (jetGrounded(e) ? 'light' : 'jet') : e.heli && e.heli.phase !== 'air' ? 'light' : e.def.armor); // Jet am Boden (seit v5.35) und Hubschrauber auf dem Heliport (seit v5.51): wie ein leichtes Fahrzeug
+const dmgKey = (e) => (e.kind === 'building' ? (e.def.armor === 'wall' ? 'wall' : 'struct') : e.def.jet ? (jetGrounded(e) ? 'light' : 'jet') : e.heli && e.heli.phase !== 'air' ? 'light' : e.def.armor); // Jet am Boden (seit v5.35) und Hubschrauber auf dem Heliport (seit v5.51): wie ein leichtes Fahrzeug
 
 /**
  * Schaden einer Schadenstabelle gegen e. Flugzeuge (def.jet, seit v5.15) haben die eigene Klasse 'jet'; fehlt sie in der
  * Tabelle, gilt der Wert gegen Hubschrauber ('air'), so treffen Flak, SAM und Flugabwehr Jets wie bisher.
  */
-const dmgVs = (table, e) => {
+const dmgVs = (table, e, splash = false) => {
   const k = dmgKey(e);
+  if (k === 'wall') return wallDamage(table, splash); // Mauer und Tor (Paket „Mauern“): eigener Wert, sonst Splash voll, Direktfeuer kaum
   return (k === 'jet' ? (table.jet ?? table.air) : table[k]) || 0;
 };
 
 /** Ist die Waffe für die Klasse des Ziels vorgesehen (targets; Jets zählen wie 'air')? */
 const meant = (spec, e) => {
-  const k = dmgKey(e);
+  const d = dmgKey(e);
+  const k = d === 'wall' ? 'struct' : d; // Mauern zählen wie Gebäude
   return !!spec.targets && (spec.targets.includes(k) || (k === 'jet' && spec.targets.includes('air')));
 };
 
@@ -178,6 +182,7 @@ function searchTarget(game, hash, s, R, dmg, { minRange = 0, prefer = null, unit
     const d = Math.hypot(e.x - s.x, e.y - s.y);
     if (d < minRange || d > R + radiusOf(e)) return;
     if (!game.sees(team, e)) return;
+    if (!throughWalls(game, s, e, dmg)) return; // hinter einer hohen Mauer: nur wer sie aufbrechen kann (Paket „Mauern“)
     const score = prefer && !prefer(e) ? d + 1e6 : d;
     if (score < bestScore) {
       best = e;
@@ -268,6 +273,12 @@ function fireWeapon(game, u, w, t) {
     fireUnitShell(game, u, w, t.x, t.y);
     return;
   }
+  const bl = fireBlocker(game, u, t);
+  if (bl) {
+    // hohe Mauer dazwischen (Paket „Mauern“): der Schuss trifft die Mauer (weaponReaches lässt nur Waffen mit Mauerschaden durch)
+    wallHit(game, u, w, bl);
+    return;
+  }
   if ((w.spec.damage.light || 0) >= BALANCE.combat.cannonDamage) {
     game.addEffect('shell', u.x, u.y, u.team, t.x, t.y, w.spec.id);
     game.addEffect('explosion', t.x, t.y, u.team, t.x, t.y, 'hit');
@@ -283,6 +294,17 @@ function fireWeapon(game, u, w, t) {
   if (w.spec.splash) flameSplash(game, u, t, w.spec.splash, dmg);
 }
 
+/** Schuss von u mit Waffe w in die Mauer bl (fireBlocker): Bild an der Mauer, Schaden der Klasse wall (Torkachel: gateMul). */
+function wallHit(game, u, w, bl) {
+  const p = bl.b ?? game.map.props[bl.prop];
+  game.addEffect((w.spec.damage.light || 0) >= BALANCE.combat.cannonDamage ? 'shell' : 'tracer', u.x, u.y, u.team, p.x, p.y, w.spec.id);
+  game.addEffect('explosion', p.x, p.y, u.team, p.x, p.y, 'hit');
+  if (u.def.stealth || u.def.stillCamo) u.revealedUntil = game.time + BALANCE.stealth.revealTime;
+  const dmg = wallDamage(w.spec.damage) * modOf(game, u, 'dmg');
+  if (bl.b) hit(game, bl.b, dmg, 1, u.team);
+  else damageProp(game, bl.prop, dmg * (p.gate ? (PROPS.kinds[p.kind]?.gateMul ?? 1) : 1));
+}
+
 /** Flammenstrahl (Paket E3, Waffe mit splash): trifft zusätzlich gegnerische Einheiten im Umkreis R um das Ziel, linear abfallend und mit halbem Schaden. */
 function flameSplash(game, u, t, R, dmg) {
   for (const e of game.units) {
@@ -292,8 +314,20 @@ function flameSplash(game, u, t, R, dmg) {
   }
 }
 
+/**
+ * Darf ein Schütze mit Schadenstabelle dmg auf t feuern, obwohl eine hohe Mauer dazwischen steht (Paket „Mauern“, walls.js)? Ohne Mauer
+ * immer; sonst nur Waffen mit eigenem Mauerschaden (wall: Kampfpanzer, Panzerabwehr, Steilfeuer) und nie durch eine eigene Mauer.
+ * Der Schuss trifft dann die Mauer (fireWeapon), Steilfeuer fliegt darüber.
+ */
+function throughWalls(game, s, t, dmg, shell = false) {
+  if (shell) return true;
+  const bl = fireBlocker(game, s, t);
+  return !bl || (dmg.wall > 0 && bl.team !== s.team);
+}
+
 /** Reichweite der Waffe w von u gegen t (Forschung, Hauswand; Artillerie nicht unter minRange)? */
 const weaponReaches = (game, u, w, t) =>
+  throughWalls(game, u, t, w.spec.damage, !!w.spec.shell) && // hohe Mauern halten Direktfeuer auf (Paket „Mauern“)
   (!isHighAlt(t) || !!w.spec.antiHighAlt) && // hochfliegende U-2 nur von Waffen mit antiHighAlt (seit v5.83)
   inRange(u, t, w.spec.range * rangeMul(game, u) + reachBonus(game, u)) &&
   !(w.spec.minRange && Math.hypot(t.x - u.x, t.y - u.y) < w.spec.minRange) &&
@@ -473,7 +507,7 @@ export function impact(game, p) {
     if (!e.alive || e.team === p.team || e.house || isHighAlt(e)) return; // seit v5.35 treffen Granaten auch abgestellte Jets (Schutz: parkedArmor); hochfliegende U-2 nie (seit v5.83)
     const d = Math.max(0, Math.hypot(e.x - p.tx, e.y - p.ty) - radiusOf(e));
     if (d >= R) return;
-    const dmg = dmgVs(p.damage, e) * (1 - d / R) * (p.mul ?? 1);
+    const dmg = dmgVs(p.damage, e, true) * (1 - d / R) * (p.mul ?? 1);
     hit(game, e, dmg, 1, p.team);
   };
   for (const list of [game.units, game.buildings]) for (const e of list) splash(e);

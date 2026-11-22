@@ -15,6 +15,7 @@ const ASSETS = [
   './js/editor/space.js',
   './js/game/mapdata.js',
   './js/game/props.js',
+  './js/game/walls.js',
   './js/game/propfire.js',
   './js/game/fieldwork.js',
   './icons/icon.svg',

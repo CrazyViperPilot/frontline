@@ -214,8 +214,8 @@ Ein Test meldet, wenn sie nicht mehr zur Config passen.
 | Gebäude | Taste (Baumenü) | HP | Größe (Zellen) | Kosten | Bauzeit |
 |---|---|---|---|---|---|
 | FOB | – | 2500 | 3×3 | 400 Baumaterial | 30 s |
-| Mauer | E | 600 | 1×1 | 8 Baumaterial | 2 s |
-| Tor | R | 800 | 1×1 | 25 Baumaterial | 4 s |
+| Mauer | E | 2400 | 1×1 | 8 Baumaterial | 2 s |
+| Tor | R | 1200 | 1×1 | 25 Baumaterial | 4 s |
 | Mörser | T | 700 | 2×2 | 200 Baumaterial, 60 Munition | 20 s |
 | Flugabwehr | Z | 700 | 2×2 | 180 Baumaterial, 40 Munition | 18 s |
 | Phalanx | C | 900 | 2×2 | 800 Geld, 300 Baumaterial, 200 Munition | 120 s |

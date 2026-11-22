@@ -50,6 +50,8 @@ export const KEYS = [
     `Seiten ohne Straße in der Nähe sind blind)`],
   ['Zäune und Mauern', 'Halten Infanterie und Radfahrzeuge auf; Kettenfahrzeuge (Panzer, Schützenpanzer …) walzen Zäune und Bruchsteinmauern nieder, Betonmauern nicht · ' +
     'Infanterie dahinter nimmt weniger Schaden, wenn die Mauer zwischen ihr und dem Schützen liegt (Mörser und Luftangriffe ausgenommen) · Betonmauern verdecken die Sicht · ' +
+    'Hohe Mauern (Betonmauer, Hesco, Mauer und Tor aus dem Baumenü) halten Direktfeuer ganz auf: nur Mörser, Artillerie, Raketenwerfer und Luftfahrzeuge schießen darüber, ' +
+    'Kampfpanzer und Panzerabwehr schießen sie auf (Mauerstück etwa 20 Schuss, Tor etwa 10), Gewehre kratzen sie kaum · ' +
     'Beschuss und Granaten zerstören sie, Mauern hinterlassen Trümmer · offene Tore lassen alle durch · Militär: Jersey-Sperren und Panzersperren halten nur Fahrzeuge auf, ' +
     'Sandsäcke und Hesco geben viel Deckung, unter Tarnnetzen sind Einheiten getarnt, Munitionskisten, Treibstofftanks und Fässer explodieren unter Beschuss · Container stehen bis drei Lagen hoch und verdecken die Sicht, unter einem Portalkran und einer Rohrbrücke fährt man durch, Rohrleitungen halten nur Fahrzeuge auf, Tanks, Kugeltanks und Druckbehälter der Raffinerie explodieren mit großem Radius · Hecken verdecken die Sicht, im Krater liegt Infanterie in Deckung nach allen Seiten'],
   ['Rechtsklick auf FOB', 'LKW: leer laden, beladen entladen · Baufahrzeug: an Baustelle helfen, beschädigtes Gebäude reparieren'],

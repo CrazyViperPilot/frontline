@@ -25,8 +25,8 @@ Regeln: PRD.md und `docs/prd/`, Werte `js/data/`. Stadt: `city/CLAUDE.md`. Jede 
 - `medic.js`, `recovery.js`, `fpv.js` – eigene Logik: Sanitäter, Bergepanzer, Kamikazedrohne
 - `fog.js` – Nebel des Krieges, `version` zählt Neuberechnungen
 - `map.js`, `landscape.js`, `relief.js`, `mapdata.js` – Zufallskarte, Gelände, Höhenraster, Kartenformat. `generateMap`, `Relief`
-- `props.js`, `propfire.js`, `fieldwork.js` – Props: Sperren, Deckung, Sicht, Tore; Beschuss; Feldstellungen bauen. `updateProps`, `cmdFieldwork`
-- `scars.js`, `animals.js` – Wracks und Krater, Tiere (Optik, aber Simulation)
+- `props.js`, `propfire.js`, `fieldwork.js`, `walls.js` – Props: Sperren, Deckung, Tore; Beschuss; Feldstellungen; hohe Mauern halten Direktfeuer auf. `fireBlocker`
+- `scars.js`, `animals.js` – Wracks und Krater, Tiere
 - `savegame.js` – Spielstand als JSON. `snapshotGame`, `restoreGame`
 - `ledger.js` – Kassenbuch je Team: Geld mit Grund buchen. `earn`, `spend`, `IN_KEYS`, `OUT_KEYS`
 

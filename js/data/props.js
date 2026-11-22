@@ -109,8 +109,10 @@ export const PROPS = {
       cover: 0.6,
       coverVeh: 0.3,
       sight: 26, // höher als Augen von Infanterie und Fahrzeugen: verdeckt, was dahinter steht
-      hp: 600,
-      armor: 'struct',
+      blocksFire: true, // hoch genug: kein Direktfeuer hindurch, nur Steilfeuer und Luftfahrzeuge darüber (Paket „Mauern“, js/game/walls.js)
+      hp: 2400, // etwa 20 Schuss von Kampfpanzer oder Panzerabwehr (Schaden wall 120)
+      armor: 'wall', // Schadensklasse Mauer: nur Waffen mit eigenem Wert (wall) richten viel aus, sonst BALANCE.combat.wallOther
+      gateMul: 2, // Torkachel: Schwachstelle, nimmt doppelten Schaden (etwa 10 Schuss)
       rubble: { blocks: 'veh', crush: true, cover: 0.35, sight: 0 }, // Schuttwall: Radfahrzeuge kommen nicht darüber
     },
     wall_stone: {
@@ -151,8 +153,9 @@ export const PROPS = {
       cover: 0.7,
       coverVeh: 0.4,
       sight: 0,
-      hp: 800,
-      armor: 'struct',
+      blocksFire: true, // mannshoch: kein Direktfeuer hindurch, nur Steilfeuer und Luftfahrzeuge darüber (Paket „Mauern“)
+      hp: 2400, // etwa 20 Schuss von Kampfpanzer oder Panzerabwehr (Schaden wall 120)
+      armor: 'wall', // Schadensklasse Mauer (siehe Betonmauer)
       rubble: { blocks: 'veh', crush: true, cover: 0.3, sight: 0 }, // Sandhaufen aus geplatzten Körben
     },
     jersey: {

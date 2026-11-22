@@ -197,6 +197,13 @@
 ### Zäune und Mauern
 
 Props der Karte: Kacheln von je einer Rasterzelle (32 px), die sich mit Nachbarn zu Gerade, Ecke, T-Stück, Kreuz und Ende verbinden.
+
+**Hohe Mauern (Paket „Mauern“, `js/game/walls.js`):** Betonmauer und Hesco-Barriere (und Mauer und Tor aus dem Baumenü) halten **Direktfeuer** ganz auf,
+egal wie weit das Ziel dahinter steht: Schütze und Ziel in Bodenhöhe, eine heile Mauerzelle auf der Linie dazwischen, dann trifft der Schuss die Mauer.
+Darüber schießen Steilfeuer (Mörser, Panzerhaubitze, Raketenwerfer), Luftfahrzeuge und Schützen in Häusern und Türmen; offene Tore und Trümmer halten nichts auf.
+Gewehre, MG und andere Handwaffen suchen sich hinter einer Mauer kein Ziel; Kampfpanzer und Panzerabwehr nehmen es trotzdem und schießen die Mauer dazwischen auf
+(Schadensklasse `wall`: 120 je Schuss, Mauerstück 2400 Trefferpunkte, also etwa 20 Schuss; Torkachel doppelter Schaden, Tor aus dem Baumenü 1200, etwa 10 Schuss).
+Waffen ohne eigenen Mauerschaden richten `BALANCE.combat.wallOther` (10 %) ihres Gebäudeschadens aus, Explosionen den vollen. Eigene Mauern beschießt niemand.
 Werte je Art in `js/data/props.js` (Tabelle unten), Regeln in `js/game/props.js`.
 
 | Art | hält auf | Kette walzt nieder | Deckung Inf. / Fz. | verdeckt Sicht | Treffer­punkte | danach |

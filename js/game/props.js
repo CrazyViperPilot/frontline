@@ -258,7 +258,16 @@ export function concealed(game, x, y) {
 }
 
 /** Schaden einer Waffe (damage je Panzerklasse) gegen Prop i, mal mul. */
-const dmgOf = (p, damage, mul) => (damage?.[PROPS.kinds[p.kind]?.armor] || 0) * mul;
+/**
+ * Schaden einer Tabelle gegen Prop p, mal mul. Schadensklasse wall (Betonmauer, Hesco; Paket „Mauern“): eigener Wert der Waffe, sonst
+ * Splash voll mit struct, Direktfeuer nur BALANCE.combat.wallOther davon; Torkacheln nehmen gateMul-fach (Schwachstelle).
+ */
+const dmgOf = (p, damage, mul, splash = false) => {
+  const K = PROPS.kinds[p.kind];
+  if (K?.armor !== 'wall') return (damage?.[K?.armor] || 0) * mul;
+  const v = !damage ? 0 : damage.wall !== undefined ? damage.wall : (damage.struct || 0) * (splash ? 1 : BALANCE.combat.wallOther);
+  return v * mul * (p.gate ? (K.gateMul ?? 1) : 1);
+};
 
 /** Splash um (x, y) mit Radius R (combat.impact): Props darin nehmen Schaden, nach außen linear weniger. */
 export function splashProps(game, x, y, R, damage, mul = 1) {
@@ -281,7 +290,7 @@ export function splashProps(game, x, y, R, damage, mul = 1) {
       for (const i of list) {
         if (done.has(i)) continue;
         done.add(i);
-        damageProp(game, i, dmgOf(props[i], damage, mul * PROPS.splashMul * (1 - d / R)));
+        damageProp(game, i, dmgOf(props[i], damage, mul * PROPS.splashMul * (1 - d / R), true));
       }
     }
   }

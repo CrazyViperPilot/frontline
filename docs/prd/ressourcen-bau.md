@@ -103,8 +103,8 @@ Der Weg ab dem Lager der Hauptstadt (LKW, vordere FOBs, Nachfüllen) ist in beid
 |---|---|
 | Hauptstadt (Zentrale) | Unendliches Lager, Bauradius, bildet alle Einheiten aus (nur Geld), leichtes MG, nicht abreißbar |
 | Vordere FOB | Endliches Lager (LKW füllen es), Bauradius, Nachladen/Tanken, leichtes MG; bis zu 10 FOBs, Bauradien ohne Überlappung |
-| Mauer | Blockiert alle Einheiten. Wird per Ziehen als Linie gebaut. |
-| Tor | Wie Mauer, aber eigene Einheiten fahren hindurch. (weiter unten) |
+| Mauer | Blockiert alle Einheiten und Direktfeuer (nur Steilfeuer und Luftfahrzeuge schießen darüber; Kampfpanzer und Panzerabwehr brauchen etwa 20 Schuss). Wird per Ziehen als Linie gebaut. |
+| Tor | Wie Mauer, aber eigene Einheiten fahren hindurch; Schwachstelle (etwa 10 Schuss). (weiter unten) |
 | Mörser | Indirektes Feuer, Reichweite 800 px (Mindestreichweite 200), Flächenschaden. (weiter unten) |
 | Flugabwehr | Schießt **Hubschrauber** ab (Reichweite 320, 35 Schaden je Schuss), fängt gegnerische Mörsergranaten ab und beschießt Bodenziele schwach. Munition aus der FOB |
 | Phalanx (seit v4.99) | Nahbereichsschutz nach dem CIWS-Geschütz: nur Baufahrzeug (Taste C), im Bauradius einer FOB (Militärgebäude), 2×2, 800 Geld, 300 Baumaterial, 200 Munition, **120 s Bauzeit**. (weiter unten) |

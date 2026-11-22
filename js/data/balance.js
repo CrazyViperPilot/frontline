@@ -428,7 +428,9 @@ export const BALANCE = {
   shellSpeed: 300, // px/s: Flugtempo eines Mörsergeschosses, wenn die Waffe keines nennt (Haubitze schneller)
   // Kampf: cityMargin = zusätzlicher Suchradius (px) nach Stadtgebäuden als Ziel; cannonDamage = Schaden gegen leichte Panzerung, ab dem ein
   // Schuss als Kanonenschuss gilt (Geschoss plus kleine Explosion im Bild)
-  combat: { cityMargin: 32, cannonDamage: 60 },
+  // wallOther: Anteil des Gebäudeschadens (struct) gegen Mauern (Schadensklasse wall) für Waffen ohne eigenen Wert wall, z. B. Gewehr
+  // 4 → 0,4 je Treffer (Paket „Mauern“): Handwaffen kratzen Mauern nur; Explosionen (Splash) treffen sie voll mit struct
+  combat: { cityMargin: 32, cannonDamage: 60, wallOther: 0.1 },
   // Effekte (rein optisch): Lebensdauer je Art in s, ohne Eintrag lifeDefault
   effects: { life: { tracer: 0.12, shell: 0.3, explosion: 0.5, intercept: 0.4, muzzle: 0.1, death: 0.1 }, lifeDefault: 0.3 },
   // Meldungen mit Drosselung (game.notify): Mindestabstand in s zwischen zwei gleichen Meldungen je Team (ohne Eintrag shortageWarn)

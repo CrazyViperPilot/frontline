@@ -84,6 +84,10 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - supplyOf(game, c, a) – Versorgung eines Ausbildungsgebäudes der Stadt (Paket „Straßen“, Teil 2; nur le…
 - trainRate(game, e) – Tempo der Ausbildung im Gebäude e (Ziel-Entity der Stadt; andere Gebäude: 1)
 
+## walls.js (3.9 KB)
+- wallDamage(table, splash) – Schaden einer Schadenstabelle gegen die Schadensklasse wall; splash: Explosion…
+- fireBlocker(game, s, t) – Erste hohe Mauer auf der Linie vom Schützen s zum Ziel t (Direktfeuer), oder nu…
+
 ## weather.js (5.6 KB)
 - SEASONS
 - SEASON_NAMES

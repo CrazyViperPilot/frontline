@@ -30,10 +30,11 @@ export const BUILDINGS = {
   wall: {
     name: 'Mauer',
     short: 'Mauer', // Kurzname in der Befehlskarte
-    armor: 'struct',
+    armor: 'wall', // Schadensklasse Mauer: nur Waffen mit eigenem Wert (wall) richten viel aus, sonst BALANCE.combat.wallOther
+    blocksFire: true, // kein Direktfeuer hindurch, nur Steilfeuer und Luftfahrzeuge darüber (Paket „Mauern“, js/game/walls.js)
     w: 1,
     h: 1,
-    hp: 600,
+    hp: 2400, // etwa 20 Schuss von Kampfpanzer oder Panzerabwehr (Schaden wall 120)
     sight: 0,
     cost: { bm: 8 },
     buildTime: 2,
@@ -44,10 +45,11 @@ export const BUILDINGS = {
   gate: {
     name: 'Tor',
     short: 'Tor', // Kurzname in der Befehlskarte
-    armor: 'struct',
+    armor: 'wall', // wie die Mauer
+    blocksFire: true, // geschlossenes Tor: kein Direktfeuer hindurch
     w: 1,
     h: 1,
-    hp: 800,
+    hp: 1200, // Schwachstelle: etwa 10 Schuss von Kampfpanzer oder Panzerabwehr
     sight: 0,
     cost: { bm: 25 },
     buildTime: 4,
@@ -71,7 +73,7 @@ export const BUILDINGS = {
       range: 800,
       minRange: 200,
       cooldown: 20, // seltene, gezielte Schüsse (Ziel wählen)
-      damage: { inf: 60, light: 50, heavy: 25, struct: 80 },
+      damage: { inf: 60, light: 50, heavy: 25, struct: 80, wall: 80 }, // wall: Steilfeuer trifft Mauern voll
       splash: 60,
       shell: true, // indirektes Feuer: Flugzeit = Distanz / 300
       ammoPerShot: 4, // je Granate

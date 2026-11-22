@@ -9,6 +9,7 @@
 // Drehung der Karte richtig. Nur Zeichnen, keine Spielregeln.
 import { airbaseGround, airbaseBodies, drawAirbaseIso, drawAirbaseTop } from './airbase.js';
 import { drawBox } from './iso.js';
+import { roofMat, flatMat, texture } from './materials.js';
 import { shade, tint } from './sprites.js';
 import { drawUnitTop, drawUnitIso, SHOWROOM } from './unitpaint.js';
 import { UNITS } from '../data/units.js';
@@ -180,15 +181,15 @@ function stationBodies(lv) {
   box(-88, -90, -28, -40, 24, '#c9c4b4', '#8a8f92', 0, { gable: 10, gates: { e: [2], n: 2, w: 18, h: 14 }, win: [[12, 17]], wg: 12, ww: 8, stripe: true });
   // Waggons (ab Stufe 1 zwei, ab Stufe 2 drei) auf dem Ladegleis
   const wagons = [[-84, -56, '#8a6d4a', '#6c5536'], [-50, -22, '#6f7b86', '#525c66'], [28, 56, '#9c4b3a', '#7a3a2d']];
-  for (const [x0, x1, c, roof] of wagons.slice(0, lv >= 2 ? 3 : 2)) box(x0, 50, x1, 66, 9, c, roof);
+  for (const [x0, x1, c, roof] of wagons.slice(0, lv >= 2 ? 3 : 2)) box(x0, 50, x1, 66, 9, c, roof, 0, { mat: 'paint', roofMat: 'metal' });
   // Mit Stufe 2: Sheddachhalle im Nordosten, Vordach über dem Bahnsteig, Container auf der Rampe
   if (lv >= 2) {
     box(26, -90, 88, -58, 22, '#bcc1bd', '#7d858b', 0, { saw: { n: 5, rh: 10 }, gates: { e: [2], n: 1, w: 22, h: 14 } });
     box(-64, 24, -24, 36, 2, '#55585b', '#6d7174', 16);
     for (const [x, y] of [[-61, 26], [-27, 26], [-61, 34], [-27, 34]]) cyl(x, y, 1.6, 16, '#6d7174');
-    box(44, 76, 62, 88, 8, '#b5523b', '#a0442f');
-    box(66, 76, 84, 88, 8, '#3c6e9e', '#2f5a82');
-    box(44, 76, 62, 88, 8, '#5f7f4f', '#4d6a40', 8); // zweite Lage Container
+    box(44, 76, 62, 88, 8, '#b5523b', '#a0442f', 0, { mat: 'paint', roofMat: 'metal' }); // Container
+    box(66, 76, 84, 88, 8, '#3c6e9e', '#2f5a82', 0, { mat: 'paint', roofMat: 'metal' });
+    box(44, 76, 62, 88, 8, '#5f7f4f', '#4d6a40', 8, { mat: 'paint', roofMat: 'metal' }); // zweite Lage Container
   }
   // Mit Stufe 3: Portalkran über der Rampe, Stellwerk am Bahnsteig, dritte Lage Container
   if (lv >= 3) {
@@ -197,7 +198,7 @@ function stationBodies(lv) {
     box(36, 79, 88, 81, 4, '#d9a21b', '#e8b52c', 36);
     box(60, 79, 64, 81, 2, '#55585b', '#6d7174', 30);
     box(-86, -36, -72, -24, 20, '#e4e0d4', '#7b7f82', 0, { win: [[6, 12]], wg: 6, ww: 4 }); // Stellwerk über dem Gleis, nicht auf dem Prellbock
-    box(66, 76, 84, 88, 8, '#3c6e9e', '#2f5a82', 8); // dritte Lage Container
+    box(66, 76, 84, 88, 8, '#3c6e9e', '#2f5a82', 8, { mat: 'paint', roofMat: 'metal' }); // dritte Lage Container
   }
   b.push({ t: 'flag', x: -92, y: -92, h: 46 }); // Teamfarbe am Eingang (Fahne)
   return b;
@@ -267,7 +268,7 @@ function bodiesOf(k, lv) {
       for (const x of [86, 108, 130]) box(x - 6, -130, x + 6, -118, 6, '#8d9296', '#6d7276', 28); // Abluft
       box(-148, -6, -56, 70, 28, HALL, '#7d858b', 0, { gable: 12, gates: { e: [2], n: 2, w: 26, h: 20 }, win: [[22, 26]], wg: 16, ww: 10, ribs: true }); // zweite Halle
       const CT = ['#b5523b', '#3c6e9e', '#c9a13a', '#5f7f4f'];
-      [[104, 32, 0], [104, 48, 0], [104, 64, 0], [104, 32, 12], [104, 48, 12]].forEach(([x, y, z], n) => box(x, y, x + 40, y + 13, 12, CT[n % 4], shade(CT[n % 4], 0.1), z)); // Container
+      [[104, 32, 0], [104, 48, 0], [104, 64, 0], [104, 32, 12], [104, 48, 12]].forEach(([x, y, z], n) => box(x, y, x + 40, y + 13, 12, CT[n % 4], shade(CT[n % 4], 0.1), z, { mat: 'paint', roofMat: 'metal' })); // Container
     }
     if (lv >= 3) {
       box(-44, -6, 52, 70, 26, HALL, '#7d858b', 0, { gable: 11, gates: { e: [2], n: 2, w: 24, h: 18 }, ribs: true }); // dritte Halle
@@ -288,7 +289,7 @@ function bodiesOf(k, lv) {
     show('truck', 0, 42, -Math.PI / 2);
     if (lv >= 2) {
       const CT = ['#b5523b', '#3c6e9e', '#5f7f4f'];
-      [[36, -56, 0], [36, -42, 0], [36, -56, 11]].forEach(([x, y, z], n) => box(x, y, x + 20, y + 11, 11, CT[n % 3], shade(CT[n % 3], 0.1), z)); // Container
+      [[36, -56, 0], [36, -42, 0], [36, -56, 11]].forEach(([x, y, z], n) => box(x, y, x + 20, y + 11, 11, CT[n % 3], shade(CT[n % 3], 0.1), z, { mat: 'paint', roofMat: 'metal' })); // Container
     }
     if (lv >= 3) box(-56, -62, 26, -52, 14, WALL, '#6f7479', 0, { ribs: true }); // Anbau
   } else if (AIRBASE.has(k)) {
@@ -469,6 +470,10 @@ function boxTop(ctx, p, color) {
     ctx.fillStyle = 'rgba(255,255,255,0.16)';
     ctx.fillRect(p.x0, p.y0, w, h / 2);
   }
+  // Materialfoto von oben (Kontext in Welteinheiten): Ziegelreihen entlang des Firsts
+  const mat = p.roofMat ?? (p.gable ? roofMat(roof) : p.saw ? roofMat(roof, 'metal') : flatMat(roof));
+  const turn = p.gable && w < h;
+  texture({ ctx }, [[p.x0, p.y0], [p.x1, p.y0], [p.x1, p.y1], [p.x0, p.y1]], mat, [0, 0], turn ? [0, 1] : [1, 0], turn ? [1, 0] : [0, 1]);
   if (p.stripe) {
     ctx.fillStyle = color;
     ctx.fillRect(p.x0, p.y1 - 3, w, 3);
@@ -530,7 +535,7 @@ export function drawBigPart(ctx, cam, p, color) {
     return;
   }
   if (p.t === 'box') {
-    drawBox(ctx, cam, p.x0, p.y0, p.x1, p.y1, p.h, p.c, { base: p.base, roof: p.roof, noShadow: p.base > 0 });
+    drawBox(ctx, cam, p.x0, p.y0, p.x1, p.y1, p.h, p.c, { base: p.base, roof: p.roof, noShadow: p.base > 0, mat: p.mat ?? (p.ribs ? 'metal' : undefined), roofMat: p.roofMat });
     return;
   }
   const z = cam.zoom;

@@ -14,6 +14,7 @@ import { drawBox, drawRotBox, wallPoint, wallQuad, buildingHeight, TOWN_H, drawT
 import { shade, tint, hexA } from './sprites.js';
 import { snowy } from './season.js';
 import { hashXY } from './color.js';
+import { wallMat, roofMat, texture } from './materials.js';
 
 const TILE = BALANCE.map.tile;
 const OUTLINE = 'rgba(0,0,0,0.55)';
@@ -119,6 +120,13 @@ function plinth(ctx, w, color, floorAt = 0) {
 }
 
 /** Satteldach über dem Quader (First entlang der langen Seite); abgewandte Giebel entfallen, beide Dachhälften werden gezeichnet. */
+/** Foto auf eine Fläche aus Bildschirmpunkten {x, y}: Ursprung pts[o], Bild-x zu pts[ix] (lx Welteinheiten), Bild-y zu pts[iy] (ly). */
+function texPts(ctx, pts, mat, o, ix, lx, iy, ly) {
+  const O = [pts[o].x, pts[o].y];
+  const at = (i, l) => [O[0] + (pts[i].x - O[0]) / (l || 1), O[1] + (pts[i].y - O[1]) / (l || 1)];
+  texture({ ctx }, pts.map((q) => [q.x, q.y]), mat, O, at(ix, lx), at(iy, ly));
+}
+
 function gableRoof(ctx, cam, x0, y0, x1, y1, H, rh, roofCol, wallCol) {
   const z = cam.zoom;
   roofCol = snowy(roofCol); // Winter: Schnee auf dem Dach (season.js)
@@ -163,6 +171,16 @@ function gableRoof(ctx, cam, x0, y0, x1, y1, H, rh, roofCol, wallCol) {
     const left = sx < 0;
     ctx.fillStyle = slope ? (left ? tint(roofCol, 0.1) : shade(roofCol, 0.22)) : left ? shade(wallCol, 0.1) : shade(wallCol, 0.3);
     ctx.fill();
+    // Materialfoto: Schrägen entlang des Firsts (pts[3] → pts[2]) und hangabwärts, Giebel entlang der Traufe und senkrecht
+    if (slope) texPts(ctx, pts, roofMat(roofCol), 3, 2, alongX ? x1 - x0 : y1 - y0, 0, Math.hypot(alongX ? ym - y0 : xm - x0, rh));
+    else {
+      const wm = wallMat(wallCol);
+      if (wm) texture({ ctx }, pts.map((q) => [q.x, q.y]), wm, [pts[0].x, pts[0].y], [pts[0].x + (pts[1].x - pts[0].x) / ((alongX ? y1 - y0 : x1 - x0) || 1), pts[0].y + (pts[1].y - pts[0].y) / ((alongX ? y1 - y0 : x1 - x0) || 1)], [pts[0].x, pts[0].y + z]);
+    }
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
     ctx.stroke();
   }
   ctx.restore();
@@ -517,16 +535,24 @@ function sawRoof(ctx, cam, p, H) {
   ctx.lineJoin = 'round';
   ctx.lineWidth = 1;
   ctx.strokeStyle = OUTLINE;
-  const face = (pts, fill) => {
+  const path = (pts) => {
     ctx.beginPath();
     pts.forEach((q, i) => (i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)));
     ctx.closePath();
+  };
+  const face = (pts, fill, tex = null) => {
+    path(pts);
     ctx.fillStyle = fill;
     ctx.fill();
+    if (tex) {
+      tex(pts);
+      path(pts);
+    }
     ctx.stroke();
   };
+  const mat = roofMat(p.roof, 'metal');
   for (const [a0, a1] of teeth) {
-    face([P(a0, p.y0, H), P(a1, p.y0, H + rh), P(a1, p.y1, H + rh), P(a0, p.y1, H)], slope);
+    face([P(a0, p.y0, H), P(a1, p.y0, H + rh), P(a1, p.y1, H + rh), P(a0, p.y1, H)], slope, mat && ((pts) => texPts(ctx, pts, mat, 1, 2, p.y1 - p.y0, 0, Math.hypot(step, rh))));
     if (dx.y > 0.01) {
       face([P(a1, p.y0, H), P(a1, p.y1, H), P(a1, p.y1, H + rh), P(a1, p.y0, H + rh)], glass);
       if (z >= DETAIL_ZOOM) {

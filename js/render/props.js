@@ -219,6 +219,7 @@ function carModel(kind, col, v, season) {
     for (const s of side) groups.push([s]);
     m = { S: groups.flat(), groups };
   }
+  for (const so of [...body, ...roof]) if (!so.fine && so.mat === undefined) so.mat = 'paint'; // Lack mit leichter Patina (materials.js)
   carModels.set(key, m);
   return m;
 }
@@ -311,7 +312,7 @@ function benchModel(v, season) {
     arms.push(cyl([x, -3.05, 6.95], [x, 2.55, 6.95], 0.36, 0.36, 4, IRON, snow)); // Armlehne
     posts.push(cyl([x, 2.2, 4.3], [x, 3.3, 10.2], 0.36, 0.3, 4, IRON)); // Lehnenstütze
   }
-  const seat = [[-2.75, -1.3], [-1.05, 0.4], [0.65, 2.1]].map(([y0, y1]) => box(-9, 9, y0, y1, 4.45, 5.0, WOOD, snow));
+  const seat = [[-2.75, -1.3], [-1.05, 0.4], [0.65, 2.1]].map(([y0, y1]) => box(-9, 9, y0, y1, 4.45, 5.0, WOOD, { ...snow, mat: 'wood' }));
   // Lehnenlatten vor den Stützen, in der Neigung der Lehne
   const d = [0.183, 0.983]; // Richtung der Stütze (y, z)
   const n = [-0.983, 0.183]; // nach vorn

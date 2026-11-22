@@ -34,6 +34,8 @@
   **Materialfotos** (`js/render/materials.js`, CC0 in `textures/`): Wände aller gemalten Gebäude und Props bekommen Körnung aus einem Foto
   (Ziegel bei rötlich-braunen, Putz bei hellen, sonst Beton), Farbe und Licht bleiben; zu kleine Flächen bleiben glatt.
   Dächer ebenso, in Iso und 2D: geneigte als Dachziegel (dunkle wirken wie Schiefer), Shed- und Tonnendächer Wellblech, graue Flachdächer Kies.
+  Großbauten (Kaserne, Fabrikhalle, Güterbahnhof) und Kartenprops auch: Container, Waggons, Tanks und Autos Lack mit Patina,
+  Kisten, Paletten, Holzzäune und Bänke Holz, Betonmauern und Leitwände Beton, gerippte Hallen Wellblech; Einheiten bleiben ohne Foto.
   Nur Bild, Spielregeln unverändert.
   Code: `js/render/townhouses.js` (eingehängt in `citylayer.js` und `isobuild.js`).
 - **Baustellen und Ruinen (Aussehen):** Eine ausgewiesene Zelle, die noch wächst, ist eine gemalte **Baustelle**; was man sieht, folgt dem Fortschritt in fünf Bauabschnitten (je 20 %):

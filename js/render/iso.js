@@ -3,6 +3,7 @@
 import { BALANCE } from '../data/balance.js';
 import { shade, tint, hexA, fitText } from './sprites.js';
 import { snowy } from './season.js';
+import { wallMat, flatMat, texture } from './materials.js';
 import { jetAlt, jetGrounded } from '../game/aircraft.js';
 
 const OUTLINE = 'rgba(0,0,0,0.55)';
@@ -79,6 +80,7 @@ export function drawBox(ctx, cam, x0, y0, x1, y1, h, color, opts = {}) {
   });
   const up = (p) => ({ x: p.x, y: p.y - H });
   const roof = snowy(opts.roof ?? tint(color, 0.18));
+  const mat = opts.mat !== undefined ? opts.mat : wallMat(color); // Materialfoto (materials.js)
   ctx.save();
   ctx.lineJoin = 'round';
   ctx.lineWidth = 1;
@@ -103,6 +105,13 @@ export function drawBox(ctx, cam, x0, y0, x1, y1, h, color, opts = {}) {
     const left = (P.x + Q.x) / 2 < wp[f].x;
     ctx.fillStyle = left ? (opts.wallS ?? shade(color, 0.62)) : (opts.wallE ?? shade(color, 0.45));
     ctx.fill();
+    if (mat) {
+      // Foto entlang der Kante (Welteinheiten), senkrecht in Höhen-Einheiten; Pfad danach für den Umriss neu setzen
+      const len = (i % 2 ? y1 - y0 : x1 - x0) || 1;
+      const O = [P.x, P.y];
+      texture({ ctx }, [O, [Q.x, Q.y], [Q.x, Q.y - H], [P.x, P.y - H]], mat, O, [P.x + (Q.x - P.x) / len, P.y + (Q.y - P.y) / len], [P.x, P.y + z]);
+      poly(ctx, [P, Q, up(Q), up(P)]);
+    }
     ctx.stroke();
     walls.push({ edge: i, left, z, base: BASE, cam, x0, y0, x1, y1, len: i % 2 ? y1 - y0 : x1 - x0 });
   }
@@ -112,6 +121,13 @@ export function drawBox(ctx, cam, x0, y0, x1, y1, h, color, opts = {}) {
     poly(ctx, top);
     ctx.fillStyle = roof;
     ctx.fill();
+    const rm = opts.roofMat !== undefined ? opts.roofMat : flatMat(roof);
+    if (rm) {
+      const O = [top[0].x, top[0].y];
+      const ax = (p, q, l) => [O[0] + (q.x - p.x) / l, O[1] + (q.y - p.y) / l];
+      texture({ ctx }, top.map((p) => [p.x, p.y]), rm, O, ax(top[0], top[1], x1 - x0 || 1), ax(top[0], top[3], y1 - y0 || 1));
+      poly(ctx, top);
+    }
     ctx.stroke();
   }
   top.walls = walls;

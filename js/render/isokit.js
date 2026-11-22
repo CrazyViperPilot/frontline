@@ -9,7 +9,7 @@ import { ISO_K } from './camera.js';
 import { poly, box, lit, FACE, OUTLINE, DETAIL, pyramid } from './university.js';
 import { shade, tint } from './sprites.js';
 import { snowy, roofSnowOn } from './season.js';
-import { wallMat, roofMat, flatMat, texWall, texFlat, texSlope, texture } from './materials.js';
+import { wallMat, roofMat, flatMat, withMat, texWall, texFlat, texSlope, texture } from './materials.js';
 
 export { poly, box, lit, FACE, OUTLINE, DETAIL, pyramid, shade, tint, snowy, roofSnowOn };
 
@@ -478,6 +478,9 @@ export function bush(g, u, v, s = 1, t = 0) {
 
 /** Auto (Kasten mit Kabine), along = 'u' oder 'v'. */
 export function car(g, u, v, along, color) {
+  withMat('paint', () => carBody(g, u, v, along, color));
+}
+function carBody(g, u, v, along, color) {
   const [hu, hv] = along === 'u' ? [4.3, 2.1] : [2.1, 4.3];
   flat(g, u - hu, u + hu, v - hv, v + hv + 1.1, 'rgba(0,0,0,0.22)');
   box(g, u - hu, u + hu, v - hv, v + hv, 0.6, 3.1, color, tint(color, 0.08));
@@ -489,6 +492,9 @@ export function car(g, u, v, along, color) {
 
 /** Krankenwagen oder Lieferwagen: hoher Kasten mit Band, Fahrerhaus vorn (+u bzw. +v), optional Blaulicht. */
 export function van(g, u, v, along, color, band, light = false) {
+  withMat('paint', () => vanBody(g, u, v, along, color, band, light));
+}
+function vanBody(g, u, v, along, color, band, light) {
   const [hu, hv] = along === 'u' ? [5, 2.3] : [2.3, 5];
   flat(g, u - hu, u + hu, v - hv, v + hv + 1.3, 'rgba(0,0,0,0.22)');
   box(g, u - hu, u + hu, v - hv, v + hv, 0.6, 6, color, tint(color, 0.05));
@@ -671,7 +677,7 @@ export function cobble(g, color = '#d2c6ad') {
 
 /** Kiste (Holz) oder Steinblock. */
 export function crate(g, u, v, s = 1.1, h = 2.2, col = '#a07a4f') {
-  box(g, u - s, u + s, v - s, v + s, 0, h, col, tint(col, 0.14));
+  withMat('wood', () => box(g, u - s, u + s, v - s, v + s, 0, h, col, tint(col, 0.14)));
 }
 
 /** Zaun um [u0,u1]×[v0,v1]: part 'back' = hintere Seiten (vor dem Gebäude malen), 'front' = vordere Seiten (danach). */
@@ -811,7 +817,7 @@ export function shed(g, u0, u1, v0, v1, H, rh, roof, fill) {
 
 /** Bretterstapel. */
 export function planks(g, u0, u1, v0, v1, h) {
-  box(g, u0, u1, v0, v1, 0, h, '#d4ad78', '#e2c28f');
+  withMat('wood', () => box(g, u0, u1, v0, v1, 0, h, '#d4ad78', '#e2c28f'));
   if (!g.fine) return;
   const { P } = g;
   for (let k = 0.7; k < h; k += 0.7) stroke(g, [P(u0, v1, k), P(u1, v1, k), P(u1, v0, k)], 'rgba(90,60,30,0.35)', 0.4);
@@ -894,6 +900,9 @@ export function excavator(g, u, v, h) {
 
 /** Muldenkipper (gelbe Mulde mit Kies, helles Fahrerhaus vorn bei +u). */
 export function truck(g, u, v) {
+  withMat('paint', () => truckBody(g, u, v));
+}
+function truckBody(g, u, v) {
   flat(g, u - 5, u + 5.5, v - 2.4, v + 3.8, 'rgba(0,0,0,0.2)');
   box(g, u - 5, u + 1.6, v - 2.2, v + 2.2, 0.9, 4.4, '#e2b021', '#c99a14');
   box(g, u - 4.4, u + 1, v - 1.6, v + 1.6, 4.4, 5.2, '#bdb6a8', '#cfc8ba', null);

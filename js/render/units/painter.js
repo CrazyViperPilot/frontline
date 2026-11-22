@@ -2,6 +2,7 @@
 // Einstieg und Verzeichnis: ../unitpaint.js.
 import { K, norm3 } from './shapes.js';
 import { rgbOf, mix } from '../color.js';
+import { texture } from '../materials.js';
 
 // ---------- Renderer ----------
 
@@ -12,6 +13,7 @@ const CHAR = '#2a2623';
 /**
  * Malt Körper um yaw gedreht. view: { iso, s (Gerätepixel je Einheit), charred, shadow (nur Umriss schwarz) }. Körper mit alpha scheinen durch.
  * Reihenfolge: Körper nach der Tiefe ihrer Mitte, aufgesetzte Teile direkt nach ihrem Träger; Rückseiten fallen weg.
+ * Körper mit mat (Material, materials.js) bekommen je Fläche das Foto entlang ihrer Ebene (Fugen waagrecht).
  */
 function paintSolids(ctx, solids, yaw, view) {
   const cs = Math.cos(yaw);
@@ -108,6 +110,29 @@ function paintSolids(ctx, solids, yaw, view) {
       }
       ctx.fillStyle = `rgb(${Math.min(255, fc[0] * k) | 0},${Math.min(255, fc[1] * k) | 0},${Math.min(255, fc[2] * k) | 0})`;
       ctx.fill();
+      if (so.mat && !view.charred) {
+        // Bildachsen in der Fläche: x waagrecht, y hangabwärts; waagrechte Flächen nach Welt-x und -y
+        let tx = [1, 0, 0];
+        let ty = [0, 1, 0];
+        if (Math.abs(nz) < 0.9) {
+          const h = Math.hypot(nx, ny);
+          tx = [-ny / h, nx / h, 0];
+          ty = [ny * tx[2] - nz * tx[1], nz * tx[0] - nx * tx[2], nx * tx[1] - ny * tx[0]];
+          if (ty[2] > 0) ty = [-ty[0], -ty[1], -ty[2]];
+        }
+        const p0 = pts[0];
+        const O = proj(p0);
+        const X = proj([p0[0] + tx[0], p0[1] + tx[1], p0[2] + tx[2]]);
+        const Y = proj([p0[0] + ty[0], p0[1] + ty[1], p0[2] + ty[2]]);
+        texture({ ctx }, pts.map(proj), so.mat, O, X, Y);
+        ctx.beginPath(); // Umriss für die Kante wieder setzen
+        for (let i = 0; i < pts.length; i++) {
+          const [x, y] = proj(pts[i]);
+          if (i) ctx.lineTo(x, y);
+          else ctx.moveTo(x, y);
+        }
+        ctx.closePath();
+      }
       if (!so.noLine) {
         const e = so.smooth ? k : k * 0.68; // runde Körper ohne dunkle Kanten (sonst Netzmuster), nur Nähte geschlossen
         ctx.strokeStyle = `rgb(${(fc[0] * e) | 0},${(fc[1] * e) | 0},${(fc[2] * e) | 0})`;

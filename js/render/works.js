@@ -17,7 +17,7 @@ import {
   vault, vaultTop, wallBand, wins, yellowTop,
 } from './isokit.js';
 import { sprite, blit, spriteDpr } from './spritecache.js';
-import { roofMat, texSlope } from './materials.js';
+import { roofMat, withMat, texSlope } from './materials.js';
 
 export const WORKS_KINDS = ['bm', 'mun', 'fuel', 'steel', 'power', 'kero'];
 /** Boden unter dem fertigen Werk (sichtbar am Rand des Grundstücks). */
@@ -79,7 +79,8 @@ export function strip(g, face, plane, a0, a1, h0, h1, step = 3, glow = false) {
 /** Wände einer Halle mit Schatten und Sockel (o.ribs: Wellblech, o.band: Band unter der Traufe); Dach, Tore, Fenster danach. */
 export function walls(g, u0, u1, v0, v1, H, wall, o = {}) {
   shadow(g, u0, u1, v0, v1, H + (o.roofH ?? 0));
-  box(g, u0, u1, v0, v1, 0, H, wall);
+  if (o.ribs) withMat('metal', () => box(g, u0, u1, v0, v1, 0, H, wall)); // Wellblech
+  else box(g, u0, u1, v0, v1, 0, H, wall);
   plinth(g, u0, u1, v0, v1, wall);
   if (o.ribs) ribs(g, u0, u1, v0, v1, 1.8, H - 0.5, o.ribs);
   if (o.band) wallBand(g, u0, u1, v0, v1, H - 2.6, H - 1.3, o.band);

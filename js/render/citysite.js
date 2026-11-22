@@ -35,6 +35,7 @@ import {
   planksTop,
   circle,
 } from './isokit.js';
+import { withMat } from './materials.js';
 
 const STEPS = 5;
 const SLAB = '#b9b6ad';
@@ -311,7 +312,7 @@ function crane(g, u, v, H, reach, hookH) {
 function office(g, u, v) {
   const { P } = g;
   for (const h of [0, 3.1]) {
-    box(g, u - 4, u + 4, v - 1.7, v + 1.7, h, h + 3, BOX_OFFICE, snowy(tint(BOX_OFFICE, 0.15)));
+    withMat('metal', () => box(g, u - 4, u + 4, v - 1.7, v + 1.7, h, h + 3, BOX_OFFICE, snowy(tint(BOX_OFFICE, 0.15))));
     if (g.fine) poly(g, [P(u - 3, v + 1.75, h + 1.2), P(u + 3, v + 1.75, h + 1.2), P(u + 3, v + 1.75, h + 2.3), P(u - 3, v + 1.75, h + 2.3)], lit('#34506d', ...FACE.s), null);
   }
 }

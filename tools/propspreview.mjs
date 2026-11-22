@@ -44,6 +44,8 @@ try {
       const MP = await import('/js/render/mapprops.js');
       const U = await import('/js/render/unitpaint.js');
       const SC = await import('/js/render/spritecache.js');
+      const MT = await import('/js/render/materials.js');
+      for (let k = 0; k < 100 && !MT.materialsReady(); k++) await new Promise((r) => setTimeout(r, 50)); // Materialfotos abwarten
       const all = Object.keys(PROPS.kinds).filter((k) => !group || PROPS.kinds[k].group === group);
       const list = kinds.length ? kinds : all;
       const bad = list.filter((k) => !PROPS.kinds[k]);

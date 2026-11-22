@@ -131,6 +131,42 @@ function stacked(o, make) {
   return S;
 }
 
+// Materialfoto (materials.js) der großen Körper je Art; Kleinteile (fine) und durchscheinende bleiben glatt. Nur Bild.
+const KIND_MAT = {
+  fence_wood: 'wood',
+  wall_concrete: 'concrete',
+  wall_stone: 'concrete',
+  jersey: 'concrete',
+  checkpoint: 'concrete',
+  ammo_stack: 'wood',
+  fuel_tank: 'paint',
+  container: 'paint', // Lack mit Patina; die senkrechten Rippen malt das Modell
+  pallets: 'wood',
+  crate_stack: 'wood',
+  barrels: 'paint',
+  barrels_lying: 'paint',
+  forklift: 'paint',
+  gantry_crane: 'paint',
+  loading_dock: 'concrete',
+  power_box: 'paint',
+  pipeline: 'paint',
+  pipe_rack: 'paint',
+  tank_float: 'paint',
+  tank_fixed: 'paint',
+  tank_sphere: 'paint',
+  distill_column: 'paint',
+  process_unit: 'metal',
+  chimney: 'brick',
+  pressure_vessels: 'paint',
+  valve_station: 'paint',
+  control_room: 'concrete',
+  bus_stop: 'paint',
+  mailbox: 'paint',
+  log_pile: 'wood',
+  well: 'concrete',
+  fallen_tree: 'wood',
+};
+
 function modelOf(o, season, flag = null) {
   const key = lookKey(o, season, flag);
   let m = models.get(key);
@@ -143,6 +179,8 @@ function modelOf(o, season, flag = null) {
     else if (isIndSingle(o.kind)) S = stacked(o, (l, top) => indModel(o.kind, o.v, (o.d + l) % DETAILS, w && top, o.rubble));
     else if (isRefSingle(o.kind)) S = refModel(o.kind, o.v, o.d, w, o.rubble);
     else if (isCivSingle(o.kind)) S = stacked(o, (l, top) => civModel(o.kind, o.v, (o.d + l) % DETAILS, top || season !== 'winter' ? season : 'autumn', o.rubble));
+    const mat = KIND_MAT[o.kind];
+    if (mat) for (const so of S) if (!so.fine && so.alpha === undefined && so.mat === undefined) so.mat = mat; // Kleinteile bleiben glatt
     m = { S, key };
     models.set(key, m);
   }

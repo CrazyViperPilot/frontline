@@ -142,7 +142,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - isIndSingle(kind) – Gibt es ein Modell dieser Art hier?
 - indModel(kind, v, d, w, rubble, stack) – Körper eines Einzelstücks der Industrie (Modellrichtung)
 
-## iso.js (10 KB)
+## iso.js (11 KB)
 - TOWN_H – Höhe (Bildschirm-Pixel bei Zoom 1) der Stadtgebäude und der Spielgebäude je Typ
 - flying(u) – Wird die Einheit über allem gezeichnet (fliegt)? Jets am Boden (abgestellt, rol…
 - unitLift(u)

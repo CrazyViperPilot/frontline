@@ -79,7 +79,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - stackTarget(map, kind, x, y) – Einzelstück am Weltpunkt (x, y), auf das sich ein weiteres derselben Art stapel…
 - blockerName(b) – Name eines Hindernisses für die Meldung „Kein Platz: …“
 
-## main.js (27 KB)
+## main.js (28 KB)
 - (keine Exporte)
 
 ## version.js (0.0 KB)

@@ -16,7 +16,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - ISO_PAD – Iso: Rand um den Ausschnitt, hohe Objekte ragen nach oben ins Bild (Welt-px)
 - SC
 
-## core.js (6.9 KB)
+## core.js (7.1 KB)
 - class Renderer
   - constructor(canvas, game, camera, team)
   - setMaxDpr(max) – Obergrenze der Pixeldichte setzen (Bildauflösung, nur Darstellung) und das Bild…
@@ -73,10 +73,10 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - drawDragBox(ctx, d) – Auswahlrahmen (Bildschirmkoordinaten, Transformation bereits auf DPR gesetzt; g…
   - drawNote(ctx, s, text) – Grund für ungültige Platzierung, über dem Mauszeiger (Bildschirmkoordinaten)
 
-## passes.js (3.2 KB)
+## passes.js (3.4 KB)
 - TOP_PASSES – 2D von oben: Boden, Objekte, Effekte, Nebel, Wetter (Bildschirmkoordinaten), Ba…
 - ISO_PASSES – Iso: Boden, Bodenmarken, Objekte nach Tiefe (Sortierung, Schatten, Zeichnen), S…
-- runPasses(r, passes, f) – Durchläufe der Reihe nach: Einträge mit when(f) === false überspringen; mit Mes…
+- runPasses(r, passes, f, skip) – Durchläufe der Reihe nach: Einträge mit when(f) === false überspringen; mit Mes…
 
 ## radii.js (8.5 KB)
 - radiiMethods

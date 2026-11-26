@@ -74,6 +74,7 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
 - `shot(name)` macht ein Foto.
 - Das Skript ist die Vorlage für eigene Prüfskripte.
 - Beispiel: `node tools/smoke-scramble.mjs` legt einen Fliegerhorst an, löst einen Alarmstart aus (Alarmrotte) und fotografiert den rollenden und den fliegenden Jet nach `.smoke/scramble/`.
+- 3D (Plan `docs/plan-3d.md`): `node tools/smoke-3d.mjs` öffnet `?three=1&cubes=1&iso=1` und prüft, dass die Prüfwürfel aus three genau bei `camera.worldToScreen` liegen (unter 1 px, 4 Drehungen, Zoom 0,35/1/1,6); Fotos nach `.smoke/3d/`.
 - Mit `device: 'tablet'` bzw. `'phone'` öffnet es das Spiel mit Bildschirm, Pixeldichte und Touch des Geräts.
 - `press(sel)` tippt dort (sonst Klick).
 - `measureFps(g, ms)` misst Bildrate und langsamstes Bild.

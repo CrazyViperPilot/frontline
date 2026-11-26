@@ -48,6 +48,10 @@ const URL_SEED = Number.parseInt(params.get('seed'), 10);
 const URL_SPEED = Number.parseFloat(params.get('speed'));
 const SPEEDS = DEBUG ? [1, 2, 3, 5, 10] : [1, 2, 3];
 const HUMAN = 0; // Blau
+// 3D mit three.js (Plan docs/plan-3d.md, Test): ?three=1 zeichnet die Iso-Ansicht über render3d/renderer3d.js; &cubes=1 zeigt die
+// Prüfwürfel (tools/smoke-3d.mjs). three.js lädt nur mit Schalter; schlägt das Laden fehl, bleibt alles wie bisher.
+const THREE_ON = params.get('three') === '1';
+const R3D = THREE_ON ? await import('./render3d/renderer3d.js').catch((e) => console.warn('3D nicht geladen:', e?.message ?? e)) : null;
 const AI_TEAM = 1; // Rot
 
 const canvas = document.getElementById('view');
@@ -117,6 +121,7 @@ function stopSession() {
   s.research?.destroy();
   s.flow?.destroy();
   s.hud.destroy();
+  s.renderer.dispose?.(); // 3D: three-Leinwand und WebGL freigeben
   clearCanvas();
 }
 
@@ -612,7 +617,7 @@ function buildSession(game, ai, opts, view) {
     camera.rot = view.rot ?? 0;
     camera.zoom = view.zoom ?? 1;
   }
-  const renderer = new Renderer(canvas, game, camera, HUMAN);
+  const renderer = R3D?.make3D(canvas, game, camera, HUMAN, { cubes: params.get('cubes') === '1' }) ?? new Renderer(canvas, game, camera, HUMAN);
   const moodSetting = DEBUG && MOOD_SETTINGS.includes(params.get('mood')) ? params.get('mood') : opts.mood ?? 'off';
   renderer.mood = pickMood(moodSetting, seed, game.weather.season); // nur Optik, ?debug=1&mood=night
   const controller = new Controller(game, HUMAN, camera);

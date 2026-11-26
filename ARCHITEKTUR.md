@@ -116,7 +116,7 @@ Neue Befehle: Rezept `docs/rezepte/neuer-befehl.md`.
 
 | `cmd.type` | Felder | Handler (`js/game/`) | Wirkung |
 |---|---|---|---|
-| `city` | `kind` (Zellenart aus `KINDS`, z. B. `road`, `res`, `barracks`, `rail`, oder `erase`), `c0, r0, c1, r1`, `demolish?` | `city/commands.js` `cmdCity` | Stadtzellen im Rechteck ausweisen oder räumen (nur mit Stadt; unter der Tabelle) |
+| `city` | `kind` (Zellenart aus `KINDS`, z. B. `road`, `res` oder `erase`), `c0, r0, c1, r1`, `demolish?` | `city/commands.js` `cmdCity` | Stadtzellen im Rechteck ausweisen oder räumen (nur mit Stadt) |
 | `move`, `attackMove` | `ids, x, y, formation?` | `cmd/units.js` `cmdMove` | Marsch bzw. Angriffsmarsch, optional in Formation |
 | `attack` | `ids, targetId` | `cmd/units.js` `cmdAttack` | Ziel angreifen (auch Brücken) |
 | `stop` | `ids` | `game.js` | Anhalten |
@@ -272,3 +272,4 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Kasse am Konto | `konto` | `api/auth.php` | UI `ui/menu/start-saves.js` | `kasse` |
 | Signierter Match-Start, Spielstatistik | `konto` | `api/match.php` | `api/lib/match.php`; UI `ui/match.js`, `ui/stats.js` | `match`, `spielstatistik` |
 | Admin-Panel | `konto` | `api/admin.php` | `admin/` | – |
+| 3D (`?three=1`) | – | `render3d/renderer3d.js` | `plan-3d.md` | – |

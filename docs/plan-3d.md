@@ -48,7 +48,9 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
 
 ## Stand
 - three.js einbinden: gebaut (Regel 5 in `CLAUDE.md` angepasst).
-- Nächstes Paket: 3D-Gerüst (Opus).
+- 3D-Gerüst: gebaut (`js/render3d/`, `?three=1`, Prüfwürfel `&cubes=1`, `tools/smoke-3d.mjs`: Abweichung 0,0000 px in allen
+  4 Drehungen bei Zoom 0,35, 1, 1,6). three übernimmt Iso-Durchläufe über `Renderer3D.takes` (Namen aus `ISO_PASSES`).
+- Nächste Pakete (parallel möglich): 3D-Boden (Opus) ‖ Körper-Wandler (Sonnet) ‖ Billboard-Brücke (Opus).
 
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als

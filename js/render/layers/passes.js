@@ -59,12 +59,16 @@ export const ISO_PASSES = [
   { name: 'Anzeigen', run: (r, f) => r.isoScreen(f) },
 ];
 
-/** Durchläufe der Reihe nach: Einträge mit when(f) === false überspringen; mit Messanzeige die Zeit je Eintrag (eine Messstelle). */
-export function runPasses(r, passes, f) {
+/**
+ * Durchläufe der Reihe nach: Einträge mit when(f) === false überspringen; mit Messanzeige die Zeit je Eintrag (eine Messstelle).
+ * skip (wahlfrei): Set mit Namen von Durchläufen, die ein anderer Zeichner übernimmt (Plan „3D mit three.js“, render3d/renderer3d.js).
+ */
+export function runPasses(r, passes, f, skip = null) {
   const pf = r.perf; // Messanzeige: je Ebene (sonst ohne Kosten)
   let t = pf ? performance.now() : 0;
   for (const p of passes) {
     if (p.when && !p.when(f)) continue;
+    if (skip?.has(p.name)) continue;
     p.run(r, f);
     if (pf) t = pf.lap(p.name, t);
   }

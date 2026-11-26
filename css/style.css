@@ -44,6 +44,17 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   touch-action: none; /* Touch: Ziehen schiebt die Karte, kein Browser-Scrollen/Zoomen */
 }
 
+/* 3D (Test, ?three=1): three-Leinwand unter #view; #view in Iso durchsichtig (render3d/renderer3d.js) */
+#view3d {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+#view.over3d { background: transparent; }
+
 .noscript { position: fixed; inset: 0; display: grid; place-items: center; margin: 0; }
 
 /* ---- HUD ------------------------------------------------------------------ */

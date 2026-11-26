@@ -39,7 +39,7 @@ export const isoViewMethods = {
    */
   renderIso(f) {
     f.relief = f.cam.relief; // gesetzt nur mit WebGL-Boden
-    runPasses(this, ISO_PASSES, f); // Durchläufe und Messung: layers/passes.js
+    runPasses(this, ISO_PASSES, f, this.isoSkip); // Durchläufe und Messung: layers/passes.js; isoSkip: von three übernommen
   },
 
   /** Iso, Boden: Gelände (WebGL oder flaches Bild), Parks, Wege, Krater, Brücken, Stadtstraßen, Zone und Hot Zone. */

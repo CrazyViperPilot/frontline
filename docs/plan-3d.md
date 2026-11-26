@@ -50,6 +50,7 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
 - three.js einbinden: gebaut (Regel 5 in `CLAUDE.md` angepasst).
 - 3D-Gerüst: gebaut (`js/render3d/`, `?three=1`, Prüfwürfel `&cubes=1`, `tools/smoke-3d.mjs`: Abweichung 0,0000 px in allen
   4 Drehungen bei Zoom 0,35, 1, 1,6). three übernimmt Iso-Durchläufe über `Renderer3D.takes` (Namen aus `ISO_PASSES`).
+- Schalter: statt im Pausenmenü über die Schaltfläche „Ansicht“ bzw. V (2D → Iso → 3D, gemerkt; three.js lädt erst beim Wechsel).
 - Nächste Pakete (parallel möglich): 3D-Boden (Opus) ‖ Körper-Wandler (Sonnet) ‖ Billboard-Brücke (Opus).
 
 ## Stufe 1 – MVP (Entscheidung danach)

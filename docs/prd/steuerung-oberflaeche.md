@@ -30,7 +30,7 @@
 | Strg+0–9 / 0–9 | Gruppe speichern / wählen (2× = Kamera hin) |
 | Rechte Maustaste/Finger ziehen, Pfeiltasten, Bildschirmrand (10 px am Fensterrand, auch über Statusleiste und Bedienfeldern), mittlere Maustaste ziehen | Kamera bewegen |
 | Mausrad | Zoom |
-| V / Schaltfläche „Ansicht“ | Ansicht umschalten: 2D von oben oder isometrisch (wird gemerkt, `?iso=1` startet isometrisch) |
+| V / Schaltfläche „Ansicht“ | Ansicht weiterschalten: 2D von oben → isometrisch → 3D (three.js, Test) → 2D (wird gemerkt, `?iso=1` startet isometrisch, `?three=1` in 3D, `?three=0` ohne 3D) |
 | `,` / `.` / Knöpfe ⟲ ⟳ | Isometrische Ansicht in 90°-Schritten nach links / rechts drehen (in 2D ohne Wirkung) |
 | Leertaste / H | Kamera auf Auswahl / Hauptstadt |
 | P | Pause; `+` / `-` Spielgeschwindigkeit 1×–3× |

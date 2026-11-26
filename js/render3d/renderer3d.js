@@ -1,8 +1,8 @@
-// 3D-Renderer (Plan „3D mit three.js“, Paket „3D-Gerüst“, nur mit ?three=1): Unterklasse von Renderer mit derselben Schnittstelle
+// 3D-Renderer (Plan „3D mit three.js“, Paket „3D-Gerüst“, Ansicht „3D“ bzw. ?three=1): Unterklasse von Renderer mit derselben Schnittstelle
 // (render(view), resize, setMaxDpr, perf, mood, season, revealAll, cityUi, dpr, canvas). Er besitzt einen THREE.WebGLRenderer auf
 // eigener Leinwand (#view3d) unter der bisherigen 2D-Leinwand (#view, in Iso durchsichtig). In der Iso-Ansicht zeichnet erst der
 // bisherige Renderer seine Durchläufe in die 2D-Leinwand, ohne die, die three übernimmt (takes: Namen aus ISO_PASSES, layers/passes.js),
-// danach three seine Szene. Die 2D-Ansicht bleibt Canvas: die three-Leinwand ist dann versteckt.
+// danach three seine Szene. Nur mit camera.three (Ansicht „3D“); in 2D und Iso zeichnet er wie Renderer, die three-Leinwand ist versteckt.
 import * as THREE from '../vendor/three/three.module.min.js';
 import { Renderer } from '../render/renderer.js';
 import { makeWorldRoot, makeIsoCamera, syncIsoCamera, projectWorld } from './camera3d.js';
@@ -17,7 +17,9 @@ export class Renderer3D extends Renderer {
    */
   constructor(canvas, game, camera, team, gl, opts = {}) {
     super(canvas, game, camera, team);
+    if (opts.cubes) camera.three = camera.iso; // Prüfszene: gleich in 3D
     this.gl = gl;
+    this.three = true; // main.js: dieser Renderer kann die Ansicht 3D
     this.gl.setClearColor(BG, 1);
     this.scene = new THREE.Scene();
     this.world = makeWorldRoot(); // Kinder in Weltkoordinaten (x, y, Höhe), camera3d.js
@@ -42,9 +44,9 @@ export class Renderer3D extends Renderer {
     this.gl.setSize(this.cssW, this.cssH, false);
   }
 
-  /** Ein Bild: 2D wie bisher; Iso: 2D-Durchläufe ohne die von three übernommenen, dann die three-Szene. */
+  /** Ein Bild: 2D und Iso wie bisher; Ansicht 3D: 2D-Durchläufe ohne die von three übernommenen, dann die three-Szene. */
   render(view = null) {
-    const iso = this.camera.iso;
+    const iso = this.camera.iso && this.camera.three;
     if (iso !== this.shown3d) {
       this.shown3d = iso;
       this.gl.domElement.style.display = iso ? '' : 'none';

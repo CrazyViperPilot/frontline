@@ -27,6 +27,7 @@ export class Camera {
     this.zoomMax = ZOOM_MAX;
     this.iso = false; // isometrische Ansicht (Renderer und Eingabe fragen dieses Flag)
     this.rot = 0; // isometrisch: Drehung 0–3 (je 90°)
+    this.three = false; // isometrisch mit three.js zeichnen (Ansicht „3D“, render3d/renderer3d.js); Projektion wie Iso
     this.viewW = 800;
     this.viewH = 600;
     this.insetTop = 0; // vom HUD verdeckte Höhe oben/unten (CSS-Pixel); centerOn legt Ziele in die freie Mitte dazwischen

@@ -135,7 +135,7 @@ export const KEYS = [
   ['Pfeile / Rand', 'Kamera bewegen · Mausrad = Zoom · rechte oder mittlere Taste ziehen'],
   ['Leertaste', 'Kamera auf Auswahl oder letzte Meldung · H = Hauptstadt'],
   ['+ / −', 'Spielgeschwindigkeit'],
-  ['V', 'Ansicht umschalten: 2D von oben / isometrisch'],
+  ['V', 'Ansicht umschalten: 2D von oben / isometrisch / 3D (three.js, Test)'],
   [', / .', 'Isometrische Ansicht um 90° nach links / rechts drehen (auch Knöpfe ⟲ ⟳ oben)'],
   ['P', 'Pause · im Pausenmenü legt „Speichern unter …“ eine Kopie der Partie als neuen Stand mit eigenem Namen an; die Partie spielt darin weiter'],
   ['Y', `Baumodus der Stadt an/aus: Werkzeug rechts wählen (gruppiert: Grundlagen, Wohnen & Gewerbe, Ressourcen, Einheiten, Stadt, Fliegerhorst), ` +

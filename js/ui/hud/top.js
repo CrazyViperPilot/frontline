@@ -123,7 +123,8 @@ export const topMethods = {
     this.speedBtn.textContent = `${st.speed}×`;
     this.pauseBtn.textContent = st.paused ? 'Weiter' : 'Pause';
     this.soundBtn.textContent = st.sound === false ? '🔇' : '🔊';
-    this.viewBtn.textContent = this.controller.camera.iso ? 'Iso' : '2D';
+    const cam = this.controller.camera;
+    this.viewBtn.textContent = cam.three ? '3D' : cam.iso ? 'Iso' : '2D';
   },
 
 

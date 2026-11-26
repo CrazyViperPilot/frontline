@@ -118,7 +118,7 @@ export class Hud {
           <button type="button" class="btn-sm" data-act="speed" title="Spielgeschwindigkeit (+ / -)">1×</button>
           <button type="button" class="btn-sm" data-act="pause" title="Pause (P)">Pause</button>
           <button type="button" class="btn-sm" data-act="rotl" title="Isometrische Ansicht nach links drehen (,)">⟲</button>
-          <button type="button" class="btn-sm" data-act="view" title="Ansicht umschalten: 2D / isometrisch (V)">2D</button>
+          <button type="button" class="btn-sm" data-act="view" title="Ansicht umschalten: 2D / isometrisch / 3D (V)">2D</button>
           <button type="button" class="btn-sm" data-act="rotr" title="Isometrische Ansicht nach rechts drehen (.)">⟳</button>
           <button type="button" class="btn-sm" data-act="city" title="Stadt verwalten (Y)">Stadt</button>
           <button type="button" class="btn-sm" data-act="sound" title="Ton an/aus (F2)" aria-label="Ton an/aus">🔊</button>

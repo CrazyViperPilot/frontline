@@ -48,10 +48,30 @@ const URL_SEED = Number.parseInt(params.get('seed'), 10);
 const URL_SPEED = Number.parseFloat(params.get('speed'));
 const SPEEDS = DEBUG ? [1, 2, 3, 5, 10] : [1, 2, 3];
 const HUMAN = 0; // Blau
-// 3D mit three.js (Plan docs/plan-3d.md, Test): ?three=1 zeichnet die Iso-Ansicht über render3d/renderer3d.js; &cubes=1 zeigt die
-// Prüfwürfel (tools/smoke-3d.mjs). three.js lädt nur mit Schalter; schlägt das Laden fehl, bleibt alles wie bisher.
-const THREE_ON = params.get('three') === '1';
-const R3D = THREE_ON ? await import('./render3d/renderer3d.js').catch((e) => console.warn('3D nicht geladen:', e?.message ?? e)) : null;
+// 3D mit three.js (Plan docs/plan-3d.md, Test): Ansicht „3D“ (V bzw. Schaltfläche „Ansicht“: 2D → Iso → 3D) zeichnet die Iso-Ansicht
+// über render3d/renderer3d.js; ?three=1 startet in 3D, ?three=0 nie; &cubes=1 zeigt die Prüfwürfel (tools/smoke-3d.mjs).
+// three.js lädt erst, wenn 3D gebraucht wird; schlägt das Laden fehl oder fehlt WebGL, bleibt die Ansicht Iso.
+const THREE_OFF = params.get('three') === '0';
+function loadThree() {
+  if (params.has('three')) return params.get('three') === '1';
+  try {
+    return localStorage.getItem('frontline-3d') === '1';
+  } catch {
+    return false;
+  }
+}
+let R3D = null; // Modul render3d/renderer3d.js, sobald geladen
+/** three.js-Renderer nachladen (einmal); null, wenn es nicht geht. */
+async function load3D() {
+  if (THREE_OFF) return null;
+  R3D ??= await import('./render3d/renderer3d.js').catch((e) => (console.warn('3D nicht geladen:', e?.message ?? e), null));
+  return R3D;
+}
+if (loadThree()) await load3D();
+/** Renderer der Partie: mit geladenem three.js der 3D-Renderer (zeichnet nur in der Ansicht 3D mit three), sonst der klassische. */
+function makeRenderer(game, camera) {
+  return R3D?.make3D(canvas, game, camera, HUMAN, { cubes: params.get('cubes') === '1' }) ?? new Renderer(canvas, game, camera, HUMAN);
+}
 const AI_TEAM = 1; // Rot
 
 const canvas = document.getElementById('view');
@@ -106,6 +126,28 @@ function resume() {
 function clearCanvas() {
   const ctx = canvas.getContext('2d');
   ctx?.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+/**
+ * Ansicht 3D vorbereiten: three.js nachladen und, falls die Partie noch mit dem klassischen Renderer läuft, auf den 3D-Renderer
+ * wechseln (Einstellungen übernehmen). false, wenn three.js oder WebGL fehlt.
+ */
+async function use3D(s) {
+  if (s.renderer.three) return true;
+  if (!(await load3D()) || session !== s) return false;
+  const old = s.renderer;
+  const r = makeRenderer(s.game, s.camera);
+  if (!r?.three) {
+    s.hud.pushMessage('3D nicht verfügbar (kein WebGL)');
+    return false;
+  }
+  r.mood = old.mood;
+  r.revealAll = old.revealAll;
+  r.cityUi = old.cityUi;
+  r.perf = old.perf;
+  if (old.maxDpr !== r.maxDpr) r.setMaxDpr(old.maxDpr);
+  s.renderer = r;
+  return true;
 }
 
 function stopSession() {
@@ -328,7 +370,7 @@ function perfInfo() {
   for (const u of s.game.units) if (u.alive) units++;
   for (const b of s.game.buildings) if (b.alive) buildings++;
   const c = s.renderer.canvas;
-  return { view: s.camera.iso ? 'Iso' : '2D', units, buildings, dpr: s.renderer.dpr, canvas: `${c.width}×${c.height}` };
+  return { view: s.camera.three ? '3D' : s.camera.iso ? 'Iso' : '2D', units, buildings, dpr: s.renderer.dpr, canvas: `${c.width}×${c.height}` };
 }
 
 /** Messung in einer Partie anschalten oder abschalten: Renderer (Ebenen) und Schleife (Simulation, Bildzeit). */
@@ -391,17 +433,31 @@ const app = {
       }, levelCtl, pauseSaveAs(s2), { rated: !!s2.match }, displayCtl);
     }
   },
-  toggleView() {
+  /** Ansicht weiterschalten: 2D → Iso → 3D (three.js, Test) → 2D; ohne three.js oder WebGL Iso → 2D. Wird gemerkt. */
+  async toggleView() {
     const s = session;
-    if (!s) return;
-    s.camera.iso = !s.camera.iso;
-    s.camera.clamp();
+    if (!s || s.viewBusy) return; // three.js lädt noch: weitere Klicks zählen nicht
+    const cam = s.camera;
+    if (!cam.iso) cam.iso = true;
+    else if (!cam.three) {
+      s.viewBusy = true;
+      const ok = await use3D(s);
+      s.viewBusy = false;
+      if (session !== s) return; // Partie während des Nachladens beendet
+      if (ok) cam.three = true;
+      else cam.iso = false;
+    } else {
+      cam.iso = false;
+      cam.three = false;
+    }
+    cam.clamp();
     try {
-      localStorage.setItem('frontline-iso', s.camera.iso ? '1' : '0');
+      localStorage.setItem('frontline-iso', cam.iso ? '1' : '0');
+      localStorage.setItem('frontline-3d', cam.three ? '1' : '0');
     } catch {
       /* ohne Speicher: gilt nur für diese Sitzung */
     }
-    s.hud.pushMessage(s.camera.iso ? 'Ansicht: isometrisch (V)' : 'Ansicht: 2D von oben (V)');
+    s.hud.pushMessage(cam.three ? 'Ansicht: 3D mit three.js, Test (V)' : cam.iso ? 'Ansicht: isometrisch (V)' : 'Ansicht: 2D von oben (V)');
     s.hud.refresh();
   },
   rotateView(dir) {
@@ -617,7 +673,8 @@ function buildSession(game, ai, opts, view) {
     camera.rot = view.rot ?? 0;
     camera.zoom = view.zoom ?? 1;
   }
-  const renderer = R3D?.make3D(canvas, game, camera, HUMAN, { cubes: params.get('cubes') === '1' }) ?? new Renderer(canvas, game, camera, HUMAN);
+  camera.three = camera.iso && loadThree() && !!R3D;
+  const renderer = makeRenderer(game, camera);
   const moodSetting = DEBUG && MOOD_SETTINGS.includes(params.get('mood')) ? params.get('mood') : opts.mood ?? 'off';
   renderer.mood = pickMood(moodSetting, seed, game.weather.season); // nur Optik, ?debug=1&mood=night
   const controller = new Controller(game, HUMAN, camera);

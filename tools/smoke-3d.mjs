@@ -21,10 +21,12 @@
 //    Danach Zeitraffer (beide Seiten KI, 10×) bis --gametime Spielminuten (Standard 5), dann Bildrate (measureFps, --fpsms ms)
 //    und langsamstes Bild in Iso und 3D mit Schatten Aus/Mittel/Hoch an Basis und Wald, im Winter am Start; Zeit je Durchlauf
 //    (timePasses) für Iso und 3D Mittel. Ergebnis zusätzlich als JSON nach <out>/mvp/messung.json. --devices desktop,phone wählt Geräte.
+// 8. Baukasten (Paket „Baukasten 3D“): Stadthäuser aus town3d.js neben den gemalten, 4 Drehungen, Sommer/Winter, Tag/Nacht,
+//    Fotos nach <out>/baukasten/; Fehler ohne Materialfotos, bei mehr als einem Draw-Call je Haus oder abweichendem Umriss.
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
-//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|mvp]
-// Ohne --only laufen die Teile 1 bis 6; „mvp“ nur ausdrücklich.
+//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|mvp]
+// Ohne --only laufen die Teile 1 bis 6 und 8; „mvp“ nur ausdrücklich.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { openGame, measureFps, DEVICES } from './smoke.mjs';
@@ -456,6 +458,194 @@ async function trees() {
   }
 }
 
+/**
+ * Baukasten (Paket „Baukasten 3D“): Stadthäuser aus town3d.js (kit3d.js) neben dem gemalten Bild aus townhouses.js, ohne Partie
+ * (Startmenü, eigene Leinwände). Je Haus und Stimmung (Sommer/Winter × Tag/Nacht) ein Foto: gemalt, dann 3D in den 4 Drehungen
+ * (Schatten Hoch über die Sonne aus sun3d.js, Nacht mit drawMood wie im Spiel). Prüft: Fotos der Materialien geladen, 3D-Haus
+ * sichtbar, Umriss (Bildbereich ohne Hintergrund) in Drehung 0 wie gemalt (±BOX_TOL px), ein Draw-Call je Haus.
+ */
+async function baukasten() {
+  const BOX_TOL = 14; // CSS-px Abweichung der Umrissränder (gemalte Konturlinien, Baumkronen als Kugeln, gemalter Schatten)
+  const dir = join(out, 'baukasten');
+  await mkdir(dir, { recursive: true });
+  const g = await openGame({ seed: 3, start: false, scale: 1, out });
+  try {
+    for (const [ck, lv, variant] of [['res', 1, 0], ['res', 2, 1]]) {
+      for (const season of ['summer', 'winter']) {
+        for (const night of [false, true]) {
+          const res = await g.run(async ({ ck, lv, variant, season, night }) => {
+            const THREE = await import('/js/vendor/three/three.module.min.js');
+            const { Camera } = await import('/js/render/camera.js');
+            const { drawTownIso, beginTownFrame } = await import('/js/render/townhouses.js');
+            const { setRoofSnow } = await import('/js/render/season.js');
+            const { materialsReady } = await import('/js/render/materials.js');
+            const { drawMood } = await import('/js/render/mood.js');
+            const { LIGHT_ELEV } = await import('/js/render/ground.js');
+            const { BALANCE } = await import('/js/data/balance.js');
+            const kit = await import('/js/render3d/kit3d.js');
+            const { townGeometry } = await import('/js/render3d/town3d.js');
+            const { makeWorldRoot, makeIsoCamera, syncIsoCamera } = await import('/js/render3d/camera3d.js');
+            const { Sun3D, CATCH } = await import('/js/render3d/sun3d.js');
+            const mat = (window.__kitMat ??= kit.makeKitMaterial());
+            for (let i = 0; i < 100 && !(materialsReady() && kit.kitTexturesReady()); i++) await new Promise((ok) => setTimeout(ok, 50));
+            const W = 260;
+            const H = 290;
+            const DPR = 2;
+            const ZOOM = 2.6;
+            const BG = '#7a9e58';
+            const X = 1000;
+            const Y = 1000;
+            const cam = new Camera(2000, 2000);
+            cam.iso = true;
+            cam.resize(W, H);
+            const aim = (rot) => {
+              cam.rot = rot;
+              cam.zoom = ZOOM;
+              cam.x = X;
+              cam.y = Y;
+              const p = cam.screenToWorldFlat(W / 2, H / 2 - H * 0.14); // Anker etwas unter der Mitte (Haus ragt nach oben)
+              cam.x = p.x;
+              cam.y = p.y;
+            };
+            const mood = night ? 'night' : null;
+            // gemalt
+            setRoofSnow(season === 'winter');
+            const b = { x: X, y: Y, ck, level: lv, variant, color: '#3a6fb3' };
+            const painted = document.createElement('canvas');
+            painted.width = W * DPR;
+            painted.height = H * DPR;
+            const pc = painted.getContext('2d');
+            aim(0);
+            for (let i = 0; i < 6; i++) {
+              beginTownFrame(DPR);
+              pc.setTransform(DPR, 0, 0, DPR, 0, 0);
+              pc.fillStyle = BG;
+              pc.fillRect(0, 0, W, H);
+              drawTownIso(pc, cam, b, season);
+            }
+            setRoofSnow(false);
+            // 3D
+            const cv = document.createElement('canvas');
+            const gl = new THREE.WebGLRenderer({ canvas: cv, antialias: false, preserveDrawingBuffer: true });
+            gl.setPixelRatio(DPR);
+            gl.setSize(W, H, false);
+            const scene = new THREE.Scene();
+            const root = makeWorldRoot();
+            scene.add(root);
+            const cam3 = makeIsoCamera();
+            const ground = new THREE.BufferGeometry();
+            const R = 400;
+            ground.setAttribute('position', new THREE.Float32BufferAttribute([X - R, Y - R, 0, X + R, Y - R, 0, X + R, Y + R, 0, X - R, Y - R, 0, X + R, Y + R, 0, X - R, Y + R, 0], 3));
+            const sun = new Sun3D(gl, scene, root, ground);
+            sun.setLevel('high');
+            sun.setMood(mood);
+            const geo = townGeometry(ck, lv, variant);
+            const mesh = kit.kitMesh(geo, mat);
+            mesh.position.set(X, Y, 0);
+            root.add(mesh);
+            const panels = [];
+            let calls = 0;
+            for (let rot = 0; rot < 4; rot++) {
+              aim(rot);
+              syncIsoCamera(cam3, cam);
+              const [, , rc, rd] = [[1, 0, 0, 1], [0, -1, 1, 0], [-1, 0, 0, -1], [0, 1, -1, 0]][rot]; // wie Renderer.lightVec
+              const a = Math.atan2(-rd, -rc) + 0.35;
+              const k = Math.sqrt(1 - LIGHT_ELEV * LIGHT_ELEV);
+              const light = [Math.cos(a) * k, Math.sin(a) * k, LIGHT_ELEV];
+              kit.setKitFrame(mat, { light, snow: season === 'winter' ? 1 : 0, night: night ? 1 : 0, shade: BALANCE.shadows3d.opacity[mood ?? 'day'] });
+              gl.setClearColor(BG, 1);
+              sun.update(cam3, light, null);
+              gl.shadowMap.needsUpdate = true;
+              cam3.layers.set(CATCH);
+              gl.render(scene, cam3);
+              cam3.layers.set(0);
+              gl.autoClear = false;
+              gl.clearDepth();
+              gl.render(scene, cam3);
+              gl.autoClear = true;
+              calls = gl.info.render.calls;
+              const c = document.createElement('canvas');
+              c.width = W * DPR;
+              c.height = H * DPR;
+              c.getContext('2d').drawImage(cv, 0, 0);
+              panels.push(c);
+            }
+            // Umriss ohne Schattenkarte (geworfene Schatten zählen nicht): Drehung 0 noch einmal mit Schatten Aus
+            sun.setLevel('off');
+            aim(0);
+            syncIsoCamera(cam3, cam);
+            gl.render(scene, cam3);
+            const flat0 = document.createElement('canvas');
+            flat0.width = W * DPR;
+            flat0.height = H * DPR;
+            flat0.getContext('2d').drawImage(cv, 0, 0);
+            // Umriss: Bildbereich, der deutlich vom Hintergrund abweicht (CSS-px), gemalt und 3D Drehung 0 (vor der Stimmung)
+            const bg = [0x7a, 0x9e, 0x58];
+            const bbox = (c) => {
+              const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+              let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+              for (let y = 0; y < c.height; y++) {
+                for (let x = 0; x < c.width; x++) {
+                  const i = (y * c.width + x) * 4;
+                  if (Math.abs(d[i] - bg[0]) + Math.abs(d[i + 1] - bg[1]) + Math.abs(d[i + 2] - bg[2]) < 60) continue;
+                  if (x < x0) x0 = x;
+                  if (x > x1) x1 = x;
+                  if (y < y0) y0 = y;
+                  if (y > y1) y1 = y;
+                }
+              }
+              return [x0, y0, x1, y1].map((v) => Math.round(v / DPR));
+            };
+            const boxes = { painted: bbox(painted), three: bbox(flat0) };
+            // Bogen: gemalt | Drehung 0 … 3, Stimmung darüber, Beschriftung
+            const sheet = document.createElement('canvas');
+            const gap = 6;
+            sheet.width = (5 * W + 4 * gap) * DPR;
+            sheet.height = H * DPR;
+            const sc = sheet.getContext('2d');
+            sc.fillStyle = '#111';
+            sc.fillRect(0, 0, sheet.width, sheet.height);
+            [painted, ...panels].forEach((c, i) => {
+              const ox = i * (W + gap);
+              sc.setTransform(DPR, 0, 0, DPR, ox * DPR, 0);
+              sc.drawImage(c, 0, 0, W, H);
+              if (mood) {
+                sc.save();
+                sc.beginPath();
+                sc.rect(0, 0, W, H);
+                sc.clip();
+                drawMood(sc, mood, W, H);
+                sc.restore();
+              }
+              const t = i === 0 ? 'gemalt' : `3D Drehung ${i - 1}`;
+              sc.font = 'bold 13px sans-serif';
+              sc.fillStyle = 'rgba(0,0,0,.6)';
+              sc.fillRect(4, H - 22, sc.measureText(t).width + 8, 18);
+              sc.fillStyle = '#fff';
+              sc.fillText(t, 8, H - 8);
+            });
+            const out = { url: sheet.toDataURL('image/png'), tris: geo.getAttribute('position').count / 3, calls, boxes, tex: kit.kitTexturesReady() };
+            sun.dispose();
+            gl.dispose();
+            ground.dispose();
+            return out;
+          }, { ck, lv, variant, season, night });
+          const name = `${ck}${lv}-${season}-${night ? 'nacht' : 'tag'}`;
+          await writeFile(join(dir, `${name}.png`), Buffer.from(res.url.split(',')[1], 'base64'));
+          const [p, t] = [res.boxes.painted, res.boxes.three];
+          const dev = Math.max(...p.map((v, i) => Math.abs(v - t[i])));
+          const bad = !res.tex || t[2] < 0 || (!night && dev > BOX_TOL) || res.calls !== 1;
+          if (bad) fail++;
+          console.log(`Baukasten ${name}: ${res.tris} Dreiecke, ${res.calls} Draw-Call(s) im Bild, Umriss gemalt ${p.join(',')} / 3D ${t.join(',')} (±${dev} px)${res.tex ? '' : ', Fotos fehlen'}${bad ? '  FEHLER' : ''}`);
+        }
+      }
+    }
+  } finally {
+    errors.push(...g.errors);
+    await g.close();
+  }
+}
+
 /** Zwei Bildschirmfotos (PNG-Puffer) nebeneinander als ein Bild speichern, links „alt (Iso)“, rechts „neu (3D)“. */
 async function sideBySide(g, file, a, b) {
   const url = await g.run(
@@ -733,6 +923,7 @@ try {
   if (!only || only === 'messung') await measure();
   if (!only || only === 'schatten') await shadows();
   if (!only || only === 'baeume') await trees();
+  if (!only || only === 'baukasten') await baukasten();
   if (only === 'mvp') await mvp();
 } catch (e) {
   console.error(`Abbruch: ${e.message}`);

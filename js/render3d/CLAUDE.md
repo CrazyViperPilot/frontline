@@ -9,10 +9,12 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `units3d.js` – Einheiten als Meshes (Wanne, Turm, stufenlose Drehung). `Units3D`
 - `trees3d.js` – Bäume als InstancedMesh je Form, grob fern und als Werfer. `Trees3D`, `treeGeometry`
 - `sun3d.js` – Sonne, Schattenkarte über dem Ausschnitt, Schattenfänger, Stufen. `Sun3D`, `CATCH`, `CAST`
-- `billboards.js` – gemalte Bilder (`spritecache.blit`) als Vierecke aus einem Atlas (≤ 4 Seiten 2048²). `Billboards`
+- `billboards.js` – gemalte Bilder (`spritecache.blit`) als Vierecke aus einem Atlas (≤ 4 Seiten). `Billboards`
 - `camera3d.js` – three-Kamera aus `Camera`: `makeWorldRoot`, `syncIsoCamera`, `projectWorld`, `clipDepth`
-- `testscene.js` – Prüfwürfel an Ecken, Mitte, Hauptstadt (`?three=1&cubes=1`). `probePoints`, `buildTestCubes`
+- `testscene.js` – Prüfwürfel (`?three=1&cubes=1`). `probePoints`, `buildTestCubes`
 - `solids3d.js` – Körperliste (render/units/shapes.js) → three-Geometrie: `solidsToGeometry`, `buildModelMesh`, `modelGeometry`
+- `kit3d.js` – Gebäude-Baukasten (Teile wie isokit.js, alle Seiten). `Kit3D`, `makeKitMaterial`, `setKitFrame`, `kitMesh`
+- `town3d.js` – Stadthäuser aus dem Baukasten (wie townhouses.js; bisher Wohnen 1, 2). `townGeometry`
 
 ## Schichtung
 - Ansicht „3D“ = `camera.iso && camera.three`; V schaltet 2D → Iso → 3D (`main.js` `toggleView`, lädt three nach).
@@ -23,16 +25,15 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
   malt (Rotoren, Flammen), kommt über eine 2D-Zwischenleinwand obenauf.
 - Einheiten (`unit3d`) und Bäume (`tree3d`, `trees3dOn`) fragt `isoObjects` nur in „Objekte“; steht das Mesh, malt
   `drawUnitIso` nur Rotoren und Nachbrenner. Mit Schattenkarte wirft das Mesh den Schatten (`shadow3d`);
-  Soldaten (zu dünn), Stufe Aus und alles ohne Mesh malen ihn.
-- WebGL-Leinwand nicht im DOM, ohne Kantenglättung; `render/ground.js` behält seinen Kontext (Relief-Erkennung).
+  Soldaten, Stufe Aus und alles ohne Mesh malen ihn.
+- WebGL-Leinwand nicht im DOM, ohne Kantenglättung; `render/ground.js` behält seinen Kontext.
 
 ## Licht und Schatten (`sun3d.js`)
 - Sonne = `lightVec` (wie Bodenlicht, Gebäudeschatten; dreht mit der Kamera), auch für Einheiten. Nacht: `drawMood`.
-- Schattenfänger statt Boden-Shader: Einheiten stehen erst in „Objekte“, dann ist das Gelände schon gemalt. Dort Render 1 mit Ebene
-  `CATCH` (Schattenkarte aus Werfern auf `CAST`, Fänger = Bodennetz mit `ShadowMaterial`), Tiefe löschen, Render 2 Ebene 0. Im
-  Boden-Shader spart nur den Fänger (≈ 35 ms Software-WebGL), aber Einheiten ein Bild zu spät, Schatten unter Bodenmarken.
+- Schattenfänger statt Boden-Shader (der wäre ≈ 35 ms schneller, aber Einheiten ein Bild zu spät): in „Objekte“ Render 1 mit Ebene
+  `CATCH` (Karte aus Werfern auf `CAST`, Fänger = Bodennetz mit `ShadowMaterial`), Tiefe löschen, Render 2 Ebene 0.
 - Karte: Bildecken × Geländehöhen im Lichtraum + `margin`, Größe auf `snap` gerundet, Mitte aufs Texel-Raster (kein Flimmern).
-- Werfer: `castShadow`, `layers.enable(CAST)` (Bäume: grobe Form nur auf `CAST`). Billboards empfangen nicht.
+- Werfer: `castShadow`, `layers.enable(CAST)` (Bäume: grobe Form nur auf `CAST`). Empfangen: nur Baukasten (`lights: true`).
 
 ## Achsen (`camera3d.js`)
 - Kinder einer Wurzelgruppe (`groundRoot`, `objRoot`) liegen in Weltkoordinaten: x, y wie im Spiel, z = Höhe in Welt-px.
@@ -40,4 +41,4 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
   selbst um. Flächen in Bild- oder Clip-Koordinaten (Billboards, Erdschnitt) brauchen `side: DoubleSide`.
 - Kamera orthografisch, 30° nach unten, Blick entlang −`camera.depthDir()`, Drehung aus `ROT[cam.rot]`; Bildbreite = viewW / zoom.
   Ergebnis: `projectWorld(x, y, h)` = `camera.worldToScreen(x, y)` (Prüfung `tools/smoke-3d.mjs`, unter 1 px).
-- Pixeldichte über `gl.setPixelRatio(dpr)`; `insetTop` wirkt nur auf `centerOn`.
+- Pixeldichte: `gl.setPixelRatio(dpr)`.

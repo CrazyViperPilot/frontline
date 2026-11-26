@@ -91,7 +91,26 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   Winter, keine Browserfehler. Bildrate nach 5 Spielminuten (Software-WebGL, nur Vergleich): 3D Aus 0,8–1,0× Iso, 3D Mittel/Hoch
   0,65–0,8× Iso (Wald am schlechtesten; Desktop Basis Iso 3,2, 3D Mittel 2,3 Bilder/s). Mehraufwand fast ganz in „Objekte“.
   Neu offen: im Iso-Winterfoto fehlte ein Bauernhof-Sprite (Zeitbudget des Sprite-Caches?).
-- Nächster Schritt: Daniel misst auf eigenem Handy und Rechner (`?three=1&perf=1`) und entscheidet: weiter, nachbessern oder verwerfen.
+- Daniel, 2026-11-26, nach der MVP-Messung: weiter mit Stufe 2.
+- Baukasten 3D: gebaut (`js/render3d/kit3d.js`, Vorlage `js/render3d/town3d.js` mit Wohnen Stufe 1 und 2, Test `test/kit3d.test.js`,
+  Prüfteil `smoke-3d.mjs --only baukasten`, Fotos `.smoke/3d/baukasten/`). Teile wie `isokit.js` mit allen Seiten: Kasten, Wand mit
+  Fensterreihen (Rahmen, Kreuz, Läden), Tür, Satteldach, Walmdach, Attika, Balkon, Zylinder, Kegeldach, Haube, Kugel, Sockel, Gesims,
+  Farbband, Bodenfläche, dazu Garten-Baum, Busch, Auto. Ein Kit3D schreibt alle Teile in einen Puffer (statt `mergeGeometries`, kein
+  Zusatz aus `examples/jsm`): ein Draw-Call je Haus, ein `ShaderMaterial` für alle Gebäude. Materialfotos aus `materials.js` als eine
+  Texturebenen-Textur (8 Ebenen, Mischung „overlay“ wie gemalt); Schnee (Shader, Flächen nach oben, wie `snowy`) und Nacht (`uNight`:
+  beleuchtete Fenster heller, 2,5-mal so viele) ohne neue Geometrie, also eine Geometrie je Variante für alle Jahres- und Tageszeiten.
+  Gebäude werfen und empfangen Schatten (three-Schattenchunks, Stärke wie der Fänger); Bodenflächen ungeschattet wie `isokit.flat`.
+  Messung: Wohnen 1 530 Dreiecke, Wohnen 2 860, je 1 Draw-Call (dazu 1 in der Schattenkarte). Umriss Drehung 0 wie gemalt (Prüfteil:
+  Bildbereich ±1 bzw. ±6 px; Node-Test: Iso-Projektion im Bildrechteck von `townhouses.js`, höchster Punkt ±4 px). Rückseiten bekommen
+  Fenster (gemalt nie sichtbar). Im Spiel noch nichts umgestellt (Folgepakete). Offen für „Stadthäuser 3D“: Renderer muss `setKitFrame`
+  je Bild setzen (Sonne, Winter, Nacht aus `mood`, Schattenstärke aus `BALANCE.shadows3d.opacity`); Gartenbäume als einfache Kugeln
+  (oder `Trees3D` nutzen); Fenster nachts noch unter `drawMood` (wirklich hell erst mit „Tag und Nacht 3D“).
+- **Licht (offener Punkt 5 des MVP-Berichts), entschieden:** eine Sonne für die ganze 3D-Szene, `lightVec` (rechts oben im Bild, dreht
+  mit der Kamera). 3D-Gebäude sind damit rechts hell wie Einheiten, Bäume und Geländerelief, ihre Schatten fallen nach links unten wie
+  die gemalten Gebäudeschatten. Gemalte Billboards (Wand links hell) bleiben bis zur Umstellung ihrer Familie so; der Bruch verschwindet
+  mit Stufe 2. Verworfen: Sonne nach links drehen (alle Schatten fielen nach rechts, 3D-Boden wiche von Iso ab) und gemalte Gebäude
+  umfärben (Aufwand für eine Übergangszeit). Frage an Daniel nur, falls er links helle Wände im 3D-Bild ausdrücklich will.
+
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als
 Billboards, Auswahl und Befehle funktionieren. Danach Fotos und Bildrate auf Rechner und Handy vergleichen.

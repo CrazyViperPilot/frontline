@@ -55,9 +55,9 @@ function storefront(g, face, plane, a0, a1, h0, h1, step, doorAt, seed = 0) {
 
 // ---------- Wohnen ----------
 
-const RES_WALL = ['#f1e7d3', '#e8cfa8', '#d8dfe1'];
-const RES_ROOF = ['#b4513a', '#56606a', '#8e5a3e'];
-const RES_ACC = ['#4f86b8', '#5f9a52', '#d08a3a'];
+export const RES_WALL = ['#f1e7d3', '#e8cfa8', '#d8dfe1'];
+export const RES_ROOF = ['#b4513a', '#56606a', '#8e5a3e'];
+export const RES_ACC = ['#4f86b8', '#5f9a52', '#d08a3a'];
 
 /** Hecke hinten und links am Grundstück. */
 function hedges(g) {

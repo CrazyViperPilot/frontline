@@ -14,6 +14,9 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - railList(town) – Gleise einer Karte: neue Form `rails` (freie Strecken) oder die ältere `rail` (…
 
 ## townhouses.js (55 KB)
+- RES_WALL
+- RES_ROOF
+- RES_ACC
 - beginTownFrame(ratio) – Zu Beginn jedes Bilds (Renderer): Gerätepixel je CSS-Pixel merken und das Zeitb…
 - townLift(ck, level) – Höhe (Weltpixel) über dem höchsten Teil, für das Schild darüber
 - drawTownIso(ctx, cam, b, season) – Isometrisch: Gebäude b als Bild aus dem Zwischenspeicher (für jede Drehung dass…

@@ -1,1 +1,0 @@
-**Lebendigere Bäume** (§7 „Natur (Aussehen)“, nur Bild): Laubkronen mit Blattmuster, dunklen Lücken und Sonnenblättern, Nadelstriche und Rindenfurchen in jedem Zoom; Laubbäume in hellem Grün, dunkler Eiche und kühler Buche.

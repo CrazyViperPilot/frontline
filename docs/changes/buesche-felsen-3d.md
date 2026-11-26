@@ -1,1 +1,0 @@
-**Büsche und Felsen 3D** (Ansicht 3D, Test, `?three=1`): Büsche (Strauch, Beerenstrauch, Farn, junge Fichte), Felsen und Tiere (Hirsch, Wildschwein mit Laufbild und Blickrichtung) stehen in der Ansicht 3D als 3D-Körper statt als gemalte Bilder, mit Herbstlaub, kahlen Sträuchern und Schnee im Winter; sie werfen Schatten über die Schattenkarte.

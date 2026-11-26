@@ -1,1 +1,0 @@
-**Wasser 3D** (Test, `?three=1`, Ansicht „3D“): Seen und Flüsse bekommen eigenes 3D-Wasser: über tiefem Grund dunkler, mit Wellen, die den Himmel spiegeln, Sonnenglanz, Uferschaum und hellem Saum im Flachen; im Winter ein Eisrand, nachts ohne Glanz. Schatten von Einheiten, Bäumen und Häusern fallen sichtbar aufs Wasser.

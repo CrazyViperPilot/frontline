@@ -3,6 +3,7 @@
 > Neueste Version oben. Gehört zum PRD ([PRD.md](../PRD.md)). Nicht von Hand bearbeiten: Einträge kommen als Datei nach
 > [docs/changes/](changes/README.md), `npm run release` trägt sie mit Version und Cache-Version hier ein (Regel 7 in [CLAUDE.md](../CLAUDE.md)).
 
+- v5.266: **Wasser 3D** (Test, `?three=1`, Ansicht „3D“): Seen und Flüsse bekommen eigenes 3D-Wasser: über tiefem Grund dunkler, mit Wellen, die den Himmel spiegeln, Sonnenglanz, Uferschaum und hellem Saum im Flachen; im Winter ein Eisrand, nachts ohne Glanz. Schatten von Einheiten, Bäumen und Häusern fallen sichtbar aufs Wasser. Cache v318.
 - v5.265: **Büsche und Felsen 3D** (Ansicht 3D, Test, `?three=1`): Büsche (Strauch, Beerenstrauch, Farn, junge Fichte), Felsen und Tiere (Hirsch, Wildschwein mit Laufbild und Blickrichtung) stehen in der Ansicht 3D als 3D-Körper statt als gemalte Bilder, mit Herbstlaub, kahlen Sträuchern und Schnee im Winter; sie werfen Schatten über die Schattenkarte. Cache v317.
 - v5.264: **Stadthäuser 3D** (Test, `?three=1`, Ansicht „3D“): Alle Stadthäuser (Wohnen, Gewerbe, Markt, Rechenzentrum, Krankenhaus, Heliport in allen drei Stufen) stehen als echte 3D-Modelle im Bild, mit Fenstern auch auf den Rückseiten, Schnee auf Dächern und Rasen, beleuchteten Fenstern und Schaufenstern bei Nacht, und werfen echte Schatten. Cache v316.
 - v5.263: **3D-Bäume** (Test, Ansicht „3D“): Laubbäume, Birken, Fichten und Kiefern stehen als 3D-Modelle im Bild, mit Herbstlaub, im Winter kahl oder verschneit, und werfen echte Schatten aufs Gelände. Cache v315.

@@ -11,7 +11,7 @@ Gemalte Bilder laufen über `spritecache.js`, Bauteile aus `isokit.js`. Ebenen d
 - `sprites.js` – einfache Formen von oben für Einheiten, Gebäude, Kisten, Tiere; Farbhilfen `shade`, `tint`, `hexA`
 - `iso.js`, `isobuild.js`, `isosprites.js` – Iso-Grundkörper, Höhen (`buildingHeight`), Ersatzgebäude, Schutt; Hülle um `unitpaint.js`
 - `unitpaint.js` – Einheiten und Wracks als 3D-Modelle (Familien in `units/`). `drawUnitIso`, `drawUnitTop`, `drawWreckIso`
-- `fx.js` – Explosion, Leuchtspur, Geschoss, Rauch, Feuer, Krater, Trümmer `drawEffect`, `drawShell`, `drawWreckRubble`
+- `fx.js` – Explosion, Leuchtspur, Geschoss, Rauch, Feuer, Krater, Trümmer. `drawEffect`, `drawShell`, `drawWreckRubble`
 - `marks.js` – Auswahlring, Balken, Stern, Befehlsmarken, Sammelpunkt-Fahne. `drawSelectMark`, `drawGauge`, `drawMoveRing`
 - `milbuild.js` – alle Militärgebäude samt Baustellen in 2D und Iso. `drawMilTop`, `drawMilIso`
 - `townhouses.js`, `works.js`, `university.js`, `cityhall.js` – 1 × 1-Stadthäuser, Werke und Kraftwerk, Universität, Regierungsgebäude

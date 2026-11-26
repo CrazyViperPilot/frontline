@@ -128,12 +128,15 @@
 
 - **Natur (Aussehen):** Bäume, Büsche, Felsen und Tiere malt das Spiel selbst (`js/render/nature.js`),
   in 2D genau von oben (Schatten nach rechts unten) und isometrisch (Bäume und Büsche aufrecht, in jeder Drehung gleich; Schatten nach links unten in einem Zug auf den Boden, nie über andere Dinge).
-  **Vier Baumarten:** Laubbaum (runde Krone aus Laubbüscheln, Licht von links oben, drei Grüntöne), Birke (weißer Stamm mit schwarzen Querstreifen, lockere, hängende Krone),
+  **Vier Baumarten:** Laubbaum (runde Krone aus Laubbüscheln, Licht von links oben, drei Grüntöne: hell, Eiche dunkel, Buche kühl),
+  Birke (weißer Stamm mit schwarzen Querstreifen, lockere, hängende Krone),
   Fichte (Stockwerke aus hängenden Ästen) und Kiefer (hoher, oben rötlicher Stamm, flache Schirmkrone); je Art drei bis vier Formen, fest nach Lage.
   **Wälder** sind Laub-, Nadel- oder Mischwälder (fest je Wald), dichter als bisher (Kronen schließen sich; Bäume gleichmäßig als Spirale mit Zufall verteilt, Zahl ≈ Radius² / 430),
   mit Unterholz aus Farnen und jungen Fichten und Büschen am Rand; der Boden darunter ist Waldboden mit weichem, gelapptem Rand (Moos, Nadelstreu, Laub) statt einer dunklen Scheibe,
   die Bäume sind in 2D nicht mehr unscharf im Bodenbild.
   Verstreute Bäume und Stadtbäume sind meist Laubbäume, dazu Birken, Fichten und Kiefern.
+  **Feinheiten in jedem Zoom:** Laubkronen tragen ein Blattmuster mit dunklen Lücken und hellen, leicht gelblichen Sonnenblättern am Rand zum Licht;
+  Fichten und Kiefern Nadelstriche, Stämme Rindenfurchen. Die Dichte richtet sich nach den Bildpunkten, nicht nach einer festen Zoomstufe.
   **Büsche:** Strauch, Beerenstrauch (rote Beeren), Farn, junge Fichte.
   **Herbst:** Laub gelb, orange, rot oder olivbraun (je Baum fest), Birken golden, Laub am Boden um den Stamm, Farne braun.
   **Winter:** Laubbäume und Birken kahl (Astwerk mit Schnee auf den Ästen), Fichten mit Schnee auf jedem Stockwerk, Kiefern mit Schnee auf den Büscheln, Sträucher als Rutenbündel mit Schnee,

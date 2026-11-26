@@ -58,7 +58,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - pickMood(setting, seed, season) – Stimmung für diese Partie: setting 'off' | 'random' | feste Stimmung; Zufall de…
 - drawMood(ctx, mood, cssW, cssH) – Stimmung über die Welt zeichnen (ctx in CSS-Pixeln, Transform = dpr)
 
-## nature.js (49 KB)
+## nature.js (54 KB)
 - SPECIES
 - forestKind(o) – Waldart (fest nach Lage des Walds): Laubwald, Nadelwald oder Mischwald
 - forestSpecies(kind, u) – Art eines Baums im Wald nach Waldart; u ∈ [0, 1) ist der Zufall des Baums

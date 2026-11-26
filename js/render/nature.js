@@ -35,6 +35,8 @@ const rgba = (h, a) => {
   return `rgba(${r},${g},${b},${a})`;
 };
 const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+/** Gerätepixel je Einheit im Malkontext: Blätter, Nadeln und Rinde richten ihre Dichte danach (Paket „Baumtextur“). */
+const pxOf = (c) => (c.getTransform ? Math.abs(c.getTransform().a) || 1 : 1);
 
 /** Farbe aus einer Palette [Licht, Mitte, Schatten, Tiefe] für Helligkeit t (0 dunkel … 1 hell). */
 function tone(P, t) {
@@ -77,8 +79,8 @@ const LEAVES = {
   broad: {
     summer: [
       ['#a9cc70', '#5f9441', '#325d27', '#1c3818'],
-      ['#97be62', '#4f8538', '#2a5122', '#173215'],
-      ['#b8d176', '#729a3f', '#3e6125', '#233d18'],
+      ['#8fb35e', '#46753a', '#244a22', '#132a12'], // Eiche: dunkel, satt (Paket „Baumtextur“)
+      ['#a3c27a', '#5a8a4a', '#2f5a2e', '#19351a'], // Buche: kühler, bläulich
     ],
     autumn: [
       ['#f6d86c', '#dba734', '#9a6a1f', '#553912'],
@@ -169,32 +171,142 @@ function trunk(c, x0, y0, x1, y1, w0, w1, B) {
   c.fill();
   // Wurzelanlauf
   ell(c, x0 + w0 * 0.2, y0, w0 * 1.5, w0 * 0.45, B[2]);
+  // Rinde (Paket „Baumtextur“): kurze Furchen längs des Stamms, links helle Schuppen; Birke hat eigene Flecken
+  const px = pxOf(c);
+  if (B === BARK.birch || w0 * px < 1.2) return;
+  const rd = rng(Math.round(x0 * 31 + y1 * 17 + w0 * 1013) + 7);
+  const n = Math.min(40, Math.round((l * w0 * px * px) / 6));
+  c.save();
+  c.beginPath();
+  c.moveTo(x0 - nx * w0, y0 - ny * w0);
+  c.lineTo(x1 - nx * w1, y1 - ny * w1);
+  c.lineTo(x1 + nx * w1, y1 + ny * w1);
+  c.lineTo(x0 + nx * w0, y0 + ny * w0);
+  c.clip();
+  c.lineCap = 'round';
+  c.lineWidth = Math.max(0.5 / px, (w0 + w1) * 0.09);
+  const furrows = new Path2D();
+  const scales = new Path2D();
+  for (let i = 0; i < n; i++) {
+    const t = rd();
+    const u = rd() * 2 - 1;
+    const w = w0 + (w1 - w0) * t;
+    const len = (2 + rd() * 4) / px;
+    const bx = x0 + dx * t + nx * u * w;
+    const by = y0 + dy * t + ny * u * w;
+    const q = u < -0.3 && rd() < 0.5 ? scales : furrows;
+    q.moveTo(bx, by);
+    q.lineTo(bx + (dx / l) * len, by + (dy / l) * len);
+  }
+  c.strokeStyle = rgba(B[2], 0.6);
+  c.stroke(furrows);
+  c.strokeStyle = rgba(B[0], 0.55);
+  c.stroke(scales);
+  c.restore();
 }
 
-/** Büschel Laub mit Licht lf (0 … 1): Grund mit Verlauf, darauf Blatt-Tupfen (nur in feinen Maßstäben). */
+/**
+ * Büschel Laub mit Licht lf (0 … 1): Grund mit Verlauf, darauf Blätter (seit Paket „Baumtextur“ in jedem Maßstab, so dicht, dass
+ * jedes Blatt gut ein Gerätepixel groß ist), dunkle Lücken im Inneren und von der Sonne getroffene Blätter am Rand links oben.
+ */
 function leafClump(c, r, k, P, lf, fine) {
   const rd = sub(r);
+  const sq = k.sq ?? 0.92;
   const g = c.createRadialGradient(k.x - k.r * 0.4, k.y - k.r * 0.45, k.r * 0.05, k.x, k.y, k.r * 1.12);
-  g.addColorStop(0, tone(P, lf + 0.26));
-  g.addColorStop(0.6, tone(P, lf));
-  g.addColorStop(1, tone(P, lf - 0.3));
+  g.addColorStop(0, tone(P, lf + 0.2));
+  g.addColorStop(0.6, tone(P, lf - 0.05));
+  g.addColorStop(1, tone(P, lf - 0.38));
   c.fillStyle = g;
-  blobPath(c, k.x, k.y, k.r, k.r * (k.sq ?? 0.92), r, 7 + ((r() * 3) | 0), 0.2);
+  blobPath(c, k.x, k.y, k.r, k.r * sq, r, 7 + ((r() * 3) | 0), 0.2);
   c.fill();
-  if (!fine) return;
-  const m = Math.round(7 + k.r * 1.7);
-  for (let i = 0; i < m; i++) {
-    const a = rd() * TAU;
-    const d = Math.sqrt(rd()) * k.r * 1.02;
-    const x = k.x + Math.cos(a) * d;
-    const y = k.y + Math.sin(a) * d * (k.sq ?? 0.92);
-    const side = (-Math.cos(a) * 0.55 - Math.sin(a) * 0.75) * (d / k.r);
-    c.fillStyle = tone(P, lf + side * 0.34 + (rd() - 0.5) * 0.2);
-    const lr = k.r * (0.1 + rd() * 0.08);
-    c.beginPath();
-    c.ellipse(x, y, lr * 1.35, lr, a + 1.2, 0, TAU);
+  // Blattwerk: kachelbares Blattmuster (helle Blätter, Schattenkanten, dunkle Lücken) über den Grund gemischt, ein fill je Büschel
+  // (Paket „Baumtextur“; einzelne Blätter je Büschel kosteten beim Malen das Vierfache). Grau 128 im Muster lässt die Farbe stehen.
+  const px = pxOf(c);
+  const pat = leafPattern(c, px, rd() * LEAF_PAT_N, rd() * LEAF_PAT_N);
+  if (pat) {
+    c.save();
+    c.globalCompositeOperation = 'overlay';
+    c.globalAlpha = 0.85;
+    c.fillStyle = pat;
     c.fill();
+    c.restore();
   }
+  // Sonnenblätter: hell und leicht gelblich am Rand zum Licht, nur auf beschienenen Büscheln
+  const lw = Math.max(1.2 / px, k.r * 0.09);
+  const h = lf < 0.3 ? 0 : Math.round(Math.min(16, (k.r / lw) ** 2 * 0.16) * Math.min(1, (lf - 0.3) * 3));
+  if (h < 1) return;
+  c.fillStyle = rgba(mix(P[0], '#f3f0b4', 0.3), 0.8);
+  c.beginPath();
+  for (let i = 0; i < h; i++) {
+    const a = -2.2 + (rd() - 0.5) * 1.9;
+    const d = k.r * (0.62 + rd() * 0.36);
+    const x = k.x + Math.cos(a) * d;
+    const y = k.y + Math.sin(a) * d * sq;
+    const lr = lw * (0.7 + rd() * 0.5);
+    c.moveTo(x + lr * 1.3 * Math.cos(a), y + lr * 1.3 * Math.sin(a));
+    c.ellipse(x, y, lr * 1.3, lr, a, 0, TAU);
+  }
+  c.fill();
+}
+
+const LEAF_PAT_N = 64; // Kantenlänge des Blattmusters (Musterpixel)
+let leafSrc; // Blattmuster als Canvas (einmal gemalt), null = kein Canvas
+
+/** Kachelbares Blattmuster in Grau (128 = neutral) für den Mischmodus „overlay“. Fester Zufall, einmal gemalt. */
+function leafCanvas() {
+  if (leafSrc !== undefined) return leafSrc;
+  leafSrc = null;
+  if (typeof document === 'undefined' || !document.createElement) return null;
+  const N = LEAF_PAT_N;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = N;
+  const g = cv.getContext('2d');
+  if (!g) return null;
+  g.fillStyle = 'rgb(118,118,118)';
+  g.fillRect(0, 0, N, N);
+  const rd = rng(0x1eaf);
+  const leaf = (x, y, rx, ry, a, col) => {
+    g.fillStyle = col;
+    for (const ox of [-N, 0, N]) {
+      for (const oy of [-N, 0, N]) {
+        g.beginPath();
+        g.ellipse(x + ox, y + oy, rx, ry, a, 0, TAU);
+        g.fill();
+      }
+    }
+  };
+  for (let i = 0; i < 30; i++) leaf(rd() * N, rd() * N, 1.3 + rd(), 1 + rd() * 0.6, rd() * TAU, 'rgb(28,28,28)'); // Lücken
+  for (let i = 0; i < 300; i++) {
+    const x = rd() * N;
+    const y = rd() * N;
+    const rx = 1.5 + rd() * 1.1;
+    const a = rd() * TAU;
+    const v = Math.round(140 + rd() * 80);
+    leaf(x + 0.7, y + 0.8, rx, rx * 0.62, a, 'rgba(40,40,40,0.55)'); // Schattenkante unten rechts
+    leaf(x, y, rx, rx * 0.62, a, `rgb(${v},${v},${v})`);
+  }
+  leafSrc = cv;
+  return cv;
+}
+
+/** Blattmuster für den Kontext c: ein Musterpixel ≈ ein Gerätepixel (größer, wenn ein Baum sehr groß gemalt wird), versetzt um ox, oy. */
+function leafPattern(c, px, ox, oy) {
+  const src = leafCanvas();
+  if (!src || !c.createPattern) return null;
+  const pat = c.createPattern(src, 'repeat');
+  if (!pat?.setTransform || typeof DOMMatrix === 'undefined') return pat;
+  const k = Math.max(1, px * 0.3) / px; // Einheiten je Musterpixel
+  pat.setTransform(new DOMMatrix([k, 0, 0, k, ox * k, oy * k]));
+  return pat;
+}
+
+/** Nadeln zeichnen: helle (Lichtseite) und dunkle Striche je als ein Pfad. */
+function needles(c, lit, dark, P, lw, aLit, aDark) {
+  c.lineWidth = lw;
+  c.strokeStyle = rgba(P[0], aLit);
+  c.stroke(lit);
+  c.strokeStyle = rgba(P[3], aDark);
+  c.stroke(dark);
 }
 
 /** Büschel einer Krone: ein Kranz am Rand und einige innen, von hinten (oben) nach vorn (unten) sortiert. */
@@ -315,7 +427,7 @@ function birchIso(c, r, P, season, fine) {
   if (season === 'autumn') litter(c, r, P, R * 0.8, fine);
   trunk(c, 0, 0, lean, top, R * 0.085, R * 0.04, BARK.birch);
   const rd = sub(r);
-  if (fine) {
+  {
     c.fillStyle = '#2f2b29';
     for (let i = 0; i < 10; i++) {
       const t = 0.06 + i * 0.085 + rd() * 0.03;
@@ -396,20 +508,22 @@ function tier(c, r, x, yb, w, th, P, snow, fine) {
   bottom.forEach(([bx, by], k) => (k ? c.lineTo(bx, by) : c.moveTo(bx, by)));
   c.stroke();
   const rd = sub(r);
-  if (fine) {
-    // Nadeln: kurze schräge Striche, links heller
-    c.lineWidth = 0.35;
-    for (let i = 0; i < 16; i++) {
+  const px = pxOf(c);
+  const nn = Math.min(70, Math.round((w * th * px * px) / 9));
+  if (nn >= 4) {
+    // Nadeln: kurze schräge Striche, links heller, Dichte nach Gerätepixeln (Paket „Baumtextur“)
+    const lit = new Path2D();
+    const dark = new Path2D();
+    for (let i = 0; i < nn; i++) {
       const u = rd() * 2 - 1;
       const v = 0.25 + rd() * 0.6;
-      const px = x + u * w * (1 - v * 0.6);
-      const py = ya + (yb - ya) * (0.35 + v * 0.6);
-      c.strokeStyle = u < 0 ? rgba(P[0], 0.7) : rgba(P[3], 0.55);
-      c.beginPath();
-      c.moveTo(px, py);
-      c.lineTo(px + u * th * 0.25, py + th * 0.22);
-      c.stroke();
+      const nx = x + u * w * (1 - v * 0.6);
+      const ny = ya + (yb - ya) * (0.35 + v * 0.6);
+      const q = u < -0.1 ? lit : dark;
+      q.moveTo(nx, ny);
+      q.lineTo(nx + u * th * 0.25, ny + th * 0.22);
     }
+    needles(c, lit, dark, P, Math.max(0.35, 0.8 / px), 0.7, 0.55);
   }
   if (!snow) return;
   // Schnee auf dem sichtbaren Band (das nächste Stockwerk verdeckt die obere Hälfte): oben gerade, unten wellig
@@ -484,20 +598,22 @@ function pineClump(c, r, k, P, snow, fine) {
   blobPath(c, k.x, k.y, k.rx, k.ry, r, 13, 0.34);
   c.fill();
   const rd = sub(r);
-  if (fine) {
-    // Nadelbüschel: kurze Striche strahlenförmig
-    c.lineWidth = 0.4;
-    for (let i = 0; i < 22; i++) {
+  const px = pxOf(c);
+  const nn = Math.min(70, Math.round((k.rx * k.ry * px * px) / 5));
+  if (nn >= 4) {
+    // Nadelbüschel: kurze Striche strahlenförmig, Dichte nach Gerätepixeln
+    const lit = new Path2D();
+    const dark = new Path2D();
+    for (let i = 0; i < nn; i++) {
       const a = rd() * TAU;
       const d = Math.sqrt(rd()) * 0.9;
-      const px = k.x + Math.cos(a) * k.rx * d;
-      const py = k.y + Math.sin(a) * k.ry * d;
-      c.strokeStyle = Math.cos(a) + Math.sin(a) < 0 ? rgba(P[0], 0.8) : rgba(P[3], 0.6);
-      c.beginPath();
-      c.moveTo(px, py);
-      c.lineTo(px + Math.cos(a) * 1.6, py + Math.sin(a) * 0.9);
-      c.stroke();
+      const nx = k.x + Math.cos(a) * k.rx * d;
+      const ny = k.y + Math.sin(a) * k.ry * d;
+      const q = Math.cos(a) + Math.sin(a) < 0 ? lit : dark;
+      q.moveTo(nx, ny);
+      q.lineTo(nx + Math.cos(a) * 1.6, ny + Math.sin(a) * 0.9);
     }
+    needles(c, lit, dark, P, Math.max(0.4, 0.8 / px), 0.8, 0.6);
   }
   if (snow) {
     c.fillStyle = SNOW[0];
@@ -667,19 +783,21 @@ function pineClumpTop(c, r, k, P, snow, fine, Rc) {
   blobPath(c, k.x, k.y, k.rx, k.ry, r, 12, 0.26);
   c.fill();
   const rd = sub(r);
-  if (fine) {
-    c.lineWidth = 0.4;
-    for (let i = 0; i < 18; i++) {
+  const px = pxOf(c);
+  const nn = Math.min(60, Math.round((k.rx * k.ry * px * px) / 5));
+  if (nn >= 4) {
+    const lit = new Path2D();
+    const dark = new Path2D();
+    for (let i = 0; i < nn; i++) {
       const a = rd() * TAU;
       const d = Math.sqrt(rd()) * 0.85;
-      const px = k.x + Math.cos(a) * k.rx * d;
-      const py = k.y + Math.sin(a) * k.ry * d;
-      c.strokeStyle = Math.cos(a) + Math.sin(a) < 0 ? rgba(P[0], 0.75) : rgba(P[3], 0.55);
-      c.beginPath();
-      c.moveTo(px, py);
-      c.lineTo(px + Math.cos(a) * 1.5, py + Math.sin(a) * 1.5);
-      c.stroke();
+      const nx = k.x + Math.cos(a) * k.rx * d;
+      const ny = k.y + Math.sin(a) * k.ry * d;
+      const q = Math.cos(a) + Math.sin(a) < 0 ? lit : dark;
+      q.moveTo(nx, ny);
+      q.lineTo(nx + Math.cos(a) * 1.5, ny + Math.sin(a) * 1.5);
     }
+    needles(c, lit, dark, P, Math.max(0.4, 0.8 / px), 0.75, 0.55);
   }
   if (snow) {
     c.fillStyle = rgba(SNOW[0], 0.95);

@@ -59,10 +59,11 @@ export class Renderer3D extends Renderer {
     this.tree3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
     this.trees3dOn = true; // false: Bäume wie in Iso als gemalte Billboards (Prüfskript: Vergleich Iso/3D, Messung)
     this.treeShadow3d = false; // isoShadows: gemalte Baumschatten weglassen (3D-Bäume werfen sie selbst)
-    this.towns3d = new Town3D(); // Stadthäuser 1 × 1 als InstancedMesh je Variante (town3d.js), gezeigt über house3d aus drawTownItemIso
+    this.towns3d = new Town3D(); // Stadthäuser 1 × 1 und Werke als InstancedMesh je Variante (town3d.js), gezeigt über house3d aus drawTownItemIso
     this.objRoot.add(this.towns3d.group);
     this.house3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
     this.towns3dOn = true; // false: Stadthäuser wie in Iso als gemalte Billboards (Prüfskript: Messung vorher/nachher)
+    this.works3dOn = true; // false: Werke und Kraftwerk gemalt
     // Nebel: eigene Szene über allem (ohne Tiefentest), gleiche Geometrie wie der Boden
     this.fogScene = new THREE.Scene();
     this.fogRoot = makeWorldRoot();
@@ -173,7 +174,7 @@ export class Renderer3D extends Renderer {
     this.unit3d = (f, u, aim, lift) => this.units3d.show(u, cam.pinned ?? (relief ? relief.displayAt(u.x, u.y) : 0), lift, aim, f.now);
     // Stadthäuser: Sonne, Schnee, Nacht und Schattenstärke wie Boden und Schattenfänger; Höhe wie das Billboard (cam.pin)
     this.towns3d.begin({ light, snow: season === 'winter' ? 1 : 0, night: this.mood === 'night' ? 1 : 0, shade: BALANCE.shadows3d.opacity[this.mood ?? 'none'] ?? BALANCE.shadows3d.opacity.none });
-    this.house3d = !this.towns3dOn ? null : (o) => o.kind === 'town' && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
+    this.house3d = (o) => (o.kind === 'town' ? this.towns3dOn : this.works3dOn) && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
     try {
       for (const it of f.items) {
         const o = it.o;

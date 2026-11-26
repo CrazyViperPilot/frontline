@@ -1921,6 +1921,50 @@ export function worksLift(kind, level) {
   return (TALL[kind] ?? TALL.bm)[clampLv(level)] + 8;
 }
 
+/** Bildmaße des gemalten Werks bei Maßstab 1 [x0, y0, x1, y1] über dem Ankerpunkt (Mitte des Quadrats); höchster Punkt bei −Höhe (Test der 3D-Werke). */
+export function worksBox(kind, level) {
+  return [-84, -(TALL[kind][clampLv(level)] + 2), 84, 47];
+}
+
+/** Höhe des höchsten Punkts im gemalten Bild (Weltpixel) je Art und Stufe 1 bis 3. */
+export const worksTall = (kind, level) => TALL[kind][clampLv(level)];
+
+/** Farben der Anlagen für die 3D-Werke (render3d/works3d.js), damit beide Darstellungen dieselben Töne nehmen. */
+export const WORKS_PAL = { E, CONCRETE, GRAVEL, BRICK, BRICKS, RAW, RUST, TANK, PIPE, GRASS, BRASS, OLIVE, RED, HOT, COAL, BLUE, KTANK };
+
+/** Dampffahnen eines Werks: [u, v, Höhe, Größe] ab der Mitte (Kühltürme des Kraftwerks), wie die gemalten in power(). In 3D bleiben sie gemalt (Effekt). */
+export function worksSteam(kind, level) {
+  if (kind !== 'power') return [];
+  const lv = clampLv(level);
+  const big = lv >= 2;
+  const out = [[37, -41, (big ? 60 : 54) + (big ? 13.9 : 13.2) * 0.35, (big ? 13.9 : 13.2) * 0.62]];
+  if (lv >= 3) out.push([42, -13, 44 + 10.1 * 0.35, 10.1 * 0.62]);
+  return out;
+}
+
+/** Nur die Dampffahnen eines Werks malen (Ansicht 3D: Werk als Mesh, Dampf als gemaltes Bild, gleiches Bild für alle Drehungen, Ort dreht mit). */
+export function drawWorksSteam(ctx, cam, b) {
+  const z = cam.zoom;
+  const dpr = spriteDpr();
+  for (const [u, v, h, s] of worksSteam(b.kind, b.level)) {
+    const p = cam.worldToScreen(b.x + u, b.y + v);
+    const x = p.x;
+    const y = p.y - h * z;
+    const key = `ws|${s.toFixed(2)}`;
+    const e = sprite(key, z * dpr, [-5 * s, -5 * s, 2.2 * s, 2.2 * s], (c, sc) => steam(G(c, sc), 0, 0, 0, s));
+    if (e === false) continue;
+    if (e) {
+      blit(ctx, e, x, y, z);
+      continue;
+    }
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(1 / dpr, 1 / dpr);
+    steam(G(ctx, z * dpr), 0, 0, 0, s);
+    ctx.restore();
+  }
+}
+
 /** Isometrisch: das ganze Werk als Bild aus dem Zwischenspeicher (für jede Drehung dasselbe), Ankerpunkt = Mitte des Quadrats. */
 export function drawWorksIso(ctx, cam, b, season = 'summer') {
   const kind = ISO[b.kind] ? b.kind : 'bm';

@@ -21,14 +21,16 @@
 //    Danach Zeitraffer (beide Seiten KI, 10×) bis --gametime Spielminuten (Standard 5), dann Bildrate (measureFps, --fpsms ms)
 //    und langsamstes Bild in Iso und 3D mit Schatten Aus/Mittel/Hoch an Basis und Wald, im Winter am Start; Zeit je Durchlauf
 //    (timePasses) für Iso und 3D Mittel. Ergebnis zusätzlich als JSON nach <out>/mvp/messung.json. --devices desktop,phone wählt Geräte.
-// 8. Baukasten (Pakete „Baukasten 3D“, „Stadthäuser 3D“): alle Stadthäuser aus town3d.js neben den gemalten; je Art und Stimmung
-//    (Sommer/Winter × Tag/Nacht) ein Bogen mit Stufe 1 bis 3 (gemalt + 4 Drehungen), je Art ein Bogen mit allen Farbvarianten;
-//    Fotos nach <out>/baukasten/; Fehler ohne Materialfotos, bei mehr als einem Draw-Call je Haus oder abweichendem Umriss.
+// 8. Baukasten (Pakete „Baukasten 3D“, „Stadthäuser 3D“, „Werke 3D“): alle Stadthäuser aus town3d.js und alle Werke aus works3d.js
+//    neben den gemalten; je Art und Stimmung (Sommer/Winter × Tag/Nacht) ein Bogen mit Stufe 1 bis 3 (gemalt + 4 Drehungen), je Art
+//    ein Bogen mit allen Farbvarianten bzw. Teamfarben (werk-<art>-teams); Fotos nach <out>/baukasten/; Fehler ohne Materialfotos, bei
+//    mehr als einem Draw-Call je Haus bzw. Werk oder abweichendem Umriss.
 // 9. Stadt (Paket „Stadthäuser 3D“): Seed 3, KI gegen KI bis --citymin Spielminuten (Standard 10), Stadt an der Hauptstadt Iso | 3D
 //    in 4 Drehungen, Sommer und Winter (<out>/stadt/); Draw-Calls, Dreiecke und Zeit „Objekte“ mit gemalten und mit 3D-Stadthäusern.
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
 //                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|mvp] [--citymin 10]
+//                                 [--what werke|haeuser] (nur mit baukasten: nur Werke oder nur Stadthäuser fotografieren)
 // Ohne --only laufen die Teile 1 bis 6, 8 und 9; „mvp“ nur ausdrücklich.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -615,25 +617,119 @@ async function baukasten() {
         }
         return { painted, panels, W, H, DPR, tris: geo.getAttribute('position').count / 3, calls, boxes, tex: kit.kitTexturesReady() };
       };
+      // Werk gemalt und in 3D (Paket „Werke 3D“): Bildmaß wie works.js (168 × 200 bei Maßstab 1), Dampf der Kühltürme gemalt über dem Mesh
+      const { drawWorksIso, drawWorksSteam, worksTall } = await import('/js/render/works.js');
+      const { worksGeometry } = await import('/js/render3d/works3d.js');
+      const { spriteFrame, spriteMissed } = await import('/js/render/spritecache.js');
+      window.__kitWork = ({ kind, lv, color, season, night, rots }) => {
+        const tall = worksTall(kind, lv);
+        const H = 300;
+        const ZOOM = Math.min(1.5, 270 / (tall + 49));
+        const py = (tall + 2) * ZOOM + (H - (tall + 49) * ZOOM) / 2; // Ankerpunkt: Bild mittig
+        const cam = new Camera(2000, 2000);
+        cam.iso = true;
+        cam.resize(W, H);
+        const aim = (rot) => {
+          cam.rot = rot;
+          cam.zoom = ZOOM;
+          cam.x = X;
+          cam.y = Y;
+          const p = cam.screenToWorldFlat(W / 2, H - py);
+          cam.x = p.x;
+          cam.y = p.y;
+        };
+        const mood = night ? 'night' : null;
+        const b = { x: X, y: Y, kind, level: lv, color, damage: 0 };
+        const painted = canvas(W, H);
+        const pc = painted.getContext('2d');
+        aim(0);
+        for (let i = 0; i < 16; i++) {
+          spriteFrame(DPR);
+          pc.setTransform(DPR, 0, 0, DPR, 0, 0);
+          pc.fillStyle = BG;
+          pc.fillRect(0, 0, W, H);
+          drawWorksIso(pc, cam, b, season);
+          if (!spriteMissed()) break;
+        }
+        gl.setSize(W, H, false);
+        sun.setLevel('high');
+        sun.setMood(mood);
+        const geo = worksGeometry(kind, lv);
+        const mesh = kit.kitTeamMesh(geo, mat, color);
+        mesh.position.set(X, Y, 0);
+        root.add(mesh);
+        const light0 = (rot) => {
+          const [, , rc, rd] = [[1, 0, 0, 1], [0, -1, 1, 0], [-1, 0, 0, -1], [0, 1, -1, 0]][rot];
+          const a = Math.atan2(-rd, -rc) + 0.35;
+          const k = Math.sqrt(1 - LIGHT_ELEV * LIGHT_ELEV);
+          return [Math.cos(a) * k, Math.sin(a) * k, LIGHT_ELEV];
+        };
+        const panels = [];
+        let calls = 0;
+        for (const rot of rots) {
+          aim(rot);
+          syncIsoCamera(cam3, cam);
+          const light = light0(rot);
+          kit.setKitFrame(mat, { light, snow: season === 'winter' ? 1 : 0, night: night ? 1 : 0, shade: BALANCE.shadows3d.opacity[mood ?? 'none'] });
+          gl.setClearColor(BG, 1);
+          sun.update(cam3, light, null);
+          gl.shadowMap.needsUpdate = true;
+          cam3.layers.set(CATCH);
+          gl.render(scene, cam3);
+          cam3.layers.set(0);
+          gl.autoClear = false;
+          gl.clearDepth();
+          gl.render(scene, cam3);
+          gl.autoClear = true;
+          calls = gl.info.render.calls;
+          const c = canvas(W, H);
+          const x = c.getContext('2d');
+          x.drawImage(cv, 0, 0);
+          x.setTransform(DPR, 0, 0, DPR, 0, 0);
+          for (let i = 0; i < 16; i++) {
+            spriteFrame(DPR);
+            drawWorksSteam(x, cam, b);
+            if (!spriteMissed()) break;
+          }
+          panels.push(c);
+        }
+        sun.setLevel('off');
+        aim(0);
+        syncIsoCamera(cam3, cam);
+        kit.setKitFrame(mat, { light: light0(0), snow: season === 'winter' ? 1 : 0, night: 0, shade: 0.4 });
+        gl.render(scene, cam3);
+        const flat0 = canvas(W, H);
+        flat0.getContext('2d').drawImage(cv, 0, 0);
+        root.remove(mesh);
+        const boxes = { painted: bbox(painted), three: bbox(flat0) };
+        if (mood) {
+          for (const c of [painted, ...panels]) {
+            const x = c.getContext('2d');
+            x.setTransform(DPR, 0, 0, DPR, 0, 0);
+            drawMood(x, mood, W, H);
+          }
+        }
+        return { painted, panels, W, H, DPR, tris: geo.getAttribute('position').count / 3, calls, boxes, tex: kit.kitTexturesReady() };
+      };
       /** Bogen aus Zeilen von Feldern (Leinwände) mit Beschriftung je Feld, als PNG-Daten-URL. */
-      window.__kitSheet = (rows) => {
+      window.__kitSheet = (rows, RH = 290) => {
         const gap = 6;
         const cols = Math.max(...rows.map((r) => r.length));
         const sheet = document.createElement('canvas');
         sheet.width = (cols * W + (cols - 1) * gap) * DPR;
-        sheet.height = (rows.length * 290 + (rows.length - 1) * gap) * DPR;
+        sheet.height = (rows.length * RH + (rows.length - 1) * gap) * DPR;
         const sc = sheet.getContext('2d');
         sc.fillStyle = '#111';
         sc.fillRect(0, 0, sheet.width, sheet.height);
         rows.forEach((row, j) => {
           row.forEach(([c, t], i) => {
-            sc.setTransform(DPR, 0, 0, DPR, i * (W + gap) * DPR, j * (290 + gap) * DPR);
-            sc.drawImage(c, 0, 0, W, 290);
+            sc.setTransform(DPR, 0, 0, DPR, i * (W + gap) * DPR, j * (RH + gap) * DPR);
+            sc.drawImage(c, 0, 0, W, RH);
             sc.font = 'bold 13px sans-serif';
             sc.fillStyle = 'rgba(0,0,0,.6)';
-            sc.fillRect(4, 290 - 22, sc.measureText(t).width + 8, 18);
+            sc.fillRect(4, RH - 22, sc.measureText(t).width + 8, 18);
             sc.fillStyle = '#fff';
-            sc.fillText(t, 8, 290 - 8);
+            sc.fillText(t, 8, RH - 8);
           });
         });
         return sheet.toDataURL('image/png');
@@ -642,7 +738,8 @@ async function baukasten() {
     const KINDS = ['res', 'com', 'market', 'dc', 'hospital', 'heliport'];
     const save = (name, url) => writeFile(join(dir, `${name}.png`), Buffer.from(url.split(',')[1], 'base64'));
     const tris = {};
-    for (const ck of KINDS) {
+    const what = arg('what', null); // --what werke | haeuser: nur eines von beidem fotografieren
+    for (const ck of what === 'werke' ? [] : KINDS) {
       for (const season of ['summer', 'winter']) {
         for (const night of [false, true]) {
           const name = `${ck}-${season}-${night ? 'nacht' : 'tag'}`;
@@ -694,6 +791,53 @@ async function baukasten() {
         }
       }
     }
+    // Werke (Paket „Werke 3D“): je Art und Stimmung ein Bogen mit Stufe 1 bis 3 (gemalt + 4 Drehungen), je Art ein Bogen mit den Teamfarben
+    const WK = ['power', 'bm', 'mun', 'fuel', 'steel', 'kero'];
+    const TEAMS = ['#3d8bfd', '#e5484d', '#3fb950', '#e3b341'];
+    const wtris = {};
+    for (const kind of what === 'haeuser' ? [] : WK) {
+      for (const season of ['summer', 'winter']) {
+        for (const night of [false, true]) {
+          const name = `werk-${kind}-${season}-${night ? 'nacht' : 'tag'}`;
+          const res = await g.run(({ kind, season, night, color }) => {
+            const rows = [];
+            const stats = [];
+            for (const lv of [1, 2, 3]) {
+              const r = window.__kitWork({ kind, lv, color, season, night, rots: [0, 1, 2, 3] });
+              rows.push([[r.painted, `${kind}${lv} gemalt`], ...r.panels.map((c, i) => [c, `3D Drehung ${i}`])]);
+              stats.push({ lv, tris: r.tris, calls: r.calls, boxes: r.boxes, tex: r.tex });
+            }
+            return { url: window.__kitSheet(rows, 300), stats };
+          }, { kind, season, night, color: TEAMS[0] });
+          await save(name, res.url);
+          for (const s of res.stats) {
+            const [p, t] = [s.boxes.painted, s.boxes.three];
+            const dev = Math.max(...p.map((v, i) => Math.abs(v - t[i])));
+            wtris[`${kind}${s.lv}`] = s.tris;
+            const bad = !s.tex || t[2] < 0 || (!night && dev > BOX_TOL) || s.calls !== 1;
+            if (bad) fail++;
+            if (bad || (season === 'summer' && !night)) {
+              console.log(`Werk ${kind}${s.lv} ${season} ${night ? 'Nacht' : 'Tag'}: ${s.tris} Dreiecke, ${s.calls} Draw-Call(s), Umriss gemalt ${p.join(',')} / 3D ${t.join(',')} (±${dev} px)${s.tex ? '' : ', Fotos fehlen'}${bad ? '  FEHLER' : ''}`);
+            }
+          }
+        }
+      }
+      // Teamfarben: je Stufe eine Zeile gemalt | 3D (Drehung 0) für alle vier Teams (Sommer, Tag)
+      const res = await g.run(({ kind, teams }) => {
+        const rows = [];
+        for (const lv of [1, 2, 3]) {
+          const row = [];
+          for (const color of teams) {
+            const r = window.__kitWork({ kind, lv, color, season: 'summer', night: false, rots: [0] });
+            row.push([r.painted, `${kind}${lv} ${color} gemalt`], [r.panels[0], `3D`]);
+          }
+          rows.push(row);
+        }
+        return window.__kitSheet(rows, 300);
+      }, { kind, teams: TEAMS });
+      await save(`werk-${kind}-teams`, res);
+    }
+    console.log(`Baukasten: Dreiecke je Werk ${Object.entries(wtris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
     console.log(`Baukasten: Dreiecke je Variante ${Object.entries(tris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
   } finally {
     errors.push(...g.errors);
@@ -748,17 +892,47 @@ async function city() {
         await look(g, spot.x, spot.y, rot, 1);
         await mvpPair(g, dir, 'seed3', `${season}-drehung${rot}`);
       }
+      // Ort mit den meisten Werken (und Stadthäusern) im Bild: Mittelpunkt, Zahl und Arten
+      const wspot = await g.run(async () => {
+        const { cityBuildings } = await import('/js/render/citylayer.js');
+        const s = window.__frontline.session();
+        const all = cityBuildings(s.game, 0, () => true, () => true);
+        const works = all.filter((b) => b.kind !== 'town' && b.level > 0 && ['bm', 'mun', 'fuel', 'steel', 'power', 'kero'].includes(b.kind));
+        const houses = all.filter((b) => b.kind === 'town');
+        const R = 420;
+        let best = null;
+        for (const w of works) {
+          const nw = works.filter((o) => Math.hypot(o.x - w.x, o.y - w.y) < R);
+          const nh = houses.filter((o) => Math.hypot(o.x - w.x, o.y - w.y) < R).length;
+          const score = nw.length * 6 + nh;
+          if (!best || score > best.score) {
+            const x = nw.reduce((a, o) => a + o.x, 0) / nw.length;
+            const y = nw.reduce((a, o) => a + o.y, 0) / nw.length;
+            const kinds = {};
+            for (const o of nw) kinds[`${o.kind}${o.level}`] = (kinds[`${o.kind}${o.level}`] ?? 0) + 1;
+            best = { score, x, y, works: nw.length, houses: nh, kinds };
+          }
+        }
+        return best ?? { x: s.camera.mapW / 2, y: s.camera.mapH / 2, works: 0, houses: 0, kinds: {} };
+      });
+      console.log(`Stadt ${season}: Werke-Ausschnitt ${wspot.works} Werke, ${wspot.houses} Stadthäuser in der Nähe ${JSON.stringify(wspot.kinds)}`);
+      for (let rot = 0; rot < 4; rot++) {
+        await look(g, wspot.x, wspot.y, rot, 1);
+        await mvpPair(g, dir, 'seed3', `werke-${season}-drehung${rot}`);
+      }
       if (season !== 'summer') continue;
-      await look(g, spot.x, spot.y, 0, 1);
+      await look(g, wspot.x, wspot.y, 0, 1);
       const rows = [];
+      // gemalt (alles), nur Stadthäuser 3D (Stand vor „Werke 3D“), Stadthäuser und Werke 3D
       for (const level of ['off', 'high']) {
-        for (const on of [false, true]) {
-          const st = await g.run(({ level, on }) => {
+        for (const [towns, works] of [[false, false], [true, false], [true, true]]) {
+          const st = await g.run(({ level, towns, works }) => {
             const s = window.__frontline.session();
             const r = s.renderer;
             s.camera.three = true;
             r.setShadows(level);
-            r.towns3dOn = on;
+            r.towns3dOn = towns;
+            r.works3dOn = works;
             for (let i = 0; i < 3; i++) r.render(s.controller.view);
             const info = r.gl.info;
             const orig = r.objects3d;
@@ -775,15 +949,20 @@ async function city() {
               r.objects3d = orig;
               info.autoReset = true;
             }
-            return { ...obj, houses: r.towns3d.stats() };
-          }, { level, on });
+            return { ...obj, houses: r.towns3d.stats('town'), works: r.towns3d.stats('works') };
+          }, { level, towns, works });
           const t = await timePasses(g, frames);
-          if (on && !st.houses.houses) fail++;
-          rows.push(`${level === 'off' ? 'Aus ' : 'Hoch'} ${on ? '3D    ' : 'gemalt'}: Objekte ${t.Objekte.toFixed(0)} ms, ${st.calls} Draw-Calls, ${st.tris} Dreiecke` + (on ? ` (Stadthäuser: ${st.houses.houses} Häuser, ${st.houses.calls} Varianten, ${st.houses.tris} Dreiecke)` : ''));
+          if (works && !st.works.houses) fail++;
+          const what = `${towns ? 'Häuser 3D' : 'gemalt   '}${works ? ' + Werke 3D' : '           '}`;
+          rows.push(`${level === 'off' ? 'Aus ' : 'Hoch'} ${what}: Objekte ${t.Objekte.toFixed(0)} ms, ${st.calls} Draw-Calls, ${st.tris} Dreiecke` + (towns ? ` (Häuser: ${st.houses.houses}/${st.houses.calls} Varianten/${st.houses.tris} Dreiecke` : ' (') + (works ? `${towns ? '; ' : ''}Werke: ${st.works.houses}/${st.works.calls} Varianten/${st.works.tris} Dreiecke` : '') + ')');
         }
       }
-      await g.run(() => (window.__frontline.session().renderer.towns3dOn = true));
-      console.log(`Stadt Messung (Seed 3, Hauptstadt, Zoom 1, ${frames} Bilder, Software-WebGL; Draw-Calls und Dreiecke in „Objekte“ samt Schattenkarte):`);
+      await g.run(() => {
+        const r = window.__frontline.session().renderer;
+        r.towns3dOn = true;
+        r.works3dOn = true;
+      });
+      console.log(`Stadt Messung (Seed 3, Ausschnitt mit ${wspot.works} Werken und ${wspot.houses} Stadthäusern in der Nähe, Zoom 1, ${frames} Bilder, Software-WebGL; Draw-Calls und Dreiecke in „Objekte“ samt Schattenkarte):`);
       for (const r of rows) console.log(`  ${r}`);
     } finally {
       errors.push(...g.errors);

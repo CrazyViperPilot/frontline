@@ -1,10 +1,12 @@
-// Baukasten 3D (js/render3d/kit3d.js, town3d.js): jedes Bauteil ist gültige Geometrie (keine NaN, Normalen der Länge 1, nach außen),
-// Stadthäuser sparsam und im Umriss wie das gemalte Bild (Iso-Projektion von isokit.G mit Maßstab 1 gegen die Bildmaße in
-// townhouses.js). Läuft in Node ohne DOM (three-Kern genügt). Fotos gemalt/3D: node tools/smoke-3d.mjs --only baukasten.
+// Baukasten 3D (js/render3d/kit3d.js, town3d.js, works3d.js): jedes Bauteil ist gültige Geometrie (keine NaN, Normalen der Länge 1,
+// nach außen), Stadthäuser und Werke sparsam und im Umriss wie das gemalte Bild (Iso-Projektion von isokit.G mit Maßstab 1 gegen die
+// Bildmaße in townhouses.js bzw. works.js). Läuft in Node ohne DOM (three-Kern genügt). Fotos gemalt/3D: node tools/smoke-3d.mjs --only baukasten.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Kit3D, KIT_MATS } from '../js/render3d/kit3d.js';
-import { townGeometry, hasTown3d, townKey } from '../js/render3d/town3d.js';
+import { townGeometry, hasTown3d, townKey, FAMILIES } from '../js/render3d/town3d.js';
+import { worksGeometry, worksKey, hasWorks3d } from '../js/render3d/works3d.js';
+import { WORKS_KINDS, worksBox, worksTall } from '../js/render/works.js';
 import { TALL, TEAM_SHOWN } from '../js/render/townhouses.js';
 import { MATS } from '../js/render/materials.js';
 import { ISO_K } from '../js/render/camera.js';
@@ -26,7 +28,7 @@ function check(name, g, center = null) {
   const info = g.getAttribute('aInfo');
   for (let i = 0; i < info.count; i++) {
     assert.ok(info.getX(i) >= 0 && info.getX(i) <= KIT_MATS.length, `${name}: Material ${info.getX(i)}`);
-    assert.ok([0, 1, 2].includes(info.getZ(i)), `${name}: Schnee ${info.getZ(i)}`);
+    assert.ok([0, 1, 2, 3, 4].includes(info.getZ(i)), `${name}: Schnee ${info.getZ(i)}`);
   }
   for (let t = 0; t < pos.count; t += 3) {
     const p = [0, 1, 2].map((k) => [pos.getX(t + k), pos.getY(t + k), pos.getZ(t + k)]);
@@ -90,6 +92,25 @@ test('Baukasten 3D: jedes Bauteil ist gültige, geschlossene Geometrie mit Auße
     helipad: [(k) => k.helipad(0, 0, 14.5), null],
     fountain: [(k) => k.fountain(0, 0, 5), null],
     clockFace: [(k) => k.clockFace('s', 5, 0, 28, 2.7), null],
+    // Bauteile der Werke
+    facePoly: [(k) => k.facePoly('s', 5, [[-1.5, 0], [1.5, 0], [1.5, 3], [0, 4.5], [-1.5, 3]], '#2d2420', 0.1, { emit: true }), null],
+    lathe: [(k) => k.lathe(0, 0, [[10, 0], [7, 20], [9, 40]], '#d6d2c9'), null],
+    frustum_inside: [(k) => k.frustum(0, 0, 6, 6, 0, 8, '#aaa', { inside: true }), null],
+    band: [(k) => (k.cyl(0, 0, 5, 0, 10, '#ddd', { top: false }), k.band(0, 0, 5, 3, 5, '#c0392b')), null],
+    seam: [(k) => k.seam(0, 0, 5, 4), null],
+    stack: [(k) => k.stack(0, 0, 5.8, 4.2, 100, { bands: 3, light: true }), null],
+    sphere: [(k) => k.sphere(0, 0, 8, 3), null],
+    hcyl_u: [(k) => k.hcyl('u', -6, 6, 0, 5, 2.8, '#6e5a4d'), [0, 0, 5]],
+    hcyl_v: [(k) => k.hcyl('v', -6, 6, 0, 5, 2.8, '#6e5a4d'), [0, 0, 5]],
+    pipe: [(k) => k.pipe([[0, 0, 2], [10, 0, 2], [10, 10, 7]], 1.2), null],
+    rack: [(k) => k.rack('u', -20, 20, 0, 7), null],
+    wire: [(k) => k.wire([0, 0, 8], [20, 10, 20], 2), null],
+    gallery: [(k) => k.gallery([0, 0, 3], [-12, 30, 33]), null],
+    conveyor: [(k) => k.conveyor(0, 0, 1.5, -20, 4, 6.5, 1.6), null],
+    heap: [(k) => k.heap(0, 0, 12, 9, '#a5653f'), null],
+    rails: [(k) => k.rails(-20, 20, 0), null],
+    logPile: [(k) => k.logPile(0, 24, 0, 10, 2), null],
+    mound: [(k) => (k.mound(0, 20, 0, 50, 8, '#2c2a27'), k.mound(40, 90, 0, 20, 8, '#2c2a27')), null],
   };
   for (const [name, [build, center]] of Object.entries(parts)) {
     const k = new Kit3D();
@@ -143,4 +164,60 @@ test('Stadthäuser 3D: alle Arten und Stufen, sparsam, gültig und im Iso-Umriss
       }
     }
   }
+});
+
+// ---------- Werke ----------
+
+const TALL_W = (kind, lv) => worksTall(kind, lv);
+
+test('Werke 3D: alle Arten und Stufen, sparsam, gültig und im Iso-Umriss wie das gemalte Werk', () => {
+  assert.deepEqual(WORKS_KINDS.slice().sort(), ['bm', 'fuel', 'kero', 'mun', 'power', 'steel']);
+  assert.equal(worksGeometry('uni', 1), null);
+  assert.ok(!hasWorks3d('uni'));
+  for (const kind of WORKS_KINDS) {
+    for (const lv of [1, 2, 3]) {
+      const name = `${kind}${lv}`;
+      assert.ok(hasWorks3d(kind), `${kind}: kein 3D-Werk`);
+      const g = worksGeometry(kind, lv);
+      check(name, g);
+      assert.equal(worksGeometry(kind, lv + 3 - 3), g, `${name}: nicht zwischengespeichert`);
+      assert.equal(worksKey(kind, lv), `${kind}|${lv}`);
+      const tris = g.getAttribute('position').count / 3;
+      assert.ok(tris <= 6000, `${name}: ${tris} Dreiecke`);
+      // Teamfarbe nur auf Flächen mit TEAM_WIN (aInfo.y = 97), sonst nichts: es gibt mindestens eine Fläche in Teamfarbe
+      const info = g.getAttribute('aInfo');
+      let team = 0;
+      for (let i = 0; i < info.count; i++) if (info.getY(i) === 97) team++;
+      assert.ok(team > 0, `${name}: keine Teamfarbe`);
+      // Iso-Projektion wie isokit.G (Maßstab 1, Drehung 0): x = (u − v)·K, y = (u + v)·K/2 − h
+      const pos = g.getAttribute('position');
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (let i = 0; i < pos.count; i++) {
+        const [u, w, h] = [pos.getX(i), pos.getY(i), pos.getZ(i)];
+        const x = (u - w) * ISO_K;
+        const y = (u + w) * ISO_K * 0.5 - h;
+        x0 = Math.min(x0, x);
+        x1 = Math.max(x1, x);
+        y0 = Math.min(y0, y);
+        y1 = Math.max(y1, y);
+      }
+      const tall = TALL_W(kind, lv);
+      const [r0, q0, r1, q1] = worksBox(kind, lv);
+      assert.deepEqual([r0, q0, r1, q1], [-84, -(tall + 2), 84, 47]);
+      assert.ok(x0 >= r0 - 1 && x1 <= r1 + 1 && y0 >= q0 - 1 && y1 <= q1 + 1, `${name}: Umriss ${[x0, y0, x1, y1].map((n) => n.toFixed(1))} außerhalb des gemalten Bilds`);
+      assert.ok(Math.abs(y0 + tall) <= 4, `${name}: höchster Punkt ${y0.toFixed(1)} statt ${-tall}`);
+      assert.ok(x1 - x0 >= 0.9 * (r1 - r0 - 4), `${name}: zu schmal (${(x1 - x0).toFixed(1)})`);
+    }
+  }
+});
+
+test('Gebäudefamilien: Stadthäuser und Werke teilen sich Town3D, Werke tönt die Instanz', () => {
+  assert.deepEqual(FAMILIES.map((f) => f.name), ['town', 'works']);
+  const [town, works] = FAMILIES;
+  assert.ok(town.has({ kind: 'town' }) && !town.has({ kind: 'power' }));
+  assert.ok(works.has({ kind: 'power' }) && !works.has({ kind: 'town' }) && !works.has({ kind: 'uni' }));
+  assert.ok(works.team && !town.team);
+  // eine Geometrie für alle Teams
+  assert.equal(works.geometry({ kind: 'steel', level: 2, color: '#c8423a' }), works.geometry({ kind: 'steel', level: 2, color: '#3a6fb3' }));
+  assert.equal(works.key({ kind: 'steel', level: 2, color: '#c8423a' }), works.key({ kind: 'steel', level: 2, color: '#3a6fb3' }));
 });

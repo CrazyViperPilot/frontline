@@ -1,0 +1,1 @@
+**Werke 3D** (Test, `?three=1`, Ansicht „3D“): Kraftwerk, BM-Werk, Munitionswerk, Raffinerie, Stahlwerk und Kerosin-Raffinerie stehen in allen drei Stufen als echte 3D-Modelle im Bild, auch von hinten, mit Teamfarbe, leuchtender Glut und Flammen, Schnee auf Dächern und Halden, und werfen echte Schatten; der Dampf der Kühltürme bleibt gemalt.

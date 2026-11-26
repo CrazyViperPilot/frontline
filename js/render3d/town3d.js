@@ -4,8 +4,9 @@
 // entfallen (Schattenkarte); Schnee legt der Shader auf Rasen und Dächer, Pflaster, Wege und Markierungen bleiben wie gemalt frei;
 // feine Linien werden schmale Leisten oder Stäbe. Gartenbäume sind Kugelbäume des Baukastens wie gemalt (Begründung in docs/plan-3d.md, „Stand“).
 // Örtliche Koordinaten wie townhouses.js: u = Welt-x, v = Welt-y ab der Zellmitte, h = Höhe.
-// Town3D zeigt die Häuser im Spiel: ein InstancedMesh je Variante (Art, Stufe, Farbvariante, Teamfarbe bei TEAM_SHOWN), also ein
-// Draw-Call je Variante im Bild, gleich wie viele Häuser sie zeigen (dazu einer je Variante in der Schattenkarte).
+// Town3D zeigt Gebäude im Spiel: eine Liste von Familien (FAMILIES: Stadthäuser 1 × 1 hier, Werke aus works3d.js), je Variante (Art,
+// Stufe, Farbvariante, Teamfarbe bei TEAM_SHOWN; bei Werken Art und Stufe, die Teamfarbe tönt die Instanz) ein InstancedMesh, also ein
+// Draw-Call je Variante im Bild, gleich wie viele Gebäude sie zeigen (dazu einer je Variante in der Schattenkarte).
 import * as THREE from '../vendor/three/three.module.min.js';
 import { Kit3D, makeKitMaterial, setKitFrame, NIGHT_MORE } from './kit3d.js';
 import { CAST } from './sun3d.js';
@@ -14,7 +15,8 @@ import {
   APRON, TEAM_SHOWN,
 } from '../render/townhouses.js';
 import { CAR_COLORS, HEDGE, LAWN, LAWN2, PATH, PAVE, PLAZA, ASPH, DECK, shade, tint, clampLv, k3, rnd } from '../render/isokit.js';
-import { mix } from '../render/color.js';
+import { mix, rgbOf } from '../render/color.js';
+import { hasWorks3d, worksGeometry, worksKey } from './works3d.js';
 
 // ---------- Gemeinsames ----------
 
@@ -780,19 +782,48 @@ export function townGeometry(ck, level, variant, color = '#888888') {
 const CAP0 = 16; // erste Größe eines Satzes (wächst bei Bedarf auf das Doppelte)
 
 /**
- * Stadthäuser im Spiel (Renderer3D, Durchlauf „Objekte“): je Variante ein InstancedMesh mit gemeinsamer Geometrie aus townGeometry
- * und einem Material (makeKitMaterial) für alle. Je Bild begin → add je Haus → end.
+ * Gebäudefamilien: name (für stats), has(b): gehört das Objekt (cityBuildings) dazu, key(b), geometry(b) (null: gemalt lassen),
+ * team: true = Teamfarbe je Instanz (instanceColor) statt je Geometrie. Neue Familie (Großbauten, Militär …): eine Zeile hier.
+ */
+export const FAMILIES = [
+  {
+    name: 'town',
+    has: (b) => b.kind === 'town',
+    key: (b) => townKey(b.ck, b.level, b.variant, b.color),
+    geometry: (b) => townGeometry(b.ck, b.level, b.variant, b.color),
+    team: false,
+  },
+  {
+    name: 'works',
+    has: (b) => hasWorks3d(b.kind),
+    key: (b) => worksKey(b.kind, b.level),
+    geometry: (b) => worksGeometry(b.kind, b.level),
+    team: true,
+  },
+];
+
+const teamRgb = new Map(); // Farbe (Text) → [r, g, b] in 0…1, ohne Farbumrechnung wie die Eckfarben
+const rgbOfTeam = (c) => {
+  let v = teamRgb.get(c);
+  if (!v) teamRgb.set(c, (v = rgbOf(c || '#888888').map((x) => x / 255)));
+  return v;
+};
+
+/**
+ * Gebäude im Spiel (Renderer3D, Durchlauf „Objekte“): je Variante ein InstancedMesh mit gemeinsamer Geometrie (townGeometry,
+ * worksGeometry) und einem Material (makeKitMaterial) für alle. Je Bild begin → add je Gebäude → end.
  */
 export class Town3D {
-  constructor() {
+  constructor(families = FAMILIES) {
+    this.families = families;
     this.material = makeKitMaterial();
     this.group = new THREE.Group();
     this.group.name = 'stadthaeuser';
-    this.sets = new Map(); // townKey → { mesh, n }
+    this.sets = new Map(); // Familie|Schlüssel → { mesh, n, cap, fam }
     this.count = 0;
   }
 
-  /** Bildanfang: Licht, Schnee, Nacht und Schattenstärke für alle Häuser (setKitFrame), Zähler leeren. */
+  /** Bildanfang: Licht, Schnee, Nacht und Schattenstärke für alle Gebäude (setKitFrame), Zähler leeren. */
   begin(frame) {
     setKitFrame(this.material, frame);
     for (const s of this.sets.values()) s.n = 0;
@@ -800,12 +831,16 @@ export class Town3D {
   }
 
   /** Satz einer Variante, beim ersten Gebrauch angelegt; ist er voll, wird er verdoppelt. */
-  setOf(key, geo, need) {
-    let s = this.sets.get(key);
+  setOf(id, fam, geo, need) {
+    let s = this.sets.get(id);
     if (s && need <= s.cap) return s;
     const cap = s ? s.cap * 2 : CAP0;
     const mesh = new THREE.InstancedMesh(geo, this.material, cap);
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    if (fam.team) {
+      mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
+      mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
+    }
     mesh.frustumCulled = false;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -814,24 +849,27 @@ export class Town3D {
     mesh.visible = false;
     if (s) {
       mesh.instanceMatrix.array.set(s.mesh.instanceMatrix.array.subarray(0, s.n * 16));
+      if (fam.team) mesh.instanceColor.array.set(s.mesh.instanceColor.array.subarray(0, s.n * 3));
       this.group.remove(s.mesh);
       s.mesh.dispose();
       s.mesh = mesh;
       s.cap = cap;
     } else {
-      s = { mesh, n: 0, cap };
-      this.sets.set(key, s);
+      s = { mesh, n: 0, cap, fam };
+      this.sets.set(id, s);
     }
     this.group.add(mesh);
     return s;
   }
 
-  /** Stadthaus b (cityBuildings, kind 'town') am Boden der Höhe h; false, wenn es kein 3D-Haus gibt (dann malt der Renderer). */
+  /** Gebäude b (cityBuildings) am Boden der Höhe h; false, wenn es kein 3D-Gebäude gibt (dann malt der Renderer). */
   add(b, h) {
-    const geo = townGeometry(b.ck, b.level, b.variant, b.color);
+    const fam = this.families.find((f) => f.has(b));
+    if (!fam) return false;
+    const geo = fam.geometry(b);
     if (!geo) return false;
-    const key = townKey(b.ck, b.level, b.variant, b.color);
-    const s = this.setOf(key, geo, (this.sets.get(key)?.n ?? 0) + 1);
+    const id = `${fam.name}|${fam.key(b)}`;
+    const s = this.setOf(id, fam, geo, (this.sets.get(id)?.n ?? 0) + 1);
     const m = s.mesh.instanceMatrix.array;
     const o = s.n * 16;
     m.fill(0, o, o + 16);
@@ -839,6 +877,7 @@ export class Town3D {
     m[o + 12] = b.x;
     m[o + 13] = b.y;
     m[o + 14] = h;
+    if (fam.team) s.mesh.instanceColor.array.set(rgbOfTeam(b.color), s.n * 3);
     s.n++;
     this.count++;
     return true;
@@ -854,14 +893,20 @@ export class Town3D {
       m.instanceMatrix.clearUpdateRanges();
       m.instanceMatrix.addUpdateRange(0, s.n * 16);
       m.instanceMatrix.needsUpdate = true;
+      if (m.instanceColor) {
+        m.instanceColor.clearUpdateRanges();
+        m.instanceColor.addUpdateRange(0, s.n * 3);
+        m.instanceColor.needsUpdate = true;
+      }
     }
   }
 
-  /** Häuser, sichtbare Varianten (= Draw-Calls ohne Schattenkarte) und Dreiecke im Bild. */
-  stats() {
-    const out = { houses: this.count, calls: 0, tris: 0 };
+  /** Gebäude, sichtbare Varianten (= Draw-Calls ohne Schattenkarte) und Dreiecke im Bild; name: nur eine Familie (Standard alle). */
+  stats(name) {
+    const out = { houses: 0, calls: 0, tris: 0 };
     for (const s of this.sets.values()) {
-      if (!s.n) continue;
+      if (!s.n || (name && s.fam.name !== name)) continue;
+      out.houses += s.n;
       out.calls++;
       out.tris += (s.mesh.geometry.getAttribute('position').count / 3) * s.n;
     }
@@ -869,7 +914,7 @@ export class Town3D {
   }
 
   dispose() {
-    for (const s of this.sets.values()) s.mesh.dispose(); // Geometrie gehört dem Zwischenspeicher (townGeometry)
+    for (const s of this.sets.values()) s.mesh.dispose(); // Geometrie gehört dem Zwischenspeicher (townGeometry, worksGeometry)
     this.material.dispose();
   }
 }

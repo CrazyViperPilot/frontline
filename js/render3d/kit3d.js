@@ -26,6 +26,7 @@ import { CAST } from './sun3d.js';
 export const KIT_MATS = ['plaster', 'brick', 'concrete', 'tile', 'metal', 'wood', 'gravel', 'paint'];
 const MAT_INDEX = new Map(KIT_MATS.map((m, i) => [m, i + 1]));
 const NO_WIN = 99; // aInfo.y für alles, was kein Fenster ist
+export const TEAM_WIN = 97; // aInfo.y für Flächen in Teamfarbe (Werke): der Shader nimmt die Farbe der Instanz (instanceColor)
 const WARM = '#f3d885'; // beleuchtetes Fenster (wie isokit.js)
 export const NIGHT_MORE = 2.5; // nachts brennt Licht in so viel mehr Fenstern (Faktor auf den Anteil)
 export const GLOW_NIGHT = 1.6; // Leuchtwert (aInfo.y) für Licht nur bei Nacht: Schaufenster, Laternen, Glaskanzeln
@@ -70,6 +71,7 @@ export class Kit3D {
     this.c = [];
     this.t = [];
     this.i = [];
+    this.team = false; // true: Teile in Teamfarbe (aInfo.y = TEAM_WIN), mit der Farbe der Instanz getönt
   }
 
   get tris() {
@@ -84,9 +86,14 @@ export class Kit3D {
     this.i.push(info[0], info[1], info[2]);
   }
 
-  /** aInfo einer Fläche aus den Optionen o (mat: Name oder null, win: Fensterwert, snow: false = nie Schnee, ground: Bodenfläche). */
+  /**
+   * aInfo einer Fläche aus den Optionen o (mat: Name oder null, win: Fensterwert, snow: false = nie Schnee, ground: Bodenfläche,
+   * bare: Bodenfläche ohne Schnee in voller Farbe wie die gemalten Werke, emit: leuchtet selbst, ohne Licht, Schnee und Schatten
+   * (Glut, Flammen)). Ist this.team gesetzt, trägt die Fläche die Teamfarbe der Instanz (Werke).
+   */
   info(o) {
-    return [o.mat ? MAT_INDEX.get(o.mat) ?? 0 : 0, o.win ?? NO_WIN, o.snow === false ? 0 : o.ground ? 2 : 1];
+    const z = o.emit ? 4 : o.bare ? 3 : o.snow === false ? 0 : o.ground ? 2 : 1;
+    return [o.mat ? MAT_INDEX.get(o.mat) ?? 0 : 0, o.win ?? (this.team ? TEAM_WIN : NO_WIN), z];
   }
 
   /**
@@ -129,7 +136,7 @@ export class Kit3D {
 
   /** Fläche am Boden (Rasen, Weg) auf Höhe h: ungeschattet in voller Farbe wie isokit.flat (nur Schatten und Schnee wirken). */
   flat(u0, u1, v0, v1, col, h = 0.05, o = {}) {
-    this.poly([[u0, v0, h], [u1, v0, h], [u1, v1, h], [u0, v1, h]], col, { mat: o.mat ?? flatMat(col), ground: true, ...o, n: [0, 0, 1] });
+    this.poly([[u0, v0, h], [u1, v0, h], [u1, v1, h], [u0, v1, h]], col, { ground: true, ...o, mat: o.mat !== undefined ? o.mat : flatMat(col), n: [0, 0, 1] });
   }
 
   /**
@@ -320,17 +327,20 @@ export class Kit3D {
       const p11 = [u + c1 * r1, v + s1 * r1, h1];
       const x0 = (k / n) * circ;
       const x1 = ((k + 1) / n) * circ;
-      // gegen den Uhrzeiger um die Außennormale: p00 → p10 → p11 (→ p01)
-      this.vert(p00, N0, C, [x0, -h0], info);
-      this.vert(p10, N1, C, [x1, -h0], info);
-      this.vert(p11, N1, C, [x1, -h1], info);
+      // gegen den Uhrzeiger um die Außennormale: p00 → p10 → p11 (→ p01); inside: Innenwand (Umlaufsinn und Normalen umgekehrt)
+      const [M0, M1] = o.inside ? [N0.map((x) => -x), N1.map((x) => -x)] : [N0, N1];
+      const q = o.inside ? [p00, p11, p10] : [p00, p10, p11];
+      const qn = [M0, M1, M1];
+      const qt = o.inside ? [[x0, -h0], [x1, -h1], [x1, -h0]] : [[x0, -h0], [x1, -h0], [x1, -h1]];
+      for (let j = 0; j < 3; j++) this.vert(q[j], qn[j], C, qt[j], info);
       if (r1 > 1e-6) {
-        this.vert(p00, N0, C, [x0, -h0], info);
-        this.vert(p11, N1, C, [x1, -h1], info);
-        this.vert(p01, N0, C, [x0, -h1], info);
+        const q2 = o.inside ? [p00, p01, p11] : [p00, p11, p01];
+        const qn2 = o.inside ? [M0, M0, M1] : [M0, M1, M0];
+        const qt2 = o.inside ? [[x0, -h0], [x0, -h1], [x1, -h1]] : [[x0, -h0], [x1, -h1], [x0, -h1]];
+        for (let j = 0; j < 3; j++) this.vert(q2[j], qn2[j], C, qt2[j], info);
       }
     }
-    if (o.top !== false && r1 > 1e-6) {
+    if (o.top !== false && !o.inside && r1 > 1e-6) {
       const pts = [];
       for (let k = 0; k < n; k++) {
         const [c, s] = ring(k);
@@ -552,7 +562,7 @@ export class Kit3D {
    * Tonnendach über [u0,u1]×[v0,v1], First entlang axis ('u' oder 'v'); Traufe auf h, Scheitel rh höher, Überstand 0,9 an den Seiten
    * und 0,6 an den Enden (wie isokit.vault), Giebel (Bogen in Wandfarbe) an beiden Enden.
    */
-  vault(axis, u0, u1, v0, v1, h, rh, roof, wall, n = 10) {
+  vault(axis, u0, u1, v0, v1, h, rh, roof, wall, n = 10, mat = roofMat(roof, 'metal')) {
     const alongU = axis === 'u';
     const [a0, a1, c0, c1] = alongU ? [u0, u1, v0, v1] : [v0, v1, u0, u1];
     const M = alongU ? (a, c, z) => [a, c, z] : (a, c, z) => [c, a, z];
@@ -560,7 +570,6 @@ export class Kit3D {
     const w = (c1 - c0) / 2;
     const ov = 0.9;
     const at = (ww, t) => [cm - ww * Math.cos(t), h + rh * Math.sin(t)];
-    const mat = roofMat(roof, 'metal');
     for (let k = 0; k < n; k++) {
       const ta = (k / n) * Math.PI;
       const tb = ((k + 1) / n) * Math.PI;
@@ -671,13 +680,15 @@ export class Kit3D {
   }
 
   /** Fahnenmast mit Fahne in Teamfarbe (wie isokit.flagpole: Fahne 8 lang nach Bild-rechts in Drehung 0, beidseitig). */
-  flagpole(u, v, h0, len, color) {
+  flagpole(u, v, h0, len, color, team = false) {
     const H = h0 + len;
     this.rod([u, v, h0], [u, v, H], 0.7, '#d9d6cc');
     const d = 8 * Math.SQRT1_2;
     const pts = [[u, v, H], [u + d, v - d, H - 1.2], [u + d, v - d, H - 5.6], [u, v, H - 5]];
+    this.team = team; // Fahne in Teamfarbe der Instanz (Werke)
     this.poly(pts, color, { mat: null, snow: false, n: [1, 1, 0] });
     this.poly(pts, color, { mat: null, snow: false, n: [-1, -1, 0] });
+    this.team = false;
   }
 
   /** Krankenwagen oder Lieferwagen (wie isokit.van): hoher Kasten, Band an beiden Seiten, Frontscheibe vorn (+u bzw. +v), Blaulicht. */
@@ -771,6 +782,188 @@ export class Kit3D {
     this.poly([p(a - nx, h - ny, 0.25), p(a + nx, h + ny, 0.25), p(a + ex + nx, h + ey + ny, 0.25), p(a + ex - nx, h + ey - ny, 0.25)], '#2b2b2b', { snow: false, n: FACE_N[face] });
   }
 
+  // ---------- Bauteile der Werke (Paket „Werke 3D“, Namen und Maße wie isokit.js bzw. works.js) ----------
+
+  /** Fläche in einer Wandebene mit beliebigem Umriss: Punkte [a, h] entlang der Wand (Ofentür mit Rundbogen), off vor der Wand. */
+  facePoly(face, plane, pts, col, off = 0, o = {}) {
+    const p = onFace(face, plane);
+    this.poly(pts.map(([a, h]) => p(a, h, off)), col, { mat: null, snow: false, ...o, n: FACE_N[face] });
+  }
+
+  /** Körper aus übereinander gesetzten Kegelstümpfen: Profil [[r, h], …] von unten nach oben (Kühlturm, Schüttkegel), glatt, ohne Deckel. */
+  lathe(u, v, prof, col, o = {}) {
+    for (let i = 0; i + 1 < prof.length; i++) this.frustum(u, v, prof[i][0], prof[i + 1][0], prof[i][1], prof[i + 1][1], col, { n: 16, ...o, top: false });
+  }
+
+  /** Farbring um einen Zylinder (wie isokit.band, rundum): r = Radius des Zylinders, gleiche Seitenzahl n wie er. */
+  band(u, v, r, h0, h1, col, n = 16) {
+    this.frustum(u, v, r + 0.06, r + 0.06, h0, h1, col, { n, top: false, mat: null, snow: false });
+  }
+
+  /** Naht um einen Zylinder (wie isokit.seam): dünner Ring auf Höhe h. */
+  seam(u, v, r, h, col = '#7c8288', n = 16) {
+    this.frustum(u, v, r + 0.05, r + 0.05, h - 0.18, h + 0.18, col, { n, top: false, mat: null, snow: false });
+  }
+
+  /**
+   * Runder Schornstein (wie works.stack): Kegelstumpf mit Nähten, roten Ringen (o.bands), dunkler Krone, Mündung und Flugwarnlicht (o.light).
+   * o.color (Standard #d6d2c9), o.n Seiten.
+   */
+  stack(u, v, r0, r1, H, o = {}) {
+    const col = o.color ?? '#d6d2c9';
+    const n = o.n ?? 14;
+    const rAt = (h) => r0 + ((r1 - r0) * h) / H;
+    this.frustum(u, v, r0, rAt(H - 1.4), 0, H - 1.4, col, { n, top: false });
+    const step = Math.max(9, H / 8);
+    for (let h = step; h < H - 6; h += step) this.seam(u, v, rAt(h), h, shade(col, 0.16), n);
+    for (let k = 0; k < (o.bands ?? 0); k++) {
+      const h1 = H - 2 - k * 10;
+      this.frustum(u, v, rAt(h1 - 5) + 0.06, rAt(h1) + 0.06, h1 - 5, h1, '#c0392b', { n, top: false, mat: null, snow: false });
+    }
+    this.cyl(u, v, r1 + 0.5, H - 1.4, H, shade(col, 0.22), { n, topCol: shade(col, 0.3) });
+    this.ring(u, v, r1 * 0.8, H + 0.06, '#262627', n, { mat: null, snow: false });
+    if (o.light) this.ball(u, v, H + 1.2, 0.9, '#ff4a3a', 0.9, 6, 3);
+  }
+
+  /** Kugeltank auf acht Stützen (wie works.sphere): Kugel r, Unterkante auf h0, Treppe zur Kuppe. */
+  sphere(u, v, r, h0, col = '#e4e7ea') {
+    for (let k = 0; k < 8; k++) {
+      const t = ((k + 0.5) / 8) * TAU;
+      const x = u + r * 0.82 * Math.cos(t);
+      const y = v + r * 0.82 * Math.sin(t);
+      this.rod([x, y, 0], [x, y, h0 + r * 0.45], 1.2, '#7d858c');
+    }
+    this.ball(u, v, h0 + r, r, col, r, 14, 7);
+    this.rod([u + r * 1.25, v + r * 0.5, 0], [u + r * 0.35, v + r * 0.25, h0 + 2 * r - 0.4], 0.8, '#464b55');
+  }
+
+  /** Liegender Zylinder entlang axis ('u' oder 'v') von a0 bis a1 bei c (quer), Achse auf Höhe h, Radius r, mit beiden Stirnseiten (wie works.hcyl). */
+  hcyl(axis, a0, a1, c, h, r, col, n = 14, o = {}) {
+    const P = axis === 'u' ? (a, cc, z) => [a, cc, z] : (a, cc, z) => [cc, a, z];
+    const ring = (a) => Array.from({ length: n }, (_, k) => P(a, c + r * Math.cos((k / n) * TAU), h + r * Math.sin((k / n) * TAU)));
+    const r0 = ring(a0);
+    const r1 = ring(a1);
+    for (let k = 0; k < n; k++) {
+      const tm = ((k + 0.5) / n) * TAU;
+      this.poly([r0[k], r0[(k + 1) % n], r1[(k + 1) % n], r1[k]], col, { mat: null, snow: false, ...o, n: P(0, Math.cos(tm), Math.sin(tm)) });
+    }
+    this.poly(r1, col, { mat: null, snow: false, ...o, n: P(1, 0, 0) });
+    this.poly(r0, col, { mat: null, snow: false, ...o, n: P(-1, 0, 0) });
+  }
+
+  /** Rohr als Linienzug durch Punkte [u, v, h], d = Durchmesser (wie works.pipe). */
+  pipe(pts, d, col = '#9aa1a8') {
+    for (let i = 0; i + 1 < pts.length; i++) this.tube(pts[i], pts[i + 1], d / 2, d / 2, col, 6);
+  }
+
+  /** Rohrbrücke entlang axis von a0 bis a1 bei c (quer), Höhe h: Stützen alle 9 mit Traverse, Rohre in den Farben cols (wie works.rack). */
+  rack(axis, a0, a1, c, h, cols = ['#a3aab0', '#c9a24a', '#8a6f5a']) {
+    const Q = axis === 'u' ? (a, cc, z) => [a, cc, z] : (a, cc, z) => [cc, a, z];
+    for (let a = a0; a <= a1 + 0.1; a += 9) {
+      this.rod(Q(a, c - 2.2, 0), Q(a, c - 2.2, h), 0.8, '#6b7177');
+      this.rod(Q(a, c + 2.2, 0), Q(a, c + 2.2, h), 0.8, '#6b7177');
+      this.rod(Q(a, c - 2.6, h), Q(a, c + 2.6, h), 0.8, '#6b7177');
+    }
+    cols.forEach((col, k) => {
+      const cc = c - 1.5 + (k * 3) / Math.max(1, cols.length - 1);
+      this.tube(Q(a0, cc, h + 0.7), Q(a1, cc, h + 0.7), 0.55, 0.55, col, 6);
+    });
+  }
+
+  /** Leitung zwischen zwei Punkten [u, v, h] mit Durchhang sag in der Mitte (wie works.wire), vier dünne Stäbe. */
+  wire(a, b, sag = 2.5) {
+    const at = (t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t - 4 * sag * t * (1 - t)];
+    for (let k = 0; k < 4; k++) this.rod(at(k / 4), at((k + 1) / 4), 0.3, '#2d2d30');
+  }
+
+  /** Überdachte Förderbrücke von a = [u, v, h] nach b, Breite w, Höhe hh: Wände mit Fensterband, Dach, Stirnseiten, Stützen (wie works.gallery). */
+  gallery(a, b, w = 3.2, hh = 3, col = '#b3b7ba') {
+    const [u0, v0, h0] = a;
+    const [u1, v1, h1] = b;
+    const L = Math.hypot(u1 - u0, v1 - v0);
+    const nu = -(v1 - v0) / L;
+    const nv = (u1 - u0) / L;
+    const pu = (nu * w) / 2;
+    const pv = (nv * w) / 2;
+    const P = (t, side, h) => [u0 + (u1 - u0) * t + pu * side, v0 + (v1 - v0) * t + pv * side, h0 + (h1 - h0) * t + h];
+    for (const s of [1, -1]) {
+      this.poly([P(0, s, 0), P(1, s, 0), P(1, s, hh), P(0, s, hh)], col, { mat: null, snow: false, n: [nu * s, nv * s, 0] });
+      this.poly([P(0, s, hh * 0.45), P(1, s, hh * 0.45), P(1, s, hh * 0.65), P(0, s, hh * 0.65)].map(([x, y, z]) => [x + nu * s * 0.06, y + nv * s * 0.06, z]), '#32404d', { mat: null, snow: false, n: [nu * s, nv * s, 0] });
+    }
+    this.poly([P(0, -1, hh), P(1, -1, hh), P(1, 1, hh), P(0, 1, hh)], tint(col, 0.06), { mat: null, n: [0, 0, 1] });
+    for (const [t, s] of [[0, -1], [1, 1]]) this.poly([P(t, -1, 0), P(t, 1, 0), P(t, 1, hh), P(t, -1, hh)], shade(col, 0.2), { mat: null, snow: false, n: [(u1 - u0) * s, (v1 - v0) * s, 0] });
+    const n = Math.max(1, Math.round(L / 12));
+    for (let k = 0; k <= n; k++) {
+      const t = k / n;
+      const h = h0 + (h1 - h0) * t;
+      if (h < 2) continue;
+      for (const s of [1, -1]) this.rod([P(t, s, 0)[0], P(t, s, 0)[1], 0], [P(t, s, 0)[0], P(t, s, 0)[1], h], 0.8, '#6b7075');
+    }
+  }
+
+  /** Förderband von (u0, v0, h0) nach (u1, v1, h1) auf Stützen (wie isokit.conveyor): dunkles Band, helle Randschiene, Stützen alle 7. */
+  conveyor(u0, v0, h0, u1, v1, h1, w = 1.3) {
+    const L = Math.hypot(u1 - u0, v1 - v0);
+    const n = Math.max(1, Math.round(L / 7));
+    for (let k = 1; k <= n; k++) {
+      const t = k / (n + 1);
+      const h = h0 + (h1 - h0) * t;
+      if (h > 0.5) this.rod([u0 + (u1 - u0) * t, v0 + (v1 - v0) * t, 0], [u0 + (u1 - u0) * t, v0 + (v1 - v0) * t, h], 0.7, '#5d6266');
+    }
+    const pu = (-(v1 - v0) / L) * (w / 2);
+    const pv = ((u1 - u0) / L) * (w / 2);
+    this.poly([[u0 + pu, v0 + pv, h0], [u1 + pu, v1 + pv, h1], [u1 - pu, v1 - pv, h1], [u0 - pu, v0 - pv, h0]], '#3b3e41', { mat: null, n: [0, 0, 1] });
+    for (const s of [1, -1]) this.rod([u0 + pu * s, v0 + pv * s, h0 + 0.35], [u1 + pu * s, v1 + pv * s, h1 + 0.35], 0.5, '#9aa0a5');
+  }
+
+  /** Schüttkegel (Erz, Lehm, Kohle; wie isokit.heap): gewölbtes Profil, r am Fuß, h hoch; ohne Schnee wie gemalt. */
+  heap(u, v, r, h, col, n = 12) {
+    const prof = [[1, 0], [0.69, 0.4], [0.425, 0.7], [0.19, 0.9], [0, 1]];
+    this.lathe(u, v, prof.map(([a, b]) => [a * r, b * h]), col, { n, snow: false });
+  }
+
+  /** Schienen entlang u bei v mit Schwellen alle 1,6 und zwei Schienenköpfen (wie isokit.rails). */
+  rails(u0, u1, v, h = 0.14) {
+    const g = { bare: true, mat: null };
+    for (let a = u0; a <= u1; a += 1.6) this.flat(a - 0.4, a + 0.4, v - 1.5, v + 1.5, '#6b5a48', h, g);
+    for (const d of [-0.95, 0.95]) this.box(u0, u1, v + d - 0.3, v + d + 0.3, h, h + 0.55, '#45484b', '#45484b', { mat: null, snow: false });
+  }
+
+  /** Holzstapel (Stämme entlang u, Prisma mit zwei Hangflächen, Stirnscheiben an beiden Enden; wie isokit.logPile). */
+  logPile(u0, u1, v0, v1, rows) {
+    const r = (v1 - v0) / (2 * rows);
+    const H = r * (2 + 1.7 * (rows - 1));
+    const vm = (v0 + v1) / 2;
+    this.poly([[u0, v0, 0], [u1, v0, 0], [u1, vm, H], [u0, vm, H]], '#6e4c2e', { mat: null, snow: false, n: [0, -H, r * rows] });
+    this.poly([[u0, vm, H], [u1, vm, H], [u1, v1, 0], [u0, v1, 0]], '#7d5734', { mat: null, snow: false, n: [0, H, r * rows] });
+    this.poly([[u1, v0, 0], [u1, v1, 0], [u1, vm, H]], '#5d4027', { mat: null, snow: false, n: [1, 0, 0] });
+    this.poly([[u0, v0, 0], [u0, v1, 0], [u0, vm, H]], '#5d4027', { mat: null, snow: false, n: [-1, 0, 0] });
+    for (let row = 0; row < rows; row++) {
+      for (let k = 0; k < rows - row; k++) {
+        const vv = v0 + r * (1 + row) + k * 2 * r;
+        const hh = r + row * r * 1.7;
+        this.disc('e', u1, vv, hh, r * 0.92, '#dcb47e', 0.1, 10);
+        this.disc('w', u0, vv, hh, r * 0.92, '#dcb47e', 0.1, 10);
+      }
+    }
+  }
+
+  /** Schuttkegel mit Grat (Kohlemiete, wie works.pile): Walmform ohne Dachfoto, Grat entlang der langen Seite. */
+  mound(u0, u1, v0, v1, h, col) {
+    const along = u1 - u0 >= v1 - v0;
+    const P = along ? (a, b, z) => [a, b, z] : (a, b, z) => [b, a, z];
+    const [A0, A1, B0, B1] = along ? [u0, u1, v0, v1] : [v0, v1, u0, u1];
+    const w = (B1 - B0) / 2;
+    const bm = (B0 + B1) / 2;
+    const top = h + 0.7;
+    const r1 = P(A0 + w, bm, top);
+    const r2 = P(A1 - w, bm, top);
+    this.poly([P(A0, B0, 0), P(A1, B0, 0), r2, r1], col, { mat: null, n: P(0, -top, w) });
+    this.poly([P(A0, B1, 0), P(A1, B1, 0), r2, r1], col, { mat: null, n: P(0, top, w) });
+    this.poly([P(A0, B0, 0), r1, P(A0, B1, 0)], col, { mat: null, n: P(-top, 0, w) });
+    this.poly([P(A1, B0, 0), r2, P(A1, B1, 0)], col, { mat: null, n: P(top, 0, w) });
+  }
+
   /** Alle Teile als eine BufferGeometry (Spielachsen, örtlich); boundingBox gesetzt. */
   geometry() {
     const g = new THREE.BufferGeometry();
@@ -797,6 +990,7 @@ varying vec3 vN;
 varying vec3 vCol;
 varying vec2 vUv;
 varying vec3 vInfo;
+varying vec3 vTeam;
 void main() {
   #include <beginnormal_vertex>
   #include <defaultnormal_vertex>
@@ -809,6 +1003,11 @@ void main() {
   vCol = color;
   vUv = aUv;
   vInfo = aInfo;
+  #ifdef USE_INSTANCING_COLOR
+  vTeam = instanceColor; // Teamfarbe der Instanz (Werke)
+  #else
+  vTeam = color;
+  #endif
 }`;
 
 const FS = `
@@ -834,11 +1033,12 @@ varying vec3 vN;
 varying vec3 vCol;
 varying vec2 vUv;
 varying vec3 vInfo;
+varying vec3 vTeam;
 void main() {
   vec3 n = normalize(vN);
-  vec3 c = vCol;
-  // Schnee auf allem, was nach oben zeigt (Dächer, Rasen), gemischt wie season.js snowy
-  c = mix(c, uSnowCol, uSnow * min(vInfo.z, 1.0) * smoothstep(0.2, 0.45, n.z) * ${SNOW_MIX.toFixed(2)});
+  vec3 c = abs(vInfo.y - ${TEAM_WIN.toFixed(1)}) < 0.5 ? vTeam : vCol;
+  // Schnee auf allem, was nach oben zeigt (Dächer, Rasen), gemischt wie season.js snowy (info.z: 0 nie, 1 Dach, 2 Boden, 3 Boden ohne Schnee, 4 Glut)
+  c = mix(c, uSnowCol, uSnow * (vInfo.z > 2.5 ? 0.0 : min(vInfo.z, 1.0)) * smoothstep(0.2, 0.45, n.z) * ${SNOW_MIX.toFixed(2)});
   int m = int(vInfo.x + 0.5) - 1;
   if (m >= 0 && uTexOn > 0.5) {
     float t = texture(uTex, vec3(vUv / uTile[m], float(m))).r;
@@ -848,7 +1048,7 @@ void main() {
   float d = max(0.0, dot(n, uLight));
   float k = vInfo.z > 1.5 ? 1.0 : 0.56 + 0.44 * d; // Bodenflächen ungeschattet wie gemalt
   #ifdef USE_SHADOWMAP
-  k *= 1.0 - uShade * (1.0 - getShadowMask()) * smoothstep(0.0, 0.2, d); // wie der Schattenfänger // nur der Sonne zugewandte Flächen
+  if (vInfo.z < 3.5) k *= 1.0 - uShade * (1.0 - getShadowMask()) * smoothstep(0.0, 0.2, d); // wie der Schattenfänger // nur der Sonne zugewandte Flächen
   #endif
   c *= k;
   // beleuchtete Fenster: am Tag warm wie gemalt, nachts heller und mehr davon (Wert ≤ 1 + (NIGHT_MORE − 1) · uNight)
@@ -960,6 +1160,18 @@ export function setKitFrame(mat, { light, snow = 0, night = 0, shade = 0.4 }) {
 /** Mesh eines Gebäudes: wirft und empfängt Schatten (Ebene CAST für die Schattenkarte). */
 export function kitMesh(geometry, material) {
   const m = new THREE.Mesh(geometry, material);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  m.layers.enable(CAST);
+  return m;
+}
+
+/** Mesh eines Werks mit Teamfarbe (Prüfteil, Fotos): InstancedMesh mit einer Instanz; die Teile mit TEAM_WIN nehmen die Farbe color. */
+export function kitTeamMesh(geometry, material, color) {
+  const m = new THREE.InstancedMesh(geometry, material, 1);
+  m.setMatrixAt(0, new THREE.Matrix4());
+  m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(colOf(color)), 3);
+  m.frustumCulled = false;
   m.castShadow = true;
   m.receiveShadow = true;
   m.layers.enable(CAST);

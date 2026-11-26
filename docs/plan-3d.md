@@ -127,6 +127,43 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   Draw-Call, `Trees3D` bräuchte je Haus 1 bis 3 Instanzen samt Satzpflege und machte die Bäume im Winter kahl (Bruch zum gemalten Bild).
   Offen: Fenster nachts noch unter `drawMood` („Tag und Nacht 3D“); Dreiecke sparen, falls echte Geräte es brauchen (fern: grobe
   Varianten ohne Fensterkreuze und Balkone, analog Bäume); Ruinen und Baustellen der Stadt bleiben Billboards („Baustellen und Ruinen 3D“).
+- Werke 3D: gebaut (`js/render3d/works3d.js`, alle 6 Anlagen × 3 Stufen aus `render/works.js`; Test `test/kit3d.test.js`; Prüfteile
+  `smoke-3d.mjs --only baukasten --what werke` (Bogen je Art und Stimmung mit gemalt + 4 Drehungen, `werk-<art>-teams` mit allen vier
+  Teamfarben, Fotos `.smoke/3d/baukasten/werk-*.png`) und `--only stadt` (Ausschnitt mit den meisten Werken)). Neue Bauteile in
+  `kit3d.js` (Namen wie `isokit.js`/`works.js`): `facePoly`, `lathe`, `band`, `seam`, `stack`, `sphere`, `hcyl`, `pipe`, `rack`, `wire`,
+  `gallery`, `conveyor`, `heap`, `rails`, `logPile`, `mound`; `frustum` mit `inside` (Innenwand von Kühlturm und Schwimmdachtank,
+  sonst sähe man durch die Rückwand), `vault` mit Fotowahl, `flagpole` mit Teamfarbe. **Gemessen vor dem Plan** (Seed 3 und 7, KI gegen
+  KI, beide Teams zusammen, jedes Werk einmal): nach 10 Spielminuten 35 bis 36 Werke (Stufe 3 gut 2/3), nach 20 min 93 (Seed 3:
+  Kraftwerk 3 × 18, Munition 3 × 21, BM 3 × 14, Raffinerie 3 × 13, Kerosin 3 × 10, Stahl 3 × 9; 91 % Stufe 3) bzw. 135 (Seed 7; 82 %
+  Stufe 3). Die teuren Stufen sind also die häufigen. Dreiecke je Variante (Stufe 1/2/3): Kraftwerk 2 986/3 442/4 228, BM 1 552/2 080/
+  2 648, Munition 2 678/3 118/3 526, Raffinerie 2 030/3 188/4 228, Stahl 2 358/2 970/3 656, Kerosin 2 060/3 258/4 298 (Testgrenze 6 000).
+  Umriss wie gemalt: Drehung 0 höchster Punkt 0,1 px über bis 1,6 px unter `TALL`, Bildbereich im Prüfteil ±1 bis ±3 px.
+  Im Spiel: `Town3D` ist jetzt eine Liste von Gebäudefamilien (`FAMILIES` in `town3d.js`: Stadthäuser, Werke; neue Familie = eine Zeile mit
+  `has`, `key`, `geometry`, `team`), `renderer.works3dOn` schaltet die Werke auf gemalt. Draw-Call je Art und Stufe, gleich wie viele
+  Werke und welche Teams: **eine Geometrie je Art und Stufe für alle Teams**, die Teile in Teamfarbe (Bänder, Fahnen, Tankringe,
+  Vordächer, Wasserturmband) tragen `aInfo.y = 97`, der Shader nimmt dort `instanceColor` der Instanz. Grund: Teamfarbe in der Geometrie
+  hätte je Team einen eigenen Satz gebraucht (bei vier Teams der Eroberung 72 statt 18 Geometrien, je 0,5 bis 0,7 MB, und 4-mal so
+  viele Draw-Calls). Boden der Anlage (Beton, Straßen, Gleisbett, Lager): Flächen mit `bare` (neu: ohne Schnee, volle Farbe, nur
+  Schatten wirken) und je Fläche 0,012 höher, damit spätere Flächen früheren vorgehen; Rasen mit Schnee wie gemalt.
+  **Entscheidungen:** (1) *Rauch und Dampf bleiben Effekt, gemalt:* der Dampf der Kühltürme ist ein Wolkenbild in Bildkoordinaten, das
+  sich nicht mit der Kamera dreht; es wird wie bisher als Bild (`drawWorksSteam`, Sprite-Cache, gleiches Bild für alle Drehungen) am
+  Ort des Turms über das Mesh gelegt (Billboard mit der Tiefe der Werksmitte). Als Volumen wäre es teuer und sähe schlechter aus.
+  Rauch bei Schaden (`damage`) bleibt wie bei den Häusern gemalt. (2) *Glut und Flammen leuchten selbst:* Flächen mit `emit` (aInfo.z = 4)
+  ignorieren Licht, Schnee und Schatten (Glut am Stichloch des Hochofens, Schlackenplätze, heiße Ofentüren des Ringofens, Torpedowagen,
+  Gießhallenband, Fackeln); sie flackern nicht (gemalt auch nicht). Echtes Leuchten in die Umgebung, Flackern und Bloom gehören zu
+  „Tag und Nacht 3D“. (3) *Förderbänder stehen still wie gemalt* (kein Lauf der Bänder, keine Beladung): reines Mesh ohne Bewegung hält
+  den Draw-Call je Variante bei 1; ein laufendes Band bräuchte ein Textur-Offset je Instanz oder einen eigenen Satz. (4) *Instancing:*
+  ein `InstancedMesh` je Art und Stufe (wie die Häuser), keine Verschmelzung ganzer Anlagen und keine gröbere Form für fern (offen,
+  siehe unten). Beim ersten Gebrauch einer Variante entsteht die Geometrie (5 bis 28 ms), danach nur noch Instanzen.
+  Messung (Seed 3, 10 Spielminuten, Ausschnitt mit den meisten Werken, 1 280 × 800, Zoom 1, 38 Werke in 11 Varianten und 62 Stadthäuser in
+  15 Varianten im Bild, „Objekte“ samt Schattenkarte, Software-WebGL): Schatten Aus gemalt 14 Draw-Calls, 9 272 Dreiecke, 45/40/36 ms → nur
+  Häuser 3D (Stand vor „Werke 3D“) 29, 98 302, 64/62/63 ms → mit Werken 40 Draw-Calls, 228 078 Dreiecke (Werke 129 828), 94/103 ms; Schatten Hoch
+  gemalt 24, 252 832, 128/109/112 ms → nur Häuser 3D 54, 431 016, 194/190/194 ms → mit Werken 76 Draw-Calls, 690 620 Dreiecke, 293/299 ms. Mehrere
+  Zeiten je Zeile sind mehrere Läufe (die erste vor den Änderungen, Rauschen etwa 10 %). Software-WebGL rechnet Dreiecke auf der CPU; die +11 (Aus) bzw. +22 (Hoch)
+  Draw-Calls sind auf echter GPU die Größe, die zählt.
+  Offen: Dreiecke sparen, falls echte Geräte es brauchen (Bäume der Werke je 204 Dreiecke, Zäune der Munitionsfabrik 1 100, Kugeln und
+  Nähte; fern: grobe Varianten ohne Zäune, Bäume und Nähte); Werke bei Schaden dunkler wie in 2D (`damage`, gemalt nur in 2D);
+  Förderbänder und Fackeln animieren und nachts leuchtende Anlagen („Tag und Nacht 3D“); Ruinen und Baustellen der Werke bleiben Billboards.
 - **Licht (offener Punkt 5 des MVP-Berichts), entschieden:** eine Sonne für die ganze 3D-Szene, `lightVec` (rechts oben im Bild, dreht
   mit der Kamera). 3D-Gebäude sind damit rechts hell wie Einheiten, Bäume und Geländerelief, ihre Schatten fallen nach links unten wie
   die gemalten Gebäudeschatten. Gemalte Billboards (Wand links hell) bleiben bis zur Umstellung ihrer Familie so; der Bruch verschwindet

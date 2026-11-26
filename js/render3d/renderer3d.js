@@ -15,13 +15,14 @@ import { Ground3D } from './ground3d.js';
 import { Billboards } from './billboards.js';
 import { Units3D } from './units3d.js';
 import { Fog3D } from './fog3d.js';
+import { Sun3D, CATCH } from './sun3d.js';
 import { probePoints, buildTestCubes } from './testscene.js';
 
 const BG = 0x0d110d; // Hintergrund wie der Iso-Boden außerhalb der Karte (layers/isoview.js BG_RGB)
 
 export class Renderer3D extends Renderer {
   /**
-   * gl: fertiger THREE.WebGLRenderer (make3D). opts.cubes: Prüfszene, nur Gelände und Würfel (Boden-, Schatten-, Objekt- und
+   * gl: fertiger THREE.WebGLRenderer (make3D). opts.shadows: Schattenstufe ('off' | 'mid' | 'high', main.js aus prefs.js). opts.cubes: Prüfszene, nur Gelände und Würfel (Boden-, Schatten-, Objekt- und
    * Wetterdurchlauf fallen weg), dazu Kreuze an camera.worldToScreen.
    */
   constructor(canvas, game, camera, team, gl, opts = {}) {
@@ -36,14 +37,14 @@ export class Renderer3D extends Renderer {
     this.groundScene.add(this.groundRoot);
     this.ground3d = new Ground3D(gl);
     this.groundRoot.add(this.ground3d.group);
-    // Objekte: 3D-Körper unter objRoot (Licht vorläufig fest), Billboards in Clip-Koordinaten; Bild durchsichtig
+    // Objekte: 3D-Körper unter objRoot, Billboards in Clip-Koordinaten; Bild durchsichtig
     this.objScene = new THREE.Scene();
     this.objRoot = makeWorldRoot();
     this.objScene.add(this.objRoot);
-    this.objScene.add(new THREE.HemisphereLight(0xfff4e0, 0x404830, 1.6));
-    const sun = new THREE.DirectionalLight(0xffffff, 1.8);
-    sun.position.set(-1, 2, -0.5); // three-Raum: von oben links (vorläufig, später aus mood.js)
-    this.objScene.add(sun);
+    // Sonne mit Schattenkarte und Schattenfänger auf dem Höhennetz des Bodens (sun3d.js); Stufe setzt main.js (setShadows)
+    this.sun = new Sun3D(gl, this.objScene, this.objRoot, this.ground3d.mesh.geometry);
+    this.shadow3d = false; // drawUnitIsoAt: gemalte Einheitenschatten weglassen (nur während „Objekte“ mit Schattenkarte)
+    this.setShadows(opts.shadows ?? 'off');
     this.billboards = new Billboards(gl);
     this.objScene.add(this.billboards.mesh);
     this.units3d = new Units3D(); // Einheiten als Meshes (units3d.js), gezeigt über unit3d aus drawUnitIsoAt
@@ -67,6 +68,16 @@ export class Renderer3D extends Renderer {
     if (this.cubes) for (const n of ['Boden', 'Schatten', 'Objekte', 'Wetter']) sw.push([n, null]);
     this.swaps = new Map(sw); // Iso-Durchlauf → Ersatz (null = auslassen)
     this.resize();
+  }
+
+  /** Schattenstufe 'off' | 'mid' | 'high' (BALANCE.shadows3d), sofort wirksam; Aus: gemalte Schatten wie in Iso. */
+  setShadows(level) {
+    this.sun.setLevel(level);
+  }
+
+  /** Aktuelle Schattenstufe. */
+  get shadows() {
+    return this.sun.level;
   }
 
   /** Wie Renderer.resize, dazu die three-Leinwand (gleiche CSS-Größe und Pixeldichte wie die 2D-Leinwand). */
@@ -138,7 +149,10 @@ export class Renderer3D extends Renderer {
     const one = [null];
     const cam = this.camera;
     const relief = f.relief;
-    this.units3d.begin(cam.rot);
+    const light = this.lightVec();
+    this.units3d.begin(light);
+    const sun = this.sun.on && !this.cubes;
+    this.shadow3d = sun;
     this.unit3d = (f, u, aim, lift) => this.units3d.show(u, cam.pinned ?? (relief ? relief.displayAt(u.x, u.y) : 0), lift, aim, f.now);
     try {
       for (const it of f.items) {
@@ -156,12 +170,29 @@ export class Renderer3D extends Renderer {
     } finally {
       setBlitSink(null);
       this.unit3d = null;
+      this.shadow3d = false;
       f.ctx = ctx;
     }
     this.units3d.end();
     bb.end();
-    this.gl.setClearColor(0x000000, 0);
-    this.gl.render(this.objScene, this.cam3);
+    const gl = this.gl;
+    gl.setClearColor(0x000000, 0);
+    if (sun) {
+      // 1. Schattenkarte und Schattenfänger (Ebene CATCH), 2. Tiefe löschen, 3. Objekte (Ebene 0) wie ohne Schatten
+      this.sun.setMood(this.mood);
+      this.sun.update(this.cam3, light, relief);
+      gl.shadowMap.needsUpdate = true;
+      this.cam3.layers.set(CATCH);
+      gl.render(this.objScene, this.cam3);
+      this.cam3.layers.set(0);
+      gl.autoClear = false;
+      gl.clearDepth();
+      try {
+        gl.render(this.objScene, this.cam3);
+      } finally {
+        gl.autoClear = true;
+      }
+    } else gl.render(this.objScene, this.cam3);
     this.copy3d(ctx);
     ctx.drawImage(sc, 0, 0);
   }
@@ -209,6 +240,7 @@ export class Renderer3D extends Renderer {
     this.billboards.dispose();
     this.units3d.dispose();
     this.fog3d.dispose();
+    this.sun.dispose();
     this.gl.dispose();
     this.gl.forceContextLoss();
   }

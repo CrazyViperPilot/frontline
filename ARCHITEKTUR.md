@@ -272,4 +272,4 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Kasse am Konto | `konto` | `api/auth.php` | UI `ui/menu/start-saves.js` | `kasse` |
 | Signierter Match-Start, Spielstatistik | `konto` | `api/match.php` | `api/lib/match.php`; UI `ui/match.js`, `ui/stats.js` | `match`, `spielstatistik` |
 | Admin-Panel | `konto` | `api/admin.php` | `admin/` | – |
-| 3D (`?three=1`) | – | `render3d/renderer3d.js` | `plan-3d.md` | – |
+| 3D, Schatten | – | `render3d/renderer3d.js` | `sun3d.js` | – |

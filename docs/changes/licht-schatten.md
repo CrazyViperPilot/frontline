@@ -1,0 +1,1 @@
+**Licht und Schatten** (Test, Ansicht „3D“): Die Sonne wirft echte Schatten: Fahrzeuge und Luftfahrzeuge werfen sie aufs Gelände, auch am Hang, und das Licht auf den Einheiten kommt aus derselben Richtung wie auf dem Boden. Neuer Schalter im Pausenmenü „Schatten (3D)“: Aus, Mittel (Standard auf Handys), Hoch; wirkt sofort und wird gemerkt.

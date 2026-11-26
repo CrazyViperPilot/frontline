@@ -59,6 +59,7 @@ Darunter listet ein Inhaltsverzeichnis alle weiteren Abschnitte.
 | Einfuhr: Baukosten Gleis und Güterbahnhof | js/data/citykinds.js | Baukosten Gleis und Güterbahnhof in `js/data/citykinds.js` (`rail`, `station`) |
 | Wetter, Häuserkampf, Kisten, Kommandeur, Formationen, Fluss, Tiere, Wracks, Tarnung, Flugabwehr | js/data/balance.js | `weather`, `garrison`, `crates`, `commander`, `formation`, `river`, `animals`, `scars`, `stealth`, `airFire` |
 | Bewegung, Wegsuche, Sicht, Effektdauern, Meldedauern, Startplätze | js/data/balance.js | `BALANCE.move`, `path`, `fog`, `effects`, `notify`, `startLayout` |
+| Schatten der Ansicht 3D (Stufen, Kartengröße, Deckkraft je Lichtstimmung) | js/data/balance.js | `BALANCE.shadows3d` |
 | Hinweise und Messfenster der Ressourcenanzeige (Stadt) | js/data/city.js | `CITY.flow` |
 | Kartengröße | js/data/balance.js | `BALANCE.map` (Vorsicht: ändert alle Karten und Tests) |
 | Aufbau der Zufallskarte (Hügel, Seen, Fluss, Stadt, Häuser, Felder, Kisten-Abstände) | js/data/mapgen.js | `MAPGEN.<abschnitt>` (ändert alle Zufallskarten) |

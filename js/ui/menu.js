@@ -15,7 +15,7 @@
 //   Gemerkte Einstellungen (readFlag, readLowRes …)    prefs.js
 //   Gemeinsames (show/hideOverlay, esc, Vollbild …)    common.js
 export { hideOverlay } from './menu/common.js';
-export { readLowRes } from './menu/prefs.js';
+export { readLowRes, readShadows } from './menu/prefs.js';
 export { takeAccountLink, wireAccount } from './menu/account.js';
 export { showStartMenu } from './menu/start.js';
 export { showPause } from './menu/pause.js';

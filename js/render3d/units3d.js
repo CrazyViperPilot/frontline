@@ -3,15 +3,16 @@
 // Raketen, Fahrwerk, Tarnung) eine Geometrie, je Einheit ein Mesh aus einem Vorrat; Wanne und Turm getrennt (der Turm folgt dem Ziel),
 // Drehung stufenlos (u.angle statt 16 Richtungen). Rotoren und Nachbrenner malt weiter unitpaint.js (drawUnitIso mit body = false).
 // Licht wie der Maler (units/painter.js): Helligkeit 0,56 + 0,44 · max(0, n · L), am Boden etwas dunkler, Farben in sRGB ohne
-// Umrechnung, Lichtrichtung fest zur Kamera (dreht mit ROT). Größe wie in Iso (ISO_SCALE 1,35).
+// Umrechnung. Lichtrichtung seit „Licht und Schatten“ die Sonne (Renderer.lightVec, wie Boden und Schattenkarte, sun3d.js), damit
+// helle Seite und Schatten zusammenpassen. Fahrzeuge und Luftfahrzeuge werfen Schatten (Ebene CAST); Soldaten nicht: in der
+// Schattenkarte (1 bis 3 Welt-px je Texel) sind sie zu dünn, sie behalten den gemalten Fußschatten (show liefert dann 'painted'). Größe wie in Iso (ISO_SCALE 1,35).
 import * as THREE from '../vendor/three/three.module.min.js';
 import { unitModel, unitLook } from '../render/unitpaint.js';
-import { ROT } from '../render/camera.js';
 import { modelGeometry } from './solids3d.js';
 import { HEIGHT_SCALE } from './camera3d.js';
+import { CAST } from './sun3d.js';
 
 const ISO_SCALE = 1.35; // wie unitpaint.js: Modelle in Iso etwas größer als ihre Grundfläche
-const LIGHT_VIEW = [-0.35, 0.45, 0.82]; // wie painter.js LIGHT, in Bildachsen (u, v, oben) der Iso-Ansicht
 const KEEP_FRAMES = 120; // so viele Bilder ungenutzt: Mesh fällt aus dem Vorrat
 
 const VS = `
@@ -55,6 +56,7 @@ export class Units3D {
       fragmentShader: FS,
       vertexColors: true,
     });
+    this.material.shadowSide = THREE.DoubleSide; // auch dünne, einseitige Teile (Bleche, Rotorblätter) werfen Schatten
     this.group = new THREE.Group();
     this.group.name = 'einheiten';
     this.pool = new Map(); // Einheit-id → { hull, turret, key, seen }
@@ -62,18 +64,16 @@ export class Units3D {
     this.count = 0; // Einheiten in 3D in diesem Bild
   }
 
-  /** Bildanfang: Lichtrichtung aus der Kameradrehung (Bildachsen → Welt, transponierte ROT). */
-  begin(rot) {
-    const [ra, rb, rc, rd] = ROT[rot | 0];
-    const [lu, lv, lz] = LIGHT_VIEW;
-    this.uLight.value.set(ra * lu + rc * lv, rb * lu + rd * lv, lz).normalize();
+  /** Bildanfang: Lichtrichtung (Welt, z oben, zur Sonne: Renderer.lightVec). */
+  begin(light) {
+    this.uLight.value.set(light[0], light[1], light[2]).normalize();
     this.frame++;
     this.count = 0;
   }
 
   /**
    * Einheit u in die Szene: Bodenhöhe h (Welt-px), lift über dem Boden, aim = Weltwinkel zum Ziel oder null, now (ms) für die Haltung.
-   * false = kein Modell (dann malt der Renderer wie bisher).
+   * false = kein Modell (dann malt der Renderer wie bisher), 'painted' = Mesh ohne eigenen Schatten (Soldaten), sonst true.
    */
   show(u, h, lift, aim, now) {
     const look = unitLook(u, now);
@@ -102,6 +102,12 @@ export class Units3D {
         e.turret.visible = true;
       } else if (e.turret) e.turret.visible = false;
       e.key = key;
+      for (const o of [e.hull, e.turret]) {
+        if (!o) continue;
+        o.castShadow = !m.inf;
+        if (m.inf) o.layers.disable(CAST);
+        else o.layers.enable(CAST);
+      }
     }
     // Soldaten blicken zum Ziel, Fahrzeuge in Fahrtrichtung (wie drawUnitIso)
     const face = m.inf && aim !== null && aim !== undefined ? aim : u.angle ?? 0;
@@ -112,7 +118,7 @@ export class Units3D {
     e.hull.visible = true;
     e.seen = this.frame;
     this.count++;
-    return true;
+    return m.inf ? 'painted' : true;
   }
 
   /** Bildende: nicht gezeigte Einheiten verstecken, lange ungenutzte aus dem Vorrat nehmen (Geometrien bleiben im Zwischenspeicher). */

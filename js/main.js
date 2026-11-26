@@ -16,7 +16,7 @@ import { Hud } from './ui/hud.js';
 import { CityPanel, MarketPanel } from './ui/citypanel.js';
 import { ResearchPanel } from './ui/researchpanel.js';
 import { FlowPanel } from './ui/flowpanel.js';
-import { showStartMenu, showPause, showHelp, showEnd, hideOverlay, readLowRes } from './ui/menu.js';
+import { showStartMenu, showPause, showHelp, showEnd, hideOverlay, readLowRes, readShadows } from './ui/menu.js';
 import { pickMood, MOOD_SETTINGS } from './render/mood.js';
 import { snapshotGame, restoreGame, SAVE_FORMAT } from './game/savegame.js';
 import { pack, unpack } from './core/snapshot.js';
@@ -70,7 +70,7 @@ async function load3D() {
 if (loadThree()) await load3D();
 /** Renderer der Partie: mit geladenem three.js der 3D-Renderer (zeichnet nur in der Ansicht 3D mit three), sonst der klassische. */
 function makeRenderer(game, camera) {
-  return R3D?.make3D(canvas, game, camera, HUMAN, { cubes: params.get('cubes') === '1' }) ?? new Renderer(canvas, game, camera, HUMAN);
+  return R3D?.make3D(canvas, game, camera, HUMAN, { cubes: params.get('cubes') === '1', shadows: shadowLevel }) ?? new Renderer(canvas, game, camera, HUMAN);
 }
 const AI_TEAM = 1; // Rot
 
@@ -109,7 +109,22 @@ function setLowRes(on) {
   session.renderer.setMaxDpr(pixelCap());
   session.minimap.setMaxDpr(pixelCap());
 }
-const displayCtl = { get: () => lowRes, set: (on) => setLowRes(on) }; // Pausenmenü: Schalter Bildauflösung
+// Schatten der Ansicht 3D (Pausenmenü „Schatten (3D)“, ?shadows=off|mid|high): nur Darstellung, wirkt sofort, gemerkt in prefs.js
+let shadowLevel = readShadows();
+/** Pausenmenü: Schalter Bildauflösung und, wenn die Ansicht 3D möglich ist, Schattenstufe. */
+const displayCtl = {
+  get: () => lowRes,
+  set: (on) => setLowRes(on),
+  shadows: THREE_OFF
+    ? null
+    : {
+        get: () => shadowLevel,
+        set(level) {
+          shadowLevel = level;
+          session?.renderer.setShadows?.(level);
+        },
+      },
+};
 
 function nearestSpeedIndex(v) {
   let best = 0;

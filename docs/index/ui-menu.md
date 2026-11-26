@@ -36,10 +36,10 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## help.js (0.7 KB)
 - showHelp(root) – Hilfe mit allen Tasten
 
-## pause.js (7.4 KB)
+## pause.js (8.4 KB)
 - showPause(root, onResume, onQuit, onSave, audio, saveAs, account, display) – Pausenmenü: onResume() bei „Weiter“, onQuit() bei „Zum Startmenü“
 
-## prefs.js (2.8 KB)
+## prefs.js (3.9 KB)
 - MOOD_KEY – Startmenü: Lichtstimmung (nur Optik)
 - WEATHER_KEY – Startmenü: Wetter aus, Zufall oder feste Jahreszeit
 - RESEARCH_KEY – Startmenü: Forschung an/aus
@@ -52,6 +52,9 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - LOWRES_KEY – Start- und Pausenmenü: Bildauflösung „Leistung“ (1× statt bis 2×, nur Darstellu…
 - readLowRes() – Bildauflösung „Leistung“ an? URL ?lowres=1 bzw. ?lowres=0 hat Vorrang (zum Prüf…
 - writeLowRes(on) – Bildauflösung merken (Startmenü und Pausenmenü)
+- SHADOW_KEY – Pausenmenü: Schatten der Ansicht 3D ('off' | 'mid' | 'high', nur Darstellung)
+- readShadows() – Schattenstufe der Ansicht 3D: URL ?shadows=off|mid|high hat Vorrang (zum Prüfen…
+- writeShadows(level) – Schattenstufe merken (Pausenmenü)
 - readMapSel()
 - readFlag(key, dflt) – Ein/Aus-Einstellung des Startmenüs (gemerkt)
 - writeFlag(key, on)

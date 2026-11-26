@@ -123,9 +123,10 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - finishMatch(token, wallet, game) – Gewertete Partie beenden: meldet den Endstand zum Token
 - matchStats() – Spielstatistik des Kontos (api/match.php „stats“): Kennzahlen und die letzten P…
 
-## menu.js (1.5 KB)
+## menu.js (1.6 KB)
 - hideOverlay (aus common.js) – Overlay-Menüs (docs/archiv/verlauf.md §5 ui/menu.js): Start, Pause, Hilfe, Ende
 - readLowRes (aus prefs.js)
+- readShadows (aus prefs.js)
 - takeAccountLink (aus account.js)
 - wireAccount (aus account.js)
 - showStartMenu (aus start.js)
@@ -202,4 +203,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 
 ## stats.js (3.6 KB)
 - hm(sec) – Spielzeit in Sekunden als „12 min“ oder „2 h 05 min“
-- statsHtml(st) – HTML der Spielstatistik aus der Antwort von matchStats(): Kasse, Kennzahlen und…

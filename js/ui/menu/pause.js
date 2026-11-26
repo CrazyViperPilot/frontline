@@ -1,9 +1,9 @@
-// Pausenmenü: Weiter, Speichern unter …, Konto (kompakt), Bildauflösung, Lautstärke, Vollbild. pauseHtml baut den Dialog,
+// Pausenmenü: Weiter, Speichern unter …, Konto (kompakt), Bildauflösung, Schatten (3D), Lautstärke, Vollbild. pauseHtml baut den Dialog,
 // makeCopyAct das „Speichern unter …“; showPause verdrahtet beides. Reines DOM, keine Spiellogik. Export: showPause.
 import { NAME_MAX, accountEmail } from '../saves.js';
 import { matchSync } from '../match.js';
 import { show, hideOverlay, markFullscreen, setFullscreen, volRow } from './common.js';
-import { writeLowRes } from './prefs.js';
+import { writeLowRes, writeShadows } from './prefs.js';
 import { wireAccount } from './account.js';
 
 /** Das HTML des Pausenmenüs; saveAs, account, display und audio wie bei showPause (leer = Abschnitt entfällt). */
@@ -25,6 +25,9 @@ function pauseHtml(saveAs, account, display, audio) {
       ${account ? '<section class="account" data-account aria-label="Konto"></section>' : ''}
       ${display ? `<div class="field"><span class="flabel" title="Scharf: volle Pixeldichte (höchstens 2×). Leistung: 1× Pixel, schont schwache Geräte; wirkt sofort">Bildauflösung</span>
         <div class="seg"><button type="button" data-lowres="0">Scharf</button><button type="button" data-lowres="1">Leistung</button></div>
+      </div>` : ''}
+      ${display?.shadows ? `<div class="field"><span class="flabel" title="Nur Ansicht 3D (V): Einheiten werfen echte Schatten aufs Gelände. Mittel schont Handys, Aus malt die Schatten wie in Iso; wirkt sofort">Schatten (3D)</span>
+        <div class="seg"><button type="button" data-shadows="off">Aus</button><button type="button" data-shadows="mid">Mittel</button><button type="button" data-shadows="high">Hoch</button></div>
       </div>` : ''}
       ${audio ? `<div class="field"><span class="flabel">Geräusche</span>${volRow('sfx', audio.get('sfx'))}</div>
       <div class="field"><span class="flabel">Musik</span>${volRow('music', audio.get('music'))}</div>` : ''}
@@ -85,7 +88,8 @@ function makeCopyAct(root, saveAs, setName) {
  * `account` (seit v5.157, optional): { rated } → Konto-Abschnitt (Anmelden, Registrieren, Abmelden). rated = die laufende Partie ist
  * gewertet: dann nur die Anzeige, An- und Abmelden erst nach dem Endstand (sonst fiele der Endstand weg). Ohne `account` kein Abschnitt.
  * Die laufende Partie bleibt, wie sie begonnen hat; das Konto gilt für künftige Partien.
- * `display` (optional): { get() → true bei Bildauflösung „Leistung“, set(on) } wirkt sofort auf das Bild.
+ * `display` (optional): { get() → true bei Bildauflösung „Leistung“, set(on) } wirkt sofort auf das Bild. `display.shadows` (optional,
+ * nur wenn die Ansicht 3D möglich ist): { get() → 'off' | 'mid' | 'high', set(level) } für „Schatten (3D)“, wirkt sofort.
  */
 export function showPause(root, onResume, onQuit, onSave = null, audio = null, saveAs = null, account = null, display = null) {
   show(root, 'pause', pauseHtml(saveAs, account, display, audio));
@@ -103,6 +107,10 @@ export function showPause(root, onResume, onQuit, onSave = null, audio = null, s
     root.querySelectorAll('[data-lowres]').forEach((b) => b.setAttribute('aria-pressed', String((b.dataset.lowres === '1') === !!display?.get())));
   };
   markLowRes();
+  const markShadows = () => {
+    root.querySelectorAll('[data-shadows]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.shadows === display?.shadows?.get())));
+  };
+  markShadows();
   const accBox = root.querySelector('[data-account]');
   if (account && accBox) {
     // Kompakt, ohne Abfrage: der Anmeldestand kommt vom Startmenü (accountEmail); Netz braucht das Pausenmenü nicht
@@ -143,6 +151,12 @@ export function showPause(root, onResume, onQuit, onSave = null, audio = null, s
       display.set(lr.dataset.lowres === '1');
       writeLowRes(lr.dataset.lowres === '1');
       return markLowRes();
+    }
+    const sh = e.target.closest('[data-shadows]');
+    if (sh && display?.shadows) {
+      display.shadows.set(sh.dataset.shadows);
+      writeShadows(sh.dataset.shadows);
+      return markShadows();
     }
     const p = e.target.closest('[data-pact]');
     if (p) return copyAct(p.dataset.pact);

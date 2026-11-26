@@ -6,24 +6,33 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `renderer3d.js` – `Renderer3D` (Unterklasse von `Renderer`, gleiche Schnittstelle), `make3D` (WebGL, Rückfall null)
 - `ground3d.js` – 3D-Boden: Höhennetz und Erdschnitt mit dem Shader `FS_GROUND` aus `render/ground.js`. `Ground3D`
 - `fog3d.js` – 3D-Nebel: Kriegsnebel (`FS_FOG`) auf dem Höhennetz des Bodens, Textur aus `fogData`. `Fog3D`
-- `units3d.js` – Einheiten als Meshes (Wanne, Turm, stufenlose Drehung), Licht wie `painter.js`. `Units3D`
+- `units3d.js` – Einheiten als Meshes (Wanne, Turm, stufenlose Drehung). `Units3D`
+- `sun3d.js` – Sonne, Schattenkarte über dem Ausschnitt, Schattenfänger, Stufen. `Sun3D`, `CATCH`, `CAST`
 - `billboards.js` – gemalte Bilder (`spritecache.blit`) als Vierecke aus einem Atlas (≤ 4 Seiten 2048²). `Billboards`
 - `camera3d.js` – three-Kamera aus `Camera`: `makeWorldRoot`, `makeIsoCamera`, `syncIsoCamera`, `projectWorld`, `clipDepth`
 - `testscene.js` – Prüfwürfel an Ecken, Mitte, Hauptstadt (`?three=1&cubes=1`). `probePoints`, `buildTestCubes`
 - `solids3d.js` – Körperliste (render/units/shapes.js) → three-Geometrie: `solidsToGeometry`, `buildModelMesh`, `modelGeometry`
 
 ## Schichtung
-- Ansicht „3D“ = `camera.iso && camera.three`; V bzw. „Ansicht“ schaltet 2D → Iso → 3D (`main.js` `toggleView`, lädt three nach).
+- Ansicht „3D“ = `camera.iso && camera.three`; V schaltet 2D → Iso → 3D (`main.js` `toggleView`, lädt three nach).
 - Die Iso-Durchläufe (`ISO_PASSES`) laufen wie bisher in die 2D-Leinwand; `swaps` (Name → Ersatz, `runPasses` über `isoSwap`)
-  ersetzt „Gelände“ (`ground3d.js`), „Objekte“ (Billboards und Einheiten unter `objRoot`, samt Luftfahrzeugen: „Flieger“ fällt
-  weg) und „Nebel“ (`fog3d.js`). Jedes three-Bild
-  wird an seiner Stelle in die 2D-Leinwand kopiert; Bodenmarken, Nebel, Wetter, Stimmung und Balken bleiben dadurch unverändert.
-- „Objekte“: `setBlitSink` fängt jedes `blit` ab → Billboard mit der Clip-Tiefe des Objekt-Fußpunkts (`clipDepth`), Malreihenfolge
-  wie heute. Was nicht über `blit` malt (Rotoren, Flammen, Ersatzformen), kommt über eine 2D-Zwischenleinwand obenauf.
+  ersetzt „Gelände“, „Objekte“ (Billboards, Einheiten unter `objRoot`, samt Luftfahrzeugen: „Flieger“ fällt weg) und „Nebel“.
+  Jedes three-Bild wird an seiner Stelle in die 2D-Leinwand kopiert; Bodenmarken, Wetter, Stimmung, Balken bleiben gemalt.
+- „Objekte“: `setBlitSink` macht aus jedem `blit` ein Billboard mit der Tiefe des Fußpunkts (`clipDepth`); was nicht über `blit`
+  malt (Rotoren, Flammen), kommt über eine 2D-Zwischenleinwand obenauf.
 - Einheiten: `drawUnitIsoAt` fragt `unit3d` (nur im Durchlauf „Objekte“ gesetzt); steht das Mesh, malt `drawUnitIso` mit
-  `body = false` nur Rotoren und Nachbrenner. Schatten bleiben gemalte Billboards bis „Licht und Schatten“.
-- Die WebGL-Leinwand hängt nicht im DOM, ohne Kantenglättung. `render/ground.js` legt weiter seinen Kontext an (Relief-Erkennung).
-- Prüfszene `&cubes=1`: nur Gelände und Würfel (Boden, Schatten, Objekte, Wetter fallen weg), Kreuze an `camera.worldToScreen`.
+  `body = false` nur Rotoren und Nachbrenner. Mit Schattenkarte wirft das Mesh den Schatten (`shadow3d`);
+  Soldaten (zu dünn), Stufe Aus und alles ohne Mesh malen ihn.
+- WebGL-Leinwand nicht im DOM, ohne Kantenglättung; `render/ground.js` behält seinen Kontext (Relief-Erkennung).
+- Prüfszene `&cubes=1`: nur Gelände und Würfel, Kreuze an `camera.worldToScreen`.
+
+## Licht und Schatten (`sun3d.js`)
+- Sonne = `lightVec` (wie Bodenlicht, Gebäudeschatten; dreht mit der Kamera), auch für Einheiten. Nacht: `drawMood`.
+- Schattenfänger statt Boden-Shader: Einheiten stehen erst in „Objekte“, dann ist das Gelände schon gemalt. Dort Render 1 mit Ebene
+  `CATCH` (Schattenkarte aus Werfern auf `CAST`, Fänger = Bodennetz mit `ShadowMaterial`), Tiefe löschen, Render 2 Ebene 0. Im
+  Boden-Shader spart nur den Fänger (≈ 35 ms Software-WebGL), aber Einheiten ein Bild zu spät, Schatten unter Bodenmarken.
+- Karte: Bildecken × Geländehöhen im Lichtraum + `margin`, Größe auf `snap` gerundet, Mitte aufs Texel-Raster (kein Flimmern).
+- Neue Werfer (Bäume): `castShadow`, `layers.enable(CAST)`. Billboards empfangen nicht.
 
 ## Achsen (`camera3d.js`)
 - Kinder einer Wurzelgruppe (`groundRoot`, `objRoot`) liegen in Weltkoordinaten: x, y wie im Spiel, z = Höhe in Welt-px.

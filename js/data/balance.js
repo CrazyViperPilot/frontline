@@ -10,7 +10,7 @@
 //   KI-Schwierigkeit difficulty (weitere KI-Werte: ai.js)
 //   Kampf, Gelände   height, slope, airFire, sightHeight, fogInterval, stealth, garrison, fortress, commander, formation, jets
 //   Wetter, Technik  weather, river (Forschung: js/data/research.js)
-//   Nur Optik        scars, animals, effects
+//   Nur Optik        scars, animals, effects, shadows3d
 //   Bewegung, Sicht  move, path (Wegsuche), fog, formation, scanStagger, spawnRing, shellSpeed, combat, notify (Meldedauern)
 //   Startmenü        menuDefaults
 //   Texte, Farben    resNames, teamNames, teamColors
@@ -435,6 +435,21 @@ export const BALANCE = {
   combat: { cityMargin: 32, cannonDamage: 60, wallOther: 0.1 },
   // Effekte (rein optisch): Lebensdauer je Art in s, ohne Eintrag lifeDefault
   effects: { life: { tracer: 0.12, shell: 0.3, explosion: 0.5, intercept: 0.4, muzzle: 0.1, death: 0.1 }, lifeDefault: 0.3 },
+  // Schatten der Ansicht 3D (rein optisch, render3d/sun3d.js; Pausenmenü „Schatten (3D)“): Sonne mit Schattenkarte über dem Bildausschnitt.
+  // levels: je Stufe Kantenlänge der Schattenkarte (Texel) und Weichzeichnung (PCF-Radius in Texeln); off = gemalte Schatten wie in Iso.
+  // phone/desktop: Startstufe ohne gemerkte Wahl (Handy = grobe Zeiger). margin: so weit (Welt-px) reicht die Karte über den Bildrand,
+  // damit Schatten von Einheiten knapp außerhalb noch hereinfallen. snap: Ausdehnung der Karte auf Vielfache davon (Welt-px), damit sie
+  // beim Verschieben gleich bleibt. opacity: Deckkraft des Schattens je Lichtstimmung (none = ohne Stimmung); nachts schwächer, weil
+  // drawMood ohnehin abdunkelt. bias: Versatz gegen Schattenakne (Tiefe der Karte, 0 … 1).
+  shadows3d: {
+    levels: { off: null, mid: { size: 1024, radius: 1 }, high: { size: 2048, radius: 2 } },
+    phone: 'mid',
+    desktop: 'high',
+    margin: 96,
+    snap: 128,
+    opacity: { none: 0.4, day: 0.42, morning: 0.36, evening: 0.36, night: 0.2 },
+    bias: -0.0005,
+  },
   // Meldungen mit Drosselung (game.notify): Mindestabstand in s zwischen zwei gleichen Meldungen je Team (ohne Eintrag shortageWarn)
   notify: {
     crateGone: 5, // „Der Gegner hat die Kiste zuerst“

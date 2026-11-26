@@ -228,17 +228,18 @@ export const isoItemMethods = {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       return;
     }
-    // Schatten am Boden: Umriss des Modells (seit v5.27, unitpaint.js), sonst Ellipse
+    const aim = this.aimOf(u);
+    // 3D (render3d/renderer3d.js unit3d): Körper als Mesh in der Szene, hier nur noch Rotoren und Nachbrenner
+    const shown = this.unit3d?.(f, u, aim, lift) ?? false; // false | true | 'painted' (Mesh, Schatten aber gemalt: Soldaten)
+    const mesh = !!shown;
+    // Schatten am Boden: Umriss des Modells (seit v5.27, unitpaint.js), sonst Ellipse; 3D mit Schattenkarte: das Mesh wirft ihn selbst
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (!drawUnitShadowIso(ctx, cam, u, p, dpr, now)) {
+    if (!(shown === true && this.shadow3d) && !drawUnitShadowIso(ctx, cam, u, p, dpr, now)) {
       ctx.fillStyle = 'rgba(0,0,0,0.28)';
       ctx.beginPath();
       ctx.ellipse(p.x, p.y + 1, u.def.radius * z * (u.def.air ? 1.5 : 1.2), u.def.radius * z * (u.def.air ? 0.7 : 0.5), 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    const aim = this.aimOf(u);
-    // 3D (render3d/renderer3d.js unit3d): Körper als Mesh in der Szene, hier nur noch Rotoren und Nachbrenner
-    const mesh = !!this.unit3d?.(f, u, aim, lift);
     if (drawUnitSprite(ctx, cam, u, { x: p.x, y: p.y }, aim, lift, now, !mesh) || mesh) return;
     setIsoAt(ctx, cam, dpr, p.x, p.y - lift * z, u.x, u.y, sc);
     drawUnit(ctx, u, g.teams[u.team].color, z * sc, aim, now, true);

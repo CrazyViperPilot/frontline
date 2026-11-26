@@ -1,6 +1,8 @@
 // Gemerkte Einstellungen der Menüs (localStorage, jede Stelle mit try/catch: ohne Speicher gilt die Wahl nur für diese Sitzung):
 // Schlüssel der Startmenü-Schalter und die Lese-/Schreibfunktionen (Ein/Aus, Auswahl, Karte, Bildauflösung „Leistung“).
-// Exporte: *_KEY, readLowRes, writeLowRes, readMapSel, writeMapSel, readFlag, writeFlag, readChoice, writeChoice.
+// Exporte: *_KEY, readLowRes, writeLowRes, readShadows, writeShadows, readMapSel, writeMapSel, readFlag, writeFlag, readChoice, writeChoice.
+import { BALANCE } from '../../data/balance.js';
+
 const MAPSEL_KEY = 'frontline-kartenwahl';
 export const MOOD_KEY = 'frontline-licht'; // Startmenü: Lichtstimmung (nur Optik)
 export const WEATHER_KEY = 'frontline-wetter'; // Startmenü: Wetter aus, Zufall oder feste Jahreszeit
@@ -21,6 +23,32 @@ export function readLowRes() {
 /** Bildauflösung merken (Startmenü und Pausenmenü). */
 export function writeLowRes(on) {
   writeFlag(LOWRES_KEY, on);
+}
+export const SHADOW_KEY = 'frontline-schatten3d'; // Pausenmenü: Schatten der Ansicht 3D ('off' | 'mid' | 'high', nur Darstellung)
+/**
+ * Schattenstufe der Ansicht 3D: URL ?shadows=off|mid|high hat Vorrang (zum Prüfen), sonst die gemerkte Wahl, sonst Handy (grober
+ * Zeiger) BALANCE.shadows3d.phone, sonst .desktop.
+ */
+export function readShadows() {
+  const ok = (v) => v in BALANCE.shadows3d.levels;
+  const q = new URLSearchParams(location.search).get('shadows');
+  if (q && ok(q)) return q;
+  try {
+    const v = localStorage.getItem(SHADOW_KEY);
+    if (v && ok(v)) return v;
+  } catch {
+    // ohne Speicher: Standard
+  }
+  const coarse = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  return coarse ? BALANCE.shadows3d.phone : BALANCE.shadows3d.desktop;
+}
+/** Schattenstufe merken (Pausenmenü). */
+export function writeShadows(level) {
+  try {
+    localStorage.setItem(SHADOW_KEY, level);
+  } catch {
+    // ohne Speicher gilt die Wahl nur für diese Sitzung
+  }
 }
 export function readMapSel() {
   try {

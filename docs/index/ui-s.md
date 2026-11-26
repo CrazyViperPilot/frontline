@@ -1,6 +1,9 @@
-# Symbol-Index ui (Teil 2 von 2, status.js)
+# Symbol-Index ui (Teil 2 von 2, stats.js bis status.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/ui/`. Pfade relativ zu `js/ui/`.
+
+## stats.js (Fortsetzung)
+- statsHtml(st) – HTML der Spielstatistik aus der Antwort von matchStats(): Kasse, Kennzahlen und…
 
 ## status.js (3.1 KB)
 - alertText(u) – Zustand der Alarmrotte eines Jets (Paket „Alarmrotte“): Alarmstart, Alarmflug,…

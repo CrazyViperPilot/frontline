@@ -223,6 +223,7 @@ const ASSETS = [
   './js/render3d/billboards.js',
   './js/render3d/fog3d.js',
   './js/render3d/units3d.js',
+  './js/render3d/sun3d.js',
   './js/ui/controller.js',
   './js/ui/controller/cards.js',
   './js/ui/controller/modes.js',

@@ -67,7 +67,17 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   Einheiten). Offen: am Hang anschmiegen (heute eben in Objekthöhe wie in Iso); nötig erst mit „Freie Kamera“ (Marken als Bodentextur).
 - Messung (Software-WebGL im Container, 200 Einheiten): Gelände 3D 152 ms gegen Iso 179 ms, Objekte 83 gegen 24 ms; mit
   Kantenglättung (MSAA) doppelt so teuer, daher aus. Echte Geräte: MVP-Messung.
-- Nächste Pakete: 3D-Bäume (Sonnet) ‖ Licht und Schatten (Opus); danach MVP-Messung.
+- Licht und Schatten: gebaut (`js/render3d/sun3d.js`, Werte `BALANCE.shadows3d`, Pausenmenü „Schatten (3D)“ Aus/Mittel/Hoch,
+  `?shadows=`). Sonne = `lightVec` (auch für das Licht der Einheiten, dreht weiter mit der Kamera in 90°-Schritten, passend zu den
+  gemalten Gebäudeschatten); Schattenfänger auf dem Bodennetz im Durchlauf „Objekte“ (Begründung `js/render3d/CLAUDE.md`).
+  Fahrzeuge und Luftfahrzeuge werfen Schatten, Soldaten behalten den gemalten (zu dünn für die Karte). Messung (Software-WebGL,
+  200 Einheiten, „Objekte“): Aus ≈ 50–60 ms, Mittel/Hoch ≈ 145–155 ms; davon ≈ 35 ms Fänger, der Rest Leeren und Zeichnen der
+  Schattenkarte und zweiter Render. Vergleich Iso/3D mit Schatten Hoch bis 1,4 % (Grenze 3 %).
+- Offen für 3D-Bäume: Bäume als Werfer (`castShadow`, Ebene `CAST`), ihre gemalten Schatten in 3D dann abschalten wie bei den Einheiten
+  (`shadow3d`); Einheiten empfangen keine Schatten (eigener Shader), Baumschatten auf Panzern bräuchte Schattenabfrage im Einheiten-Shader.
+- Offen für MVP-Messung: Kosten der Schattenkarte auf echter GPU (Rechner, Handy „Mittel“); falls teuer: Karte nur bei Bewegung neu,
+  Bodennetz in Kacheln mit Sichtprüfung (Fänger und Boden zeichnen heute das ganze Netz).
+- Nächste Pakete: 3D-Bäume (Sonnet), danach MVP-Messung.
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als
 Billboards, Auswahl und Befehle funktionieren. Danach Fotos und Bildrate auf Rechner und Handy vergleichen.

@@ -133,7 +133,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - COVER_SEAT_R – px um die Mitte: wer so nah steht, sitzt schon in der Stellung
 - COVER_SEAT_OFF – px: zwei Plätze links und rechts der Mitte, entlang der Längsseite
 
-## balance.js (38 KB)
+## balance.js (39 KB)
 - QUICK – == SCHNELLEINSTELLUNGEN == Hier ändern; BALANCE unten liest diese Werte
 - BALANCE
 

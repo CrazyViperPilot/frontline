@@ -127,6 +127,24 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   Draw-Call, `Trees3D` bräuchte je Haus 1 bis 3 Instanzen samt Satzpflege und machte die Bäume im Winter kahl (Bruch zum gemalten Bild).
   Offen: Fenster nachts noch unter `drawMood` („Tag und Nacht 3D“); Dreiecke sparen, falls echte Geräte es brauchen (fern: grobe
   Varianten ohne Fensterkreuze und Balkone, analog Bäume); Ruinen und Baustellen der Stadt bleiben Billboards („Baustellen und Ruinen 3D“).
+- Wasser 3D: gebaut (`js/render3d/ground3d.js`, Shader `FS_WATER`, Prüfteil `smoke-3d.mjs --only wasser`, Fotos `.smoke/3d/wasser/`).
+  **Eigenes Netz statt Boden-Shader:** Das Wasser teilt Lage und Höhen (`position`, `aH`) mit dem Bodennetz, hat aber eine eigene
+  Dreiecksliste (nur Dreiecke mit einer Ecke unter `RELIEF.water`: 3 540 bei Seed 3 ohne Fluss, 7 632 bei Seed 4 mit Fluss, gegen
+  242 200 im Boden). Gründe: eigener Shader mit Blickrichtung (Fresnel, Sonnenglanz), den `FS_GROUND` nicht kennt und nicht bekommen
+  soll (Iso bleibt pixelgleich); gleiche Ecken wie der Boden geben die Uferlinie genau an der Stelle, an der `FS_GROUND` sein Wasser
+  malt (kein Spalt), `polygonOffset` zum Betrachter verhindert Flimmern, der Tiefentest gegen das Bodennetz verdeckt Wasser hinter
+  Hügeln; ein Draw-Call mehr. Der Fluss ist Gelände unter dem Wasserspiegel (`landscape.js` `riverHeight`), also dasselbe Netz;
+  Brücken bleiben gemalt darüber (Durchlauf „Boden“), ihr gemalter Schatten liegt auf dem 3D-Wasser. Schatten der Werfer fallen über
+  den Schattenfänger (gleiches Netz) aufs Wasser, Nebel und `drawMood` (Nacht) liegen wie auf dem Boden darüber; nachts kein Glanz,
+  dunkler Himmel. Inhalt: Grundfarbe wie `FS_GROUND`, über tiefem Grund dunkler (Tiefe bis 48 px), Wellen aus den Rauschlagen von
+  `FS_GROUND` als Normale (Bildschirm-Ableitungen, keine weiteren Texturzugriffe), Spiegelung des Himmels je Stimmung, Uferschaum
+  (Wellen laufen aufs Ufer zu), heller Saum, Winter: kälteres Wasser, Eisrand mit feinen Rissen. Der 3D-Boden verwirft unter tiefem
+  Wasser (Uniform `uWater3d`, Zeile vor `FS_GROUND` nur in `ground3d.js`). Messen an Seeds vorher: Wasser 0,8–1,5 % der Karte ohne
+  Fluss, 2,7–3,5 % mit Fluss, um die Hauptstadt 0 % (Prüfteil `vergleich` bleibt unberührt: höchstens 1,45 %).
+  Messung „Gelände“ (Software-WebGL, Zoom 1, Drehung 0, Schatten Hoch, ohne = Wasser ausgeblendet und Boden malt sein Wasser selbst;
+  3 × 12 Bilder): See (Seed 3, gut ein Viertel des Bilds Wasser) 201 → 214 ms, Fluss an der Brücke (Seed 4) 218 → 241 ms; Prüfteil
+  (8 Bilder) 209 → 219 bzw. 238 → 234 ms. Draw-Calls im Bodenbild 2 → 3, Dreiecke 242 200 → 245 740 bzw. 249 832. Offen: auf echter
+  GPU messen; Wasser ohne Strömungsrichtung (Fluss wellt wie der See), Spiegelung nur des Himmels (keine Ufer, Bäume, Brücken).
 - **Licht (offener Punkt 5 des MVP-Berichts), entschieden:** eine Sonne für die ganze 3D-Szene, `lightVec` (rechts oben im Bild, dreht
   mit der Kamera). 3D-Gebäude sind damit rechts hell wie Einheiten, Bäume und Geländerelief, ihre Schatten fallen nach links unten wie
   die gemalten Gebäudeschatten. Gemalte Billboards (Wand links hell) bleiben bis zur Umstellung ihrer Familie so; der Bruch verschwindet

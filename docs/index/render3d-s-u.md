@@ -3,6 +3,7 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render3d/`. Pfade relativ zu `js/render3d/`.
 
 ## sun3d.js (Fortsetzung)
+- SHADOW_LEVELS – Stufen in der Reihenfolge des Pausenmenüs.
 - class Sun3D
   - constructor(gl, scene, root, geometry) – gl: THREE.WebGLRenderer; scene: Szene der Objekte; root: Wurzelgruppe (Weltkoor…
   - setLevel(level) – Stufe 'off' | 'mid' | 'high' (BALANCE.shadows3d.levels); wirkt ohne Neustart (K…

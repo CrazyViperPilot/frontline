@@ -4,8 +4,8 @@ Liest den Spielzustand, ändert ihn nie. Darf `js/render/` lesen (Kamera, Modell
 three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 
 - `renderer3d.js` – `Renderer3D` (Unterklasse von `Renderer`, gleiche Schnittstelle), `make3D` (WebGL, Rückfall null)
-- `ground3d.js` – 3D-Boden: Höhennetz und Erdschnitt mit dem Shader `FS_GROUND` aus `render/ground.js`. `Ground3D`
-- `fog3d.js` – 3D-Nebel: Kriegsnebel (`FS_FOG`) auf dem Höhennetz des Bodens, Textur aus `fogData`. `Fog3D`
+- `ground3d.js` – 3D-Boden: Höhennetz, Erdschnitt (`FS_GROUND` aus `render/ground.js`), Wasser-Netz (`FS_WATER`). `Ground3D`
+- `fog3d.js` – 3D-Nebel: Kriegsnebel (`FS_FOG`) auf dem Bodennetz, Textur aus `fogData`. `Fog3D`
 - `units3d.js` – Einheiten als Meshes (Wanne, Turm, stufenlose Drehung). `Units3D`
 - `trees3d.js` – Bäume als InstancedMesh je Form, grob fern und als Werfer. `Trees3D`, `treeGeometry`
 - `sun3d.js` – Sonne, Schattenkarte über dem Ausschnitt, Schattenfänger, Stufen. `Sun3D`, `CATCH`, `CAST`

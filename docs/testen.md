@@ -83,6 +83,8 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
   Farbvarianten (`.smoke/3d/baukasten/`; Fehler bei abweichendem Umriss, mehr als einem Draw-Call je Haus, fehlenden Fotos).
   `--only stadt`: Seed 3, KI gegen KI bis `--citymin` Spielminuten, Stadt an der Hauptstadt Iso | 3D in 4 Drehungen, Sommer und Winter
   (`.smoke/3d/stadt/`), Draw-Calls, Dreiecke und Zeit „Objekte“ mit gemalten gegen 3D-Stadthäuser.
+  `--only wasser`: See (Seed 3, `river=0`) und Fluss an der Brücke (Seed 4, `river=1`), Hubschrauber und Panzer am Wasser; Iso | 3D in
+  4 Drehungen Tag und Nacht, Zoom 0,5/1,6, Sommer und Winter (`.smoke/3d/wasser/`); Zeit „Gelände“, Draw-Calls ohne und mit 3D-Wasser.
 - `node tools/smoke-3d.mjs --only mvp` (Paket „MVP-Messung“, nur ausdrücklich, gut 10 min): Rundgang je Gerät desktop, tablet, phone
   (Ansicht umschalten, Drehungen, Zoom, Wald, Hang, Winter; Fotos alt/neu nebeneinander nach `.smoke/3d/mvp/`), Auswahl per Klick/Tippen
   und Befehl in 3D (Fehler, wenn nicht), Bildrate Iso und 3D Aus/Mittel/Hoch nach `--gametime` Spielminuten Zeitraffer; Zahlen auch in

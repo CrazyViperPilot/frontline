@@ -22,6 +22,7 @@ const MERGED = { 'js': 'core', 'js/core': 'core', 'js/audio': 'core', 'js/editor
 function walk(dir, out = []) {
   for (const n of readdirSync(join(ROOT, dir)).sort()) {
     const p = `${dir}/${n}`;
+    if (p === 'js/vendor') continue; // fremde Bibliotheken (js/vendor/) nicht prüfen
     if (statSync(join(ROOT, p)).isDirectory()) walk(p, out);
     else if (n.endsWith('.js')) out.push(p);
   }

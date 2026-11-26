@@ -213,6 +213,8 @@ const ASSETS = [
   './js/render/mood.js',
   './js/render/bridge.js',
   './js/render/minimap.js',
+  './js/vendor/three/three.core.min.js',
+  './js/vendor/three/three.module.min.js',
   './js/ui/controller.js',
   './js/ui/controller/cards.js',
   './js/ui/controller/modes.js',

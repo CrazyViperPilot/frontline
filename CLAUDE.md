@@ -2,7 +2,7 @@
 
 Echtzeit-Strategie im Browser: Blau (Spieler) gegen Rot (KI); im Modus Eroberung bis zu drei KIs (Rot, Grün, Gelb, jeder gegen jeden).
 Vanilla JS mit ES-Modulen, Canvas 2D und WebGL-Boden, kein Build-Schritt, offline als PWA.
-Diese Datei ist der Kern: Regeln, Befehle, Wegweiser. Alles Weitere gezielt über den Wegweiser unten lesen.
+Diese Datei ist der Kern: Regeln, Befehle, Wegweiser. Weiteres über den Wegweiser unten.
 
 ## Regeln
 
@@ -12,7 +12,7 @@ Diese Datei ist der Kern: Regeln, Befehle, Wegweiser. Alles Weitere gezielt übe
    KI-Werte: Armee `js/data/ai.js`, Stadt `CITY.ai` (`js/data/city.js`), je Schwierigkeit `BALANCE.difficulty`.
 4. Zufall nur über `game.rng` bzw. `makeRng(seed)` (`js/core/rng.js`), nie `Math.random()`. Gleicher Seed = gleiche Partie;
    Zufallskarten ohne Fluss bleiben je Seed unverändert.
-5. Imports immer mit Endung (`'./zone.js'`), nie über den Repo-Ordner hinaus, keine CDNs oder externen Dateien.
+5. Imports mit Endung (`'./zone.js'`), nie über den Repo-Ordner hinaus, keine CDNs; Bibliotheken nur als feste Kopie in `js/vendor/`.
 6. Neue Datei, die der Browser lädt: in `sw.js` unter `ASSETS` und eine Zeile in die `CLAUDE.md` ihres Ordners.
    `CACHE_VERSION` nie von Hand erhöhen (macht `npm run release`).
 7. Regel- oder Feature-Änderung: Themen-Datei unter `docs/prd/` anpassen, Eintrag als eigene Datei nach `docs/changes/` (eine Zeile,

@@ -35,6 +35,9 @@ oder Opus nach Schwierigkeit.
    werden (Modelle, Farben, Sprite-Cache), nie umgekehrt.
 
 ## Entscheidungen für Daniel (vor Stufe 1)
+Daniel, 2026-11-26: allen vier Empfehlungen zugestimmt (Kopie unter `js/vendor/`, einmal verkleinert, `?three=1` bis zur Abnahme,
+Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
+
 | Frage | Empfehlung |
 |---|---|
 | three.js als Kopie ins Repo (Regel 5 um „Bibliotheken unter `js/vendor/`“ ergänzen)? | Ja, Version fest 0.187.0, Lizenzdatei dabei |
@@ -42,6 +45,10 @@ oder Opus nach Schwierigkeit.
 | MVP nur hinter `?three=1`, Standard bleibt Canvas bis zur Abnahme? | Ja |
 | Schatten auf Handys? | Stufen Aus/Mittel/Hoch im Pausenmenü, Handy startet mit Mittel |
 | Fremde Modelle (CC0, z. B. Kenney, Quaternius)? | Erst nach dem MVP und nur für Natur und Kleinkram; Lizenz je Modell in `textures/LIZENZEN.md` |
+
+## Stand
+- three.js einbinden: gebaut (Regel 5 in `CLAUDE.md` angepasst).
+- Nächstes Paket: 3D-Gerüst (Opus).
 
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als

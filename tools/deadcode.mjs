@@ -19,6 +19,7 @@ function walk(dir, exts, out = []) {
   for (const n of names) {
     if (n === 'node_modules' || n.startsWith('.')) continue;
     const p = join(dir, n);
+    if (p === join(ROOT, 'js', 'vendor')) continue; // fremde Bibliotheken (js/vendor/) nicht prüfen
     if (statSync(p).isDirectory()) walk(p, exts, out);
     else if (exts.some((e) => n.endsWith(e))) out.push(p);
   }

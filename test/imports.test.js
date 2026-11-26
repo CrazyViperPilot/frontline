@@ -13,6 +13,7 @@ function graph() {
   const walk = (d) => {
     for (const f of readdirSync(d)) {
       const p = join(d, f);
+      if (p === join(ROOT, 'js', 'vendor')) continue; // fremde Bibliotheken (js/vendor/) nicht prüfen
       if (statSync(p).isDirectory()) walk(p);
       else if (f.endsWith('.js')) files.push(p);
     }

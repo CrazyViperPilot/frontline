@@ -74,3 +74,10 @@ export function projectWorld(root, cam3, cam, x, y, h) {
   _p.set(x, y, h).applyMatrix4(root.matrixWorld).project(cam3);
   return { x: ((_p.x + 1) / 2) * cam.viewW, y: ((1 - _p.y) / 2) * cam.viewH };
 }
+
+const _q = new THREE.Vector3();
+
+/** Clip-Tiefe (−1 nah … 1 fern) eines Weltpunkts (x, y, h): Tiefe der Billboards (billboards.js) im selben Puffer wie 3D-Körper. */
+export function clipDepth(root, cam3, x, y, h) {
+  return _q.set(x, y, h).applyMatrix4(root.matrixWorld).project(cam3).z;
+}

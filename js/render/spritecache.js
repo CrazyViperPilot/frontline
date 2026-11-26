@@ -163,8 +163,19 @@ export function peek(key, scale) {
   return best;
 }
 
+let sink = null; // Abgriff (3D, render3d/billboards.js): nimmt das Bild statt der Leinwand, solange gesetzt
+
+/**
+ * Abgriff für blit setzen oder mit null lösen: sink(ctx, img, x, y, w, h) bekommt jedes Bild samt Zielrechteck in den
+ * Koordinaten der aktuellen ctx-Transformation; liefert er true, malt blit nicht selbst (3D-Renderer: Billboards).
+ */
+export function setBlitSink(fn) {
+  sink = fn;
+}
+
 /** Eintrag e so zeichnen, dass sein Ankerpunkt bei (x, y) liegt; f = Zeichenkoordinaten je Einheit (Iso: Zoom, 2D: 1). */
 export function blit(ctx, e, x, y, f) {
+  if (sink && sink(ctx, e.img, x + e.x0 * f, y + e.y0 * f, e.w * f, e.h * f)) return;
   ctx.drawImage(e.img, x + e.x0 * f, y + e.y0 * f, e.w * f, e.h * f);
 }
 

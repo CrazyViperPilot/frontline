@@ -7,7 +7,7 @@ import { groundDetail, DETAIL_N } from './groundtex.js';
 
 const W = BALANCE.map.width;
 const STEP = RELIEF.step;
-const SKIRT_BOTTOM = -190; // Unterkante des Erdschnitts am Kartenrand
+export const SKIRT_BOTTOM = -190; // Unterkante des Erdschnitts am Kartenrand
 const DEPTH_K = 1 / 26000; // Tiefe → Clip-Raum (Karte samt Höhen passt hinein)
 export const LIGHT_ELEV = 0.62; // Lichthöhe (z-Anteil des Lichtvektors)
 export const FOG_EXPLORED_ALPHA = 150; // Nebel über Erkundetem: abgedunkelt, nicht schwarz (0 … 255)
@@ -38,7 +38,8 @@ void main() {
 
 // Rauschen kommt aus einer kachelbaren Textur (noiseTexture), das ist auf Handys viel billiger als sin()-Hashes:
 // r, g = Neigung der Felsstruktur h (0,5 = eben), b = h (Grate hell, Rinnen dunkel), a = weiches Rauschen für Farbe und Wasser.
-const FS_GROUND = `
+// Auch der 3D-Boden (render3d/ground3d.js) nutzt diesen Shader, mit eigenem Vertex-Shader (vPos, vH, vG wie hier).
+export const FS_GROUND = `
 precision highp float;
 uniform sampler2D uTex;
 uniform sampler2D uNoise;
@@ -170,7 +171,7 @@ void main() {
   gl_FragColor = vec4(col * a, a);
 }`;
 
-const NOISE_N = 256;
+export const NOISE_N = 256;
 const NOISE_CELLS = 16; // Felsblöcke je Achse und Kachel
 
 /**
@@ -178,7 +179,7 @@ const NOISE_CELLS = 16; // Felsblöcke je Achse und Kachel
  * (eigene Kippung je Block plus leichte Wölbung, Wert = 0,5 + 0,6 × Neigung), b = Helligkeit (je Block verschieden, in
  * den Fugen dunkel). a = weiches Wertrauschen für Farbe und Wasser.
  */
-function noiseTexture() {
+export function noiseTexture() {
   const N = NOISE_N;
   const G = NOISE_CELLS;
   const cs = N / G;

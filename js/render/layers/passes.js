@@ -24,8 +24,9 @@ export const TOP_PASSES = [
   { name: 'Anzeigen', run: (r, f) => r.topScreen(f) },
 ];
 
-/** Iso: Boden, Bodenmarken, Objekte nach Tiefe (Sortierung, Schatten, Zeichnen), Schilder, Flieger, Effekte, Nebel, Wetter, Balken, Anzeigen. */
+/** Iso: Gelände, Boden, Bodenmarken, Objekte nach Tiefe (Sortierung, Schatten, Zeichnen), Schilder, Flieger, Effekte, Nebel, Wetter, Balken, Anzeigen. */
 export const ISO_PASSES = [
+  { name: 'Gelände', run: (r, f) => r.isoTerrain(f) }, // Höhennetz bzw. flaches Bodenbild (3D: render3d/ground3d.js)
   { name: 'Boden', run: (r, f) => r.isoGround(f) },
   { name: 'Markierungen', run: (r, f) => r.isoMarks(f) },
   {
@@ -61,15 +62,17 @@ export const ISO_PASSES = [
 
 /**
  * Durchläufe der Reihe nach: Einträge mit when(f) === false überspringen; mit Messanzeige die Zeit je Eintrag (eine Messstelle).
- * skip (wahlfrei): Set mit Namen von Durchläufen, die ein anderer Zeichner übernimmt (Plan „3D mit three.js“, render3d/renderer3d.js).
+ * swap (wahlfrei): Map Name → run(r, f) oder null; ersetzt bzw. überspringt Durchläufe, die ein anderer Zeichner übernimmt
+ * (Plan „3D mit three.js“, render3d/renderer3d.js). Gemessen wird der Ersatz unter demselben Namen.
  */
-export function runPasses(r, passes, f, skip = null) {
+export function runPasses(r, passes, f, swap = null) {
   const pf = r.perf; // Messanzeige: je Ebene (sonst ohne Kosten)
   let t = pf ? performance.now() : 0;
   for (const p of passes) {
     if (p.when && !p.when(f)) continue;
-    if (skip?.has(p.name)) continue;
-    p.run(r, f);
+    const run = swap?.has(p.name) ? swap.get(p.name) : p.run;
+    if (!run) continue;
+    run(r, f);
     if (pf) t = pf.lap(p.name, t);
   }
 }

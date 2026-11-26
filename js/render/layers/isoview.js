@@ -39,12 +39,12 @@ export const isoViewMethods = {
    */
   renderIso(f) {
     f.relief = f.cam.relief; // gesetzt nur mit WebGL-Boden
-    runPasses(this, ISO_PASSES, f, this.isoSkip); // Durchläufe und Messung: layers/passes.js; isoSkip: von three übernommen
+    runPasses(this, ISO_PASSES, f, this.isoSwap); // Durchläufe und Messung: layers/passes.js; isoSwap: von three übernommen
   },
 
-  /** Iso, Boden: Gelände (WebGL oder flaches Bild), Parks, Wege, Krater, Brücken, Stadtstraßen, Zone und Hot Zone. */
-  isoGround(f) {
-    const { ctx, g, cam, dpr, z, now, R, relief, inRect } = f;
+  /** Iso, Gelände: Höhennetz (WebGL, ground.js) oder ohne Relief das flache Bodenbild; deckt die ganze Leinwand. */
+  isoTerrain(f) {
+    const { ctx, g, cam, dpr, now, R, relief } = f;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.imageSmoothingEnabled = true;
     if (relief) {
@@ -67,6 +67,11 @@ export const isoViewMethods = {
         ctx.drawImage(this.terrainIso, x0 * S, y0 * S, (x1 - x0) * S, (y1 - y0) * S, x0, y0, x1 - x0, y1 - y0);
       }
     }
+  },
+
+  /** Iso, Boden auf dem Gelände: Parks, Wege, Krater, Brücken, Stadtstraßen, Zone und Hot Zone. */
+  isoGround(f) {
+    const { ctx, g, cam, dpr, z, now, relief, inRect } = f;
     // Parks der Kartenstadt als Bodenbild (seit v5.23, maptown.js), vor Kratern und Stadtstraßen
     const parks = g.map.town?.parks ?? [];
     if (parks.length) {

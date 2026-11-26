@@ -51,8 +51,16 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
 - 3D-Gerüst: gebaut (`js/render3d/`, `?three=1`, Prüfwürfel `&cubes=1`, `tools/smoke-3d.mjs`: Abweichung 0,0000 px in allen
   4 Drehungen bei Zoom 0,35, 1, 1,6). three übernimmt Iso-Durchläufe über `Renderer3D.takes` (Namen aus `ISO_PASSES`).
 - Schalter: statt im Pausenmenü über die Schaltfläche „Ansicht“ bzw. V (2D → Iso → 3D, gemerkt; three.js lädt erst beim Wechsel).
-- Nächste Pakete (parallel möglich): 3D-Boden (Opus) ‖ Körper-Wandler (Sonnet) ‖ Billboard-Brücke (Opus).
-
+- Körper-Wandler: gebaut (`js/render3d/solids3d.js`, Test `test/solids3d.test.js`: alle 35 Einheiten, Felsen, Hirsch, Wildschwein).
+- 3D-Boden: gebaut (`js/render3d/ground3d.js`, Shader `FS_GROUND` aus `ground.js` unverändert). Durchlauf „Boden“ geteilt in
+  „Gelände“ (three) und „Boden“ (Parks, Wege, Stadtstraßen, Zonen: bleibt 2D bis „Bodenmarken“).
+- Billboard-Brücke: gebaut (`js/render3d/billboards.js`, Abgriff `setBlitSink` in `spritecache.js`, Atlas ≤ 4 Seiten 2048²).
+- Schichtung geändert (Grund: Lichtstimmung `drawMood` multipliziert über die ganze Leinwand, über einer durchsichtigen 2D-Leinwand
+  würde sie den 3D-Boden verdecken): three-Bilder werden je Durchlauf in die 2D-Leinwand kopiert statt darunter zu liegen; die
+  Durchläufe tauscht `Renderer3D.swaps`. Zwei Leinwände erst, wenn Nebel, Bodenmarken und Stimmung in three sind.
+- Prüfung `tools/smoke-3d.mjs`: Kamera 0 px; Iso gegen 3D (Seeds 3, 7, Sommer, Winter, 4 Drehungen) unter 1 % abweichende Pixel.
+- Nächste Pakete: 3D-Einheiten (Sonnet, braucht Körper-Wandler) ‖ Bodenmarken (Sonnet) ‖ 3D-Nebel (Sonnet); danach 3D-Bäume,
+  Licht und Schatten.
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als
 Billboards, Auswahl und Befehle funktionieren. Danach Fotos und Bildrate auf Rechner und Handy vergleichen.

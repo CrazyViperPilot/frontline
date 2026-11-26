@@ -82,6 +82,8 @@
   Wald, Bäume und Fabrikgelände stehen nur auf ebenem Grund.
 - **Darstellung:** Iso mit WebGL: echtes Höhennetz (Feinraster), Licht von rechts oben wie die Gebäudeschatten, Felsblöcke an steilen Hängen und auf Gipfeln, Geröll am Fuß, Sandufer, Wasser mit Tiefe,
   Wellen und hellem Saum, Erdschnitt am Kartenrand; Einheiten, Gebäude (auf ihrer tiefsten Ecke), Kreise und Linien stehen auf dem Gelände.
+  Die Wiese hat großflächig saftige, trockene und kahle Erdflecken, aus der Nähe Halme, Grasbüschel mit Licht und Schatten, Steinchen und Blütengruppen
+  (weiß, gelb, violett) aus einer kachelbaren Detailtextur in zwei Maßstäben; im Winter bleiben davon nur leichte Schneewellen.
   2D und Minimap: Schummerung (Licht aus Nordwest), Fels, Ufer und Seen aufgemalt.
   Ohne WebGL bleibt Iso flach mit aufgemaltem Gelände.
 - **Felder, Weiden, Feldwege:** Um die Einzelhäuser außerhalb der Zone liegen Gehöfte:

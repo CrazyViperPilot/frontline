@@ -3,6 +3,7 @@
 // demselben Netz. Zeichnet in ein eigenes Canvas, das der Renderer in sein 2D-Bild kopiert (erst Boden, später Nebel).
 import { BALANCE } from '../data/balance.js';
 import { RELIEF, FINE_N } from '../game/relief.js';
+import { groundDetail, DETAIL_N } from './groundtex.js';
 
 const W = BALANCE.map.width;
 const STEP = RELIEF.step;
@@ -41,6 +42,7 @@ const FS_GROUND = `
 precision highp float;
 uniform sampler2D uTex;
 uniform sampler2D uNoise;
+uniform sampler2D uDetail;
 uniform vec3 uLight;
 uniform float uTime;
 uniform float uWater;
@@ -67,6 +69,34 @@ void main() {
   float n2 = nz(vPos + 91.0, 1.1);
   // Gras: oben trockener und heller
   base *= mix(vec3(1.0), vec3(1.10, 1.05, 0.84), hh * (1.0 - uSnow));
+  // Wiese (Paket „Bodentextur“): großflächig saftige, trockene und kahle Flecken, aus der Nähe Halme, Büschel, Steinchen und
+  // Blüten aus der Detailtextur (groundtex.js) in zwei Maßstäben, gedreht gegeneinander, damit keine Kacheln auffallen.
+  // veg = wie sehr das Bodenbild Wiese ist (grün, nicht grau, nicht verschneit); Plätze, Wege und Schnee bleiben fast unberührt.
+  float veg = clamp((base.g - base.b) * 7.0, 0.0, 1.0) * clamp((base.g - base.r) * 6.0 + 0.8, 0.0, 1.0) * (1.0 - uSnow * 0.85);
+  float m1 = nz(vPos + 1500.0, 70.0);
+  float m2 = nz(vPos + 733.0, 24.0);
+  float m3 = nz(vPos + 90.0, 9.0);
+  float lushK = smoothstep(0.44, 0.28, m1);
+  float dryK = smoothstep(0.54, 0.70, m1 + (m2 - 0.5) * 0.5);
+  float bare = smoothstep(0.67, 0.75, m2 + (m3 - 0.5) * 0.7) * smoothstep(0.45, 0.6, m1);
+  vec2 dp = vPos / ${DETAIL_N.toFixed(1)};
+  vec4 d1 = texture2D(uDetail, dp);
+  vec4 d2 = texture2D(uDetail, mat2(0.8, 0.6, -0.6, 0.8) * vPos / 1210.0 + 0.37);
+  float tl = texture2D(uDetail, dp + uLight.xy * ${(2.5 / DETAIL_N).toFixed(5)}).g; // Büschelhöhe ein Stück zum Licht hin
+  float blades = (d1.r - 0.5) * 0.6 + (d2.r - 0.5) * 0.3;
+  float tuftLit = (d1.g - tl) * 1.5 + (d1.g - 0.3) * 0.15; // Hang des Büschels zum Licht hell, abgewandt dunkel
+  vec3 gr = base;
+  gr *= mix(vec3(1.0), vec3(0.86, 1.04, 0.80), lushK);
+  gr *= mix(vec3(1.0), vec3(1.17, 1.08, 0.80), dryK);
+  gr = mix(gr, vec3(0.42, 0.37, 0.28) * (0.88 + 0.28 * m3), bare * 0.75);
+  gr *= 1.0 + (blades + tuftLit) * (1.0 - 0.6 * bare);
+  float pb = max(d1.b, d2.b * 0.85);
+  gr = mix(gr, vec3(0.66, 0.62, 0.55) * (0.45 + 0.65 * pb), smoothstep(0.12, 0.3, pb) * (0.2 + 0.8 * bare));
+  float fh = nz(vPos + 4099.0, 30.0);
+  vec3 bloom = mix(mix(vec3(0.93, 0.92, 0.84), vec3(0.96, 0.80, 0.26), step(0.47, fh)), vec3(0.72, 0.56, 0.86), step(0.57, fh));
+  float fl = d1.a * (1.0 - bare) * (1.0 - 0.7 * dryK) * smoothstep(0.45, 0.62, nz(vPos + 2711.0, 16.0));
+  gr = mix(gr, bloom, fl * 0.9);
+  base = mix(base * (1.0 + (d1.r - 0.5) * 0.15 + tuftLit * 0.4 * uSnow), gr, veg);
   vec3 n = normalize(vec3(-vG * 1.9, 1.0));
   float lit = clamp(1.0 + 1.05 * (dot(n, uLight) - uLight.z), 0.6, 1.35);
   float rk = max(smoothstep(${RELIEF.rock.toFixed(2)}, ${(RELIEF.steep + 0.03).toFixed(2)}, slope + (n1 - 0.5) * 0.1), smoothstep(${(RELIEF.peak - 40).toFixed(1)}, ${RELIEF.peak.toFixed(1)}, vH));
@@ -286,6 +316,15 @@ class Ground {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.generateMipmap(gl.TEXTURE_2D); // Zweierpotenz: geht auch mit WebGL 1
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    this.detailTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.detailTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, DETAIL_N, DETAIL_N, 0, gl.RGBA, gl.UNSIGNED_BYTE, groundDetail());
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+    if (this.aniso) gl.texParameterf(gl.TEXTURE_2D, this.aniso.TEXTURE_MAX_ANISOTROPY_EXT, Math.min(4, gl.getParameter(this.aniso.MAX_TEXTURE_MAX_ANISOTROPY_EXT) || 1));
   }
 
   /** Statisches Netz: Lage der Feinpunkte und Dreiecke; dazu der Erdschnitt am Rand (eigene Puffer). */
@@ -474,6 +513,9 @@ class Ground {
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, this.noiseTex);
     gl.uniform1i(u.uNoise, 2);
+    gl.activeTexture(gl.TEXTURE3);
+    gl.bindTexture(gl.TEXTURE_2D, this.detailTex);
+    gl.uniform1i(u.uDetail, 3);
     gl.uniform3f(u.uLight, light[0], light[1], light[2]);
     gl.uniform1f(u.uTime, time);
     gl.uniform1f(u.uSnow, snow);

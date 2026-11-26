@@ -133,10 +133,14 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawQuarterTop(ctx, grid, b, color, zoom, season) – 2D: alle Teile des Viertels (ohne Boden und ohne das Regierungsgebäude) in eine…
 - _quarter – Für Tests: Plan, Gruppen und Hilfen
 
-## ground.js (24 KB)
+## ground.js (27 KB)
 - LIGHT_ELEV – Lichthöhe (z-Anteil des Lichtvektors)
 - FOG_EXPLORED_ALPHA – Nebel über Erkundetem: abgedunkelt, nicht schwarz (0 … 255)
 - getGround() – Gemeinsamer WebGL-Boden (ein Kontext für Spiel und Editor) oder null, wenn WebG…
+
+## groundtex.js (4.3 KB)
+- DETAIL_N – Texel je Kante (Zweierpotenz: Mipmaps und Kachelung auch in WebGL 1)
+- groundDetail() – Kachelbare Detailtextur, DETAIL_N² RGBA (Uint8Array)
 
 ## indprops.js (11 KB)
 - isIndSingle(kind) – Gibt es ein Modell dieser Art hier?
@@ -152,4 +156,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - setUprightAt(ctx, cam, dpr, sx, sy, wx, wy) – Transform: aufrecht (nicht verzerrt), Weltpunkt (wx, wy) landet in (sx, sy); Ma…
 - setIsoGround(ctx, cam, dpr) – Bodenebene der ganzen Welt isometrisch (Gelände, Zone, Nebel …); mit Gelände au…
 - drawBox(ctx, cam, x0, y0, x1, y1, h, color, opts) – Quader mit Grundfläche [x0,x1]×[y0,y1] (Welt) und Höhe h (Bildschirm-Pixel, mit…
-- drawRotBox(ctx, cam, cx, cy, len, wid, ang, h, color, opts) – Quader um (cx, cy) mit Länge `len` (entlang `ang`) und Breite `wid`, beliebig g…

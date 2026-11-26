@@ -11,7 +11,7 @@ Gemalte Bilder laufen über `spritecache.js`, Bauteile aus `isokit.js`. Ebenen d
 - `sprites.js` – einfache Formen von oben für Einheiten, Gebäude, Kisten, Tiere; Farbhilfen `shade`, `tint`, `hexA`
 - `iso.js`, `isobuild.js`, `isosprites.js` – Iso-Grundkörper, Höhen (`buildingHeight`), Ersatzgebäude, Schutt; Hülle um `unitpaint.js`
 - `unitpaint.js` – Einheiten und Wracks als 3D-Modelle (Familien in `units/`). `drawUnitIso`, `drawUnitTop`, `drawWreckIso`
-- `fx.js` – Explosion, Leuchtspur, Geschoss, Rauch, Feuer, Krater, Wrack-Trümmer. `drawEffect`, `drawShell`, `drawWreckRubble`
+- `fx.js` – Explosion, Leuchtspur, Geschoss, Rauch, Feuer, Krater, Trümmer `drawEffect`, `drawShell`, `drawWreckRubble`
 - `marks.js` – Auswahlring, Balken, Stern, Befehlsmarken, Sammelpunkt-Fahne. `drawSelectMark`, `drawGauge`, `drawMoveRing`
 - `milbuild.js` – alle Militärgebäude samt Baustellen in 2D und Iso. `drawMilTop`, `drawMilIso`
 - `townhouses.js`, `works.js`, `university.js`, `cityhall.js` – 1 × 1-Stadthäuser, Werke und Kraftwerk, Universität, Regierungsgebäude
@@ -20,10 +20,10 @@ Gemalte Bilder laufen über `spritecache.js`, Bauteile aus `isokit.js`. Ebenen d
 - `citylayer.js` – Stadt auf der Karte: Straßen, Zonen, Gebäudeliste, Schilder. `cityBuildings`, `drawCityGround`, `drawCityTop`
 - `landmarks.js`, `mappreview.js` – Fabrikhalle, Strommasten fester Karten; Kartenvorschau. `pylonNet`, `drawMapPreview`
 - `paving.js` – Pflaster der Karte: graue Plätze und Bürgersteige (nur Boden). `drawPaving`, `drawPlaza`, `drawWalk`
-- `maptown.js`, `props.js`, `stronghold.js` – Kartenstadt, Kleinkram (Autos, Bänke, Kisten, Ballen), Besatzungsfahnen und Ausbauten
+- `maptown.js`, `props.js`, `stronghold.js` – Kartenstadt, Kleinkram (Autos, Bänke, Kisten, Ballen), Besatzungsfahnen, Ausbauten
 - `mapprops.js`, `fences.js`, `milprops.js`, `indprops.js`, `refprops.js`, `civprops.js` – Props: Aussehen, Zäune, Militär, Industrie, Zivil. `propLooks`
 - `nature.js` – Bäume, Büsche, Felsen, Tiere. `drawTreeIso`, `drawRockIso`, `forestKind`
-- `ground.js`, `reliefimg.js`, `terrain.js` – WebGL-Boden samt Nebel, Geländebild, Kartenbild. `getGround`, `buildTerrain`
+- `ground.js`, `groundtex.js`, `reliefimg.js`, `terrain.js` – WebGL-Boden, Nebel, Gras, Geländebild, Kartenbild. `getGround`, `buildTerrain`
 - `ways.js`, `fields.js` – Feldwege, Gleise, Straßenmuster (Fotos `textures/`); Äcker, Weiden. `drawWays`, `buildFields`, `fieldBales`
 - `bridge.js`, `season.js` – Brücken und Furtstangen; Jahreszeitenfarben. `drawBridgeIso`, `seasonal`
 - `mood.js`, `weatherfx.js` – Tageslicht, Regen, Schnee, Nebelbänke. `drawMood`, `drawWeather`

@@ -1,0 +1,1 @@
+**Lebendigere Wiese** (§7 „Darstellung“, nur Bild): Der WebGL-Boden der Iso-Ansicht zeigt saftige, trockene und kahle Flecken, aus der Nähe Halme, Grasbüschel, Steinchen und Blütengruppen; im Winter leichte Schneewellen.

@@ -190,6 +190,7 @@ const ASSETS = [
   './js/render/govquarter.js',
   './js/render/terrain.js',
   './js/render/ground.js',
+  './js/render/groundtex.js',
   './js/render/reliefimg.js',
   './js/render/sprites.js',
   './js/render/renderer.js',

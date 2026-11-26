@@ -2,7 +2,9 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## townhouses.js (Fortsetzung)
+## townhouses.js (55 KB)
+- beginTownFrame(ratio) – Zu Beginn jedes Bilds (Renderer): Gerätepixel je CSS-Pixel merken und das Zeitb…
+- townLift(ck, level) – Höhe (Weltpixel) über dem höchsten Teil, für das Schild darüber
 - drawTownIso(ctx, cam, b, season) – Isometrisch: Gebäude b als Bild aus dem Zwischenspeicher (für jede Drehung dass…
 - drawTownTop(ctx, b, zoom) – 2D von oben: Gebäude b als Bild aus dem Zwischenspeicher (Weltkoordinaten, Kame…
 

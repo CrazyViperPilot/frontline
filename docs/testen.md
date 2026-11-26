@@ -79,6 +79,10 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
   200 Einheiten), Schatten (Fotos je Stufe und Drehung, Panzer am Hang, Nacht; Schattenkarte beim Verschieben gleich groß und auf dem Texel-Raster).
   `?shadows=off|mid|high` setzt die Schattenstufe der Ansicht 3D. `--only baeume`: 3D-Bäume je Jahreszeit nah und fern (Fotos, höchstens
   2 Draw-Calls je Art bei ≥ 400 Bäumen, Zeit gemalte gegen 3D-Bäume).
+- `node tools/smoke-3d.mjs --only mvp` (Paket „MVP-Messung“, nur ausdrücklich, gut 10 min): Rundgang je Gerät desktop, tablet, phone
+  (Ansicht umschalten, Drehungen, Zoom, Wald, Hang, Winter; Fotos alt/neu nebeneinander nach `.smoke/3d/mvp/`), Auswahl per Klick/Tippen
+  und Befehl in 3D (Fehler, wenn nicht), Bildrate Iso und 3D Aus/Mittel/Hoch nach `--gametime` Spielminuten Zeitraffer; Zahlen auch in
+  `.smoke/3d/mvp/messung.json`. Optionen `--devices desktop,phone`, `--fpsms 5000`. Bericht: `docs/mvp-3d-bericht.md`.
 - Mit `device: 'tablet'` bzw. `'phone'` öffnet es das Spiel mit Bildschirm, Pixeldichte und Touch des Geräts.
 - `press(sel)` tippt dort (sonst Klick).
 - `measureFps(g, ms)` misst Bildrate und langsamstes Bild.

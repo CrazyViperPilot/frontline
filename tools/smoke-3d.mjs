@@ -14,10 +14,20 @@
 // 6. Bäume (Paket „3D-Bäume“): Seed 7, Wald; je Jahreszeit Fotos nah (Zoom 1,6) und fern (0,5), Iso und 3D, dazu 4 Drehungen;
 //    Fehler, wenn bei mindestens 400 Bäumen im Bild eine Art mehr als TREE_SHAPES Draw-Calls braucht (Werfer der Schattenkarte
 //    nicht mitgezählt); Zeit des Durchlaufs „Objekte“ mit gemalten und mit 3D-Bäumen, Schatten Aus und Hoch.
+// 7. MVP (Paket „MVP-Messung“, nur mit --only mvp, einige Minuten je Gerät): Rundgang je Gerät (desktop, tablet, phone) mit Seed 7:
+//    Start, Ansicht über V bzw. Knopf (3D → 2D → Iso → 3D), 4 Drehungen, Zoom 0,35/1/1,6, Wald, Panzer am Hang, Winter; jedes Bild
+//    alt (Iso) und neu (3D) nebeneinander als ein Foto nach <out>/mvp/<gerät>-<name>.png. Auswahl einer Einheit per Klick bzw.
+//    Tippen auf ihr Bild in 3D, Befehl per Rechtsklick bzw. Tippen auf den Boden: Fehler, wenn nicht gewählt oder sie nicht fährt.
+//    Danach Zeitraffer (beide Seiten KI, 10×) bis --gametime Spielminuten (Standard 5), dann Bildrate (measureFps, --fpsms ms)
+//    und langsamstes Bild in Iso und 3D mit Schatten Aus/Mittel/Hoch an Basis und Wald, im Winter am Start; Zeit je Durchlauf
+//    (timePasses) für Iso und 3D Mittel. Ergebnis zusätzlich als JSON nach <out>/mvp/messung.json. --devices desktop,phone wählt Geräte.
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
-//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume]
-import { openGame } from './smoke.mjs';
+//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|mvp]
+// Ohne --only laufen die Teile 1 bis 6; „mvp“ nur ausdrücklich.
+import { writeFile, mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import { openGame, measureFps, DEVICES } from './smoke.mjs';
 
 const arg = (name, def) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -446,6 +456,276 @@ async function trees() {
   }
 }
 
+/** Zwei Bildschirmfotos (PNG-Puffer) nebeneinander als ein Bild speichern, links „alt (Iso)“, rechts „neu (3D)“. */
+async function sideBySide(g, file, a, b) {
+  const url = await g.run(
+    async ({ a, b }) => {
+      const load = (s) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = `data:image/png;base64,${s}`; });
+      const [ia, ib] = await Promise.all([load(a), load(b)]);
+      const c = document.createElement('canvas');
+      const gap = 8;
+      c.width = ia.width + gap + ib.width;
+      c.height = Math.max(ia.height, ib.height);
+      const x = c.getContext('2d');
+      x.fillStyle = '#111';
+      x.fillRect(0, 0, c.width, c.height);
+      x.drawImage(ia, 0, 0);
+      x.drawImage(ib, ia.width + gap, 0);
+      x.font = `bold ${Math.round(c.height / 28)}px sans-serif`;
+      for (const [t, px] of [['alt (Iso)', 10], ['neu (3D)', ia.width + gap + 10]]) {
+        x.fillStyle = 'rgba(0,0,0,.6)';
+        x.fillRect(px - 4, c.height - c.height / 18 - 8, x.measureText(t).width + 8, c.height / 18 + 4);
+        x.fillStyle = '#fff';
+        x.fillText(t, px, c.height - 14);
+      }
+      return c.toDataURL('image/png');
+    },
+    { a: a.toString('base64'), b: b.toString('base64') },
+  );
+  await writeFile(file, Buffer.from(url.split(',')[1], 'base64'));
+}
+
+/** Ansicht aus Iso und 3D fotografieren (Spiel angehalten, je 4 Bilder fertig gemalt) und nebeneinander speichern. */
+async function mvpPair(g, dir, dev, name) {
+  const shots = [];
+  for (const three of [false, true]) {
+    await g.run((three) => {
+      const s = window.__frontline.session();
+      s.camera.three = three;
+      for (let i = 0; i < 4; i++) s.renderer.render(s.controller.view);
+    }, three);
+    await g.page.waitForTimeout(250);
+    shots.push(await g.page.screenshot());
+  }
+  await sideBySide(g, join(dir, `${dev}-${name}.png`), shots[0], shots[1]);
+}
+
+/** Bildrate an der aktuellen Ansicht: Iso und 3D mit Schatten Aus/Mittel/Hoch, Spiel läuft (1×). */
+async function mvpFps(g, ms) {
+  const row = {};
+  for (const [label, three, level] of [['Iso', false, 'off'], ['3D Aus', true, 'off'], ['3D Mittel', true, 'mid'], ['3D Hoch', true, 'high']]) {
+    await g.run(({ three, level }) => {
+      const s = window.__frontline.session();
+      s.loop.paused = false;
+      s.loop.speed = 1;
+      s.camera.three = three;
+      s.renderer.setShadows(level);
+    }, { three, level });
+    await g.page.waitForTimeout(600);
+    const r = await measureFps(g, ms);
+    row[label] = { fps: r.fps, worst: r.worst };
+  }
+  return row;
+}
+
+/** Kamera auf (x, y) mit Drehung und Zoom. */
+const look = (g, x, y, rot = 0, zoom = 1) =>
+  g.run(({ x, y, rot, zoom }) => {
+    const c = window.__frontline.session().camera;
+    c.rot = rot;
+    c.zoom = zoom;
+    c.centerOn(x, y);
+  }, { x, y, rot, zoom });
+
+/** Auswahl per Klick/Tippen auf das Bild einer Einheit in 3D und Befehl per Rechtsklick/Tippen auf den Boden. */
+async function mvpOrder(g, dir, dev) {
+  const { page } = g;
+  const u = await g.run(() => {
+    const s = window.__frontline.session();
+    s.loop.paused = true;
+    s.camera.three = true;
+    s.camera.rot = 0;
+    s.camera.zoom = 1.2;
+    s.controller.view.selection.clear();
+    const hq = s.game.buildings.find((b) => b.main && b.team === 0);
+    // freier Platz neben der Hauptstadt (Ausweichen übernimmt spawnUnit)
+    const t = s.game.spawnUnit('tank', 0, hq.x + 320, hq.y + 320);
+    if (!t) return null;
+    s.camera.centerOn(t.x, t.y);
+    for (let i = 0; i < 3; i++) s.renderer.render(s.controller.view);
+    return { id: t.id, x: t.x, y: t.y };
+  });
+  if (!u) throw new Error('Panzer für die Auswahl nicht gesetzt');
+  const at = (wx, wy) =>
+    g.run(({ wx, wy }) => {
+      const s = window.__frontline.session();
+      const p = s.camera.worldToScreen(wx, wy);
+      const r = s.renderer.canvas.getBoundingClientRect();
+      return { x: r.left + p.x, y: r.top + p.y };
+    }, { wx, wy });
+  const p = await at(u.x, u.y);
+  if (g.touch) await page.touchscreen.tap(p.x, p.y);
+  else await page.mouse.click(p.x, p.y);
+  await page.waitForTimeout(300);
+  const selected = await g.run((id) => window.__frontline.session().controller.view.selection.has(id), u.id);
+  await g.shot(`mvp/${dev}-auswahl-3d`);
+  if (!selected) return { selected, moved: 0 };
+  // Ziel: 260 Welt-px weiter (Bild nach rechts unten), auf dem Boden
+  const q = await at(u.x + 260, u.y + 60);
+  if (g.touch) await page.touchscreen.tap(q.x, q.y);
+  else await page.mouse.click(q.x, q.y, { button: 'right' });
+  await g.run(() => (window.__frontline.session().loop.paused = false));
+  await page.waitForTimeout(3000);
+  const moved = await g.run(({ id, x, y }) => {
+    const t = window.__frontline.session().game.units.find((v) => v.id === id);
+    return t ? Math.hypot(t.x - x, t.y - y) : 0;
+  }, u);
+  await g.run(() => (window.__frontline.session().loop.paused = true));
+  await g.shot(`mvp/${dev}-befehl-3d`);
+  return { selected, moved };
+}
+
+async function mvp() {
+  const devs = arg('devices', 'desktop,tablet,phone').split(',');
+  const gameMin = Number(arg('gametime', 5));
+  const fpsMs = Number(arg('fpsms', 5000));
+  const dir = join(out, 'mvp');
+  await mkdir(dir, { recursive: true });
+  const FOREST = { x: 7600, y: 9000 };
+  const report = {};
+  for (const dev of devs) {
+    if (!(dev in DEVICES)) throw new Error(`unbekanntes Gerät ${dev}`);
+    const res = (report[dev] = { fps: {}, passes: {}, order: null, gameMin: 0, notes: [] });
+    // --- Sommer: Rundgang, Auswahl, Befehl, Zeitraffer, Bildrate ---
+    let g = await openGame({ seed: 7, query: 'iso=1&three=1&shadows=mid&weather=summer&wx=clear', device: dev, out });
+    try {
+      const { page } = g;
+      const has3D = await g.run(() => !!window.__frontline.session().renderer.three && window.__frontline.session().camera.three);
+      if (!has3D) throw new Error(`${dev}: Ansicht 3D nicht aktiv (WebGL oder three.js fehlt)`);
+      // Ansicht über V bzw. Knopf „Ansicht“: 3D → 2D → Iso → 3D
+      const seen = [];
+      for (let i = 0; i < 3; i++) {
+        if (g.touch && (await g.reachable('[data-act=view]'))) await g.press('[data-act=view]');
+        else await page.keyboard.press('v');
+        await page.waitForTimeout(900);
+        seen.push(await g.run(() => { const c = window.__frontline.session().camera; return c.three ? '3D' : c.iso ? 'Iso' : '2D'; }));
+      }
+      if (seen.join() !== '2D,Iso,3D') {
+        fail++;
+        res.notes.push(`Ansicht umschalten: ${seen.join(' → ')} statt 2D → Iso → 3D`);
+      }
+      const hq = await g.run(() => {
+        const s = window.__frontline.session();
+        s.loop.paused = true;
+        const b = s.game.buildings.find((b) => b.main && b.team === 0);
+        return { x: b.x, y: b.y };
+      });
+      await look(g, hq.x + 150, hq.y + 100);
+      await mvpPair(g, dir, dev, 'start');
+      for (let rot = 1; rot < 4; rot++) {
+        await look(g, hq.x + 150, hq.y + 100, rot, 1);
+        await mvpPair(g, dir, dev, `drehung${rot}`);
+      }
+      for (const zoom of [0.35, 1.6]) {
+        await look(g, hq.x + 150, hq.y + 100, 0, zoom);
+        await mvpPair(g, dir, dev, `zoom${zoom}`);
+      }
+      await look(g, FOREST.x, FOREST.y, 0, 1);
+      await mvpPair(g, dir, dev, 'wald');
+      const hill = await slopeSpot(g, 2400);
+      if (hill) {
+        const u = await g.run((hill) => {
+          const s = window.__frontline.session();
+          const t = s.game.spawnUnit('tank', 0, hill.x, hill.y);
+          if (t) t.angle = 0.9;
+          return t ? { x: t.x, y: t.y } : null;
+        }, hill);
+        if (u) {
+          await look(g, u.x, u.y, 0, 2);
+          await mvpPair(g, dir, dev, 'hang');
+        } else res.notes.push('Panzer am Hang nicht gesetzt');
+      } else res.notes.push('kein Hang bei der Hauptstadt');
+      // Auswahl und Befehl in 3D
+      res.order = await mvpOrder(g, dir, dev);
+      if (!res.order.selected || res.order.moved < 20) fail++;
+      // Zeitraffer: Blau mit KI, 10×, in 2D (spart Zeichnen), bis gameMin Spielminuten oder 4 min echte Zeit
+      await g.run(async () => {
+        const { AI } = await import('/js/ai/ai.js');
+        const s = window.__frontline.session();
+        const blue = new AI(s.game, 0, 'normal');
+        const step = s.game.update.bind(s.game);
+        s.game.update = (dt) => {
+          blue.update(dt);
+          step(dt);
+        };
+        s.camera.three = false;
+        s.camera.iso = false;
+        s.loop.paused = false;
+        s.loop.speed = 10;
+      });
+      const t0 = Date.now();
+      while (Date.now() - t0 < 240000) {
+        if ((await g.run(() => window.__frontline.session().game.time)) >= gameMin * 60) break;
+        await page.waitForTimeout(2000);
+      }
+      res.gameMin = (await g.run(() => window.__frontline.session().game.time)) / 60;
+      res.units = await g.run(() => window.__frontline.session().game.units.filter((u) => u.alive).length);
+      await g.run(() => {
+        const s = window.__frontline.session();
+        s.camera.iso = true;
+        s.loop.speed = 1;
+      });
+      // Bildrate: Basis (eigene Truppen) und Wald
+      const base = await g.run(() => {
+        const s = window.__frontline.session();
+        const own = s.game.units.filter((u) => u.alive && u.team === 0 && !u.def.air);
+        const b = s.game.buildings.find((b) => b.main && b.team === 0);
+        if (!own.length) return { x: b.x, y: b.y };
+        return { x: own.reduce((a, u) => a + u.x, 0) / own.length, y: own.reduce((a, u) => a + u.y, 0) / own.length };
+      });
+      await look(g, base.x, base.y, 0, 1);
+      res.fps.Basis = await mvpFps(g, fpsMs);
+      await g.run(() => (window.__frontline.session().loop.paused = true));
+      await mvpPair(g, dir, dev, `basis-${Math.round(res.gameMin)}min`);
+      for (const [label, three, level] of [['Iso', false, 'off'], ['3D Mittel', true, 'mid']]) {
+        await g.run(({ three, level }) => {
+          const s = window.__frontline.session();
+          s.camera.three = three;
+          s.renderer.setShadows(level);
+        }, { three, level });
+        res.passes[label] = await timePasses(g, frames);
+      }
+      await look(g, FOREST.x, FOREST.y, 0, 1);
+      res.fps.Wald = await mvpFps(g, fpsMs);
+    } finally {
+      errors.push(...g.errors.map((e) => `${dev}: ${e}`));
+      await g.close();
+    }
+    // --- Winter: Fotos und Bildrate am Start ---
+    g = await openGame({ seed: 7, query: 'iso=1&three=1&shadows=mid&weather=winter&wx=snow', device: dev, out });
+    try {
+      const hq = await g.run(() => {
+        const s = window.__frontline.session();
+        s.loop.paused = true;
+        const b = s.game.buildings.find((b) => b.main && b.team === 0);
+        return { x: b.x, y: b.y };
+      });
+      await look(g, hq.x + 150, hq.y + 100);
+      await mvpPair(g, dir, dev, 'winter');
+      await look(g, FOREST.x, FOREST.y, 0, 1);
+      await mvpPair(g, dir, dev, 'winter-wald');
+      await look(g, hq.x + 150, hq.y + 100);
+      res.fps.Winter = await mvpFps(g, fpsMs);
+    } finally {
+      errors.push(...g.errors.map((e) => `${dev}: ${e}`));
+      await g.close();
+    }
+    // Ausgabe je Gerät
+    const o = res.order;
+    console.log(`MVP ${dev}: Auswahl ${o.selected ? 'ok' : 'FEHLT'}, Befehl ${o.moved >= 20 ? `ok (${o.moved.toFixed(0)} px gefahren)` : 'FEHLT'}; Partie ${res.gameMin.toFixed(1)} Spielminuten, ${res.units} Einheiten`);
+    for (const n of res.notes) console.log(`  Hinweis: ${n}`);
+    console.log(`  ${'Bilder/s (langsamstes ms)'.padEnd(26)}${['Iso', '3D Aus', '3D Mittel', '3D Hoch'].map((l) => l.padStart(14)).join('')}`);
+    for (const [scene, row] of Object.entries(res.fps)) {
+      console.log(`  ${scene.padEnd(26)}${Object.values(row).map((r) => `${r.fps.toFixed(1)} (${r.worst.toFixed(0)})`.padStart(14)).join('')}`);
+    }
+    for (const [label, p] of Object.entries(res.passes)) {
+      console.log(`  ms je Durchlauf ${label}: ${Object.entries(p).map(([k, v]) => `${k} ${v.toFixed(1)}`).join(', ')}`);
+    }
+  }
+  await writeFile(join(dir, 'messung.json'), JSON.stringify(report, null, 1));
+  return report;
+}
+
 try {
   if (!only || only === 'kamera') await camera();
   if (!only || only === 'vergleich') await compare();
@@ -453,6 +733,7 @@ try {
   if (!only || only === 'messung') await measure();
   if (!only || only === 'schatten') await shadows();
   if (!only || only === 'baeume') await trees();
+  if (only === 'mvp') await mvp();
 } catch (e) {
   console.error(`Abbruch: ${e.message}`);
   fail++;

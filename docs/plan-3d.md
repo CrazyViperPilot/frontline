@@ -86,7 +86,12 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
 - Offen für MVP-Messung: echte GPU (Rechner, Handy „Mittel“) mit Wald im Bild; falls zu teuer: weiter weg Billboards (Impostor),
   weniger Bäume in die Schattenkarte, Bodennetz in Kacheln. Einheiten empfangen keine Schatten (Baumschatten auf Panzern fehlen);
   3D-Bäume dicht an gemalten Gebäuden können mit der Krone durch die Wand ragen (Billboards haben nur die Tiefe des Fußpunkts).
-- Nächstes Paket: MVP-Messung.
+- MVP-Messung: gebaut (`tools/smoke-3d.mjs --only mvp`, Bericht `docs/mvp-3d-bericht.md` mit Fotos alt/neu und Anleitung).
+  Rundgang desktop/tablet/phone grün: Auswahl und Befehl in 3D per Klick bzw. Tippen, Umschalten, Drehungen, Zoom, Wald, Hang,
+  Winter, keine Browserfehler. Bildrate nach 5 Spielminuten (Software-WebGL, nur Vergleich): 3D Aus 0,8–1,0× Iso, 3D Mittel/Hoch
+  0,65–0,8× Iso (Wald am schlechtesten; Desktop Basis Iso 3,2, 3D Mittel 2,3 Bilder/s). Mehraufwand fast ganz in „Objekte“.
+  Neu offen: im Iso-Winterfoto fehlte ein Bauernhof-Sprite (Zeitbudget des Sprite-Caches?).
+- Nächster Schritt: Daniel misst auf eigenem Handy und Rechner (`?three=1&perf=1`) und entscheidet: weiter, nachbessern oder verwerfen.
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als
 Billboards, Auswahl und Befehle funktionieren. Danach Fotos und Bildrate auf Rechner und Handy vergleichen.

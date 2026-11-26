@@ -1,4 +1,4 @@
-# Symbol-Index render (Teil 3 von 4, maptown.js bis terrain.js)
+# Symbol-Index render (Teil 3 von 4, maptown.js bis stronghold.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
@@ -67,6 +67,9 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - SPECIES
 - forestKind(o) – Waldart (fest nach Lage des Walds): Laubwald, Nadelwald oder Mischwald
 - forestSpecies(kind, u) – Art eines Baums im Wald nach Waldart; u ∈ [0, 1) ist der Zufall des Baums
+- treeLook3d(t, season) – Aussehen eines Baums für die Ansicht 3D (render3d/trees3d.js), gleich gewürfelt…
+- TREE_COLORS – Farben der Bäume für die Ansicht 3D: alle Laubpaletten (Reihenfolge fest), Rind…
+- leafCanvas() – Kachelbares Blattmuster in Grau (128 = neutral) für den Mischmodus „overlay“
 - drawTreeIso(ctx, cam, t, season) – Baum in Iso (Stammfuß am Weltpunkt, Größe nach t.r)
 - drawTreeTop(ctx, t, season, zoom) – Baum von oben (2D, Welt-Transformation gesetzt), mit Schatten
 - drawBushIso(ctx, cam, b, season) – Busch in Iso (Fuß am Weltpunkt)
@@ -153,8 +156,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawHouseWorksIso(ctx, cam, h, part, body) – Ausbauten eines Hauses isometrisch (Ankerpunkt = Hausmitte am Boden, Kamera mit…
 - drawHouseFlagIso(ctx, cam, h, color, t, body) – Fahne am besetzten Haus (Iso): Mast an der linken Ecke des Hauses (außen; Altba…
 - drawHouseWorksTop(ctx, h, zoom) – Ausbauten von oben (2D, Weltkoordinaten, Kamera-Transformation gesetzt)
-- drawHouseFlagTop(ctx, h, color, t) – Fahne von oben (2D, Weltkoordinaten): Mast an der linken unteren Ecke, Tuch nac…
-
-## terrain.js (23 KB)
-- parkDeco(p) – Ausstattung eines Parks (deterministisch aus Lage und Größe): Bäume am Rand, vi…
-- invalidateTerrain(map) – Karte wurde verändert (Editor): zwischengespeicherte Geländebilder verwerfen

@@ -40,7 +40,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - update(relief, tex, light, time, snow) – Vor dem Zeichnen: Gelände, Bodenbild, Licht (Weltvektor, z oben), Zeit (s) und…
   - dispose()
 
-## renderer3d.js (12 KB)
+## renderer3d.js (13 KB)
 - class Renderer3D
   - constructor(canvas, game, camera, team, gl, opts) – gl: fertiger THREE.WebGLRenderer (make3D)
   - setShadows(level) – Schattenstufe 'off' | 'mid' | 'high' (BALANCE.shadows3d), sofort wirksam; Aus:…
@@ -81,6 +81,20 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## testscene.js (1.8 KB)
 - probePoints(game, team) – Prüfpunkte { name, x, y, color } für die Karte von game; Hauptstadt = Gebäude m…
 - buildTestCubes(points, heightAt) – Würfelgruppe in Weltkoordinaten (Kind der Wurzelgruppe); heightAt(x, y) liefert…
+
+## trees3d.js (21 KB)
+- TREE_SHAPES – Formen je Art in 3D (die Drehung je Baum sorgt für weitere Vielfalt)
+- LOD_ZOOM – darunter gröbere Formen (bis ~1500 Bäume im Bild, Messung Seed 7)
+- TREE_SPECIES
+- treeGeometry(sp, shape, bare, lod) – Geometrie einer Form (je Art, Form, kahl, grob einmal gebaut)
+- class Trees3D
+  - constructor()
+  - begin(light, season, zoom) – Bildanfang: Sonne (Welt, z oben), Jahreszeit, Zoom (gröbere Formen darunter)
+  - setOf(sp, shape, bare, lod) – Satz (InstancedMesh) einer Form, beim ersten Gebrauch angelegt
+  - add(L, x, y, h) – Baum (Aussehen L aus treeLook3d) am Weltpunkt (x, y) auf Höhe h
+  - end() – Bildende: Zahl der Bäume je Form setzen, leere Formen verstecken
+  - stats() – Sichtbare Formen (= Draw-Calls ohne Schattenkarte) und Bäume, je Art
+  - dispose()
 
 ## units3d.js (5.7 KB)
 - class Units3D

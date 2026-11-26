@@ -98,6 +98,7 @@ export const isoItemMethods = {
     ctx.beginPath();
     for (const it of items) {
       if ((it.t !== 1 && it.t !== 2 && it.t !== 13) || it.o.inner || it.o.under) continue;
+      if (it.t === 1 && this.treeShadow3d) continue; // Ansicht 3D mit Schattenkarte: der 3D-Baum wirft ihn selbst
       if (relief) cam.pin(this.baseHeight(it));
       natureShadowIso(ctx, cam, it.o, it.t);
       cam.unpin();
@@ -126,7 +127,8 @@ export const isoItemMethods = {
       if (relief) cam.pin(this.baseHeight(it));
       if (it.t === 0) this.drawTownItemIso(f, it.o);
       else if (it.t === 1) {
-        if (!drawTreeIso(ctx, cam, it.o, this.season)) drawTree(ctx, cam, it.o, this.season); // gemalt (nature.js), sonst Ersatz
+        // 3D (render3d/trees3d.js, nur im Durchlauf „Objekte“ der Ansicht 3D), sonst gemalt (nature.js), sonst Ersatz
+        if (!this.tree3d?.(it.o) && !drawTreeIso(ctx, cam, it.o, this.season)) drawTree(ctx, cam, it.o, this.season);
       }
       else if (it.t === 2) { if (!drawRockIso(ctx, cam, it.o, this.season)) drawRock(ctx, cam, it.o); }
       else if (it.t === 13) drawBushIso(ctx, cam, it.o, this.season);
@@ -184,7 +186,7 @@ export const isoItemMethods = {
     const fort = hs && this.fortShown(hs, known) ? hs : null; // besetztes oder ausgebautes Haus (seit v5.48, stronghold.js)
     const body = fort ? houseYardIso(o, cam.rot | 0) : null; // Altbau mit Hof: Säcke vor der Hofmauer, Fahne an ihrer Ecke
     if (fort) drawHouseWorksIso(ctx, cam, fort, 'back', body); // Draht hinter dem Haus
-    if (o.part?.t !== 'tree' || !drawTreeIso(ctx, cam, o.part, this.season)) drawTownBuilding(ctx, cam, o, this.season); // Bäume der Großbauten gemalt (nature.js)
+    if (o.part?.t !== 'tree' || !(this.tree3d?.(o.part) || drawTreeIso(ctx, cam, o.part, this.season))) drawTownBuilding(ctx, cam, o, this.season); // Bäume der Großbauten gemalt (nature.js)
     if (fort) {
       drawHouseWorksIso(ctx, cam, fort, 'front', body); // Sandsäcke, MG-Nest, Draht davor
       if (fort.occupants.length && fort.team >= 0) drawHouseFlagIso(ctx, cam, fort, g.teams[fort.team]?.color ?? '#888', f.now / 1000, body);

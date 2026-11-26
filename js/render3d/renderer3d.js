@@ -16,6 +16,8 @@ import { Billboards } from './billboards.js';
 import { Units3D } from './units3d.js';
 import { Fog3D } from './fog3d.js';
 import { Sun3D, CATCH } from './sun3d.js';
+import { Trees3D } from './trees3d.js';
+import { treeLook3d } from '../render/nature.js';
 import { probePoints, buildTestCubes } from './testscene.js';
 
 const BG = 0x0d110d; // Hintergrund wie der Iso-Boden außerhalb der Karte (layers/isoview.js BG_RGB)
@@ -50,6 +52,11 @@ export class Renderer3D extends Renderer {
     this.units3d = new Units3D(); // Einheiten als Meshes (units3d.js), gezeigt über unit3d aus drawUnitIsoAt
     this.objRoot.add(this.units3d.group);
     this.unit3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
+    this.trees3d = new Trees3D(); // Bäume als InstancedMesh je Form (trees3d.js), gezeigt über tree3d aus isoObjects
+    this.objRoot.add(this.trees3d.group);
+    this.tree3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
+    this.trees3dOn = true; // false: Bäume wie in Iso als gemalte Billboards (Prüfskript: Vergleich Iso/3D, Messung)
+    this.treeShadow3d = false; // isoShadows: gemalte Baumschatten weglassen (3D-Bäume werfen sie selbst)
     // Nebel: eigene Szene über allem (ohne Tiefentest), gleiche Geometrie wie der Boden
     this.fogScene = new THREE.Scene();
     this.fogRoot = makeWorldRoot();
@@ -92,6 +99,7 @@ export class Renderer3D extends Renderer {
   render(view = null) {
     const on = this.camera.iso && this.camera.three;
     this.isoSwap = on ? this.swaps : null;
+    this.treeShadow3d = on && this.trees3dOn && this.sun.on && !this.cubes;
     this.frame3d = false; // Kamera für dieses Bild noch nicht gesetzt
     super.render(view); // gleicht auch Relief und Größe ab
     if (on && this.cubes) this.markProbes();
@@ -153,6 +161,9 @@ export class Renderer3D extends Renderer {
     this.units3d.begin(light);
     const sun = this.sun.on && !this.cubes;
     this.shadow3d = sun;
+    this.trees3d.begin(light, this.season, cam.zoom);
+    const season = this.season;
+    this.tree3d = !this.trees3dOn ? null : (t) => this.trees3d.add(treeLook3d(t, season), t.x, t.y, cam.pinned ?? (relief ? relief.displayAt(t.x, t.y) : 0));
     this.unit3d = (f, u, aim, lift) => this.units3d.show(u, cam.pinned ?? (relief ? relief.displayAt(u.x, u.y) : 0), lift, aim, f.now);
     try {
       for (const it of f.items) {
@@ -170,10 +181,12 @@ export class Renderer3D extends Renderer {
     } finally {
       setBlitSink(null);
       this.unit3d = null;
+      this.tree3d = null;
       this.shadow3d = false;
       f.ctx = ctx;
     }
     this.units3d.end();
+    this.trees3d.end();
     bb.end();
     const gl = this.gl;
     gl.setClearColor(0x000000, 0);
@@ -239,6 +252,7 @@ export class Renderer3D extends Renderer {
     this.ground3d.dispose();
     this.billboards.dispose();
     this.units3d.dispose();
+    this.trees3d.dispose();
     this.fog3d.dispose();
     this.sun.dispose();
     this.gl.dispose();

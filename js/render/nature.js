@@ -135,6 +135,23 @@ function treeLook(t) {
   return { h, sp, shape, size };
 }
 
+/**
+ * Aussehen eines Baums für die Ansicht 3D (render3d/trees3d.js), gleich gewürfelt wie das gemalte Bild: Art sp, Form shape, Größe size
+ * (1 = Bezugsradius R), Zufall h, Laubpalette P [Licht, Mitte, Schatten, Tiefe] der Jahreszeit (Nadelbäume immer gleich).
+ */
+export function treeLook3d(t, season = 'summer') {
+  const L = treeLook(t);
+  return { ...L, P: leavesOf(L.sp, season, palIndex(L.sp, season, L.h)) };
+}
+
+/** Farben der Bäume für die Ansicht 3D: alle Laubpaletten (Reihenfolge fest), Rinde je Art, Schnee, kahle Zweige. */
+export const TREE_COLORS = {
+  palettes: [...LEAVES.broad.summer, ...LEAVES.broad.autumn, ...LEAVES.birch.summer, ...LEAVES.birch.autumn, SPRUCE, PINE],
+  bark: BARK,
+  snow: SNOW,
+  twig: TWIG,
+};
+
 /** Färbung des Laubs (Index in LEAVES); kahle Winterbäume und Nadelbäume haben nur eine. */
 function palIndex(sp, season, h) {
   if (season === 'winter' || sp === 'spruce' || sp === 'pine') return 0;
@@ -252,8 +269,8 @@ function leafClump(c, r, k, P, lf, fine) {
 const LEAF_PAT_N = 64; // Kantenlänge des Blattmusters (Musterpixel)
 let leafSrc; // Blattmuster als Canvas (einmal gemalt), null = kein Canvas
 
-/** Kachelbares Blattmuster in Grau (128 = neutral) für den Mischmodus „overlay“. Fester Zufall, einmal gemalt. */
-function leafCanvas() {
+/** Kachelbares Blattmuster in Grau (128 = neutral) für den Mischmodus „overlay“. Fester Zufall, einmal gemalt (auch Textur der 3D-Bäume). */
+export function leafCanvas() {
   if (leafSrc !== undefined) return leafSrc;
   leafSrc = null;
   if (typeof document === 'undefined' || !document.createElement) return null;

@@ -26,7 +26,7 @@ function pauseHtml(saveAs, account, display, audio) {
       ${display ? `<div class="field"><span class="flabel" title="Scharf: volle Pixeldichte (höchstens 2×). Leistung: 1× Pixel, schont schwache Geräte; wirkt sofort">Bildauflösung</span>
         <div class="seg"><button type="button" data-lowres="0">Scharf</button><button type="button" data-lowres="1">Leistung</button></div>
       </div>` : ''}
-      ${display?.shadows ? `<div class="field"><span class="flabel" title="Nur Ansicht 3D (V): Einheiten werfen echte Schatten aufs Gelände. Mittel schont Handys, Aus malt die Schatten wie in Iso; wirkt sofort">Schatten (3D)</span>
+      ${display?.shadows ? `<div class="field"><span class="flabel" title="Nur Ansicht 3D (V): Fahrzeuge und Bäume werfen echte Schatten aufs Gelände. Mittel schont Handys, Aus malt die Schatten wie in Iso; wirkt sofort">Schatten (3D)</span>
         <div class="seg"><button type="button" data-shadows="off">Aus</button><button type="button" data-shadows="mid">Mittel</button><button type="button" data-shadows="high">Hoch</button></div>
       </div>` : ''}
       ${audio ? `<div class="field"><span class="flabel">Geräusche</span>${volRow('sfx', audio.get('sfx'))}</div>

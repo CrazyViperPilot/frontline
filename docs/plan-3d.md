@@ -73,11 +73,20 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   Fahrzeuge und Luftfahrzeuge werfen Schatten, Soldaten behalten den gemalten (zu dünn für die Karte). Messung (Software-WebGL,
   200 Einheiten, „Objekte“): Aus ≈ 50–60 ms, Mittel/Hoch ≈ 145–155 ms; davon ≈ 35 ms Fänger, der Rest Leeren und Zeichnen der
   Schattenkarte und zweiter Render. Vergleich Iso/3D mit Schatten Hoch bis 1,4 % (Grenze 3 %).
-- Offen für 3D-Bäume: Bäume als Werfer (`castShadow`, Ebene `CAST`), ihre gemalten Schatten in 3D dann abschalten wie bei den Einheiten
+- (erledigt mit 3D-Bäumen) Bäume als Werfer (`castShadow`, Ebene `CAST`), ihre gemalten Schatten in 3D dann abschalten wie bei den Einheiten
   (`shadow3d`); Einheiten empfangen keine Schatten (eigener Shader), Baumschatten auf Panzern bräuchte Schattenabfrage im Einheiten-Shader.
 - Offen für MVP-Messung: Kosten der Schattenkarte auf echter GPU (Rechner, Handy „Mittel“); falls teuer: Karte nur bei Bewegung neu,
   Bodennetz in Kacheln mit Sichtprüfung (Fänger und Boden zeichnen heute das ganze Netz).
-- Nächste Pakete: 3D-Bäume (Sonnet), danach MVP-Messung.
+- 3D-Bäume: gebaut (`js/render3d/trees3d.js`, Test `test/trees3d.test.js`, Prüfteil `smoke-3d.mjs --only baeume`). Je Art 2 Formen als
+  `InstancedMesh` (8 Draw-Calls bei 681 bis 1500 Bäumen), Palette je Baum aus `nature.js` über eine kleine Farbtextur, Blattmuster
+  aus `nature.js`, Herbstlaub, im Winter Laubbäume kahl und Schnee als Band je Fichtenstockwerk. Unter Zoom 0,55 grobe Formen; in die
+  Schattenkarte zeichnet immer die grobe Form. Dreiecke je Baum: fein 150 bis 430, grob 56 bis 160. Gemalte Baumschatten fallen mit
+  Schattenkarte weg. Messung „Objekte“ (Software-WebGL, Seed 7, Schatten Aus/Hoch): Zoom 1, 883 Bäume: gemalt 34/78 ms,
+  3D 98/191 ms; Zoom 0,5, 1500 Bäume: gemalt 31/84 ms, 3D 71/205 ms. Bäume als Teile der Großbauten laufen mit.
+- Offen für MVP-Messung: echte GPU (Rechner, Handy „Mittel“) mit Wald im Bild; falls zu teuer: weiter weg Billboards (Impostor),
+  weniger Bäume in die Schattenkarte, Bodennetz in Kacheln. Einheiten empfangen keine Schatten (Baumschatten auf Panzern fehlen);
+  3D-Bäume dicht an gemalten Gebäuden können mit der Krone durch die Wand ragen (Billboards haben nur die Tiefe des Fußpunkts).
+- Nächstes Paket: MVP-Messung.
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als
 Billboards, Auswahl und Befehle funktionieren. Danach Fotos und Bildrate auf Rechner und Handy vergleichen.

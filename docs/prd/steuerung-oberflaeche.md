@@ -220,8 +220,10 @@
 - **Schatten (3D)** (Pausenmenü, nur wenn die Ansicht 3D möglich ist, `?shadows=off|mid|high`, gemerkt unter `frontline-schatten3d`,
   `js/ui/menu/prefs.js`, `pause.js`, Werte `BALANCE.shadows3d`): In der Ansicht 3D (Test) werfen Fahrzeuge und Luftfahrzeuge echte
   Schatten aufs Gelände, auch am Hang (Sonne aus derselben Richtung wie das Bodenlicht, `js/render3d/sun3d.js`). „Hoch“ (Standard am
-  Rechner) mit feinerer, weicherer Schattenkarte, „Mittel“ (Standard auf Handys) gröber, „Aus“ malt die Schatten wie in Iso. Soldaten,
-  Gebäude, Bäume, Büsche, Felsen und Props behalten ihre gemalten Schatten. Wirkt sofort; reine Darstellung, nicht im Spielstand.
+  Rechner) mit feinerer, weicherer Schattenkarte, „Mittel“ (Standard auf Handys) gröber, „Aus“ malt die Schatten wie in Iso. Bäume
+  stehen in der Ansicht 3D als 3D-Modelle (Laubbaum, Birke, Fichte, Kiefer; Herbstlaub, im Winter kahl bzw. verschneit, `trees3d.js`)
+  und werfen ebenfalls echte Schatten. Soldaten, Gebäude, Büsche, Felsen und Props behalten ihre gemalten Schatten.
+  Wirkt sofort; reine Darstellung, nicht im Spielstand.
 - **Detailstufen beim Herauszoomen** (`js/render/layers/core.js`, Konstante `LOD_ZOOM`: 2D unter 0,8, Iso unter 0,6): Dort ist eine Infanterie-Einheit kleiner als ~10 Bildschirmpixel.
   Größere Einheiten wechseln nach ihrem Radius (Radius × Zoom unter `LOD_ZOOM` × 6); mit Mindestzoom 0,35 bleiben Panzer und schwere Fahrzeuge daher immer Modelle.
   Dann zeichnet der Renderer Bodeneinheiten als Keil in Teamfarbe mit dunklem Rand (Luftfahrzeuge als Dreieck, Richtung wie das Modell; `drawUnitSymbol` in `sprites.js`), ohne Schatten in Iso.

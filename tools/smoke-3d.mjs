@@ -11,9 +11,12 @@
 // 5. Schatten (Paket „Licht und Schatten“): Fotos je Stufe (Aus, Mittel, Hoch) und Drehung neben Iso, Panzer am Hang, Nacht;
 //    Prüfungen: Schattenkarte beim Verschieben gleich groß und auf dem Texel-Raster, Stufenwechsel ohne Neustart (keine Fehler),
 //    im Bild mit Schattenkarte keine gemalten Einheitenschatten, unter dem Panzer am Hang dunkler als daneben.
+// 6. Bäume (Paket „3D-Bäume“): Seed 7, Wald; je Jahreszeit Fotos nah (Zoom 1,6) und fern (0,5), Iso und 3D, dazu 4 Drehungen;
+//    Fehler, wenn bei mindestens 400 Bäumen im Bild eine Art mehr als TREE_SHAPES Draw-Calls braucht (Werfer der Schattenkarte
+//    nicht mitgezählt); Zeit des Durchlaufs „Objekte“ mit gemalten und mit 3D-Bäumen, Schatten Aus und Hoch.
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
-//                                 [--only kamera|vergleich|speicher|messung|schatten]
+//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume]
 import { openGame } from './smoke.mjs';
 
 const arg = (name, def) => {
@@ -373,12 +376,83 @@ async function shadows() {
   }
 }
 
+async function trees() {
+  const FOREST = { x: 7600, y: 9000 }; // Seed 7: Misch- und Nadelwald neben einem Acker (bis ~1500 Bäume bei Zoom 0,5)
+  for (const season of ['summer', 'autumn', 'winter']) {
+    const wx = season === 'winter' ? 'snow' : 'clear';
+    const g = await openGame({ seed: 7, query: `iso=1&three=1&shadows=high&weather=${season}&wx=${wx}`, scale: 1, out });
+    try {
+      await g.run(() => {
+        const s = window.__frontline.session();
+        s.loop.paused = true;
+        s.renderer.revealAll = true;
+      });
+      for (const [name, zoom] of [['nah', 1.6], ['fern', 0.5]]) {
+        for (const three of [false, true]) {
+          const st = await g.run(({ zoom, three, FOREST }) => {
+            const s = window.__frontline.session();
+            s.camera.three = three;
+            s.camera.zoom = zoom;
+            s.camera.rot = 0;
+            s.camera.centerOn(FOREST.x, FOREST.y);
+            for (let i = 0; i < 4; i++) s.renderer.render(s.controller.view);
+            return three ? s.renderer.trees3d.stats() : null;
+          }, { zoom, three, FOREST });
+          await g.shot(`baeume-${season}-${name}-${three ? '3d' : 'iso'}`);
+          if (!st) continue;
+          const worst = Math.max(...Object.values(st.bySpecies));
+          const bad = st.trees >= 400 && worst > 2;
+          if (bad) fail++;
+          console.log(`Bäume ${season.padEnd(7)} ${name}: ${st.trees} Bäume, ${st.calls} Draw-Calls (je Art ${JSON.stringify(st.bySpecies)})${bad ? '  ZU VIELE' : ''}`);
+        }
+      }
+      if (season !== 'summer') continue;
+      for (let rot = 1; rot < 4; rot++) {
+        await g.run(({ rot, FOREST }) => {
+          const s = window.__frontline.session();
+          s.camera.rot = rot;
+          s.camera.zoom = 1.2;
+          s.camera.centerOn(FOREST.x, FOREST.y);
+          for (let i = 0; i < 4; i++) s.renderer.render(s.controller.view);
+        }, { rot, FOREST });
+        await g.shot(`baeume-summer-rot${rot}-3d`);
+      }
+      // Zeit des Durchlaufs „Objekte“: gemalte Bäume (Billboards) gegen 3D-Bäume, Schatten Aus und Hoch
+      for (const zoom of [1, 0.5]) {
+        await g.run(({ zoom, FOREST }) => {
+          const s = window.__frontline.session();
+          s.camera.rot = 0;
+          s.camera.zoom = zoom;
+          s.camera.centerOn(FOREST.x, FOREST.y);
+        }, { zoom, FOREST });
+        const row = [];
+        for (const on of [false, true]) {
+          for (const level of ['off', 'high']) {
+            await g.run(({ on, level }) => {
+              const r = window.__frontline.session().renderer;
+              r.trees3dOn = on;
+              r.setShadows(level);
+            }, { on, level });
+            row.push(`${on ? '3D' : 'gemalt'}/${level === 'off' ? 'Aus' : 'Hoch'} ${(await timePasses(g, frames)).Objekte.toFixed(0)}`);
+          }
+        }
+        const n = await g.run(() => window.__frontline.session().renderer.trees3d.count);
+        console.log(`Objekte (ms, Zoom ${zoom}, ${n} Bäume): ${row.join(', ')}`);
+      }
+    } finally {
+      errors.push(...g.errors);
+      await g.close();
+    }
+  }
+}
+
 try {
   if (!only || only === 'kamera') await camera();
   if (!only || only === 'vergleich') await compare();
   if (!only || only === 'speicher') await memory();
   if (!only || only === 'messung') await measure();
   if (!only || only === 'schatten') await shadows();
+  if (!only || only === 'baeume') await trees();
 } catch (e) {
   console.error(`Abbruch: ${e.message}`);
   fail++;

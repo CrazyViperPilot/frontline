@@ -14,9 +14,23 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - railList(town) – Gleise einer Karte: neue Form `rails` (freie Strecken) oder die ältere `rail` (…
 
 ## townhouses.js (55 KB)
+- TALL – Höhe des höchsten Punkts über der Zellmitte im Iso-Bild (Weltpixel, hinten steh…
+- TEAM_SHOWN – Arten und Stufen, deren Bild die Teamfarbe zeigt (Fahnen, Bänder); nur diese be…
 - RES_WALL
 - RES_ROOF
 - RES_ACC
+- COM_FACADE
+- COM_AWN
+- COM_GLASS
+- STALL
+- MARKET_ROOF – Kupfer mit Patina
+- MARKET_WALL
+- DC_WALL
+- DC_RIM
+- DC_LED
+- HOSP
+- RED
+- APRON
 - beginTownFrame(ratio) – Zu Beginn jedes Bilds (Renderer): Gerätepixel je CSS-Pixel merken und das Zeitb…
 - townLift(ck, level) – Höhe (Weltpixel) über dem höchsten Teil, für das Schild darüber
 - drawTownIso(ctx, cam, b, season) – Isometrisch: Gebäude b als Bild aus dem Zwischenspeicher (für jede Drehung dass…

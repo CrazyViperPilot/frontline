@@ -105,6 +105,28 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   Fenster (gemalt nie sichtbar). Im Spiel noch nichts umgestellt (Folgepakete). Offen für „Stadthäuser 3D“: Renderer muss `setKitFrame`
   je Bild setzen (Sonne, Winter, Nacht aus `mood`, Schattenstärke aus `BALANCE.shadows3d.opacity`); Gartenbäume als einfache Kugeln
   (oder `Trees3D` nutzen); Fenster nachts noch unter `drawMood` (wirklich hell erst mit „Tag und Nacht 3D“).
+- Stadthäuser 3D: gebaut (`js/render3d/town3d.js`, alle 6 Arten × 3 Stufen × 3 Farbvarianten, Teamfarbe bei `TEAM_SHOWN`; Test
+  `test/kit3d.test.js`; Prüfteile `smoke-3d.mjs --only baukasten` (Bögen je Art und Stimmung, Farbvarianten) und `--only stadt`
+  (Seed 3, KI gegen KI 10 Spielminuten, Fotos `.smoke/3d/stadt/`)). Neue Bauteile in `kit3d.js` mit Namen wie `isokit.js`/`townhouses.js`:
+  Stab, Rohr, Wandscheibe, Kreis, Schaufenster, Markise, Rundbogen- und Fächerfenster, Tonnendach, Zeltdach, Lüfter, Parabolantenne,
+  Gittermast, Zaun, Rippen, Klimakasten, Laterne, Fahne, Lieferwagen, Kiste, Pflaster, Solarzellen, Landeplatz, Brunnen, Uhr. Glas-
+  fassaden mit Verlauf je Ecke; Schaufenster, Laternen und Glaskanzeln leuchten nur nachts (`GLOW_NIGHT`). Pflaster, Wege und
+  Markierungen schneefrei wie gemalt. Dreiecke je Variante: Heliport 328/604/738, Wohnen 530/860/1686–1828, Gewerbe 606/700/1302–1312,
+  Markt 1104/1258/1504, Rechenzentrum 954/1244/1560–1564, Krankenhaus 818–822/1036–1042/1308–1316. Umriss Drehung 0 wie gemalt:
+  höchster Punkt 1–3 px unter `TALL`, Bildbereich im Prüfteil ±1 bis ±6 px. Im Spiel (`?three=1`): `Town3D` mit einem `InstancedMesh`
+  je Variante (geteilte Geometrie, ein Draw-Call je Variante im Bild, einer in der Schattenkarte), Höhe wie das Billboard (`cam.pinned`),
+  `setKitFrame` je Bild aus `lightVec`, Winter, `mood` und `BALANCE.shadows3d.opacity`. Messung (Seed 3, 10 Spielminuten, Hauptstadt,
+  Zoom 1, 49 Stadthäuser in 14 Varianten im Bild, „Objekte“ samt Schattenkarte, Software-WebGL): Schatten Aus gemalt 12 Draw-Calls,
+  6 670 Dreiecke, 31 ms → 3D 26 Draw-Calls, 78 470 Dreiecke (Häuser 71 898), 57 ms; Schatten Hoch gemalt 22 Draw-Calls, 249 378 Dreiecke,
+  89 ms → 3D 50 Draw-Calls, 393 076 Dreiecke, 140 ms; zweiter Lauf (56 Häuser, 15 Varianten; die Stadt wächst je Lauf etwas anders,
+  weil die Spielschleife vor dem Anhalten kurz läuft): Aus 15 → 30 Draw-Calls, 39 → 62 ms; Hoch 28 → 58 Draw-Calls, 88 → 149 ms. Software-WebGL rechnet Dreiecke auf der CPU; auf echter GPU zählen eher die
+  Draw-Calls (+14 bzw. +28). Messen an Seeds vorher: nach 10 Spielminuten 82 Stadthäuser (Seed 3, beide Teams), nach 20 min 199, davon
+  75 % Wohnen 3 und 14 % Gewerbe 3 (die teuersten Varianten).
+  **Gartenbäume:** Kugelbäume des Baukastens (Stamm, drei Kronenkugeln) bleiben Teil der Hausgeometrie. Grund: gemalt sind es dieselben
+  Kugelkronen, im Winter verschneit statt kahl (wie `LEAF_SNOW`, im 3D-Shader Schnee auf der Krone); ein Teil des Hauses kostet keinen
+  Draw-Call, `Trees3D` bräuchte je Haus 1 bis 3 Instanzen samt Satzpflege und machte die Bäume im Winter kahl (Bruch zum gemalten Bild).
+  Offen: Fenster nachts noch unter `drawMood` („Tag und Nacht 3D“); Dreiecke sparen, falls echte Geräte es brauchen (fern: grobe
+  Varianten ohne Fensterkreuze und Balkone, analog Bäume); Ruinen und Baustellen der Stadt bleiben Billboards („Baustellen und Ruinen 3D“).
 - **Licht (offener Punkt 5 des MVP-Berichts), entschieden:** eine Sonne für die ganze 3D-Szene, `lightVec` (rechts oben im Bild, dreht
   mit der Kamera). 3D-Gebäude sind damit rechts hell wie Einheiten, Bäume und Geländerelief, ihre Schatten fallen nach links unten wie
   die gemalten Gebäudeschatten. Gemalte Billboards (Wand links hell) bleiben bis zur Umstellung ihrer Familie so; der Bruch verschwindet

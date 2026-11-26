@@ -1,0 +1,1 @@
+**Stadthäuser 3D** (Test, `?three=1`, Ansicht „3D“): Alle Stadthäuser (Wohnen, Gewerbe, Markt, Rechenzentrum, Krankenhaus, Heliport in allen drei Stufen) stehen als echte 3D-Modelle im Bild, mit Fenstern auch auf den Rückseiten, Schnee auf Dächern und Rasen, beleuchteten Fenstern und Schaufenstern bei Nacht, und werfen echte Schatten.

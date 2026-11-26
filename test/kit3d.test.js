@@ -4,7 +4,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Kit3D, KIT_MATS } from '../js/render3d/kit3d.js';
-import { townGeometry, hasTown3d } from '../js/render3d/town3d.js';
+import { townGeometry, hasTown3d, townKey } from '../js/render3d/town3d.js';
+import { TALL, TEAM_SHOWN } from '../js/render/townhouses.js';
 import { MATS } from '../js/render/materials.js';
 import { ISO_K } from '../js/render/camera.js';
 
@@ -63,6 +64,32 @@ test('Baukasten 3D: jedes Bauteil ist gültige, geschlossene Geometrie mit Auße
     flat: [(k) => k.flat(-25, 25, -25, 25, '#86b35c'), null],
     tree: [(k) => k.tree(0, 0, 1, 1), null],
     car: [(k) => k.car(0, 0, 'v', '#c0392b'), null],
+    rod: [(k) => k.rod([0, 0, 0], [3, -2, 10], 0.8, '#55595d'), null],
+    tube: [(k) => k.tube([0, 0, 9], [6, 0, 8.5], 1.3, 0.6, '#f07a2a'), null],
+    disc: [(k) => k.disc('e', 4, 0, 10, 2.7, '#f4f1e6', 0.2), null],
+    ring: [(k) => k.ring(0, 0, 5, 1.8, '#6fa8d2'), null],
+    storefront: [(k) => ['s', 'e', 'n', 'w'].forEach((f) => k.storefront(f, 4, -10, 10, 1.2, 9.8, 3.4, f === 's' ? -3 : null, 5)), null],
+    awning: [(k) => ['s', 'e', 'n', 'w'].forEach((f) => k.awning(f, 4, -10, 10, 10.6, 5, 2.3, ['#c8423a', '#f3eee4'], 6)), null],
+    archWins: [(k) => k.archWins('n', -6, [-3, 3], 2.8, 7, 3.2, { seed: 3 }), null],
+    fanWin: [(k) => k.fanWin('w', -10, 0, 11, 5), null],
+    vault_u: [(k) => k.vault('u', -21, 11, -20, 4, 11, 8, '#6e9d8e', '#b8664c'), null],
+    vault_v: [(k) => k.vault('v', 6, 24, -24, -8, 8, 6.5, '#8d9aa4', '#c9cbc6'), null],
+    pyramid: [(k) => k.pyramid(0, 0, 5.4, 34, 11, '#6e9d8e'), [0, 0, 36]],
+    fan: [(k) => k.fan(0, 0, 12.4, 2.2), null],
+    dish: [(k) => k.dish(0, 0, 16, 3.6), null],
+    mast: [(k) => k.mast(0, 0, 34, 70, 2.2, 0.5), null],
+    fence: [(k) => k.fence(-24, 24, -24, 24), null],
+    ribs: [(k) => k.ribs(-19, 9, -17, 5, 0.8, 8.6, 1.8, '#5a636b'), null],
+    acUnit: [(k) => k.acUnit(0, 0, 12.8, 2.5), null],
+    lamp: [(k) => k.lamp(0, 0), null],
+    flagpole: [(k) => k.flagpole(0, 0, 0, 15, '#3a6fb3'), null],
+    van: [(k) => (k.van(0, 0, 'u', '#f4f3ef', '#d8313b', true), k.van(12, 0, 'v', '#f4f3ef', '#d8313b', true)), null],
+    crate: [(k) => k.crate(0, 0), [0, 0, 1]],
+    cobble: [(k) => k.cobble(), null],
+    solar: [(k) => k.solar(-3, 14, -15, 4.6, 60.7, 62.7), null],
+    helipad: [(k) => k.helipad(0, 0, 14.5), null],
+    fountain: [(k) => k.fountain(0, 0, 5), null],
+    clockFace: [(k) => k.clockFace('s', 5, 0, 28, 2.7), null],
   };
   for (const [name, [build, center]] of Object.entries(parts)) {
     const k = new Kit3D();
@@ -75,37 +102,45 @@ test('Baukasten 3D: Materialfotos der Gebäude stammen aus materials.js', () => 
   for (const m of KIT_MATS) assert.ok(MATS[m]?.tile > 0 && MATS[m].alpha > 0, `${m} fehlt in MATS`);
 });
 
-// Gemaltes Bild (townhouses.js drawTownIso): Bildmaße [-41, -(TALL+1), 39, 21] bei Maßstab 1, TALL Wohnen [_, 39, 41]
-const PAINTED = { 1: { top: -39, rect: [-41, -40, 39, 21] }, 2: { top: -41, rect: [-41, -42, 39, 21] } };
+// Gemaltes Bild (townhouses.js drawTownIso): Bildmaße [-41, -(TALL + 1), 39, 21] bei Maßstab 1, höchster Punkt −TALL
+const KINDS = Object.keys(TALL);
 
-test('Stadthäuser 3D: sparsam, gültig und im Iso-Umriss wie das gemalte Haus', () => {
-  assert.ok(hasTown3d('res', 1) && hasTown3d('res', 2) && !hasTown3d('com', 1));
-  assert.equal(townGeometry('com', 1, 0), null);
-  for (const lv of [1, 2]) {
-    for (const v of [0, 1, 2]) {
-      const name = `res${lv}/${v}`;
-      const g = townGeometry('res', lv, v);
-      check(name, g);
-      assert.equal(townGeometry('res', lv, v + 3), g, `${name}: nicht zwischengespeichert`);
-      const tris = g.getAttribute('position').count / 3;
-      assert.ok(tris <= 1200, `${name}: ${tris} Dreiecke`);
-      // Iso-Projektion wie isokit.G (Maßstab 1, Drehung 0): x = (u − v)·K, y = (u + v)·K/2 − h
-      const pos = g.getAttribute('position');
-      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-      for (let i = 0; i < pos.count; i++) {
-        const [u, w, h] = [pos.getX(i), pos.getY(i), pos.getZ(i)];
-        const x = (u - w) * ISO_K;
-        const y = (u + w) * ISO_K * 0.5 - h;
-        x0 = Math.min(x0, x);
-        x1 = Math.max(x1, x);
-        y0 = Math.min(y0, y);
-        y1 = Math.max(y1, y);
+test('Stadthäuser 3D: alle Arten und Stufen, sparsam, gültig und im Iso-Umriss wie das gemalte Haus', () => {
+  assert.deepEqual(KINDS, ['res', 'com', 'market', 'dc', 'hospital', 'heliport']);
+  assert.equal(townGeometry('fabrik', 1, 0), null);
+  assert.ok(!hasTown3d('fabrik', 1));
+  for (const ck of KINDS) {
+    for (const lv of [1, 2, 3]) {
+      assert.ok(hasTown3d(ck, lv), `${ck}${lv}: kein 3D-Haus`);
+      for (const v of [0, 1, 2]) {
+        const name = `${ck}${lv}/${v}`;
+        const g = townGeometry(ck, lv, v, '#3a6fb3');
+        check(name, g);
+        assert.equal(townGeometry(ck, lv, v + 3, '#3a6fb3'), g, `${name}: nicht zwischengespeichert`);
+        // Teamfarbe nur, wo das gemalte Bild sie zeigt (TEAM_SHOWN): sonst dieselbe Geometrie für alle Teams
+        const team = TEAM_SHOWN.has(ck + lv);
+        assert.equal(townGeometry(ck, lv, v, '#c8423a') === g, !team, `${name}: Teamfarbe`);
+        assert.equal(townKey(ck, lv, v, '#c8423a') === townKey(ck, lv, v, '#3a6fb3'), !team);
+        const tris = g.getAttribute('position').count / 3;
+        assert.ok(tris <= 2000, `${name}: ${tris} Dreiecke`);
+        // Iso-Projektion wie isokit.G (Maßstab 1, Drehung 0): x = (u − v)·K, y = (u + v)·K/2 − h
+        const pos = g.getAttribute('position');
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+        for (let i = 0; i < pos.count; i++) {
+          const [u, w, h] = [pos.getX(i), pos.getY(i), pos.getZ(i)];
+          const x = (u - w) * ISO_K;
+          const y = (u + w) * ISO_K * 0.5 - h;
+          x0 = Math.min(x0, x);
+          x1 = Math.max(x1, x);
+          y0 = Math.min(y0, y);
+          y1 = Math.max(y1, y);
+        }
+        const tall = TALL[ck][lv];
+        const [r0, q0, r1, q1] = [-41, -(tall + 1), 39, 21];
+        assert.ok(x0 >= r0 - 1 && x1 <= r1 + 1 && y0 >= q0 - 1 && y1 <= q1 + 1, `${name}: Umriss ${[x0, y0, x1, y1].map((n) => n.toFixed(1))} außerhalb des gemalten Bilds`);
+        assert.ok(Math.abs(y0 + tall) <= 4, `${name}: höchster Punkt ${y0.toFixed(1)} statt ${-tall}`);
+        assert.ok(x1 - x0 >= 0.9 * (r1 - r0 - 4), `${name}: zu schmal (${(x1 - x0).toFixed(1)})`);
       }
-      const P = PAINTED[lv];
-      const [r0, q0, r1, q1] = P.rect;
-      assert.ok(x0 >= r0 - 1 && x1 <= r1 + 1 && y0 >= q0 - 1 && y1 <= q1 + 1, `${name}: Umriss ${[x0, y0, x1, y1].map((n) => n.toFixed(1))} außerhalb des gemalten Bilds`);
-      assert.ok(Math.abs(y0 - P.top) <= 4, `${name}: höchster Punkt ${y0.toFixed(1)} statt ${P.top}`);
-      assert.ok(x1 - x0 >= 0.9 * (r1 - r0 - 4), `${name}: zu schmal (${(x1 - x0).toFixed(1)})`);
     }
   }
 });

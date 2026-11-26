@@ -186,7 +186,9 @@ export const isoItemMethods = {
     const fort = hs && this.fortShown(hs, known) ? hs : null; // besetztes oder ausgebautes Haus (seit v5.48, stronghold.js)
     const body = fort ? houseYardIso(o, cam.rot | 0) : null; // Altbau mit Hof: Säcke vor der Hofmauer, Fahne an ihrer Ecke
     if (fort) drawHouseWorksIso(ctx, cam, fort, 'back', body); // Draht hinter dem Haus
-    if (o.part?.t !== 'tree' || !(this.tree3d?.(o.part) || drawTreeIso(ctx, cam, o.part, this.season))) drawTownBuilding(ctx, cam, o, this.season); // Bäume der Großbauten gemalt (nature.js)
+    // 3D (render3d/town3d.js house3d, nur im Durchlauf „Objekte“ der Ansicht 3D): Stadthaus 1 × 1 als Mesh, sonst gemalt
+    const mesh = this.house3d?.(o) ?? false;
+    if (!mesh && (o.part?.t !== 'tree' || !(this.tree3d?.(o.part) || drawTreeIso(ctx, cam, o.part, this.season)))) drawTownBuilding(ctx, cam, o, this.season); // Bäume der Großbauten gemalt (nature.js)
     if (fort) {
       drawHouseWorksIso(ctx, cam, fort, 'front', body); // Sandsäcke, MG-Nest, Draht davor
       if (fort.occupants.length && fort.team >= 0) drawHouseFlagIso(ctx, cam, fort, g.teams[fort.team]?.color ?? '#888', f.now / 1000, body);

@@ -17,6 +17,8 @@ import { Units3D } from './units3d.js';
 import { Fog3D } from './fog3d.js';
 import { Sun3D, CATCH } from './sun3d.js';
 import { Trees3D } from './trees3d.js';
+import { Town3D } from './town3d.js';
+import { BALANCE } from '../data/balance.js';
 import { treeLook3d } from '../render/nature.js';
 import { probePoints, buildTestCubes } from './testscene.js';
 
@@ -57,6 +59,10 @@ export class Renderer3D extends Renderer {
     this.tree3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
     this.trees3dOn = true; // false: Bäume wie in Iso als gemalte Billboards (Prüfskript: Vergleich Iso/3D, Messung)
     this.treeShadow3d = false; // isoShadows: gemalte Baumschatten weglassen (3D-Bäume werfen sie selbst)
+    this.towns3d = new Town3D(); // Stadthäuser 1 × 1 als InstancedMesh je Variante (town3d.js), gezeigt über house3d aus drawTownItemIso
+    this.objRoot.add(this.towns3d.group);
+    this.house3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
+    this.towns3dOn = true; // false: Stadthäuser wie in Iso als gemalte Billboards (Prüfskript: Messung vorher/nachher)
     // Nebel: eigene Szene über allem (ohne Tiefentest), gleiche Geometrie wie der Boden
     this.fogScene = new THREE.Scene();
     this.fogRoot = makeWorldRoot();
@@ -165,6 +171,9 @@ export class Renderer3D extends Renderer {
     const season = this.season;
     this.tree3d = !this.trees3dOn ? null : (t) => this.trees3d.add(treeLook3d(t, season), t.x, t.y, cam.pinned ?? (relief ? relief.displayAt(t.x, t.y) : 0));
     this.unit3d = (f, u, aim, lift) => this.units3d.show(u, cam.pinned ?? (relief ? relief.displayAt(u.x, u.y) : 0), lift, aim, f.now);
+    // Stadthäuser: Sonne, Schnee, Nacht und Schattenstärke wie Boden und Schattenfänger; Höhe wie das Billboard (cam.pin)
+    this.towns3d.begin({ light, snow: season === 'winter' ? 1 : 0, night: this.mood === 'night' ? 1 : 0, shade: BALANCE.shadows3d.opacity[this.mood ?? 'none'] ?? BALANCE.shadows3d.opacity.none });
+    this.house3d = !this.towns3dOn ? null : (o) => o.kind === 'town' && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
     try {
       for (const it of f.items) {
         const o = it.o;
@@ -182,11 +191,13 @@ export class Renderer3D extends Renderer {
       setBlitSink(null);
       this.unit3d = null;
       this.tree3d = null;
+      this.house3d = null;
       this.shadow3d = false;
       f.ctx = ctx;
     }
     this.units3d.end();
     this.trees3d.end();
+    this.towns3d.end();
     bb.end();
     const gl = this.gl;
     gl.setClearColor(0x000000, 0);
@@ -253,6 +264,7 @@ export class Renderer3D extends Renderer {
     this.billboards.dispose();
     this.units3d.dispose();
     this.trees3d.dispose();
+    this.towns3d.dispose();
     this.fog3d.dispose();
     this.sun.dispose();
     this.gl.dispose();

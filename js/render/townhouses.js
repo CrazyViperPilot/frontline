@@ -15,7 +15,7 @@ import { sprite, blit, spriteFrame } from './spritecache.js';
 
 // Höhe des höchsten Punkts über der Zellmitte im Iso-Bild (Weltpixel, hinten stehende Teile zählen höher): Größe des Bilds
 // und Höhe des Schilds darüber, je Art und Stufe
-const TALL = {
+export const TALL = {
   res: [0, 39, 41, 81],
   com: [0, 29, 56, 124],
   market: [0, 36, 32, 59],
@@ -24,7 +24,7 @@ const TALL = {
   heliport: [0, 39, 41, 43],
 };
 // Arten und Stufen, deren Bild die Teamfarbe zeigt (Fahnen, Bänder); nur diese bekommen je Team ein eigenes Bild
-const TEAM_SHOWN = new Set(['com3', 'market3', 'dc3']);
+export const TEAM_SHOWN = new Set(['com3', 'market3', 'dc3']);
 
 // ---------- Grundformen (isometrisch, örtliche Koordinaten) ----------
 
@@ -193,9 +193,9 @@ function res3(g, o) {
 
 // ---------- Gewerbe ----------
 
-const COM_FACADE = ['#e4d8bf', '#b05f45', '#a3acb1'];
-const COM_AWN = [['#c8423a', '#f3eee4'], ['#3f8a4f', '#f3eee4'], ['#3a6fb3', '#f3eee4']];
-const COM_GLASS = ['#4b7aa3', '#3d8580', '#86694a'];
+export const COM_FACADE = ['#e4d8bf', '#b05f45', '#a3acb1'];
+export const COM_AWN = [['#c8423a', '#f3eee4'], ['#3f8a4f', '#f3eee4'], ['#3a6fb3', '#f3eee4']];
+export const COM_GLASS = ['#4b7aa3', '#3d8580', '#86694a'];
 
 /** Café-Tisch mit Sonnenschirm. */
 function cafe(g, u, v, cols) {
@@ -354,9 +354,9 @@ function com3(g, o) {
 
 // ---------- Markt ----------
 
-const STALL = [['#e6b422', '#f6f0df'], ['#c8423a', '#f6f0df'], ['#3f8a4f', '#f6f0df'], ['#3a6fb3', '#f6f0df'], ['#e07b2a', '#f6f0df']];
-const MARKET_ROOF = '#6e9d8e'; // Kupfer mit Patina
-const MARKET_WALL = ['#b8664c', '#d6c29a', '#c9a27e'];
+export const STALL = [['#e6b422', '#f6f0df'], ['#c8423a', '#f6f0df'], ['#3f8a4f', '#f6f0df'], ['#3a6fb3', '#f6f0df'], ['#e07b2a', '#f6f0df']];
+export const MARKET_ROOF = '#6e9d8e'; // Kupfer mit Patina
+export const MARKET_WALL = ['#b8664c', '#d6c29a', '#c9a27e'];
 
 /** Marktstand: Tisch mit Waren, Pfosten und gestreiftes Zeltdach (First entlang u). */
 function stall(g, u, v, cols, seed) {
@@ -527,9 +527,9 @@ function market3(g, o) {
 
 // ---------- Rechenzentrum ----------
 
-const DC_WALL = '#5a636b';
-const DC_RIM = '#4b535a';
-const DC_LED = '#5ae4ec';
+export const DC_WALL = '#5a636b';
+export const DC_RIM = '#4b535a';
+export const DC_LED = '#5ae4ec';
 
 /** Leuchtband (ohne Schattierung, wirkt selbstleuchtend). */
 function glowBand(g, u0, u1, v0, v1, h0, h1, color = DC_LED) {
@@ -620,8 +620,8 @@ function dc3(g, o) {
 
 // ---------- Krankenhaus ----------
 
-const HOSP = '#f1f0ec';
-const RED = '#d8313b';
+export const HOSP = '#f1f0ec';
+export const RED = '#d8313b';
 
 /** Fensterband (Klinik): durchgehendes Glas mit Pfosten, einzelne Felder hell. */
 function ribbon(g, face, plane, a0, a1, h0, h1, seed = 0) {
@@ -767,7 +767,7 @@ function hosp3(g, o) {
 
 // ---------- Heliport ----------
 
-const APRON = '#b7b5ac';
+export const APRON = '#b7b5ac';
 
 function apron(g) {
   flat(g, -25, 25, -25, 25, APRON);

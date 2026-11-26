@@ -14,7 +14,7 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `testscene.js` – Prüfwürfel (`?three=1&cubes=1`). `probePoints`, `buildTestCubes`
 - `solids3d.js` – Körperliste (render/units/shapes.js) → three-Geometrie: `solidsToGeometry`, `buildModelMesh`, `modelGeometry`
 - `kit3d.js` – Gebäude-Baukasten (Teile wie isokit.js, alle Seiten). `Kit3D`, `makeKitMaterial`, `setKitFrame`, `kitMesh`
-- `town3d.js` – Stadthäuser aus dem Baukasten (wie townhouses.js; bisher Wohnen 1, 2). `townGeometry`
+- `town3d.js` – Stadthäuser 1 × 1 (alle Arten, Stufen), InstancedMesh je Variante. `townGeometry`, `Town3D`
 
 ## Schichtung
 - Ansicht „3D“ = `camera.iso && camera.three`; V schaltet 2D → Iso → 3D (`main.js` `toggleView`, lädt three nach).
@@ -23,9 +23,8 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
   Jedes three-Bild wird an seiner Stelle in die 2D-Leinwand kopiert; Bodenmarken, Wetter, Stimmung, Balken bleiben gemalt.
 - „Objekte“: `setBlitSink` macht aus jedem `blit` ein Billboard mit der Tiefe des Fußpunkts (`clipDepth`); was nicht über `blit`
   malt (Rotoren, Flammen), kommt über eine 2D-Zwischenleinwand obenauf.
-- Einheiten (`unit3d`) und Bäume (`tree3d`, `trees3dOn`) fragt `isoObjects` nur in „Objekte“; steht das Mesh, malt
-  `drawUnitIso` nur Rotoren und Nachbrenner. Mit Schattenkarte wirft das Mesh den Schatten (`shadow3d`);
-  Soldaten, Stufe Aus und alles ohne Mesh malen ihn.
+- Einheiten (`unit3d`), Bäume (`tree3d`), Stadthäuser (`house3d`) fragt `isoObjects` nur in „Objekte“; `trees3dOn`, `towns3dOn`
+  schalten auf gemalt. Einheit mit Mesh: gemalt nur Rotoren, Nachbrenner; Schatten wirft das Mesh (`shadow3d`), außer Soldaten.
 - WebGL-Leinwand nicht im DOM, ohne Kantenglättung; `render/ground.js` behält seinen Kontext.
 
 ## Licht und Schatten (`sun3d.js`)

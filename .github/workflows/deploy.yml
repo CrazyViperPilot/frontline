@@ -45,11 +45,15 @@ jobs:
           for v in FTP_SERVER FTP_USER FTP_PASSWORD; do
             if [ -z "${!v}" ]; then echo "::error::Secret $v fehlt (Settings → Secrets and variables → Actions)."; exit 1; fi
           done
+      - name: Pause 3 s # Wartezeit nach jedem Schritt (Daniel, 2026-11-26)
+        run: sleep 3
 
       - uses: actions/checkout@v4
         with:
           # beim Auslösen durch den Testlauf genau den getesteten Stand hochladen
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - name: Pause 3 s # Wartezeit nach jedem Schritt (Daniel, 2026-11-26)
+        run: sleep 3
 
       # Datenbank- und Mail-Zugang für api/save.php und api/auth.php. Werte per PHP var_export gequotet, nicht per Shell-Interpolation.
       # Die SMTP-Werte sind optional: fehlen sie, nur eine Warnung (die Konto-Mails melden dann einen Fehler).
@@ -100,6 +104,8 @@ jobs:
             if (file_put_contents("secret/config.php", $src) === false) { fwrite(STDERR, "secret/config.php nicht schreibbar\n"); exit(1); }
           '
           php -l secret/config.php
+      - name: Pause 3 s # Wartezeit nach jedem Schritt (Daniel, 2026-11-26)
+        run: sleep 3
 
       # lftp statt einer Node-FTP-Action: kommt mit FTPS-Servern zurecht, die TLS-Session-Reuse auf der Datenverbindung verlangen.
       - name: Hochladen per FTP
@@ -131,6 +137,8 @@ jobs:
           mirror --reverse --no-perms --verbose site/ $FTP_DIR
           bye
           LFTP
+      - name: Pause 3 s # Wartezeit nach jedem Schritt (Daniel, 2026-11-26)
+        run: sleep 3
 
       # Der Datenbank-Zugang geht erst hoch, wenn der Webspace PHP wirklich ausführt: sonst läge das Passwort lesbar im Netz.
       - name: PHP prüfen, dann Datenbank-Zugang hochladen
@@ -169,3 +177,5 @@ jobs:
           echo "Spielstand-API: $(curl -s ${SITE_URL}api/save.php | head -c 300)"
           leak=$(curl -s ${SITE_URL}api/config.php | head -c 100)
           case "$leak" in *password*) echo "::error::api/config.php ist lesbar!"; exit 1 ;; esac
+      - name: Pause 3 s # Wartezeit nach jedem Schritt (Daniel, 2026-11-26)
+        run: sleep 3

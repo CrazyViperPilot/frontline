@@ -14,9 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Pause 3 s # Wartezeit nach jedem Schritt (Daniel, 2026-11-26)
+        run: sleep 3
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Pause 3 s # Wartezeit nach jedem Schritt (Daniel, 2026-11-26)
+        run: sleep 3
       - run: npm test
+      - name: Pause 3 s # Wartezeit nach jedem Schritt (Daniel, 2026-11-26)
+        run: sleep 3
       # KI-Kennzahlen (tools/metrics.mjs): lange Läufe KI gegen KI, warnt bei groben Ausreißern gegenüber tools/metrics-ref.json
       - run: npm run metrics
+      - name: Pause 3 s # Wartezeit nach jedem Schritt (Daniel, 2026-11-26)
+        run: sleep 3

@@ -792,6 +792,128 @@ async function city() {
   }
 }
 
+/**
+ * Teil „natur“ (--only natur, läuft auch ohne --only), Paket „Büsche und Felsen 3D“: Seed 7, Wald (dicht mit Unterholz) und offenes Land (Felsen, Büsche, wenige Bäume), dazu ein
+ * Tier aus der Nähe. Je Jahreszeit Fotos Iso | 3D nah (Zoom 1,6) und fern (0,5) nach <out>/natur/, im Sommer zusätzlich 4 Drehungen.
+ * Prüft: in 3D wird jeder Busch, Fels und jedes Tier im Bild ein 3D-Körper (keine Natur-Billboards); höchstens BUSH_SHAPES Draw-Calls
+ * je Buschart und 4 für Felsen. Misst Draw-Calls und Dreiecke von „Objekte“ samt Schattenkarte und Zeit „Objekte“ mit gemalter Natur
+ * (nature3dOn = false) gegen 3D, Schatten Aus und Hoch.
+ */
+async function nature() {
+  const dir = join(out, 'natur');
+  await mkdir(dir, { recursive: true });
+  for (const season of ['summer', 'autumn', 'winter']) {
+    const wx = season === 'winter' ? 'snow' : 'clear';
+    const g = await openGame({ seed: 7, query: `iso=1&three=1&shadows=high&weather=${season}&wx=${wx}`, scale: 1, out });
+    try {
+      // Stellen suchen: Wald = meiste Büsche, offen = viele Felsen und Büsche bei wenig Bäumen, Tier = erstes Tier
+      const spots = await g.run(() => {
+        const s = window.__frontline.session();
+        s.loop.paused = true;
+        s.renderer.revealAll = true;
+        s.camera.three = true;
+        s.renderer.render(s.controller.view);
+        const d = s.renderer.deco;
+        const cell = new Map();
+        const at = (x, y) => {
+          const k = `${Math.floor(x / 700)},${Math.floor(y / 700)}`;
+          let c = cell.get(k);
+          if (!c) cell.set(k, (c = { k, b: 0, u: 0, r: 0, t: 0 }));
+          return c;
+        };
+        for (const b of d.bushes) at(b.x, b.y)[b.under ? 'u' : 'b']++;
+        for (const o of d.rocks) at(o.x, o.y).r++;
+        for (const t of d.trees) at(t.x, t.y).t++;
+        const mid = (c) => c.k.split(',').map((v) => (+v + 0.5) * 700);
+        const cs = [...cell.values()];
+        const wald = cs.sort((a, b) => b.b + b.u - (a.b + a.u))[0];
+        const offen = cs.filter((c) => c.t < 25).sort((a, b) => b.r * 2 + b.b - (a.r * 2 + a.b))[0];
+        const a = s.game.animals?.find((x) => x.kind === 'deer') ?? s.game.animals?.[0];
+        return { wald: mid(wald), offen: mid(offen), tier: a ? [a.x, a.y] : mid(offen) };
+      });
+      // Fotos und Prüfung: je Stelle nah und fern
+      const views = [['wald-nah', spots.wald, 1.6], ['wald-fern', spots.wald, 0.5], ['offen-nah', spots.offen, 1.6], ['offen-fern', spots.offen, 0.5], ['tier', spots.tier, 2.4]];
+      for (const [name, [x, y], zoom] of views) {
+        await look(g, x, y, 0, zoom);
+        await mvpPair(g, dir, season, name);
+        const st = await g.run(() => {
+          const s = window.__frontline.session();
+          const r = s.renderer;
+          s.camera.three = true;
+          let items = [];
+          const orig = r.isoItems;
+          r.isoItems = function (f) {
+            const res = orig.call(this, f);
+            items = res.items;
+            return res;
+          };
+          try {
+            r.render(s.controller.view);
+          } finally {
+            r.isoItems = orig;
+          }
+          const want = { bush: 0, rock: 0, animal: 0 };
+          for (const it of items) if (it.t === 13) want.bush++; else if (it.t === 2) want.rock++; else if (it.t === 11) want.animal++;
+          return { want, got: r.nature3d.stats() };
+        });
+        const { want, got } = st;
+        const bb = want.bush !== got.bush || want.rock !== got.rock || want.animal !== got.animal;
+        const many = Object.entries(got.byArt).some(([k, n]) => n > (k === 'rock' ? 4 : 2) && k !== 'animal');
+        if (bb || many) fail++;
+        console.log(`Natur ${season.padEnd(7)} ${name.padEnd(10)}: ${got.bush}/${want.bush} Büsche, ${got.rock}/${want.rock} Felsen, ${got.animal}/${want.animal} Tiere in 3D; ${got.calls} Draw-Calls ${JSON.stringify(got.byArt)}, ${got.tris} Dreiecke${bb ? '  BILLBOARDS ÜBRIG' : ''}${many ? '  ZU VIELE DRAW-CALLS' : ''}`);
+      }
+      if (season !== 'summer') continue;
+      for (const [name, [x, y]] of [['wald', spots.wald], ['offen', spots.offen]]) {
+        for (let rot = 0; rot < 4; rot++) {
+          await look(g, x, y, rot, 1.2);
+          await mvpPair(g, dir, season, `${name}-drehung${rot}`);
+        }
+      }
+      // Messung: Draw-Calls, Dreiecke und Zeit „Objekte“, gemalt gegen 3D, Schatten Aus und Hoch (Wald und offen, Zoom 1)
+      for (const [name, [x, y]] of [['wald', spots.wald], ['offen', spots.offen]]) {
+        await look(g, x, y, 0, 1);
+        const rows = [];
+        for (const level of ['off', 'high']) {
+          for (const on of [false, true]) {
+            const st = await g.run(({ level, on }) => {
+              const s = window.__frontline.session();
+              const r = s.renderer;
+              s.camera.three = true;
+              r.setShadows(level);
+              r.nature3dOn = on;
+              for (let i = 0; i < 3; i++) r.render(s.controller.view);
+              const info = r.gl.info;
+              const orig = r.objects3d;
+              let obj = null;
+              info.autoReset = false;
+              r.objects3d = function (f) {
+                info.reset();
+                orig.call(this, f);
+                obj = { calls: info.render.calls, tris: info.render.triangles };
+              };
+              try {
+                r.render(s.controller.view);
+              } finally {
+                r.objects3d = orig;
+                info.autoReset = true;
+              }
+              return { ...obj, nat: r.nature3d.stats() };
+            }, { level, on });
+            const t = await timePasses(g, frames);
+            rows.push(`${level === 'off' ? 'Aus ' : 'Hoch'} ${on ? '3D    ' : 'gemalt'}: Objekte ${t.Objekte.toFixed(0)} ms, ${st.calls} Draw-Calls, ${st.tris} Dreiecke` + (on ? ` (Natur: ${st.nat.bush} Büsche, ${st.nat.rock} Felsen, ${st.nat.animal} Tiere, ${st.nat.calls} Formen, ${st.nat.tris} Dreiecke)` : ''));
+          }
+        }
+        await g.run(() => (window.__frontline.session().renderer.nature3dOn = true));
+        console.log(`Natur Messung ${name} (Seed 7, Zoom 1, ${frames} Bilder, Software-WebGL; „Objekte“ samt Schattenkarte):`);
+        for (const r of rows) console.log(`  ${r}`);
+      }
+    } finally {
+      errors.push(...g.errors);
+      await g.close();
+    }
+  }
+}
+
 /** Zwei Bildschirmfotos (PNG-Puffer) nebeneinander als ein Bild speichern, links „alt (Iso)“, rechts „neu (3D)“. */
 async function sideBySide(g, file, a, b) {
   const url = await g.run(
@@ -1183,6 +1305,7 @@ try {
   if (!only || only === 'stadt') await city();
   if (!only || only === 'wasser') await water();
   if (only === 'mvp') await mvp();
+  if (!only || only === 'natur') await nature();
 } catch (e) {
   console.error(`Abbruch: ${e.message}`);
   fail++;

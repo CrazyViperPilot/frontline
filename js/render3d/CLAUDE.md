@@ -7,7 +7,8 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `ground3d.js` – 3D-Boden: Höhennetz, Erdschnitt (`FS_GROUND` aus `render/ground.js`), Wasser-Netz (`FS_WATER`). `Ground3D`
 - `fog3d.js` – 3D-Nebel: Kriegsnebel (`FS_FOG`) auf dem Bodennetz, Textur aus `fogData`. `Fog3D`
 - `units3d.js` – Einheiten als Meshes (Wanne, Turm, stufenlose Drehung). `Units3D`
-- `trees3d.js` – Bäume als InstancedMesh je Form, grob fern und als Werfer. `Trees3D`, `treeGeometry`
+- `trees3d.js` – Bäume als InstancedMesh je Form, grob fern. `Trees3D`, `treeGeometry`
+- `nature3d.js` – Büsche, Felsen, Tiere je Form instanziert (`bush3d` …, `nature3dOn`). `Nature3D`
 - `sun3d.js` – Sonne, Schattenkarte über dem Ausschnitt, Schattenfänger, Stufen. `Sun3D`, `CATCH`, `CAST`
 - `billboards.js` – gemalte Bilder (`spritecache.blit`) als Vierecke aus einem Atlas (≤ 4 Seiten). `Billboards`
 - `camera3d.js` – three-Kamera aus `Camera`: `makeWorldRoot`, `syncIsoCamera`, `projectWorld`, `clipDepth`
@@ -28,11 +29,11 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - WebGL-Leinwand nicht im DOM, ohne Kantenglättung; `render/ground.js` behält seinen Kontext.
 
 ## Licht und Schatten (`sun3d.js`)
-- Sonne = `lightVec` (wie Bodenlicht, Gebäudeschatten; dreht mit der Kamera), auch für Einheiten. Nacht: `drawMood`.
-- Schattenfänger statt Boden-Shader (der wäre ≈ 35 ms schneller, aber Einheiten ein Bild zu spät): in „Objekte“ Render 1 mit Ebene
+- Sonne = `lightVec` (wie Bodenlicht, Gebäudeschatten; dreht mit der Kamera). Nacht: `drawMood`.
+- Schattenfänger statt Boden-Shader (der käme ein Bild zu spät): in „Objekte“ Render 1 mit Ebene
   `CATCH` (Karte aus Werfern auf `CAST`, Fänger = Bodennetz mit `ShadowMaterial`), Tiefe löschen, Render 2 Ebene 0.
 - Karte: Bildecken × Geländehöhen im Lichtraum + `margin`, Größe auf `snap` gerundet, Mitte aufs Texel-Raster (kein Flimmern).
-- Werfer: `castShadow`, `layers.enable(CAST)` (Bäume: grobe Form nur auf `CAST`). Empfangen: nur Baukasten (`lights: true`).
+- Werfer: `castShadow`, `layers.enable(CAST)` (Bäume: grobe Form). Empfangen: nur Baukasten (`lights: true`).
 
 ## Achsen (`camera3d.js`)
 - Kinder einer Wurzelgruppe (`groundRoot`, `objRoot`) liegen in Weltkoordinaten: x, y wie im Spiel, z = Höhe in Welt-px.

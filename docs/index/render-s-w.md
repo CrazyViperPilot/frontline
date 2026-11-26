@@ -3,6 +3,9 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
 ## stronghold.js (Fortsetzung)
+- drawHouseWorksIso(ctx, cam, h, part, body) – Ausbauten eines Hauses isometrisch (Ankerpunkt = Hausmitte am Boden, Kamera mit…
+- drawHouseFlagIso(ctx, cam, h, color, t, body) – Fahne am besetzten Haus (Iso): Mast an der linken Ecke des Hauses (außen; Altba…
+- drawHouseWorksTop(ctx, h, zoom) – Ausbauten von oben (2D, Weltkoordinaten, Kamera-Transformation gesetzt)
 - drawHouseFlagTop(ctx, h, color, t) – Fahne von oben (2D, Weltkoordinaten): Mast an der linken unteren Ecke, Tuch nac…
 
 ## terrain.js (23 KB)

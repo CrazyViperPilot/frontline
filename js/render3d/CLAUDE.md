@@ -6,6 +6,7 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `renderer3d.js` – `Renderer3D` (Unterklasse von `Renderer`, gleiche Schnittstelle), `make3D` (Leinwand, WebGL, Rückfall null)
 - `camera3d.js` – three-Kamera aus `Camera`: `makeWorldRoot`, `makeIsoCamera`, `syncIsoCamera`, `projectWorld`, `HEIGHT_SCALE`
 - `testscene.js` – Prüfwürfel an Ecken, Mitte, Hauptstadt (`?three=1&cubes=1`). `probePoints`, `buildTestCubes`
+- `solids3d.js` – Körperliste (render/units/shapes.js) → three-Geometrie: `solidsToGeometry`, `buildModelMesh`, `modelGeometry` (Zwischenspeicher), `boundsOf3`
 
 ## Schichtung
 - Ansicht „3D“ = `camera.iso && camera.three`; V bzw. „Ansicht“ schaltet 2D → Iso → 3D (`main.js` `toggleView`, lädt three nach).

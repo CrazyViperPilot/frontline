@@ -4,8 +4,8 @@
 // - Büsche (Strauch, Beerenstrauch, Farn, junge Fichte): niedrige Polygone mit dem Baukasten und dem Shader der Bäume (trees3d.js: Geo,
 //   TREE_VS/TREE_FS, Palette nach Helligkeit, Blattmuster, Schnee). Je Art BUSH_SHAPES Formen, die Drehung je Busch sorgt für Vielfalt.
 //   Herbst: Laubpalette des Herbstes (Farn braun); Winter: Strauch und Beeren kahl (Ruten, Schnee am Fuß, Hagebutten), Farn braun mit
-//   Schnee, junge Fichte mit Schneebändern wie die Fichte. Unterholz im Wald (under) wirft keinen Schatten (gemalt auch nicht); unter
-//   Zoom 0,6 lässt isoItems es ohnehin weg.
+//   Schnee, junge Fichte mit Schneebändern wie die Fichte. Unterholz im Wald (under) wirft hier auch Schatten (gemalt nicht): ein Satz
+//   je Form statt zwei, und unter den Kronen fällt es kaum auf. Unter Zoom 0,6 lässt isoItems Unterholz ohnehin weg.
 // - Felsen (4 Varianten je Jahreszeit) und Tiere (Hirsch, Wildschwein je Haltung: Gehbild, Galopp, Äsen, also mit Laufbild) aus den
 //   Körperlisten von nature.js über den Körper-Wandler (solids3d.js modelGeometry), Licht wie die Einheiten (units3d.js).
 // Alles wirft Schatten in die Schattenkarte (Ebene CAST); die gemalten Schatten lässt isoShadows dann weg (natureShadow3d).
@@ -348,12 +348,11 @@ export class Nature3D {
     return true;
   }
 
-  /** Busch (Aussehen L aus bushLook3d) am Weltpunkt (x, y) auf Höhe h. Unterholz wirft keinen Schatten. */
+  /** Busch (Aussehen L aus bushLook3d) am Weltpunkt (x, y) auf Höhe h. */
   bush(L, x, y, h) {
     const shape = L.shape % BUSH_SHAPES;
     const bare = this.season === 'winter' && (L.kind === 'shrub' || L.kind === 'berry');
-    const under = L.under ? 1 : 0;
-    const s = this.setOf(`b|${L.kind}|${shape}|${bare ? 1 : 0}|${under}`, L.kind, () => bushGeometry(L.kind, shape, bare), { mat: this.bushMat, cap: CAP_BUSH, pal: true, cast: !under });
+    const s = this.setOf(`b|${L.kind}|${shape}|${bare ? 1 : 0}`, L.kind, () => bushGeometry(L.kind, shape, bare), { mat: this.bushMat, cap: CAP_BUSH, pal: true });
     const ok = this.put(s, x, y, h, (((L.h >>> 17) % 360) * Math.PI) / 180, L.size, this.rows.get(L.P) ?? 0);
     if (ok) this.counts.bush++;
     return ok;

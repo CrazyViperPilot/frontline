@@ -1,1 +1,0 @@
-**3D-Einheiten und 3D-Nebel** (Test, Ansicht „3D“): Fahrzeuge, Soldaten, Hubschrauber und Jets stehen in der Ansicht 3D als echte 3D-Modelle in der Szene (Turm folgt dem Ziel, Drehung stufenlos statt in 16 Richtungen, Flieger verdecken und werden verdeckt nach ihrer Tiefe); der Kriegsnebel kommt ebenfalls aus three.js. Das Aussehen gleicht den gemalten Modellen.

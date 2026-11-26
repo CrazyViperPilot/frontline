@@ -40,7 +40,7 @@ test('Dokumente liegen einmal vor: alte Pläne und verlauf.md nur unter docs/arc
 
 // Paket „Archiv“: Erledigte Pläne liegen unter docs/archiv/ (ein noch offener Plan darf in docs/ bleiben, steht dann hier),
 // und .ignore nimmt Archiv und Changelog aus der Suche (ripgrep), damit sie Suchen nicht aufblähen.
-const OPEN_PLANS = ['plan-lagerhallen.md']; // laufende Pläne; erledigte nach docs/archiv/
+const OPEN_PLANS = ['plan-lagerhallen.md', 'plan-3d.md']; // laufende Pläne; erledigte nach docs/archiv/
 
 test('Archiv: unter docs/ liegt keine erledigte plan-*.md auf oberster Ebene', () => {
   const plans = readdirSync(rel('docs/')).filter((f) => /^plan-.*\.md$/.test(f) && !OPEN_PLANS.includes(f));

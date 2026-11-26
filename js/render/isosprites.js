@@ -5,8 +5,8 @@
 import { drawUnitIso, drawWreckIso } from './unitpaint.js';
 
 /** Einheit in Iso (gemalt, unitpaint.js): Soldaten blicken zum Ziel, Türme folgen dem Ziel. false = noch kein Bild (Ersatz im Renderer). */
-export function drawUnitSprite(ctx, cam, u, p, aim = null, lift = 0, now = 0) {
-  return drawUnitIso(ctx, cam, u, p, aim, lift, now);
+export function drawUnitSprite(ctx, cam, u, p, aim = null, lift = 0, now = 0, body = true) {
+  return drawUnitIso(ctx, cam, u, p, aim, lift, now, body);
 }
 
 /** Wrack als verkohltes Fahrzeugmodell am Boden (auch abgeschossene Hubschrauber). false = kein Modell, der Renderer zeichnet Kästen. */

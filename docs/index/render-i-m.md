@@ -136,7 +136,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - railsTop(c, x0, x1, y)
 
 ## isosprites.js (1.0 KB)
-- drawUnitSprite(ctx, cam, u, p, aim, lift, now) – Einheit in Iso (gemalt, unitpaint.js): Soldaten blicken zum Ziel, Türme folgen…
+- drawUnitSprite(ctx, cam, u, p, aim, lift, now, body) – Einheit in Iso (gemalt, unitpaint.js): Soldaten blicken zum Ziel, Türme folgen…
 - drawWreckSprite(ctx, cam, w, p) – Wrack als verkohltes Fahrzeugmodell am Boden (auch abgeschossene Hubschrauber)
 
 ## landmarks.js (13 KB)

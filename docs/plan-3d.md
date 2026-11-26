@@ -59,8 +59,15 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   würde sie den 3D-Boden verdecken): three-Bilder werden je Durchlauf in die 2D-Leinwand kopiert statt darunter zu liegen; die
   Durchläufe tauscht `Renderer3D.swaps`. Zwei Leinwände erst, wenn Nebel, Bodenmarken und Stimmung in three sind.
 - Prüfung `tools/smoke-3d.mjs`: Kamera 0 px; Iso gegen 3D (Seeds 3, 7, Sommer, Winter, 4 Drehungen) unter 1 % abweichende Pixel.
-- Nächste Pakete: 3D-Einheiten (Sonnet, braucht Körper-Wandler) ‖ Bodenmarken (Sonnet) ‖ 3D-Nebel (Sonnet); danach 3D-Bäume,
-  Licht und Schatten.
+- 3D-Einheiten: gebaut (`js/render3d/units3d.js`): Meshes aus dem Körper-Wandler, Wanne und Turm getrennt, stufenlose Drehung,
+  Soldaten mit Gehbildern als Posen, Luftfahrzeuge mit Tiefe statt „immer obenauf“, Licht wie `painter.js`. Rotoren und Nachbrenner
+  weiter gemalt; offen: Instancing (heute ein Draw-Call je Einheit), Wracks als Mesh (heute verkohltes Billboard), Lackfoto `mat`.
+- 3D-Nebel: gebaut (`js/render3d/fog3d.js`, `FS_FOG` auf dem Bodennetz).
+- Bodenmarken: durch die Schichtung erfüllt (Ringe, Zonen, Radien liegen gemalt zwischen Gelände und Objekten, also unter den
+  Einheiten). Offen: am Hang anschmiegen (heute eben in Objekthöhe wie in Iso); nötig erst mit „Freie Kamera“ (Marken als Bodentextur).
+- Messung (Software-WebGL im Container, 200 Einheiten): Gelände 3D 152 ms gegen Iso 179 ms, Objekte 83 gegen 24 ms; mit
+  Kantenglättung (MSAA) doppelt so teuer, daher aus. Echte Geräte: MVP-Messung.
+- Nächste Pakete: 3D-Bäume (Sonnet) ‖ Licht und Schatten (Opus); danach MVP-Messung.
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als
 Billboards, Auswahl und Befehle funktionieren. Danach Fotos und Bildrate auf Rechner und Handy vergleichen.

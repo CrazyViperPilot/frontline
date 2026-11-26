@@ -47,7 +47,8 @@ export class Renderer {
     this.maxDpr = MAX_DPR_SHARP; // Obergrenze der Pixeldichte: „Scharf“ 2, „Leistung“ 1 (setMaxDpr, Einstellung Bildauflösung)
     this.cssW = 0;
     this.cssH = 0;
-    this.isoSwap = null; // Iso-Durchläufe (Name aus ISO_PASSES → Ersatz oder null), die der 3D-Renderer übernimmt (render3d/renderer3d.js)
+    this.isoSwap = null;
+    this.unit3d = null; // 3D: (f, u, aim, lift) → true, wenn die Einheit als Mesh steht (render3d/renderer3d.js); sonst null // Iso-Durchläufe (Name aus ISO_PASSES → Ersatz oder null), die der 3D-Renderer übernimmt (render3d/renderer3d.js)
     this.resize();
   }
 

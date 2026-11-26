@@ -15,7 +15,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawTownTop(ctx, b, zoom) – 2D von oben: Gebäude b als Bild aus dem Zwischenspeicher (Weltkoordinaten, Kame…
 
 ## unitpaint.js (21 KB)
-- drawUnitIso(ctx, cam, u, p, aim, lift, now) – Einheit in Iso an Bildpunkt p (Boden), lift = Höhe über dem Boden
+- drawUnitIso(ctx, cam, u, p, aim, lift, now, body) – Einheit in Iso an Bildpunkt p (Boden), lift = Höhe über dem Boden
 - drawUnitShadowIso(ctx, cam, u, p, dpr, now) – Schatten in Iso: Umriss des Modells von oben, flach auf den Boden gelegt (Boden…
 - drawUnitTop(ctx, u, zoom, aim, now) – Einheit von oben (2D), Weltkoordinaten (Transform des Renderers)
 - drawWreckIso(ctx, cam, w, p) – Wrack in Iso: verkohltes Modell (Wanne und Turm) am Boden

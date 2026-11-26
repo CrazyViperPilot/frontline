@@ -237,7 +237,9 @@ export const isoItemMethods = {
       ctx.fill();
     }
     const aim = this.aimOf(u);
-    if (drawUnitSprite(ctx, cam, u, { x: p.x, y: p.y }, aim, lift, now)) return;
+    // 3D (render3d/renderer3d.js unit3d): Körper als Mesh in der Szene, hier nur noch Rotoren und Nachbrenner
+    const mesh = !!this.unit3d?.(f, u, aim, lift);
+    if (drawUnitSprite(ctx, cam, u, { x: p.x, y: p.y }, aim, lift, now, !mesh) || mesh) return;
     setIsoAt(ctx, cam, dpr, p.x, p.y - lift * z, u.x, u.y, sc);
     drawUnit(ctx, u, g.teams[u.team].color, z * sc, aim, now, true);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

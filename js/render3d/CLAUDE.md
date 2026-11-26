@@ -6,6 +6,7 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `renderer3d.js` – `Renderer3D` (Unterklasse von `Renderer`, gleiche Schnittstelle), `make3D` (WebGL, Rückfall null)
 - `ground3d.js` – 3D-Boden: Höhennetz und Erdschnitt mit dem Shader `FS_GROUND` aus `render/ground.js`. `Ground3D`
 - `fog3d.js` – 3D-Nebel: Kriegsnebel (`FS_FOG`) auf dem Höhennetz des Bodens, Textur aus `fogData`. `Fog3D`
+- `units3d.js` – Einheiten als Meshes (Wanne, Turm, stufenlose Drehung), Licht wie `painter.js`. `Units3D`
 - `billboards.js` – gemalte Bilder (`spritecache.blit`) als Vierecke aus einem Atlas (≤ 4 Seiten 2048²). `Billboards`
 - `camera3d.js` – three-Kamera aus `Camera`: `makeWorldRoot`, `makeIsoCamera`, `syncIsoCamera`, `projectWorld`, `clipDepth`
 - `testscene.js` – Prüfwürfel an Ecken, Mitte, Hauptstadt (`?three=1&cubes=1`). `probePoints`, `buildTestCubes`
@@ -14,11 +15,14 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 ## Schichtung
 - Ansicht „3D“ = `camera.iso && camera.three`; V bzw. „Ansicht“ schaltet 2D → Iso → 3D (`main.js` `toggleView`, lädt three nach).
 - Die Iso-Durchläufe (`ISO_PASSES`) laufen wie bisher in die 2D-Leinwand; `swaps` (Name → Ersatz, `runPasses` über `isoSwap`)
-  ersetzt „Gelände“ (three: `ground3d.js`) und „Objekte“ (three: Billboards, später 3D-Körper unter `objRoot`). Jedes three-Bild
+  ersetzt „Gelände“ (`ground3d.js`), „Objekte“ (Billboards und Einheiten unter `objRoot`, samt Luftfahrzeugen: „Flieger“ fällt
+  weg) und „Nebel“ (`fog3d.js`). Jedes three-Bild
   wird an seiner Stelle in die 2D-Leinwand kopiert; Bodenmarken, Nebel, Wetter, Stimmung und Balken bleiben dadurch unverändert.
 - „Objekte“: `setBlitSink` fängt jedes `blit` ab → Billboard mit der Clip-Tiefe des Objekt-Fußpunkts (`clipDepth`), Malreihenfolge
   wie heute. Was nicht über `blit` malt (Rotoren, Flammen, Ersatzformen), kommt über eine 2D-Zwischenleinwand obenauf.
-- Die WebGL-Leinwand hängt nicht im DOM. Der Nebel nutzt weiter `render/ground.js` (eigener Kontext) bis zum Paket „3D-Nebel“.
+- Einheiten: `drawUnitIsoAt` fragt `unit3d` (nur im Durchlauf „Objekte“ gesetzt); steht das Mesh, malt `drawUnitIso` mit
+  `body = false` nur Rotoren und Nachbrenner. Schatten bleiben gemalte Billboards bis „Licht und Schatten“.
+- Die WebGL-Leinwand hängt nicht im DOM, ohne Kantenglättung. `render/ground.js` legt weiter seinen Kontext an (Relief-Erkennung).
 - Prüfszene `&cubes=1`: nur Gelände und Würfel (Boden, Schatten, Objekte, Wetter fallen weg), Kreuze an `camera.worldToScreen`.
 
 ## Achsen (`camera3d.js`)

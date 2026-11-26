@@ -13,6 +13,8 @@ import { setBlitSink } from '../render/spritecache.js';
 import { makeWorldRoot, makeIsoCamera, syncIsoCamera, projectWorld, clipDepth } from './camera3d.js';
 import { Ground3D } from './ground3d.js';
 import { Billboards } from './billboards.js';
+import { Units3D } from './units3d.js';
+import { Fog3D } from './fog3d.js';
 import { probePoints, buildTestCubes } from './testscene.js';
 
 const BG = 0x0d110d; // Hintergrund wie der Iso-Boden außerhalb der Karte (layers/isoview.js BG_RGB)
@@ -44,12 +46,23 @@ export class Renderer3D extends Renderer {
     this.objScene.add(sun);
     this.billboards = new Billboards(gl);
     this.objScene.add(this.billboards.mesh);
+    this.units3d = new Units3D(); // Einheiten als Meshes (units3d.js), gezeigt über unit3d aus drawUnitIsoAt
+    this.objRoot.add(this.units3d.group);
+    this.unit3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
+    // Nebel: eigene Szene über allem (ohne Tiefentest), gleiche Geometrie wie der Boden
+    this.fogScene = new THREE.Scene();
+    this.fogRoot = makeWorldRoot();
+    this.fogScene.add(this.fogRoot);
+    this.fog3d = new Fog3D(this.ground3d);
+    this.fogRoot.add(this.fog3d.group);
     this.scratch = null; // 2D-Leinwand für alles, was im Durchlauf „Objekte“ nicht über blit läuft (liegt über den Billboards)
     this.cubes = !!opts.cubes;
     this.probes = null; // Prüfpunkte der Würfel (testscene.js), beim ersten 3D-Bild
     const sw = [
       ['Gelände', (r, f) => r.terrain3d(f)],
       ['Objekte', (r, f) => r.objects3d(f)],
+      ['Flieger', null], // Luftfahrzeuge zeichnet „Objekte“ mit (Tiefe statt „immer obenauf“)
+      ['Nebel', (r, f) => r.fog3dPass(f)],
     ];
     if (this.cubes) for (const n of ['Boden', 'Schatten', 'Objekte', 'Wetter']) sw.push([n, null]);
     this.swaps = new Map(sw); // Iso-Durchlauf → Ersatz (null = auslassen)
@@ -79,6 +92,7 @@ export class Renderer3D extends Renderer {
     syncIsoCamera(this.cam3, this.camera);
     this.groundRoot.updateMatrixWorld();
     this.objRoot.updateMatrixWorld();
+    this.fogRoot.updateMatrixWorld();
     this.frame3d = true;
   }
 
@@ -122,22 +136,45 @@ export class Renderer3D extends Renderer {
     setBlitSink((c, img, x, y, w, h) => bb.take(c, img, x, y, w, h));
     f.ctx = sctx;
     const one = [null];
+    const cam = this.camera;
+    const relief = f.relief;
+    this.units3d.begin(cam.rot);
+    this.unit3d = (f, u, aim, lift) => this.units3d.show(u, cam.pinned ?? (relief ? relief.displayAt(u.x, u.y) : 0), lift, aim, f.now);
     try {
       for (const it of f.items) {
         const o = it.o;
-        if (Number.isFinite(o.x) && Number.isFinite(o.y)) bb.item(clipDepth(this.objRoot, this.cam3, o.x, o.y, f.relief ? this.baseHeight(it) : 0));
+        if (Number.isFinite(o.x) && Number.isFinite(o.y)) bb.item(clipDepth(this.objRoot, this.cam3, o.x, o.y, relief ? this.baseHeight(it) : 0));
         one[0] = it;
         this.isoObjects(f, one);
       }
+      // Luftfahrzeuge (sonst Durchlauf „Flieger“): Mesh mit eigener Tiefe, Schatten und Rotoren wie bisher
+      for (const u of f.air ?? []) {
+        bb.item(clipDepth(this.objRoot, this.cam3, u.x, u.y, relief ? relief.displayAt(u.x, u.y) : 0));
+        f.ctx.setTransform(f.dpr, 0, 0, f.dpr, 0, 0);
+        this.drawUnitIsoAt(f, u);
+      }
     } finally {
       setBlitSink(null);
+      this.unit3d = null;
       f.ctx = ctx;
     }
+    this.units3d.end();
     bb.end();
     this.gl.setClearColor(0x000000, 0);
     this.gl.render(this.objScene, this.cam3);
     this.copy3d(ctx);
     ctx.drawImage(sc, 0, 0);
+  }
+
+  /** Durchlauf „Nebel“: Kriegsnebel auf dem Höhennetz in three (fog3d.js); ohne Relief wie bisher. */
+  fog3dPass(f) {
+    if (f.reveal) return;
+    if (!f.relief) return this.isoFog(f);
+    this.sync3d();
+    this.fog3d.update(this.fogData(f.g.fog[f.team]), f.now / 1000);
+    this.gl.setClearColor(0x000000, 0);
+    this.gl.render(this.fogScene, this.cam3);
+    this.copy3d(f.ctx);
   }
 
   /** Würfel einmal bauen, sobald das Relief bekannt ist (syncRelief im ersten Bild). */
@@ -170,6 +207,8 @@ export class Renderer3D extends Renderer {
   dispose() {
     this.ground3d.dispose();
     this.billboards.dispose();
+    this.units3d.dispose();
+    this.fog3d.dispose();
     this.gl.dispose();
     this.gl.forceContextLoss();
   }
@@ -192,7 +231,8 @@ export class Renderer3D extends Renderer {
 /** 3D-Renderer bauen (eigene, nicht eingehängte Leinwand). Ohne WebGL (oder bei einem Fehler) null: main.js zeichnet dann klassisch. */
 export function make3D(canvas, game, camera, team, opts = {}) {
   try {
-    const gl = new THREE.WebGLRenderer({ canvas: document.createElement('canvas'), antialias: true, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' });
+    // ohne Kantenglättung: wie der alte WebGL-Boden; MSAA kostete im Software-WebGL das Doppelte, bei Pixeldichte 2 kaum sichtbar
+    const gl = new THREE.WebGLRenderer({ canvas: document.createElement('canvas'), antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' });
     return new Renderer3D(canvas, game, camera, team, gl, opts);
   } catch (e) {
     console.warn('3D nicht verfügbar, zeichne klassisch:', e?.message ?? e);

@@ -162,8 +162,9 @@ function lookOf(u, now) {
 /**
  * Einheit in Iso an Bildpunkt p (Boden), lift = Höhe über dem Boden. aim = Weltwinkel zum Ziel (Turm, Soldat) oder null.
  * Liefert false, wenn es kein Modell oder noch kein Bild gibt (dann zeichnet der Renderer den Ersatz).
+ * body = false: nur Rotoren und Nachbrenner (der Körper steht als 3D-Modell in der Szene, render3d/units3d.js).
  */
-export function drawUnitIso(ctx, cam, u, p, aim = null, lift = 0, now = 0) {
+export function drawUnitIso(ctx, cam, u, p, aim = null, lift = 0, now = 0, body = true) {
   const look = lookOf(u, now);
   const m = modelOf(u.type, u.team, look);
   if (!m) return false;
@@ -178,14 +179,14 @@ export function drawUnitIso(ctx, cam, u, p, aim = null, lift = 0, now = 0) {
   const base = `ui|${u.type}|${tk}|${look.frame ?? ''}|${look.missiles ?? ''}|${look.gear ? 1 : 0}|${look.camo ?? ''}${look.prone ? 'p' : ''}`;
   const make = (k) => `${base}|${k}`;
   const yaw = (k) => (k / n) * TAU;
-  const e = getSprite(make(sec), f * dpr, boundsOf(m, m.S, yaw(sec), true), (c, s) => paintSolids(c, m.S, yaw(sec), { iso: true, s }), nearKeys(make, sec, n));
+  const e = !body || getSprite(make(sec), f * dpr, boundsOf(m, m.S, yaw(sec), true), (c, s) => paintSolids(c, m.S, yaw(sec), { iso: true, s }), nearKeys(make, sec, n));
   if (!e) return false;
   const y = p.y - lift * z;
   const burn = m.nozzle && !u.parked && (u.jet?.phase === 'roll' || jetAlt(u) > 0.05);
   const away = Math.cos(yaw(sec)) + Math.sin(yaw(sec)) > 0; // Düse zeigt vom Betrachter weg: Flamme liegt hinter dem Rumpf
   if (burn && away) drawFlameIso(ctx, m, p.x, y, f, yaw(sec), now);
-  blit(ctx, e, p.x, y, f);
-  if (m.turret) {
+  if (body) blit(ctx, e, p.x, y, f);
+  if (m.turret && body) {
     const ta = aim === null || aim === undefined ? va : viewAngle(cam, aim);
     const ts = sectorOf(ta, VEH_SECT);
     const hy = yaw(sec);

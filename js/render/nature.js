@@ -1005,6 +1005,19 @@ function paintBush(c, s, kind, shape, pv, season, iso) {
   }
 }
 
+/**
+ * Aussehen eines Buschs für die Ansicht 3D (render3d/nature3d.js), gleich gewürfelt wie das gemalte Bild: Art kind, Form shape,
+ * Größe size (1 = Bezugsradius RB), Zufall h, Unterholz under, Laubpalette P der Jahreszeit (Strauch, Beeren: wie paintBush).
+ */
+export function bushLook3d(b, season = 'summer') {
+  const L = bushLook(b);
+  const P = L.kind === 'fern' ? FERN[season] ?? FERN.summer : L.kind === 'sapling' ? SPRUCE : LEAVES.broad[season === 'autumn' ? 'autumn' : 'summer'][L.pv % (season === 'autumn' ? 4 : 3)];
+  return { ...L, under: !!b.under, P };
+}
+
+/** Farben der Büsche für die Ansicht 3D: Farn je Jahreszeit, Beeren, Ruten, Schnee. */
+export const BUSH_COLORS = { fern: FERN, berry: BERRY, twig: '#5a4636', snow: SNOW[0] };
+
 const BUSH_ISO = [-21, -26, 21, 5];
 const BUSH_TOP = [-13, -13, 15, 15];
 
@@ -1244,6 +1257,12 @@ export function drawRockIso(ctx, cam, o, season = 'summer') {
   return true;
 }
 
+/** Fels für die Ansicht 3D: Variante v, Blickwinkel yaw in der Welt (wie drawRockIso in Drehung 0), Größe, Körper S der Jahreszeit. */
+export function rockLook3d(o, season = 'summer') {
+  const L = rockLook(o, 0);
+  return { ...L, S: rockModel(L.v, season).S };
+}
+
 /** Fels von oben (2D) mit Schatten nach rechts unten. false = noch kein Bild. */
 export function drawRockTop(ctx, o, season = 'summer', zoom = 1) {
   const L = rockLook(o, 0);
@@ -1357,6 +1376,12 @@ export function drawAnimalIso(ctx, cam, a, p, now = 0) {
   ell(ctx, p.x, p.y + 0.5 * f, 7.5 * f, 3 * f, 'rgba(0,0,0,0.24)');
   blit(ctx, e, p.x, p.y, f);
   return true;
+}
+
+/** Tier für die Ansicht 3D: Haltung wie drawAnimalIso (Gehbild, Galopp, Äsen), Schlüssel key der Haltung, Körper S, Maßstab. */
+export function animalLook3d(a, now = 0) {
+  const look = animalLook(a, now);
+  return { key: `${a.kind}|${look.key}`, S: animalModel(a.kind, look).S, scale: ANIMAL_ISO };
 }
 
 /** Tier von oben (2D), gedreht nach a.angle, mit Schatten. false = noch kein Bild. */

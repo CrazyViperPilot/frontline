@@ -63,7 +63,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - pickMood(setting, seed, season) – Stimmung für diese Partie: setting 'off' | 'random' | feste Stimmung; Zufall de…
 - drawMood(ctx, mood, cssW, cssH) – Stimmung über die Welt zeichnen (ctx in CSS-Pixeln, Transform = dpr)
 
-## nature.js (54 KB)
+## nature.js (56 KB)
 - SPECIES
 - forestKind(o) – Waldart (fest nach Lage des Walds): Laubwald, Nadelwald oder Mischwald
 - forestSpecies(kind, u) – Art eines Baums im Wald nach Waldart; u ∈ [0, 1) ist der Zufall des Baums
@@ -72,12 +72,16 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - leafCanvas() – Kachelbares Blattmuster in Grau (128 = neutral) für den Mischmodus „overlay“
 - drawTreeIso(ctx, cam, t, season) – Baum in Iso (Stammfuß am Weltpunkt, Größe nach t.r)
 - drawTreeTop(ctx, t, season, zoom) – Baum von oben (2D, Welt-Transformation gesetzt), mit Schatten
+- bushLook3d(b, season) – Aussehen eines Buschs für die Ansicht 3D (render3d/nature3d.js), gleich gewürfe…
+- BUSH_COLORS – Farben der Büsche für die Ansicht 3D: Farn je Jahreszeit, Beeren, Ruten, Schnee
 - drawBushIso(ctx, cam, b, season) – Busch in Iso (Fuß am Weltpunkt)
 - drawBushTop(ctx, b, season, zoom) – Busch von oben (2D)
 - natureShadowIso(ctx, cam, o, t) – Hängt den Schatten eines Baums (t 1), Felsens (2) oder Buschs (13) als Ellipse…
 - drawRockIso(ctx, cam, o, season) – Fels in Iso (Fuß am Weltpunkt), in jeder Drehung der Ansicht von der passenden…
+- rockLook3d(o, season) – Fels für die Ansicht 3D: Variante v, Blickwinkel yaw in der Welt (wie drawRockI…
 - drawRockTop(ctx, o, season, zoom) – Fels von oben (2D) mit Schatten nach rechts unten
 - drawAnimalIso(ctx, cam, a, p, now) – Tier in Iso an Bildpunkt p (Boden), Blick nach a.angle (8 Richtungen)
+- animalLook3d(a, now) – Tier für die Ansicht 3D: Haltung wie drawAnimalIso (Gehbild, Galopp, Äsen), Sch…
 - drawAnimalTopP(ctx, a, zoom, now) – Tier von oben (2D), gedreht nach a.angle, mit Schatten
 - natureModels() – Für Tests: alle Felsen- und Tiermodelle (Körper) bauen, ohne zu malen
 
@@ -153,6 +157,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 
 ## stronghold.js (16 KB)
 - worksMask(h) – Ausbauten eines Hauses als Bitmaske: 1 Sandsäcke, 2 MG-Nest, 4 Stacheldraht
-- drawHouseWorksIso(ctx, cam, h, part, body) – Ausbauten eines Hauses isometrisch (Ankerpunkt = Hausmitte am Boden, Kamera mit…
-- drawHouseFlagIso(ctx, cam, h, color, t, body) – Fahne am besetzten Haus (Iso): Mast an der linken Ecke des Hauses (außen; Altba…
-- drawHouseWorksTop(ctx, h, zoom) – Ausbauten von oben (2D, Weltkoordinaten, Kamera-Transformation gesetzt)

@@ -169,6 +169,20 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   die gemalten Gebäudeschatten. Gemalte Billboards (Wand links hell) bleiben bis zur Umstellung ihrer Familie so; der Bruch verschwindet
   mit Stufe 2. Verworfen: Sonne nach links drehen (alle Schatten fielen nach rechts, 3D-Boden wiche von Iso ab) und gemalte Gebäude
   umfärben (Aufwand für eine Übergangszeit). Frage an Daniel nur, falls er links helle Wände im 3D-Bild ausdrücklich will.
+- Büsche und Felsen 3D: gebaut (`js/render3d/nature3d.js`, Test `test/nature3d.test.js`, Prüfteil `smoke-3d.mjs --only natur`, Fotos
+  `.smoke/3d/natur/`). Büsche (Strauch, Beerenstrauch, Farn, junge Fichte) aus dem Baukasten und mit dem Shader der Bäume (`Geo`,
+  `TREE_VS`/`TREE_FS` aus `trees3d.js`; Palette, Blattmuster, Schnee), je Art 2 Formen als `InstancedMesh`; Herbstlaub, im Winter
+  Sträucher kahl (Ruten, Schneehügel, Hagebutten), Farn braun mit Schnee, junge Fichte mit Schneebändern. Felsen (4 Varianten je
+  Jahreszeit) und Tiere über `modelGeometry`, ein `InstancedMesh` je Variante bzw. Haltung; Tiere mit Blickrichtung und Laufbild
+  (Gehbild, Galopp, Äsen: eine Geometrie je Haltung, höchstens 40, im Bild ≤ 8 Tiere). Alles wirft Schatten über die Schattenkarte, die
+  gemalten Schatten fallen dann weg (`natureShadow3d`); ohne Karte malt `isoShadows` den Fußschatten der Tiere (`animalShadow2d`).
+  Unterholz wirft in 3D auch Schatten (ein Satz je Form statt zwei). Schalter `nature3dOn`. Dreiecke je Form: Strauch 180/200 (Winter
+  594), Beeren 460 (Winter 774/794), Farn 360, junge Fichte 200, Felsen 239 bis 371, Hirsch 432, Wildschwein 330. Gemessen vorher (Seeds 3,
+  7): Wald bei Zoom 1 bis 300 Büsche (davon ~140 Unterholz), bis 140 Felsen; Tiere höchstens 8 im Bild. Messung „Objekte“ samt
+  Schattenkarte (Seed 7, Zoom 1, Software-WebGL), gemalt → 3D: Wald (308 Büsche, 26 Felsen) Aus 96 → 118 ms, 9 → 21 Draw-Calls; Hoch
+  199 → 244 ms, 18 → 42 Draw-Calls; offen (191 Büsche, 50 Felsen) Aus 44 → 55 ms, Hoch 139 → 164 ms. Natur-Draw-Calls im Bild 11 bis 16
+  (je Buschart 2, Felsen ≤ 4, Tiere je Haltung). Offen: Gesteinsfoto (`mat: 'rock'`) fehlt den 3D-Felsen (Flächenfarben bleiben),
+  Herbstlaub am Boden unter den Sträuchern fehlt in 3D (wie bei den Bäumen).
 
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als

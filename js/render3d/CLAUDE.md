@@ -7,15 +7,16 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `ground3d.js` – 3D-Boden: Höhennetz, Erdschnitt, Shader `FS_GROUND` aus `render/ground.js`. `Ground3D`
 - `fog3d.js` – 3D-Nebel: Kriegsnebel (`FS_FOG`) auf dem Höhennetz des Bodens, Textur aus `fogData`. `Fog3D`
 - `units3d.js` – Einheiten als Meshes (Wanne, Turm, stufenlose Drehung). `Units3D`
-- `trees3d.js` – Bäume als InstancedMesh je Form, grob fern und als Werfer. `Trees3D`, `treeGeometry`
+- `trees3d.js` – Bäume als InstancedMesh je Form, grob fern. `Trees3D`, `treeGeometry`
+- `nature3d.js` – Büsche, Felsen, Tiere je Form instanziert (`bush3d` …, `nature3dOn`). `Nature3D`
 - `sun3d.js` – Sonne, Schattenkarte über dem Ausschnitt, Schattenfänger, Stufen. `Sun3D`, `CATCH`, `CAST`
 - `billboards.js` – gemalte Bilder (`blit`) als Vierecke aus einem Atlas (≤ 4 Seiten). `Billboards`
 - `camera3d.js` – three-Kamera aus `Camera`: `makeWorldRoot`, `syncIsoCamera`, `projectWorld`, `clipDepth`
 - `testscene.js` – Prüfwürfel (`?cubes=1`). `probePoints`, `buildTestCubes`
 - `solids3d.js` – Körperliste (units/shapes.js) → Geometrie: `solidsToGeometry`, `buildModelMesh`, `modelGeometry`
-- `kit3d.js` – Gebäude-Baukasten (Teile wie isokit.js, alle Seiten). `Kit3D`, `makeKitMaterial`, `setKitFrame`, `kitMesh`
+- `kit3d.js` – Gebäude-Baukasten (Teile wie isokit.js). `Kit3D`, `makeKitMaterial`, `setKitFrame`, `kitMesh`
 - `town3d.js` – Gebäudefamilien (Stadthäuser 1 × 1, Werke), InstancedMesh je Variante. `townGeometry`, `FAMILIES`, `Town3D`
-- `works3d.js` – Werke und Kraftwerk aus dem Baukasten, Teamfarbe je Instanz. `worksGeometry`, `worksKey`
+- `works3d.js` – Werke aus dem Baukasten, Teamfarbe je Instanz. `worksGeometry`, `worksKey`
 
 ## Schichtung
 - Ansicht „3D“ = `camera.iso && camera.three`; V schaltet 2D → Iso → 3D (`main.js` `toggleView`, lädt three nach).
@@ -29,11 +30,11 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - WebGL-Leinwand nicht im DOM, ohne Kantenglättung.
 
 ## Licht und Schatten (`sun3d.js`)
-- Sonne = `lightVec` (wie Bodenlicht, Gebäudeschatten; dreht mit der Kamera), auch für Einheiten. Nacht: `drawMood`.
-- Schattenfänger statt Boden-Shader (≈ 35 ms schneller, aber Einheiten ein Bild zu spät): in „Objekte“ Render 1 mit Ebene `CATCH`
-  (Karte aus Werfern auf `CAST`, Fänger = Bodennetz mit `ShadowMaterial`), Tiefe löschen, Render 2 Ebene 0.
+- Sonne = `lightVec` (wie Bodenlicht, Gebäudeschatten; dreht mit der Kamera). Nacht: `drawMood`.
+- Schattenfänger statt Boden-Shader (käme ein Bild zu spät): in „Objekte“ Render 1 mit Ebene
+  `CATCH` (Karte aus Werfern auf `CAST`, Fänger = Bodennetz mit `ShadowMaterial`), Tiefe löschen, Render 2 Ebene 0.
 - Karte: Bildecken × Geländehöhen im Lichtraum + `margin`, Größe auf `snap` gerundet, Mitte aufs Texel-Raster.
-- Werfer: `castShadow`, `layers.enable(CAST)` (Bäume: grobe Form nur auf `CAST`). Empfangen: nur Baukasten (`lights: true`).
+- Werfer: `castShadow`, `layers.enable(CAST)` (Bäume: grobe Form). Empfangen: nur Baukasten (`lights: true`).
 
 ## Achsen (`camera3d.js`)
 - Kinder einer Wurzelgruppe (`groundRoot`, `objRoot`) liegen in Weltkoordinaten: x, y wie im Spiel, z = Höhe in Welt-px.

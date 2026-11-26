@@ -100,8 +100,18 @@ export const isoItemMethods = {
     for (const it of items) {
       if ((it.t !== 1 && it.t !== 2 && it.t !== 13) || it.o.inner || it.o.under) continue;
       if (it.t === 1 && this.treeShadow3d) continue; // Ansicht 3D mit Schattenkarte: der 3D-Baum wirft ihn selbst
+      if (it.t !== 1 && this.natureShadow3d) continue; // ebenso Busch und Fels (render3d/nature3d.js)
       if (relief) cam.pin(this.baseHeight(it));
       natureShadowIso(ctx, cam, it.o, it.t);
+      cam.unpin();
+    }
+    // Ansicht 3D ohne Schattenkarte: Fußschatten der 3D-Tiere wie drawAnimalIso
+    if (this.animalShadow2d) for (const it of items) if (it.t === 11) {
+      if (relief) cam.pin(this.baseHeight(it));
+      const p = cam.worldToScreen(it.o.x, it.o.y);
+      const z = cam.zoom;
+      ctx.moveTo(p.x + 7.5 * z, p.y + 0.5 * z);
+      ctx.ellipse(p.x, p.y + 0.5 * z, 7.5 * z, 3 * z, 0, 0, Math.PI * 2);
       cam.unpin();
     }
     ctx.fillStyle = 'rgba(10,18,8,0.24)';
@@ -131,8 +141,8 @@ export const isoItemMethods = {
         // 3D (render3d/trees3d.js, nur im Durchlauf „Objekte“ der Ansicht 3D), sonst gemalt (nature.js), sonst Ersatz
         if (!this.tree3d?.(it.o) && !drawTreeIso(ctx, cam, it.o, this.season)) drawTree(ctx, cam, it.o, this.season);
       }
-      else if (it.t === 2) { if (!drawRockIso(ctx, cam, it.o, this.season)) drawRock(ctx, cam, it.o); }
-      else if (it.t === 13) drawBushIso(ctx, cam, it.o, this.season);
+      else if (it.t === 2) { if (!this.rock3d?.(it.o) && !drawRockIso(ctx, cam, it.o, this.season)) drawRock(ctx, cam, it.o); } // 3D: render3d/nature3d.js
+      else if (it.t === 13) { if (!this.bush3d?.(it.o)) drawBushIso(ctx, cam, it.o, this.season); }
       else if (it.t === 6) { if (!drawMapCarIso(ctx, cam, it.o, this.season)) drawCar(ctx, cam, it.o); } // gemalt (props.js, seit v5.43)
       else if (it.t === 7) { if (!drawBenchIso(ctx, cam, it.o, this.season)) drawBench(ctx, cam, it.o); }
       else if (it.t === 14) drawBaleIso(ctx, cam, it.o, this.season);
@@ -146,7 +156,7 @@ export const isoItemMethods = {
       else if (it.t === 11) {
         const a = it.o;
         const p = cam.worldToScreen(a.x, a.y);
-        if (!drawAnimalIso(ctx, cam, a, p, now)) drawAnimalSide(ctx, a, p.x, p.y, z * 1.1, ia * Math.cos(a.angle) + ic * Math.sin(a.angle) >= 0);
+        if (!this.animal3d?.(a, now) && !drawAnimalIso(ctx, cam, a, p, now)) drawAnimalSide(ctx, a, p.x, p.y, z * 1.1, ia * Math.cos(a.angle) + ic * Math.sin(a.angle) >= 0);
       } else if (it.t === 9 || it.t === 10) {
         const w = it.o;
         ctx.globalAlpha = scarAlpha(w, g.time, SC.wreckLife, SC.wreckFade);

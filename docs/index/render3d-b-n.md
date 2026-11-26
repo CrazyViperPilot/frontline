@@ -1,4 +1,4 @@
-# Symbol-Index render3d (Teil 1 von 2, billboards.js bis kit3d.js)
+# Symbol-Index render3d (Teil 1 von 2, billboards.js bis nature3d.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render3d/`. Pfade relativ zu `js/render3d/`.
 
@@ -121,3 +121,9 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - setKitFrame(mat, { light, snow = 0, night = 0, shade = 0.4 }) – Bildanfang: Sonne (Welt, z oben, Renderer.lightVec), Schnee (Winter), Nacht 0 ……
 - kitMesh(geometry, material) – Mesh eines Gebäudes: wirft und empfängt Schatten (Ebene CAST für die Schattenka…
 - kitTeamMesh(geometry, material, color) – Mesh eines Werks mit Teamfarbe (Prüfteil, Fotos): InstancedMesh mit einer Insta…
+
+## nature3d.js (17 KB)
+- BUSH_SHAPES – Formen je Buschart in 3D
+- BUSH_KINDS3D
+- PALETTES
+- bushGeometry(kind, shape, bare) – Geometrie einer Buschform (Art, Form, kahl im Winter: nur Strauch und Beeren),…

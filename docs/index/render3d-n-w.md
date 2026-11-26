@@ -1,8 +1,21 @@
-# Symbol-Index render3d (Teil 2 von 2, renderer3d.js bis works3d.js)
+# Symbol-Index render3d (Teil 2 von 2, nature3d.js bis works3d.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render3d/`. Pfade relativ zu `js/render3d/`.
 
-## renderer3d.js (14 KB)
+## nature3d.js (Fortsetzung)
+- class Nature3D
+  - constructor()
+  - begin(light, season) – Bildanfang: Sonne (Welt, z oben), Jahreszeit
+  - setOf(key, art, make, { mat, cap, pal = false, cast = true }) – Satz (InstancedMesh) zum Schlüssel, beim ersten Gebrauch aus make() angelegt; p…
+  - put(s, x, y, h, yaw, k, row) – Instanz an (x, y, h), gedreht um die Hochachse (yaw), Maßstab k
+  - bush(L, x, y, h) – Busch (Aussehen L aus bushLook3d) am Weltpunkt (x, y) auf Höhe h
+  - rock(L, x, y, h) – Fels (rockLook3d) am Weltpunkt (x, y) auf Höhe h
+  - animal(L, a, h) – Tier a (animalLook3d) auf Höhe h, Blick nach a.angle
+  - end() – Bildende: Zahl der Instanzen je Satz setzen, leere verstecken
+  - stats() – Sichtbare Sätze (= Draw-Calls ohne Schattenkarte) je Art und Zahl der Büsche, F…
+  - dispose()
+
+## renderer3d.js (15 KB)
 - class Renderer3D
   - constructor(canvas, game, camera, team, gl, opts) – gl: fertiger THREE.WebGLRenderer (make3D)
   - setShadows(level) – Schattenstufe 'off' | 'mid' | 'high' (BALANCE.shadows3d), sofort wirksam; Aus:…
@@ -62,7 +75,19 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - TREE_SHAPES – Formen je Art in 3D (die Drehung je Baum sorgt für weitere Vielfalt)
 - LOD_ZOOM – darunter gröbere Formen (bis ~1500 Bäume im Bild, Messung Seed 7)
 - TREE_SPECIES
+- class Geo – Sammelt Dreiecke: Lage, Normale, Farbe, aTone
+  - constructor()
+  - vert(p, n, col, tone)
+  - frustum(a, b, ra, rb, k, col, tone) – Stumpf von a nach b (Radien ra, rb, k Seiten), Farbe col; Normalen radial
+  - blob(c, rx, ry, rz, detail, tone, rough, seed) – Verbeulter Ellipsoid um c (Halbachsen rx, ry, rz) aus einem Ikosaeder (detail),…
+  - tier(cx, cy, zb, w, th, k, r) – Stockwerk einer Fichte: Kegel mit gezackter, hängender Unterkante (k Zacken) un…
+  - limb(r, a, dir, len, w, depth, col) – Ast mit Verzweigung (kahle Winterkrone): Stümpfe, je Stufe zwei Zweige
+  - build()
 - treeGeometry(sp, shape, bare, lod) – Geometrie einer Form (je Art, Form, kahl, grob einmal gebaut)
+- TREE_VS
+- TREE_FS
+- paletteTexture(pals) – Palettentextur: je Zeile eine Laubpalette, Spalten Tiefe, Schatten, Mitte, Lich…
+- leafTexture()
 - class Trees3D
   - constructor()
   - begin(light, season, zoom) – Bildanfang: Sonne (Welt, z oben), Jahreszeit, Zoom (gröbere Formen darunter)

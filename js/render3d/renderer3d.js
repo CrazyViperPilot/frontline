@@ -18,6 +18,8 @@ import { Fog3D } from './fog3d.js';
 import { Sun3D, CATCH } from './sun3d.js';
 import { Trees3D } from './trees3d.js';
 import { Town3D } from './town3d.js';
+import { Nature3D } from './nature3d.js';
+import { bushLook3d, rockLook3d, animalLook3d } from '../render/nature.js';
 import { BALANCE } from '../data/balance.js';
 import { treeLook3d } from '../render/nature.js';
 import { probePoints, buildTestCubes } from './testscene.js';
@@ -64,6 +66,12 @@ export class Renderer3D extends Renderer {
     this.house3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
     this.towns3dOn = true; // false: Stadthäuser wie in Iso als gemalte Billboards (Prüfskript: Messung vorher/nachher)
     this.works3dOn = true; // false: Werke und Kraftwerk gemalt
+    this.nature3d = new Nature3D(); // Büsche, Felsen, Tiere als InstancedMesh je Form (nature3d.js), gezeigt über bush3d, rock3d, animal3d
+    this.objRoot.add(this.nature3d.group);
+    this.bush3d = this.rock3d = this.animal3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
+    this.nature3dOn = true; // false: Büsche, Felsen, Tiere wie in Iso gemalt (Prüfskript: Vergleich und Messung)
+    this.natureShadow3d = false; // isoShadows: gemalte Schatten der Büsche und Felsen weglassen (3D wirft sie selbst)
+    this.animalShadow2d = false; // isoShadows: Fußschatten der 3D-Tiere gemalt (ohne Schattenkarte)
     // Nebel: eigene Szene über allem (ohne Tiefentest), gleiche Geometrie wie der Boden
     this.fogScene = new THREE.Scene();
     this.fogRoot = makeWorldRoot();
@@ -107,6 +115,8 @@ export class Renderer3D extends Renderer {
     const on = this.camera.iso && this.camera.three;
     this.isoSwap = on ? this.swaps : null;
     this.treeShadow3d = on && this.trees3dOn && this.sun.on && !this.cubes;
+    this.natureShadow3d = on && this.nature3dOn && this.sun.on && !this.cubes;
+    this.animalShadow2d = on && this.nature3dOn && !this.sun.on && !this.cubes;
     this.frame3d = false; // Kamera für dieses Bild noch nicht gesetzt
     super.render(view); // gleicht auch Relief und Größe ab
     if (on && this.cubes) this.markProbes();
@@ -175,6 +185,14 @@ export class Renderer3D extends Renderer {
     // Stadthäuser: Sonne, Schnee, Nacht und Schattenstärke wie Boden und Schattenfänger; Höhe wie das Billboard (cam.pin)
     this.towns3d.begin({ light, snow: season === 'winter' ? 1 : 0, night: this.mood === 'night' ? 1 : 0, shade: BALANCE.shadows3d.opacity[this.mood ?? 'none'] ?? BALANCE.shadows3d.opacity.none });
     this.house3d = (o) => (o.kind === 'town' ? this.towns3dOn : this.works3dOn) && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
+    // Büsche, Felsen, Tiere (nature3d.js): Höhe wie das Billboard
+    this.nature3d.begin(light, season);
+    if (this.nature3dOn) {
+      const at = (o) => cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0);
+      this.bush3d = (b) => this.nature3d.bush(bushLook3d(b, season), b.x, b.y, at(b));
+      this.rock3d = (o) => this.nature3d.rock(rockLook3d(o, season), o.x, o.y, at(o));
+      this.animal3d = (a, now) => this.nature3d.animal(animalLook3d(a, now), a, at(a));
+    }
     try {
       for (const it of f.items) {
         const o = it.o;
@@ -193,12 +211,14 @@ export class Renderer3D extends Renderer {
       this.unit3d = null;
       this.tree3d = null;
       this.house3d = null;
+      this.bush3d = this.rock3d = this.animal3d = null;
       this.shadow3d = false;
       f.ctx = ctx;
     }
     this.units3d.end();
     this.trees3d.end();
     this.towns3d.end();
+    this.nature3d.end();
     bb.end();
     const gl = this.gl;
     gl.setClearColor(0x000000, 0);
@@ -266,6 +286,7 @@ export class Renderer3D extends Renderer {
     this.units3d.dispose();
     this.trees3d.dispose();
     this.towns3d.dispose();
+    this.nature3d.dispose();
     this.fog3d.dispose();
     this.sun.dispose();
     this.gl.dispose();

@@ -1,4 +1,4 @@
-# Symbol-Index render3d (Teil 1 von 2, billboards.js bis sun3d.js)
+# Symbol-Index render3d (Teil 1 von 2, billboards.js bis renderer3d.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render3d/`. Pfade relativ zu `js/render3d/`.
 
@@ -104,7 +104,24 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - setKitFrame(mat, { light, snow = 0, night = 0, shade = 0.4 }) – Bildanfang: Sonne (Welt, z oben, Renderer.lightVec), Schnee (Winter), Nacht 0 ……
 - kitMesh(geometry, material) – Mesh eines Gebäudes: wirft und empfängt Schatten (Ebene CAST für die Schattenka…
 
-## renderer3d.js (14 KB)
+## nature3d.js (17 KB)
+- BUSH_SHAPES – Formen je Buschart in 3D
+- BUSH_KINDS3D
+- PALETTES
+- bushGeometry(kind, shape, bare) – Geometrie einer Buschform (Art, Form, kahl im Winter: nur Strauch und Beeren),…
+- class Nature3D
+  - constructor()
+  - begin(light, season) – Bildanfang: Sonne (Welt, z oben), Jahreszeit
+  - setOf(key, art, make, { mat, cap, pal = false, cast = true }) – Satz (InstancedMesh) zum Schlüssel, beim ersten Gebrauch aus make() angelegt; p…
+  - put(s, x, y, h, yaw, k, row) – Instanz an (x, y, h), gedreht um die Hochachse (yaw), Maßstab k
+  - bush(L, x, y, h) – Busch (Aussehen L aus bushLook3d) am Weltpunkt (x, y) auf Höhe h
+  - rock(L, x, y, h) – Fels (rockLook3d) am Weltpunkt (x, y) auf Höhe h
+  - animal(L, a, h) – Tier a (animalLook3d) auf Höhe h, Blick nach a.angle
+  - end() – Bildende: Zahl der Instanzen je Satz setzen, leere verstecken
+  - stats() – Sichtbare Sätze (= Draw-Calls ohne Schattenkarte) je Art und Zahl der Büsche, F…
+  - dispose()
+
+## renderer3d.js (15 KB)
 - class Renderer3D
   - constructor(canvas, game, camera, team, gl, opts) – gl: fertiger THREE.WebGLRenderer (make3D)
   - setShadows(level) – Schattenstufe 'off' | 'mid' | 'high' (BALANCE.shadows3d), sofort wirksam; Aus:…
@@ -121,15 +138,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - dispose() – Partie beendet: WebGL-Kontext und Grafikspeicher freigeben
   - probe() – Prüfung (tools/smoke-3d.mjs): je Würfel Bildlage über three (Vector3.project) u…
 - make3D(canvas, game, camera, team, opts) – 3D-Renderer bauen (eigene, nicht eingehängte Leinwand)
-
-## solids3d.js (6.8 KB)
-- solidsToGeometry(solids, opts) – Körperliste → BufferGeometry (nicht indiziert): position, normal, color (linear)
-- boundsOf3(solids) – Umriss aller Ecken in Modellkoordinaten (ohne only 'top'): { x0, x1, y0, y1, z0…
-- buildModelMesh(solids, opts) – Gruppe mit einem undurchsichtigen und, falls Körper mit alpha da sind, einem du…
-- modelGeometry(key, solids, opts) – Geometrie eines Modells (alle Körper) mit Zwischenspeicher je key und charred:…
-- clearModelCache() – Zwischenspeicher leeren (Geometrien freigeben)
-
-## sun3d.js (8.2 KB)
-- CATCH – Ebenen der three-Kamera: CATCH = Schattenfänger, CAST = wirft Schatten (Einheit…
-- CAST
-- SHADOW_LEVELS – Stufen in der Reihenfolge des Pausenmenüs.

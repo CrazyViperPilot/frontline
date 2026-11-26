@@ -5,7 +5,7 @@
 // denselben Instanzmatrizen): bei 1 bis 3 Welt-px je Texel sieht man keinen Unterschied, im Software-WebGL halbiert es die Kosten. Winter: Laubbäume kahl (Äste), Schnee auf allem, was nach oben zeigt (im Shader).
 //
 // Geometrie in Spielachsen (x, y, z = Höhe, Welt-px) unter objRoot, Bezugsgröße wie nature.js (R = 16, Größe 1); je Baum skaliert
-// und um die Hochachse gedreht. Je Ecke: Normale, aTone (−1 = Rinde/Ast, sonst Grundhelligkeit des Laubs 0 … 1), Farbe: bei Rinde
+// und um die Hochachse gedreht. Je Ecke: Normale, aTone (−1 = Rinde/Ast, −2 = ohne Schnee und Fußschatten, Büsche; sonst Grundhelligkeit des Laubs 0 … 1), Farbe: bei Rinde
 // die Rindenfarbe, beim Laub r = Schneegewicht im Winter (Fichte: Band je Stockwerk, Büschel: oben).
 // Je Baum (Instanz): Matrix und aPal (Zeile der Palettentextur: TREE_COLORS.palettes, Spalten Tiefe → Licht).
 // Licht wie die Einheiten (units3d.js): Sonne = Renderer.lightVec; Laub nimmt die Farbe aus der Palette nach Helligkeit, darüber das
@@ -39,7 +39,7 @@ const hex = (h) => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 1
 // ---------- Baukasten ----------
 
 /** Sammelt Dreiecke: Lage, Normale, Farbe, aTone. Umlaufsinn gegen den Uhrzeiger nach außen (three spiegelt selbst, camera3d.js). */
-class Geo {
+export class Geo {
   constructor() {
     this.p = [];
     this.n = [];
@@ -294,7 +294,7 @@ export function treeGeometry(sp, shape, bare = false, lod = false) {
 
 // ---------- Shader ----------
 
-const VS = `
+export const TREE_VS = `
 uniform float uS;
 attribute float aTone;
 attribute float aPal;
@@ -314,7 +314,7 @@ void main() {
   gl_Position = projectionMatrix * viewMatrix * m * vec4(position, 1.0);
 }`;
 
-const FS = `
+export const TREE_FS = `
 uniform vec3 uLight;
 uniform sampler2D uPal;
 uniform sampler2D uLeaf;
@@ -332,7 +332,7 @@ void main() {
   float pat = texture2D(uLeaf, vec2(vObj.x + vObj.z * 0.6, vObj.y - vObj.z * 0.6) / 40.0).r; // Blattmuster, 0,46 = neutral
   vec3 c;
   if (vTone < -0.5) {
-    c = vCol * (0.56 + 0.44 * max(d, 0.0)) * (vObj.z < 4.0 ? 0.8 : 1.0); // Rinde wie die Einheiten, am Fuß dunkler
+    c = vCol * (0.56 + 0.44 * max(d, 0.0)) * (vObj.z < 4.0 && vTone > -1.5 ? 0.8 : 1.0); // Rinde wie die Einheiten, am Fuß dunkler
   } else {
     float t = clamp(vTone + 0.34 * d + 0.02, 0.0, 1.0);
     c = texture2D(uPal, vec2((0.5 + t * 3.0) / 4.0, (vPal + 0.5) / uRows)).rgb;
@@ -340,14 +340,13 @@ void main() {
     c = mix(c, o, 0.75);
   }
   // Schnee: Äste und Stämme auf der Oberseite, Laub nach dem Schneegewicht der Ecke (vCol.r), unregelmäßig nach dem Muster
-  float snow = uSnow * (vTone < -0.5 ? smoothstep(0.5, 0.85, n.z) : smoothstep(0.3, 0.7, vCol.r * (0.55 + 0.9 * pat)));
+  float snow = vTone < -1.5 ? 0.0 : uSnow * (vTone < -0.5 ? smoothstep(0.5, 0.85, n.z) : smoothstep(0.3, 0.7, vCol.r * (0.55 + 0.9 * pat)));
   c = mix(c, uSnowCol * (0.82 + 0.18 * max(d, 0.0)), snow * 0.9);
   gl_FragColor = vec4(c, 1.0);
 }`;
 
 /** Palettentextur: je Zeile eine Laubpalette, Spalten Tiefe, Schatten, Mitte, Licht (lineare Mischung = nature.js tone). */
-function paletteTexture() {
-  const pals = TREE_COLORS.palettes;
+export function paletteTexture(pals = TREE_COLORS.palettes) {
   const data = new Uint8Array(pals.length * 4 * 4);
   pals.forEach((P, row) => {
     [P[3], P[2], P[1], P[0]].forEach((h, i) => {
@@ -366,7 +365,7 @@ function paletteTexture() {
   return t;
 }
 
-function leafTexture() {
+export function leafTexture() {
   const src = leafCanvas();
   if (!src) {
     const t = new THREE.DataTexture(new Uint8Array([118, 118, 118, 255]), 1, 1, THREE.RGBAFormat);
@@ -396,8 +395,8 @@ export class Trees3D {
         uRows: { value: TREE_COLORS.palettes.length },
         uSnowCol: { value: new THREE.Vector3(...hex(TREE_COLORS.snow[0])) },
       },
-      vertexShader: VS,
-      fragmentShader: FS,
+      vertexShader: TREE_VS,
+      fragmentShader: TREE_FS,
       vertexColors: true,
     });
     this.material.shadowSide = THREE.DoubleSide; // dünne Äste und offene Stümpfe werfen auch Schatten

@@ -1,8 +1,18 @@
-# Symbol-Index render3d (Teil 2 von 2, sun3d.js bis units3d.js)
+# Symbol-Index render3d (Teil 2 von 2, solids3d.js bis units3d.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render3d/`. Pfade relativ zu `js/render3d/`.
 
-## sun3d.js (Fortsetzung)
+## solids3d.js (6.8 KB)
+- solidsToGeometry(solids, opts) – Körperliste → BufferGeometry (nicht indiziert): position, normal, color (linear)
+- boundsOf3(solids) – Umriss aller Ecken in Modellkoordinaten (ohne only 'top'): { x0, x1, y0, y1, z0…
+- buildModelMesh(solids, opts) – Gruppe mit einem undurchsichtigen und, falls Körper mit alpha da sind, einem du…
+- modelGeometry(key, solids, opts) – Geometrie eines Modells (alle Körper) mit Zwischenspeicher je key und charred:…
+- clearModelCache() – Zwischenspeicher leeren (Geometrien freigeben)
+
+## sun3d.js (8.2 KB)
+- CATCH – Ebenen der three-Kamera: CATCH = Schattenfänger, CAST = wirft Schatten (Einheit…
+- CAST
+- SHADOW_LEVELS – Stufen in der Reihenfolge des Pausenmenüs.
 - class Sun3D
   - constructor(gl, scene, root, geometry) – gl: THREE.WebGLRenderer; scene: Szene der Objekte; root: Wurzelgruppe (Weltkoor…
   - setLevel(level) – Stufe 'off' | 'mid' | 'high' (BALANCE.shadows3d.levels); wirkt ohne Neustart (K…
@@ -33,7 +43,19 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - TREE_SHAPES – Formen je Art in 3D (die Drehung je Baum sorgt für weitere Vielfalt)
 - LOD_ZOOM – darunter gröbere Formen (bis ~1500 Bäume im Bild, Messung Seed 7)
 - TREE_SPECIES
+- class Geo – Sammelt Dreiecke: Lage, Normale, Farbe, aTone
+  - constructor()
+  - vert(p, n, col, tone)
+  - frustum(a, b, ra, rb, k, col, tone) – Stumpf von a nach b (Radien ra, rb, k Seiten), Farbe col; Normalen radial
+  - blob(c, rx, ry, rz, detail, tone, rough, seed) – Verbeulter Ellipsoid um c (Halbachsen rx, ry, rz) aus einem Ikosaeder (detail),…
+  - tier(cx, cy, zb, w, th, k, r) – Stockwerk einer Fichte: Kegel mit gezackter, hängender Unterkante (k Zacken) un…
+  - limb(r, a, dir, len, w, depth, col) – Ast mit Verzweigung (kahle Winterkrone): Stümpfe, je Stufe zwei Zweige
+  - build()
 - treeGeometry(sp, shape, bare, lod) – Geometrie einer Form (je Art, Form, kahl, grob einmal gebaut)
+- TREE_VS
+- TREE_FS
+- paletteTexture(pals) – Palettentextur: je Zeile eine Laubpalette, Spalten Tiefe, Schatten, Mitte, Lich…
+- leafTexture()
 - class Trees3D
   - constructor()
   - begin(light, season, zoom) – Bildanfang: Sonne (Welt, z oben), Jahreszeit, Zoom (gröbere Formen darunter)

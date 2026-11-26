@@ -5,6 +5,7 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 
 - `renderer3d.js` – `Renderer3D` (Unterklasse von `Renderer`, gleiche Schnittstelle), `make3D` (WebGL, Rückfall null)
 - `ground3d.js` – 3D-Boden: Höhennetz und Erdschnitt mit dem Shader `FS_GROUND` aus `render/ground.js`. `Ground3D`
+- `fog3d.js` – 3D-Nebel: Kriegsnebel (`FS_FOG`) auf dem Höhennetz des Bodens, Textur aus `fogData`. `Fog3D`
 - `billboards.js` – gemalte Bilder (`spritecache.blit`) als Vierecke aus einem Atlas (≤ 4 Seiten 2048²). `Billboards`
 - `camera3d.js` – three-Kamera aus `Camera`: `makeWorldRoot`, `makeIsoCamera`, `syncIsoCamera`, `projectWorld`, `clipDepth`
 - `testscene.js` – Prüfwürfel an Ecken, Mitte, Hauptstadt (`?three=1&cubes=1`). `probePoints`, `buildTestCubes`

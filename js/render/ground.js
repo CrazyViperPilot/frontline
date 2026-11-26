@@ -149,7 +149,7 @@ void main() {
 // kühl abgedunkelt, am Rand des Unerforschten ein heller Wolkensaum (Farben wie updateFogLayer in render/layers/fog.js). uFog: r = in Sicht,
 // a = erkundet, je Zelle weichgezeichnet; smoothstep macht daraus glatte, schmale Ränder ohne die Treppen der Zellen. uDrift: Versatz
 // der Lagen (xy, zw), auf der CPU genommen (fract), damit die Koordinaten klein und genau bleiben.
-const FS_FOG = `
+export const FS_FOG = `
 precision mediump float;
 uniform sampler2D uFog;
 uniform sampler2D uNoise;

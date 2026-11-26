@@ -144,7 +144,7 @@ export class Renderer3D extends Renderer {
     if (!relief) return this.isoTerrain(f);
     this.sync3d();
     if (!this.terrainGL) this.terrainGL = seasonal(buildTerrain(f.g.map, 'gl'), this.season);
-    this.ground3d.update(relief, this.terrainGL, this.lightVec(), f.now / 1000, this.season === 'winter' ? 1 : 0);
+    this.ground3d.update(relief, this.terrainGL, this.lightVec(), f.now / 1000, this.season === 'winter' ? 1 : 0, this.cam3, this.mood); // Wasser: Blick und Stimmung
     if (this.cubes) this.syncCubes();
     this.gl.setClearColor(BG, 1);
     this.gl.render(this.groundScene, this.cam3);

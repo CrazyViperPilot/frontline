@@ -1363,6 +1363,116 @@ async function mvp() {
   return report;
 }
 
+/**
+ * Wasser (Paket „Wasser 3D“, nur mit --only wasser oder ohne --only): See (Seed 3 ohne Fluss, Ausschnitt mit dem meisten Wasser) und
+ * Fluss (Seed 4 mit Fluss, mittlere Brücke des eigenen Flusses), je Sommer und Winter. Über dem Wasser schweben zwei Kampfhubschrauber,
+ * am Ufer stehen Panzer (Schatten aufs Wasser). Fotos Iso | 3D (Schatten Hoch) nach <out>/wasser/: Tag und Nacht je 4 Drehungen (Zoom 1),
+ * dazu Zoom 0,5 und 1,6 bei Tag. Im Sommer Zeit „Gelände“ (Mittel über --frames Bilder) sowie Draw-Calls und Dreiecke des Bodenbilds
+ * ohne 3D-Wasser (vorher, Wassernetz ausgeblendet) und mit. Fehler ohne Wasserdreiecke oder bei Browserfehlern.
+ */
+async function water() {
+  const dir = join(out, 'wasser');
+  await mkdir(dir, { recursive: true });
+  const rows = [];
+  for (const [name, seed, river] of [['see', 3, 0], ['fluss', 4, 1]]) {
+    for (const season of ['summer', 'winter']) {
+      const g = await openGame({ seed, query: `iso=1&three=1&shadows=high&river=${river}&weather=${season}&wx=clear`, scale: 1, out });
+      try {
+        const spot = await g.run(async (river) => {
+          const { RELIEF } = await import('/js/game/relief.js');
+          const s = window.__frontline.session();
+          s.loop.paused = true;
+          const rel = s.game.relief;
+          const hq = s.game.buildings.find((b) => b.main && b.team === 0);
+          let p = null;
+          if (river) {
+            // mittlere Brücke des Flusses vor der eigenen Startecke
+            const bs = [...(s.game.bridges ?? [])].sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y)).slice(0, 3);
+            bs.sort((a, b) => a.angle - b.angle);
+            const b = bs[1] ?? bs[0];
+            if (b) p = { x: (b.x1 + b.x2) / 2, y: (b.y1 + b.y2) / 2 };
+          } else {
+            let best = -1;
+            for (let cy = 700; cy < s.camera.mapH - 700; cy += 160) {
+              for (let cx = 900; cx < s.camera.mapW - 900; cx += 160) {
+                let c = 0;
+                for (let y = cy - 500; y < cy + 500; y += 64) for (let x = cx - 800; x < cx + 800; x += 64) if (rel.heightAt(x, y) < RELIEF.water) c++;
+                if (c > best) [best, p] = [c, { x: cx, y: cy }];
+              }
+            }
+          }
+          if (!p) return null;
+          // Wasserpunkt nahe der Mitte (Hubschrauber darüber) und Uferpunkt (Panzer daneben)
+          let wet = null;
+          let dry = null;
+          for (let r = 0; r < 900 && !(wet && dry); r += 32) {
+            for (let a = 0; a < 6.28; a += 0.2) {
+              const x = p.x + Math.cos(a) * r;
+              const y = p.y + Math.sin(a) * r;
+              const h = rel.heightAt(x, y);
+              if (!wet && h < RELIEF.water - 15) wet = { x, y };
+              if (!dry && h > RELIEF.water + 4 && h < RELIEF.water + 30 && rel.cellSlope?.(Math.floor(x / 32), Math.floor(y / 32)) < 0.2) dry = { x, y };
+            }
+          }
+          if (wet) for (const d of [-60, 60]) s.game.spawnUnit('gunship', 0, wet.x + d, wet.y - d / 2);
+          if (dry) for (const d of [-40, 40]) s.game.spawnUnit('tank', 0, dry.x + d, dry.y);
+          return { ...p, wet, dry, tris: s.renderer.ground3d.waterStats().tris };
+        }, river);
+        if (!spot) throw new Error(`${name}: kein Wasser gefunden`);
+        if (!spot.tris) fail++;
+        console.log(`Wasser ${name} (Seed ${seed}, Fluss ${river ? 'an' : 'aus'}) ${season}: Blick auf ${Math.round(spot.x)}, ${Math.round(spot.y)}, ${spot.tris} Wasserdreiecke im Netz`);
+        for (const mood of [null, 'night']) {
+          await g.run((mood) => (window.__frontline.session().renderer.mood = mood), mood);
+          for (let rot = 0; rot < 4; rot++) {
+            await look(g, spot.x, spot.y, rot, 1);
+            await mvpPair(g, dir, name, `${season}-${mood ?? 'tag'}-drehung${rot}`);
+          }
+        }
+        await g.run(() => (window.__frontline.session().renderer.mood = null));
+        for (const zoom of [0.5, 1.6]) {
+          await look(g, spot.x, spot.y, 0, zoom);
+          await mvpPair(g, dir, name, `${season}-tag-zoom${zoom}`);
+        }
+        if (season !== 'summer') continue;
+        await look(g, spot.x, spot.y, 0, 1);
+        for (const on of [false, true]) {
+          const st = await g.run((on) => {
+            const s = window.__frontline.session();
+            const r = s.renderer;
+            s.camera.three = true;
+            r.ground3d.water.visible = on;
+            for (let i = 0; i < 3; i++) r.render(s.controller.view);
+            const info = r.gl.info;
+            const orig = r.terrain3d;
+            let st = null;
+            info.autoReset = false;
+            r.terrain3d = function (f) {
+              info.reset();
+              orig.call(this, f);
+              st = { calls: info.render.calls, tris: info.render.triangles };
+            };
+            try {
+              r.render(s.controller.view);
+            } finally {
+              r.terrain3d = orig;
+              info.autoReset = true;
+            }
+            return st;
+          }, on);
+          const t = await timePasses(g, frames);
+          rows.push(`${name.padEnd(5)} ${on ? 'mit 3D-Wasser ' : 'ohne (vorher) '}: Gelände ${t['Gelände'].toFixed(1)} ms, ${st.calls} Draw-Calls, ${st.tris} Dreiecke`);
+        }
+        await g.run(() => (window.__frontline.session().renderer.ground3d.water.visible = true));
+      } finally {
+        errors.push(...g.errors);
+        await g.close();
+      }
+    }
+  }
+  console.log(`Wasser Messung (Zoom 1, Drehung 0, ${frames} Bilder, Software-WebGL; Draw-Calls und Dreiecke im Bodenbild):`);
+  for (const r of rows) console.log(`  ${r}`);
+}
+
 try {
   if (!only || only === 'kamera') await camera();
   if (!only || only === 'vergleich') await compare();
@@ -1372,6 +1482,7 @@ try {
   if (!only || only === 'baeume') await trees();
   if (!only || only === 'baukasten') await baukasten();
   if (!only || only === 'stadt') await city();
+  if (!only || only === 'wasser') await water();
   if (only === 'mvp') await mvp();
   if (!only || only === 'natur') await nature();
 } catch (e) {

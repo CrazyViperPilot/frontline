@@ -2,7 +2,11 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render3d/`. Pfade relativ zu `js/render3d/`.
 
-## nature3d.js (Fortsetzung)
+## nature3d.js (17 KB)
+- BUSH_SHAPES – Formen je Buschart in 3D
+- BUSH_KINDS3D
+- PALETTES
+- bushGeometry(kind, shape, bare) – Geometrie einer Buschform (Art, Form, kahl im Winter: nur Strauch und Beeren),…
 - class Nature3D
   - constructor()
   - begin(light, season) – Bildanfang: Sonne (Welt, z oben), Jahreszeit

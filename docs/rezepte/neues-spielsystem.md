@@ -7,4 +7,4 @@ Teil der Rezepte für Erweiterungen (Einstieg: `CLAUDE.md` im Wurzelordner, Absc
    (siehe `ARCHITEKTUR.md`).
    Abgeleiteter Zustand, den der Spielstand nicht speichert (wie das Sperrraster `grid.lock`), wird in `restoreAccessors` (`game.js`) nach dem Laden neu gebunden.
 3. Werte als eigener Abschnitt in `js/data/balance.js`, Datei in `sw.js` → `ASSETS`, Test `test/<name>.test.js`,
-   Zeile in der Feature-Landkarte (`ARCHITEKTUR.md` §9) und in `js/game/CLAUDE.md`.
+   Zeile in der Feature-Landkarte (`docs/feature-landkarte.md`) und in `js/game/CLAUDE.md`.

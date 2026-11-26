@@ -1,0 +1,1 @@
+**Doku entlastet** (nur Doku): Die Feature-Landkarte steht jetzt in `docs/feature-landkarte.md` statt in `ARCHITEKTUR.md` §9; die Erklärabschnitte der Ordner `js/render3d/`, `js/render/` und `js/game/` stehen in `docs/architektur/`, die Ordner-`CLAUDE.md` bleiben Dateilisten mit Luft für neue Dateien.

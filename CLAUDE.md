@@ -76,9 +76,8 @@ URL-Parameter, Smoke-Varianten, Prüfsummen und Prüftests: `docs/testen.md`.
 
 - Spielregeln: `PRD.md` (Einstieg, Übersicht), dann nur die passende Themen-Datei unter `docs/prd/`, nie alle.
 - Aufbau des Codes (Schichten, Simulationsschritt, Datenmodelle, Befehle): `ARCHITEKTUR.md`.
-- Wo ein Feature liegt: Feature-Landkarte `ARCHITEKTUR.md` §9; neues Feature: dort eine Zeile, höchstens 200 Zeichen
-  (Name, PRD-Datei, Hauptmodul, Test).
-- Dateien eines Ordners: die `CLAUDE.md` des Ordners (z. B. `js/game/CLAUDE.md`), höchstens 4 KB (`test/featuremap.test.js`).
+- Wo ein Feature liegt: `docs/feature-landkarte.md`; neues Feature: dort eine Zeile (≤ 200 Zeichen: Name, PRD, Modul, Test).
+- Dateien eines Ordners: `CLAUDE.md` des Ordners (z. B. `js/game/CLAUDE.md`), höchstens 4 KB (`test/featuremap.test.js`), Erklärungen in `docs/architektur/`.
 - Stadt im Simulationsschritt, Felder von Stadt und Straßentransport: `docs/architektur/stadt.md`; Eroberung: `docs/architektur/eroberung.md`;
   Speichern und Laden: `docs/architektur/spielstand.md`.
 - Einen Spielwert ändern, Schlüssel finden → `docs/wo-aendern.md`, dann `docs/rezepte/wert-aendern.md`.

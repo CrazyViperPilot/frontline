@@ -1,8 +1,9 @@
 // Dateilisten der Doku: Jede Datei unter js/ steht in der CLAUDE.md ihres Ordners oder eines Elternordners unter js/
 // (Zeile mit Zweck und Exporten) oder in ARCHITEKTUR.md (§7 nennt die kleinen Ordner direkt). Ausgenommen ist nur der
-// Karteneditor (js/editor/, Zeile in ARCHITEKTUR.md §9). Fehlt eine Datei, steht sie in der Meldung; dann in der CLAUDE.md
+// Karteneditor (js/editor/, Zeile in docs/feature-landkarte.md). Fehlt eine Datei, steht sie in der Meldung; dann in der CLAUDE.md
 // ihres Ordners nachtragen. Dazu Größengrenzen, damit die Doku billig zu lesen bleibt: Ordnerdateien höchstens 4 KB und
-// 200 Zeichen je Zeile, ARCHITEKTUR.md unter 30 000 Bytes und 250 Zeichen je Zeile.
+// 200 Zeichen je Zeile, ARCHITEKTUR.md unter 30 000 Bytes und 250 Zeichen je Zeile, Feature-Landkarte höchstens 20 000 Bytes.
+// Erklärungen zu einem Ordner gehören nach docs/architektur/<ordner>.md, nicht in die Ordnerdatei.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
@@ -15,6 +16,7 @@ const FOLDER_MAX_BYTES = 4096;
 const FOLDER_MAX_LINE = 200;
 const ARCH_MAX_BYTES = 30000;
 const ARCH_MAX_LINE = 250;
+const MAP_MAX_BYTES = 20000;
 
 /** Alle Dateien unter js/ mit der Endung `ext` (relativ zur Wurzel, Pfade mit /). */
 function filesUnderJs(ext, dir = join(ROOT, 'js'), out = []) {
@@ -72,4 +74,12 @@ test('ARCHITEKTUR.md bleibt schlank: unter 30 000 Bytes, keine Zeile über 250 Z
   assert.ok(bytes < ARCH_MAX_BYTES, `ARCHITEKTUR.md: ${bytes} Bytes (unter ${ARCH_MAX_BYTES}); Dateilisten gehören in die CLAUDE.md der Ordner`);
   const long = text.split('\n').map((line, i) => [i + 1, line.length]).filter(([, n]) => n > ARCH_MAX_LINE);
   assert.deepEqual(long, [], 'ARCHITEKTUR.md: Zeilen über 250 Zeichen ([Zeile, Länge]) an Satzgrenzen umbrechen');
+});
+
+test('Feature-Landkarte docs/feature-landkarte.md: höchstens 20 000 Bytes, keine Zeile über 250 Zeichen', () => {
+  const text = read('docs/feature-landkarte.md');
+  const bytes = Buffer.byteLength(text, 'utf8');
+  assert.ok(bytes <= MAP_MAX_BYTES, `docs/feature-landkarte.md: ${bytes} Bytes (höchstens ${MAP_MAX_BYTES}); Zeilen kürzen oder zusammenfassen`);
+  const long = text.split('\n').map((line, i) => [i + 1, line.length]).filter(([, n]) => n > ARCH_MAX_LINE);
+  assert.deepEqual(long, [], 'docs/feature-landkarte.md: Zeilen über 250 Zeichen ([Zeile, Länge])');
 });

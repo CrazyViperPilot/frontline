@@ -3421,8 +3421,9 @@ async function freeCamera() {
       const c = window.__frontline.session().camera;
       return { yaw: (c.yaw() * 180) / Math.PI, tilt: (c.tilt * 180) / Math.PI };
     });
-    const turned = st.yaw > 10 && st.yaw < 90;
-    const tilted = st.tilt > 40 && st.tilt <= 60;
+    // Software-WebGL bei Pixeldichte 2: wenige Bilder je Sekunde (die Schleife begrenzt dt je Bild) und halbe Raddeltas; nur „sichtbar gedreht/geneigt“
+    const turned = st.yaw > 3 && st.yaw < 90;
+    const tilted = st.tilt > 33 && st.tilt <= 60;
     if (!turned || !tilted) fail++;
     console.log(`  Taste . 0,5 s: Drehung ${st.yaw.toFixed(1)}°${turned ? '' : '  FEHLER'}; Umschalt + 3 Rasten: Neigung ${st.tilt.toFixed(1)}°${tilted ? '' : '  FEHLER'}`);
     await g.shot(`${dir}/tasten`);

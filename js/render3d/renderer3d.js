@@ -19,6 +19,8 @@ import { Sun3D, CATCH } from './sun3d.js';
 import { Trees3D } from './trees3d.js';
 import { Town3D } from './town3d.js';
 import { quarterMask, INNER, _quarter } from '../render/govquarter.js';
+import { isMilBuilding } from '../render/milbuild.js';
+import { FORT_DIM, worksMask } from '../render/stronghold.js';
 import { Nature3D } from './nature3d.js';
 import { Props3D } from './props3d.js';
 import { propSolids3d, propFlagColor } from '../render/mapprops.js';
@@ -73,6 +75,9 @@ export class Renderer3D extends Renderer {
     this.big3dOn = true; // false: Großbauten (Kaserne, Fabrikhalle, Lagerhalle, Güterbahnhof, Universität), Regierungsgebäude und -viertel gemalt
     this.hall3d = null; // nur während des Durchlaufs „Objekte“ gesetzt (Regierungsgebäude, gov3d.js)
     this.quarter3d = null; // ebenso (Regierungsviertel)
+    this.mil3dOn = true; // false: Militärgebäude (FOB, Mauer, Tor, Mörser, Flugabwehr, Phalanx, Turm, Bohrer, Baustellen) gemalt
+    this.mil3d = null; // nur während des Durchlaufs „Objekte“ gesetzt (mil3d.js)
+    this.fort3d = null; // ebenso: Ausbauten besetzter Häuser (Sandsäcke, MG-Nest, Draht; stronghold.js), schaltet auch mil3dOn
     this.nature3d = new Nature3D(); // Büsche, Felsen, Tiere als InstancedMesh je Form (nature3d.js), gezeigt über bush3d, rock3d, animal3d
     this.objRoot.add(this.nature3d.group);
     this.bush3d = this.rock3d = this.animal3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
@@ -207,6 +212,11 @@ export class Renderer3D extends Renderer {
       return on && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
     };
     this.hall3d = !this.big3dOn ? null : (b, color) => this.towns3d.add({ kind: 'hall', x: b.x, y: b.y, color }, cam.pinned ?? (relief ? relief.displayAt(b.x, b.y) : 0));
+    this.mil3d = !this.mil3dOn ? null : (b, color) => isMilBuilding(b) && this.towns3d.add({ kind: 'mil', x: b.x, y: b.y, b, color }, cam.pinned ?? (relief ? relief.displayAt(b.x, b.y) : 0));
+    this.fort3d = !this.mil3dOn ? null : (h) => {
+      const mask = worksMask(h);
+      return !mask || this.towns3d.add({ kind: 'fort', x: h.x, y: h.y, W: FORT_DIM.q8(h.pw), D: FORT_DIM.q8(h.ph), mask }, cam.pinned ?? (relief ? relief.displayAt(h.x, h.y) : 0));
+    };
     this.quarter3d = !this.big3dOn ? null : (o) => {
       const b = o.b;
       if (this.towns3d.seen.has(b)) return true; // alle Gruppen der Hauptstadt als ein Mesh (Bitmaske der freien Gruppen)
@@ -258,7 +268,7 @@ export class Renderer3D extends Renderer {
       setBlitSink(null);
       this.unit3d = null;
       this.tree3d = null;
-      this.house3d = this.hall3d = this.quarter3d = null;
+      this.house3d = this.hall3d = this.quarter3d = this.mil3d = this.fort3d = null;
       this.bush3d = this.rock3d = this.animal3d = null;
       this.prop3d = this.crate3d = null;
       this.shadow3d = false;

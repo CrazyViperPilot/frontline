@@ -16,6 +16,7 @@ Licht und Schatten oder Achsen und Kamera der Ansicht 3D geht. Plan und Stand de
   (Familie mit `at`), Bäume und Ausstellungsstücke bleiben gemalte Billboards; das Viertel ein Mesh je Hauptstadt (Drehung und Maske der freien Gruppen). Einheit mit Mesh: gemalt nur Rotoren, Nachbrenner; Schatten wirft das Mesh.
 - Props (t 6, 7, 8, 14, 16: Autos, Bänke, Kisten, Ballen, Props der Karte) über `prop3d(t, o)` und `crate3d` (`props3d.js`, Schalter `props3dOn`); Busch und Fels
   der Karte gehen über `nature3d`. Zäune, Mauern: je Kachel eine Instanz (Arme schon in der Kachel verbunden); Fahnentuch: Teamfarbe der Instanz.
+- Militärgebäude (`type 4`, Art ohne Hauptstadt) über `mil3d(b, color)`, Ausbauten besetzter Häuser über `fort3d(h)` (`mil3d.js`, Schalter `mil3dOn`): Familie „mil“ in `town3d.js`, eine Geometrie je Art und Variante (Mauer: Nachbarmaske in Weltrichtung, Baustelle: Stufe, beschädigt: dunklere Farben), Teamfarbe der Instanz; Fahne der besetzten Häuser bleibt gemalt (flattert).
 - WebGL-Leinwand nicht im DOM, ohne Kantenglättung.
 
 ## Licht und Schatten (`sun3d.js`)

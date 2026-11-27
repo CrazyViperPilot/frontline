@@ -41,10 +41,14 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - texSlope(g, pts, mat, a, b, c) – Foto auf eine schräge Iso-Fläche (Dach): a und b sind zwei Weltpunkte [u, v, h]…
 - texTop(ctx, pts, mat) – Foto auf eine Fläche der 2D-Ansicht (Kontext schon in Welteinheiten skaliert)
 
-## milbuild.js (49 KB)
+## milbuild.js (50 KB)
 - setMilWalls(list) – Mauern und Tore merken (je Bild, für die Verbindungen zu den Nachbarn)
 - drawMilIso(ctx, cam, b, color) – Iso-Bild eines Militärgebäudes (Ankerpunkt = Mitte des Grundrisses)
 - drawMilTop(ctx, b, color, zoom) – 2D von oben (Kamera-Transformation gesetzt, Weltkoordinaten)
+- MIL_DIM – Farben, Höhen und Maße der Militärgebäude für render3d/mil3d.js (dieselben Wert…
+- isMilBuilding – Zuständig für b (Militärgebäude außer der Hauptstadt)?
+- milVariant(b) – Variante ohne Drehung der Ansicht (Mauer: Nachbarn in Weltrichtung 1 = +x, 2 =…
+- milDamaged – Beschädigt (unter halber Gesundheit, gemalt: Ruß)? 1 oder 0.
 
 ## milprops.js (17 KB)
 - isMilSingle(kind) – Gibt es ein Einzelstück-Modell für diese Art?
@@ -150,8 +154,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 
 ## sprites.js (25 KB)
 - shade(hex, f) – Farbe abdunkeln (f = 0 unverändert, 1 schwarz)
-- tint(hex, f) – Farbe aufhellen (f = 0 unverändert, 1 weiß)
-- hexA(hex, a) – Hex-Farbe mit Alpha als rgba-String
-- hpColor(frac) – Farbe für Lebensbalken: grün, gelb, rot
-- fitText(ctx, text, x, y, px, zoom, maxW) – Text in Weltkoordinaten, Schriftgröße in Bildschirm-Pixeln (px), verkleinert be…
-- drawBar(ctx, x, y, w, h, frac, color, px, ticks) – Lebensbalken (Welt-Maße)

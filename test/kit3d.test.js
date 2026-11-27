@@ -217,7 +217,7 @@ test('Werke 3D: alle Arten und Stufen, sparsam, gültig und im Iso-Umriss wie da
 });
 
 test('Gebäudefamilien: Stadthäuser, Werke und Großbauten teilen sich Town3D, Werke und Großbauten tönt die Instanz', () => {
-  assert.deepEqual(FAMILIES.map((f) => f.name), ['town', 'works', 'big', 'big', 'big', 'big']);
+  assert.deepEqual(FAMILIES.map((f) => f.name), ['town', 'works', 'big', 'big', 'big', 'big', 'mil', 'mil']);
   const [town, works, big, uni, hall, quarter] = FAMILIES;
   assert.ok(town.has({ kind: 'town' }) && !town.has({ kind: 'power' }));
   assert.ok(works.has({ kind: 'power' }) && !works.has({ kind: 'town' }) && !works.has({ kind: 'uni' }));
@@ -237,7 +237,7 @@ test('Gebäudefamilien: Stadthäuser, Werke und Großbauten teilen sich Town3D, 
   assert.ok(hall.has({ kind: 'hall' }) && quarter.has({ kind: 'quarter' }) && quarter.at({ src: plan }) === plan);
   assert.equal(quarter.key({ turn: 1, mask: 5 }), quarterKey(1, 5));
   assert.ok([big, uni, hall, quarter].every((f) => f.team));
-  for (const f of FAMILIES) assert.ok([town, works, big, uni, hall, quarter].includes(f));
+  for (const f of FAMILIES.slice(0, 6)) assert.ok([town, works, big, uni, hall, quarter].includes(f)); // „mil“: test/mil3d.test.js
   assert.ok(!hasBig3d('stand') && !hasBig3d('atc') && !hasBig3d('ktank') && !hasBig3d('mdepot') && !hasBig3d('uni'));
 });
 

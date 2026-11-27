@@ -181,7 +181,8 @@ export const isoItemMethods = {
       else if (it.t === 4) {
         const b = it.o;
         setRoofSnow(this.season === 'winter'); // Winter: Schnee auf Dächern und Wällen (milbuild.js)
-        if (!(isCapital(b) && this.hall3d?.(b, g.teams[b.team].color))) drawTeamBuilding(ctx, cam, b, g.teams[b.team].color); // Regierungsgebäude in 3D: render3d/gov3d.js
+        // 3D (nur im Durchlauf „Objekte“ der Ansicht 3D): Regierungsgebäude render3d/gov3d.js, übrige Militärgebäude render3d/mil3d.js, sonst gemalt
+        if (!(isCapital(b) && this.hall3d?.(b, g.teams[b.team].color)) && !this.mil3d?.(b, g.teams[b.team].color)) drawTeamBuilding(ctx, cam, b, g.teams[b.team].color);
         setRoofSnow(false);
         if (!b.built && b.team === team) {
           const p = cam.worldToScreen(b.x, b.y);
@@ -210,13 +211,14 @@ export const isoItemMethods = {
     setRoofSnow(this.season === 'winter'); // Winter: Schnee auf den Dächern der Stadt
     const fort = hs && this.fortShown(hs, known) ? hs : null; // besetztes oder ausgebautes Haus (seit v5.48, stronghold.js)
     const body = fort ? houseYardIso(o, cam.rot | 0) : null; // Altbau mit Hof: Säcke vor der Hofmauer, Fahne an ihrer Ecke
-    if (fort) drawHouseWorksIso(ctx, cam, fort, 'back', body); // Draht hinter dem Haus
+    const fort3d = !!(fort && !body && this.fort3d?.(fort)); // Ausbauten als Mesh (render3d/mil3d.js, nur Ansicht 3D; Altbau mit Hof bleibt gemalt)
+    if (fort && !fort3d) drawHouseWorksIso(ctx, cam, fort, 'back', body); // Draht hinter dem Haus
     // 3D (render3d/town3d.js house3d, nur im Durchlauf „Objekte“ der Ansicht 3D): Stadthaus 1 × 1, Werk oder Großbau (bigpart, uni) als Mesh, sonst gemalt
     const mesh = this.house3d?.(o) ?? false;
     if (mesh && WORKS_KINDS.includes(o.kind)) drawWorksSteam(ctx, cam, o); // Dampf der Kühltürme bleibt gemalt (Effekt)
     if (!mesh && (o.part?.t !== 'tree' || !(this.tree3d?.(o.part) || drawTreeIso(ctx, cam, o.part, this.season)))) drawTownBuilding(ctx, cam, o, this.season); // Bäume der Großbauten gemalt (nature.js)
     if (fort) {
-      drawHouseWorksIso(ctx, cam, fort, 'front', body); // Sandsäcke, MG-Nest, Draht davor
+      if (!fort3d) drawHouseWorksIso(ctx, cam, fort, 'front', body); // Sandsäcke, MG-Nest, Draht davor
       if (fort.occupants.length && fort.team >= 0) drawHouseFlagIso(ctx, cam, fort, g.teams[fort.team]?.color ?? '#888', f.now / 1000, body);
     }
     setRoofSnow(false);

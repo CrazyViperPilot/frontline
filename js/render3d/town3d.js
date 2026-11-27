@@ -19,6 +19,7 @@ import { mix, rgbOf } from '../render/color.js';
 import { hasWorks3d, worksGeometry, worksKey } from './works3d.js';
 import { hasBig3d, bigGeometry, bigKey, uniGeometry, uniKey, isBig3dPart } from './bigbuild3d.js';
 import { hallGeometry, quarterGeometry, quarterKey } from './gov3d.js';
+import { milGeometryOf, milKey, fortGeometry } from './mil3d.js';
 
 // ---------- Gemeinsames ----------
 
@@ -833,6 +834,22 @@ export const FAMILIES = [
     key: (b) => quarterKey(b.turn, b.mask),
     geometry: (b) => quarterGeometry(b.turn, b.mask),
     team: true,
+  },
+  // Militärgebäude (Paket „Militärgebäude 3D“, mil3d.js): { kind: 'mil', x, y, b, color } mit b aus game.buildings
+  {
+    name: 'mil',
+    has: (b) => b.kind === 'mil',
+    key: (b) => milKey(b.b),
+    geometry: (b) => milGeometryOf(b.b),
+    team: true,
+  },
+  // Ausbauten besetzter Häuser (stronghold.js): { kind: 'fort', x, y, W, D, mask }, ohne Teamfarbe (die Fahne bleibt gemalt)
+  {
+    name: 'mil',
+    has: (b) => b.kind === 'fort',
+    key: (b) => `fort|${b.W}|${b.D}|${b.mask}`,
+    geometry: (b) => fortGeometry(b.W, b.D, b.mask),
+    team: false,
   },
 ];
 

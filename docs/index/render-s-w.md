@@ -3,6 +3,11 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
 ## sprites.js (Fortsetzung)
+- tint(hex, f) – Farbe aufhellen (f = 0 unverändert, 1 weiß)
+- hexA(hex, a) – Hex-Farbe mit Alpha als rgba-String
+- hpColor(frac) – Farbe für Lebensbalken: grün, gelb, rot
+- fitText(ctx, text, x, y, px, zoom, maxW) – Text in Weltkoordinaten, Schriftgröße in Bildschirm-Pixeln (px), verkleinert be…
+- drawBar(ctx, x, y, w, h, frac, color, px, ticks) – Lebensbalken (Welt-Maße)
 - drawUnit(ctx, u, color, zoom, aim, now, iso) – Einheit von oben
 - drawUnitSymbol(ctx, x, y, a, color, k, air)
 - drawBuilding(ctx, b, color, zoom, pic)
@@ -18,6 +23,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawHouseFlagIso(ctx, cam, h, color, t, body) – Fahne am besetzten Haus (Iso): Mast an der linken Ecke des Hauses (außen; Altba…
 - drawHouseWorksTop(ctx, h, zoom) – Ausbauten von oben (2D, Weltkoordinaten, Kamera-Transformation gesetzt)
 - drawHouseFlagTop(ctx, h, color, t) – Fahne von oben (2D, Weltkoordinaten): Mast an der linken unteren Ecke, Tuch nac…
+- FORT_DIM – Maße und Farben der Ausbauten für render3d/mil3d.js (dieselben Werte wie das ge…
 
 ## terrain.js (23 KB)
 - parkDeco(p) – Ausstattung eines Parks (deterministisch aus Lage und Größe): Bäume am Rand, vi…

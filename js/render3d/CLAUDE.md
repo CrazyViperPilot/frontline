@@ -16,10 +16,11 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `testscene.js` – Prüfwürfel (`?cubes=1`). `probePoints`, `buildTestCubes`
 - `solids3d.js` – Körperliste (units/shapes.js) → Geometrie: `solidsToGeometry`, `buildModelMesh`, `modelGeometry`
 - `kit3d.js` – Gebäude-Baukasten (Teile wie isokit.js). `Kit3D`, `makeKitMaterial`, `setKitFrame`, `kitMesh`
-- `town3d.js` – Gebäudefamilien (Stadthäuser 1 × 1, Werke, Großbauten), InstancedMesh je Variante. `townGeometry`, `FAMILIES`, `Town3D`
+- `town3d.js` – Gebäudefamilien (Stadthäuser 1 × 1, Werke, Großbauten, Militär), InstancedMesh je Variante. `townGeometry`, `FAMILIES`, `Town3D`
 - `works3d.js` – Werke aus dem Baukasten, Teamfarbe je Instanz. `worksGeometry`, `worksKey`
 - `bigbuild3d.js` – Kaserne, Fabrikhalle, Lagerhalle, Güterbahnhof, Universität aus dem Baukasten. `bigGeometry`, `uniGeometry`
 - `gov3d.js` – Regierungsgebäude und Teile des Regierungsviertels (je Teamdrehung und Gruppenmaske). `hallGeometry`, `quarterGeometry`
+- `mil3d.js` – Militärgebäude (FOB, Mauer, Tor, Mörser, Flak, Phalanx, Turm, Bohrer, Baustellen), Ausbauten besetzter Häuser. `milGeometry`, `fortGeometry`
 
 ## Besonderheiten
 - 3D-Gegenstück eines Iso-Malers: Hook im Maler (`house3d`, `tree3d`, `bush3d` …, nur im Durchlauf „Objekte“), Schalter `…3dOn` im Renderer.

@@ -2,7 +2,7 @@
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render3d/`. Pfade relativ zu `js/render3d/`.
 
-## renderer3d.js (19 KB)
+## renderer3d.js (20 KB)
 - class Renderer3D
   - constructor(canvas, game, camera, team, gl, opts) – gl: fertiger THREE.WebGLRenderer (make3D)
   - setShadows(level) – Schattenstufe 'off' | 'mid' | 'high' (BALANCE.shadows3d), sofort wirksam; Aus:…
@@ -44,7 +44,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - probePoints(game, team) – Prüfpunkte { name, x, y, color } für die Karte von game; Hauptstadt = Gebäude m…
 - buildTestCubes(points, heightAt) – Würfelgruppe in Weltkoordinaten (Kind der Wurzelgruppe); heightAt(x, y) liefert…
 
-## town3d.js (42 KB)
+## town3d.js (43 KB)
 - hasTown3d(ck, level) – Gibt es ein 3D-Haus für Art ck und Stufe? (Sonst bleibt das gemalte Billboard.)
 - townKey(ck, level, variant, color) – Schlüssel einer Variante: Art, Stufe, Farbvariante, Teamfarbe nur bei TEAM_SHOW…
 - townGeometry(ck, level, variant, color) – Geometrie des Stadthauses (Zellenart ck, Stufe, Farbvariante, Teamfarbe) wie to…

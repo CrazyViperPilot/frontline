@@ -401,3 +401,8 @@ export function drawHouseFlagTop(ctx, h, color, t) {
   return true;
 }
 
+
+// ---------- Für die Ansicht 3D (render3d/mil3d.js fortGeometry) ----------
+
+/** Maße und Farben der Ausbauten für render3d/mil3d.js (dieselben Werte wie das gemalte Bild). */
+export const FORT_DIM = { BAG, BAG_TOP, WIRE, POST, MG, BOX, OFF, BAG_H, BAG_D, wallBags, q8 };

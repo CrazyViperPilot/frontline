@@ -272,6 +272,46 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   (Farbe je Instanz über `aTeam` ginge, die Modelle mischen aber Abtönungen aus der Lackfarbe, `carModel`: Stadtausschnitt 24 Formen auf etwa 10 senken);
   Furtstangen (`bridge.js`, Paket „Brücken 3D“), Wracks und Ruinen bleiben Billboards; Materialfotos; bewegte Teile (Schranke offen/zu ist ein Tor-Zustand,
   keine Bewegung); durchscheinende Teile werfen keinen Schatten (gemalt ein schwacher).
+- Militärgebäude 3D: gebaut (`js/render3d/mil3d.js`: FOB, Mörserstellung, Flugabwehr, Phalanx, Gefechtsturm mit vier Dachaufbauten, Bohrer, Mauer in
+  16 Nachbarmasken, Einzeltor und vier Torhälften, dazu die Baustellen aller Arten in neun Stufen aus `render/milbuild.js` und die Ausbauten besetzter
+  Häuser aus `render/stronghold.js`; Test `test/mil3d.test.js`; Prüfteile `smoke-3d.mjs --only baukasten --what mil` (Bogen je Art und Stimmung
+  mit gemalt + 4 Drehungen, Baustellen in 5 Stufen, beschädigt, Teamfarben: `mil-*.png`) und `--only stadt` (Ausschnitt mit den meisten
+  Militärgebäuden `seed3-militaer-*`, ein ausgebautes Haus `seed3-ausbau-*`, Messung)). Kein neues Bauteil in `kit3d.js` nötig (Mast, Schale, Fass,
+  Zelt, Zaun, Rohr, Stab … gab es schon; nichts nachzutragen). `milbuild.js` und `stronghold.js` geben nur ihre Maße und Farben (`MIL_DIM`, `FORT_DIM`) und
+  die Variante ohne Bilddrehung (`milVariant`) heraus, das Gemalte ändert sich nicht. Hooks: `mil3d(b, color)` im Zweig „Gebäude“ von `isoObjects` (neben
+  `hall3d`) und `fort3d(h)` in `drawTownItemIso`, beide nur im Durchlauf „Objekte“; Familie `mil` in `FAMILIES` (zwei Zeilen), Schalter `renderer.mil3dOn`
+  (false = alles gemalt, auch die Ausbauten). **Gemessen vor dem Plan** (Seed 3 und 7, KI gegen KI, beide Teams, je Gebäude einmal; ohne die
+  Hauptstädte, die über `hall3d` laufen): nach 10 Spielminuten Seed 3 FOB 8, Flugabwehr 10, Mörser 12, Mauer 10, Tor 4; Seed 7 FOB 7, Flak 9, Mörser 10
+  (+ 1 Baustelle, Stufe 3), Mauer 10, Tor 4; nach 20 min beide Seeds FOB 8, Flak 10, Mörser 11 bis 12, Mauer 37, Tor 14 und 2 Gefechtstürme (Dach Mörser
+  und SAM); Phalanx und Bohrer baut die KI nie, beschädigt war nichts (unter halber Gesundheit). Gebaut ist also fast alles (Baustellen kurz, meist
+  1 bis 2 gleichzeitig), die Mauern stehen in wenigen Masken, im Bild (Zoom 1, Ausschnitt mit den meisten) 9 Gebäude in 7 Varianten. Dreiecke je Variante: FOB 1 398,
+  Mörser 284, Flugabwehr 416, Phalanx 364, Bohrer 790, Turm 206 (ohne Aufbau) / 332 (Mörser) / 280 (Flak) / 330 (SAM), Mauer 48 bis 172 (je nach Maske), Tor 186,
+  Torhälfte 376; Baustellen FOB 1 516 bis 1 588, 2 × 2 786 bis 1 074 (Turm wächst, Gerüst), 1 × 1 300; Ausbauten (Haus 64 × 64): Sandsäcke 800, MG-Nest 150, Draht
+  1 594, alles 2 544 (Haus 96 × 72: 3 116). Testgrenze 3 000 je Variante, 6 000 für die Ausbauten. Umriss: Node-Test Iso-Umriss der Geometrie innerhalb des
+  gemalten Bildmaßes (`drawMilIso`: ± 1,42 · halbe Breite + 6, Höhe höchstens `TALL` + 12, Platz ± 30 bzw. ± 46 wie gemalt), Prüfteil Drehung 0 ± 1 bis ± 11 px (Torhälften:
+  gemalt zeigt die helle Stahlseite, 3D die dunkle Fläche; Mauern ± 7: gemalt zeichnet die Sockelkante und den Schatten mit).
+  **Entscheidungen:** (1) *Eine Geometrie je Art und Variante für alle Teams, ein Draw-Call je Variante* (wie Werke): Platzrand, Bänder, Dächer, Schilde,
+  Kappen, Fahnen tragen `aInfo.y = 97` und nehmen die Farbe der Instanz. (2) *Mauern und Tore nach Weltrichtung:* gemalt hängt die Variante von der Bilddrehung
+  ab (Nachbarn im Bildrahmen), in 3D dreht die Ansicht selbst, also gilt die Maske in Weltrichtung (1 = +x, 2 = +y, 4 = −x, 8 = −y); 16 Mauer- und 6 Torvarianten, beim
+  ersten Gebrauch gebaut (1 bis 4 ms). Wächst eine Mauer an, wechselt nur die Variante der Nachbarn. (3) *Baustellen:* neun Stufen je Art (`s0` … `s8`, die
+  gemalte Zahl), Rohbau, Gerüst, Planken, Bewehrung, Zaun, Baustoffe und Kran der FOB sind Körper, Bauzaun-Planen in Teamfarbe an allen vier Seiten (gemalt nur
+  vorn); das gemalte Bild schneidet Zaun und Kran oben ab (Bildmaß `SITE_TALL`), 3D zeigt sie ganz. Je Art und Stufe ein Draw-Call, höchstens ein Dutzend sichtbar.
+  (4) *Schaden:* gemalt Ruß, 3D eine dunklere Variante derselben Geometrie (Farben × 0,7, Teamfarbe bleibt), nur bei unter halber Gesundheit (`milDamaged`) und damit
+  ein Draw-Call mehr je betroffener Art. (5) *Fahnen:* die Fahnen der Militärgebäude (Mast mit Tuch an FOB, Mörser, Flak, Turm, Bohrer) sind starre, beidseitige Flächen in
+  Teamfarbe (`flagpole`, wie Werke und Großbauten, kein Wehen); die Fahne an besetzten Häusern **bleibt gemalt** (`drawHouseFlagIso`): sie flattert in jedem Bild neu
+  (Tuch aus fünf Streifen mit Welle) und wäre als Mesh entweder starr oder müsste jedes Bild neu aufgebaut werden. (6) *Ausbauten besetzter Häuser:* Sandsäcke, MG-Nest,
+  Stacheldraht als Mesh je Hausmaß und Ausbaumaske (`fortGeometry`, Maße `q8` wie gemalt, Mitte des Hauses); gemalt liegen Säcke und Nest nur vor den Wänden zur Kamera,
+  3D dreht die Ansicht, deshalb stehen die Säcke an allen vier Wänden (Durchgang in der Mitte jeder Wand), das MG-Nest bleibt an der Ecke +x +y, der Draht rundum
+  (Durchgang vorn). **Altbauten mit Hof** (`houseYardIso`, `maptown.js`, Paket „Kartenstadt 3D“) bleiben mit ihren Ausbauten gemalt, ihre Hofmauer liegt im Bildrahmen;
+  3D folgt mit dem Hof. (7) *Gemalt bleiben:* Rauch gibt es bei Militärgebäuden nicht, gemalte Schatten und Ruß entfallen (Schattenkarte, dunklere Variante), Schilde,
+  Balken und Baumarken (`drawSiteMarks`) sind Marken, kein Körper. Zwischen dem Boden der Anlage (Platz, Fahrspur, Grube) und dem Gelände gilt wie bei den Werken:
+  Flächen 0,012 über dem Boden auf der tiefsten Ecke, an einem Hang kann Gelände durch den Platz ragen. Fenster nachts wie die Stadthäuser.
+  **Messung** (Seed 3, 10 Spielminuten, Ausschnitt mit den meisten Militärgebäuden der eigenen Seite: Mörser, Flak, 5 Mauern, 2 Tore = 9 Gebäude in 7 Varianten, 1 280 × 800,
+  Zoom 1, „Objekte“ samt Schattenkarte, Software-WebGL, 8 Bilder; Häuser, Werke und Großbauten in beiden Zeilen 3D): Schatten Aus gemalt 49 Draw-Calls, 199 293 Dreiecke,
+  137 ms → Militär 3D 56 Draw-Calls, 200 999 Dreiecke (Militär 1 724), 143 ms; Schatten Hoch gemalt 96, 634 646, 370 ms → Militär 3D 110, 638 076, 356 ms; zweiter Lauf (andere Last, die
+  Partie wächst je Lauf etwas anders): Aus 48 → 55 Draw-Calls, 233 351 → 235 057 Dreiecke, 140 → 166 ms, Hoch 94 → 108, 702 814 → 706 244, 426 → 474 ms. Die +7 (Aus) bzw. +14
+  (Hoch) Draw-Calls sind auf echter GPU die Größe, die zählt; der Zeitunterschied liegt im Rauschen (bis 15 bis 20 % je Lauf). Offen: wehende Fahnen; Altbau-Hof samt Ausbauten (mit „Kartenstadt 3D“);
+  Förderbänder und Torbewegung (Tor offen/zu ist ein Zustand, keine Bewegung); fern grobe Varianten (Draht, Gerüst, Fugen), falls echte Geräte es brauchen.
 
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als

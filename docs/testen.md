@@ -95,6 +95,9 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
   Ecke, Tor zu und offen, Trümmer, Einzelstücke mit Fahne, Lagen) in 4 Drehungen Sommer und Winter und bei Nacht (`.smoke/3d/props/`).
   Zählung „x/x Props in 3D“ (Fehler, wenn ein Prop-Billboard übrig bleibt), Draw-Calls, Dreiecke und Zeit „Objekte“ gemalt gegen 3D
   (`renderer.props3dOn`, Schatten Aus und Hoch). Node-Test: `test/props3d.test.js`.
+  `--only baukasten --what mil`: alle Militärgebäude (FOB, Mörser, Flak, Phalanx, Turm mit 4 Dachaufbauten, Bohrer, Mauer in 8 Masken, Tor und 4 Torhälften)
+  je Jahreszeit und Tageszeit gemalt + 4 Drehungen, Baustellen in 5 Stufen, beschädigt und Teamfarben (`mil-*`, `mil-bau-*`); `--only stadt` zusätzlich Ausschnitt mit den
+  meisten Militärgebäuden der eigenen Seite (`seed3-militaer-*`), ein ausgebautes Haus der Karte (`seed3-ausbau-*`) und Messung gemalt / 3D (`renderer.mil3dOn`). Node-Test: `test/mil3d.test.js`.
 - `node tools/smoke-3d.mjs --only mvp` (Paket „MVP-Messung“, nur ausdrücklich, gut 10 min): Rundgang je Gerät desktop, tablet, phone
   (Ansicht umschalten, Drehungen, Zoom, Wald, Hang, Winter; Fotos alt/neu nebeneinander nach `.smoke/3d/mvp/`), Auswahl per Klick/Tippen
   und Befehl in 3D (Fehler, wenn nicht), Bildrate Iso und 3D Aus/Mittel/Hoch nach `--gametime` Spielminuten Zeitraffer; Zahlen auch in

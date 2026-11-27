@@ -1139,3 +1139,17 @@ export function drawMilTop(ctx, b, color, zoom = 1) {
   }
   return true;
 }
+
+// ---------- Für die Ansicht 3D (render3d/mil3d.js) ----------
+
+/** Farben, Höhen und Maße der Militärgebäude für render3d/mil3d.js (dieselben Werte wie das gemalte Bild). */
+export const MIL_DIM = {
+  SAND, HESCO, FILL, OLIVE, CANVAS, DIRT, GRAVEL, PAD, CONC, GUN, RED, STEEL, STEEL_HI, STEEL_DK, WARN, PIL_H, LEAF_TOP, LEAF_A0, WALL_H,
+  SITE_H, TALL, SITE_TALL, wallParts,
+};
+/** Zuständig für b (Militärgebäude außer der Hauptstadt)? */
+export const isMilBuilding = isMil;
+/** Variante ohne Drehung der Ansicht (Mauer: Nachbarn in Weltrichtung 1 = +x, 2 = +y, 4 = −x, 8 = −y; Baustelle `s0` … `s8`; Turm: Dachaufbau). */
+export const milVariant = (b) => variant(b, 0);
+/** Beschädigt (unter halber Gesundheit, gemalt: Ruß)? 1 oder 0. */
+export const milDamaged = damaged;

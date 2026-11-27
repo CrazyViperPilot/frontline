@@ -1,8 +1,18 @@
-# Symbol-Index render (Teil 2 von 4, iso.js bis maptown.js)
+# Symbol-Index render (Teil 2 von 4, groundtex.js bis mapprops.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## iso.js (Fortsetzung)
+## groundtex.js (4.3 KB)
+- DETAIL_N – Texel je Kante (Zweierpotenz: Mipmaps und Kachelung auch in WebGL 1)
+- groundDetail() – Kachelbare Detailtextur, DETAIL_N² RGBA (Uint8Array)
+
+## indprops.js (11 KB)
+- isIndSingle(kind) – Gibt es ein Modell dieser Art hier?
+- indModel(kind, v, d, w, rubble, stack) – Körper eines Einzelstücks der Industrie (Modellrichtung)
+
+## iso.js (11 KB)
+- TOWN_H – Höhe (Bildschirm-Pixel bei Zoom 1) der Stadtgebäude und der Spielgebäude je Typ
+- flying(u) – Wird die Einheit über allem gezeichnet (fliegt)? Jets am Boden (abgestellt, rol…
 - unitLift(u)
 - CAPITAL_H – Hauptstadt (Regierungsgebäude, cityhall.js): Höhe der Ebene für Lebensbalken un…
 - buildingHeight(b)
@@ -168,10 +178,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawPropIso(ctx, cam, o, season, flag) – Prop in Iso (Fuß am Weltpunkt)
 - drawPropShadowIso(ctx, cam, o, season, dpr) – Iso: Schatten eines Props, scharf begrenzt nach links unten
 - drawPropsTop(ctx, looks, inRect, zoom, season, flagOf) – 2D (Weltkoordinaten): erst alle Schatten, dann alle Props, damit kein Schatten…
-- drawPropsMini(ctx, looks, minPx) – Minimap (Weltkoordinaten, Transformation gesetzt): Kacheln als Zellen, Einzelst…
-
-## maptown.js (97 KB)
-- setMapTown(map) – Zu Beginn jedes Bilds (Renderer): Felder der Karte merken (Gehöfte erkennt man…
-- mapPylons(map) – Strommasten der Karte mit Richtung und Nachfolger (pylonNet), neu berechnet, we…
-- drawHouseYard(ctx, b, zoom, season, rot) – Iso, Bodendurchgang (seit Paket „Wohnhaus“): Hof, Vorplatz, Weg und Schatten ei…
-- houseYardIso(b, rot) – Hofmauer eines Altbaus in der Drehung rot (für Sandsäcke und Fahne, stronghold.…

@@ -15,6 +15,9 @@ import { Ground3D } from './ground3d.js';
 import { Billboards } from './billboards.js';
 import { Units3D } from './units3d.js';
 import { Fog3D } from './fog3d.js';
+import { Fx3D, effect3d, shell3d, smoke3d } from './fx3d.js';
+import { drawMine } from '../render/fx.js';
+import { bridgeUnder } from '../game/river.js';
 import { Sun3D, CATCH } from './sun3d.js';
 import { Trees3D } from './trees3d.js';
 import { Town3D } from './town3d.js';
@@ -91,6 +94,13 @@ export class Renderer3D extends Renderer {
     this.fogScene.add(this.fogRoot);
     this.fog3d = new Fog3D(this.ground3d);
     this.fogRoot.add(this.fog3d.group);
+    // Effekte: eigene Szene nach „Objekte“, Tiefentest gegen deren Tiefenpuffer (fx3d.js); false: aufrechte Effekte gemalt wie in Iso
+    this.fxScene = new THREE.Scene();
+    this.fxRoot = makeWorldRoot();
+    this.fxScene.add(this.fxRoot);
+    this.fx3d = new Fx3D();
+    this.fxRoot.add(this.fx3d.mesh);
+    this.fx3dOn = true;
     this.scratch = null; // 2D-Leinwand für alles, was im Durchlauf „Objekte“ nicht über blit läuft (liegt über den Billboards)
     this.cubes = !!opts.cubes;
     this.probes = null; // Prüfpunkte der Würfel (testscene.js), beim ersten 3D-Bild
@@ -98,6 +108,7 @@ export class Renderer3D extends Renderer {
       ['Gelände', (r, f) => r.terrain3d(f)],
       ['Objekte', (r, f) => r.objects3d(f)],
       ['Flieger', null], // Luftfahrzeuge zeichnet „Objekte“ mit (Tiefe statt „immer obenauf“)
+      ['Effekte', (r, f) => r.fx3dPass(f)],
       ['Nebel', (r, f) => r.fog3dPass(f)],
     ];
     if (this.cubes) for (const n of ['Boden', 'Schatten', 'Objekte', 'Wetter']) sw.push([n, null]);
@@ -303,6 +314,56 @@ export class Renderer3D extends Renderer {
     this.copy3d(f.ctx);
   }
 
+  /**
+   * Durchlauf „Effekte“: Bodenteile gemalt (Zielringe, Feuerschein, Druckringe), dann Feuerbälle, Leuchtspuren, Granaten, Rauch und
+   * Feuer als Teilchen in three (fx3d.js) über dem Bild, verdeckt von dem, was in „Objekte“ davor steht (Tiefenpuffer bleibt stehen);
+   * danach Minen und Wegziel gemalt. Ohne Relief oder mit fx3dOn = false wie in Iso.
+   */
+  fx3dPass(f) {
+    if (!this.fx3dOn || !f.relief) return this.isoEffects(f);
+    this.sync3d();
+    const g = this.game;
+    const relief = f.relief;
+    const ground = (x, y) => {
+      const br = g.bridges?.length ? bridgeUnder(g, x, y) : null; // auf einer Brücke: ihre Fahrbahn (wie screenAt)
+      return br ? br.deckH : relief.displayAt(x, y);
+    };
+    const { shells, ups } = this.isoFxGround(f);
+    const smokes = this.isoSmokes(f);
+    const fx = this.fx3d;
+    this.fxRoot.updateMatrixWorld();
+    fx.begin(this.cam3, this.fxRoot, this.camera.zoom, f.dpr, this.lightVec());
+    for (const p of shells) shell3d(fx, p, ground);
+    for (const e of ups) effect3d(fx, e, ground);
+    const t = f.now / 1000;
+    for (const q of smokes) smoke3d(fx, q, t, ground);
+    fx.end();
+    const box = fx.rect(this.camera.viewW, this.camera.viewH, f.dpr);
+    if (box) {
+      // nur Farbe löschen: die Tiefe aus „Objekte“ verdeckt Effekte hinter Häusern, Einheiten und Bäumen
+      const gl = this.gl;
+      gl.setClearColor(0x000000, 0);
+      gl.autoClear = false;
+      gl.clear(true, false, false);
+      try {
+        gl.render(this.fxScene, this.cam3);
+      } finally {
+        gl.autoClear = true;
+      }
+      // nur das Rechteck der Teilchen kopieren (meist ein kleiner Teil des Bildes)
+      f.ctx.setTransform(1, 0, 0, 1, 0, 0);
+      f.ctx.drawImage(gl.domElement, box.x, box.y, box.w, box.h, box.x, box.y, box.w, box.h);
+    }
+    const { ctx, cam, dpr, z } = f;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (const q of smokes) {
+      if (!q.mine) continue;
+      const p = cam.worldToScreen(q.x, q.y);
+      drawMine(ctx, p.x, p.y - q.lift * z, z * 0.6);
+    }
+    this.isoMoveMark(f);
+  }
+
   /** Würfel einmal bauen, sobald das Relief bekannt ist (syncRelief im ersten Bild). */
   syncCubes() {
     if (this.probes) return;
@@ -332,6 +393,7 @@ export class Renderer3D extends Renderer {
   /** Partie beendet: WebGL-Kontext und Grafikspeicher freigeben. */
   dispose() {
     this.ground3d.dispose();
+    this.fx3d.dispose();
     this.billboards.dispose();
     this.units3d.dispose();
     this.trees3d.dispose();

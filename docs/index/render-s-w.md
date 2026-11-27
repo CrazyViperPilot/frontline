@@ -1,8 +1,18 @@
-# Symbol-Index render (Teil 4 von 4, sprites.js bis works.js)
+# Symbol-Index render (Teil 4 von 4, spritecache.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## sprites.js (Fortsetzung)
+## spritecache.js (Fortsetzung)
+- blit(ctx, e, x, y, f) – Eintrag e so zeichnen, dass sein Ankerpunkt bei (x, y) liegt; f = Zeichenkoordi…
+- spriteStats() – Für Tests und Fehlersuche: Zahl der Bilder und Bildpunkte im Speicher
+
+## sprites.js (25 KB)
+- shade(hex, f) – Farbe abdunkeln (f = 0 unverändert, 1 schwarz)
+- tint(hex, f) – Farbe aufhellen (f = 0 unverändert, 1 weiß)
+- hexA(hex, a) – Hex-Farbe mit Alpha als rgba-String
+- hpColor(frac) – Farbe für Lebensbalken: grün, gelb, rot
+- fitText(ctx, text, x, y, px, zoom, maxW) – Text in Weltkoordinaten, Schriftgröße in Bildschirm-Pixeln (px), verkleinert be…
+- drawBar(ctx, x, y, w, h, frac, color, px, ticks) – Lebensbalken (Welt-Maße)
 - drawUnit(ctx, u, color, zoom, aim, now, iso) – Einheit von oben
 - drawUnitSymbol(ctx, x, y, a, color, k, air)
 - drawBuilding(ctx, b, color, zoom, pic)

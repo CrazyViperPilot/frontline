@@ -136,11 +136,18 @@ export const isoViewMethods = {
 
   /**
    * Iso, Effekte (seit v5.34, fx.js): Zielringe, Lichtschein und Druckringe in der Bodenebene, danach aufrecht Granaten im Bogen,
-   * Feuerbälle, Leuchtspuren und Mündungsfeuer; Rauch, Feuer, Nebelwände und Minen; zuletzt das Wegziel.
+   * Feuerbälle, Leuchtspuren und Mündungsfeuer; Rauch, Feuer, Nebelwände und Minen; zuletzt das Wegziel. Ansicht 3D: den aufrechten
+   * Teil ersetzt render3d/fx3d.js (Renderer3D.fx3dPass), Boden, Minen und Wegziel bleiben gemalt.
    */
   isoEffects(f) {
-    const { ctx, cam, dpr, z, now, v, relief } = f;
-    const at = (x, y) => this.screenAt(x, y);
+    const { shells, ups } = this.isoFxGround(f);
+    this.isoFxUp(f, shells, ups);
+    this.isoMoveMark(f);
+  },
+
+  /** Effekte in der Bodenebene (Zielringe der Granaten, Feuerschein, Druckring); liefert die sichtbaren Granaten und Effekte. */
+  isoFxGround(f) {
+    const { ctx, cam, dpr, z, relief } = f;
     const shells = [];
     setIsoGround(ctx, cam, dpr);
     for (const p of this.visibleShells(f)) {
@@ -158,12 +165,24 @@ export const isoViewMethods = {
       }
       ups.push(e);
     }
+    return { shells, ups };
+  },
+
+  /** Rauchquellen des Bildes (Detailstufe: ohne Rauch und Staub von Fahrzeugen und Baggern). */
+  isoSmokes(f) {
+    const list = this.smokeSources(f.seen, f.shown, f.inRect, ISO_PAD);
+    return f.lodFx ? list.filter((q) => !(q.unit || q.dust)) : list;
+  },
+
+  /** Aufrechte Effekte gemalt: Granaten im Bogen, Feuerbälle, Leuchtspuren, Mündungsfeuer, dann Rauch, Feuer, Nebelwände, Minen. */
+  isoFxUp(f, shells, ups) {
+    const { ctx, cam, dpr, z, now } = f;
+    const at = (x, y) => this.screenAt(x, y);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     for (const p of shells) drawShellIso(ctx, cam, p, at);
     for (const e of ups) drawEffectUp(ctx, e, cam, at);
     const t = now / 1000;
-    for (const q of this.smokeSources(f.seen, f.shown, f.inRect, ISO_PAD)) {
-      if (f.lodFx && (q.unit || q.dust)) continue; // Detailstufe: Rauch und Staub von Fahrzeugen und Baggern weg
+    for (const q of this.isoSmokes(f)) {
       const p = cam.worldToScreen(q.x, q.y);
       const y = p.y - q.lift * z;
       if (q.mine) {
@@ -181,6 +200,11 @@ export const isoViewMethods = {
       if (q.fire) drawFire(ctx, p.x, y, q.s * 0.7 * z, t, q.seed);
       drawSmoke(ctx, p.x, y, q.s * z, q.k, t, q.seed);
     }
+  },
+
+  /** Wegziel des letzten Befehls am Boden. */
+  isoMoveMark(f) {
+    const { ctx, cam, dpr, now, z, v, relief } = f;
     if (relief && v.moveMarker) this.groundAt(ctx, v.moveMarker.x, v.moveMarker.y);
     else setIsoGround(ctx, cam, dpr); // ohne Gelände: flache Bodenebene
     this.drawMoveMarker(ctx, v.moveMarker, now, z, relief ? (x, y) => this.groundAt(ctx, x, y) : null);

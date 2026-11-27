@@ -7,11 +7,12 @@
 // 2D: Weltkoordinaten (Kamera-Transformation gesetzt). Iso: Bodenteile in der Bodenebene (setIsoGround), Feuerball, Funken,
 // Leuchtspuren und Mündungsfeuer aufrecht in Bildschirmkoordinaten (drawEffectUp, CSS-Pixel, Maße × Zoom). Weiche Flecken
 // sind kleine, einmal gemalte Bilder (dot), damit viele gleichzeitige Effekte flüssig bleiben. Nur Darstellung.
+// Ansicht 3D: render3d/fx3d.js baut die aufrechten Teile mit denselben Teilen, Größen und Farben nach (Exporte partsOf, SIZE, fireCol …).
 import { shade, tint } from './sprites.js';
 import { clamp, hashXY } from './color.js';
 
 const TAU = Math.PI * 2;
-const ease = (k) => 1 - (1 - k) * (1 - k); // erst schnell, dann langsam
+export const ease = (k) => 1 - (1 - k) * (1 - k); // erst schnell, dann langsam
 const OUTLINE = 'rgba(0,0,0,0.65)';
 
 /** Kleiner Zufallsgenerator je Narbe bzw. Effekt (gleiche Form in jedem Bild). */
@@ -91,11 +92,11 @@ function blob(ctx, col, x, y, r, a, style = SOFT) {
 
 // ---------- Explosion ----------
 
-const SIZE = { hit: 0.75, building: 1.7 };
+export const SIZE = { hit: 0.75, building: 1.7 };
 const FIRE = ['#fff4c4', '#ffd25e', '#f79a32', '#e0601e', '#a83a1a', '#5a2a1a']; // heiß → abgekühlt
 const parts = new WeakMap();
 /** Feste Teile einer Explosion: Flammenwolken, Rauchwolken, Funken, Brocken (Richtung, Abstand, Größe). */
-function partsOf(e) {
+export function partsOf(e) {
   let p = parts.get(e);
   if (p) return p;
   const rnd = scarRng(hashXY(e.x * 3, e.y * 7));
@@ -109,8 +110,8 @@ function partsOf(e) {
   parts.set(e, p);
   return p;
 }
-const fireCol = (k, i) => FIRE[clamp(Math.floor(k * 5 + (i % 3) * 0.5), 0, FIRE.length - 1)];
-const smokeIn = (k) => 0.72 * clamp((k - 0.1) * 5, 0, 1) * Math.pow(1 - k, 0.7); // Rauch kommt nach dem Blitz
+export const fireCol = (k, i) => FIRE[clamp(Math.floor(k * 5 + (i % 3) * 0.5), 0, FIRE.length - 1)];
+export const smokeIn = (k) => 0.72 * clamp((k - 0.1) * 5, 0, 1) * Math.pow(1 - k, 0.7); // Rauch kommt nach dem Blitz
 
 /** Explosion von oben (2D, Weltkoordinaten): Druckring, Blitz, Rauch, Feuerball aus beleuchteten Flammenwolken, Brocken, Funken. */
 function explosionTop(ctx, e, z, k) {
@@ -255,8 +256,8 @@ function tracer(ctx, x1, y1, x2, y2, k, px, flak) {
   ctx.stroke();
 }
 
-const MISSILE = /rpg|rocket|aim|sam/; // Lenkwaffen und Raketen ziehen eine Rauchspur
-const FLAK = /flak|twin|sam/; // Flugabwehr: rötliche Leuchtspur
+export const MISSILE = /rpg|rocket|aim|sam/; // Lenkwaffen und Raketen ziehen eine Rauchspur
+export const FLAK = /flak|twin|sam/; // Flugabwehr: rötliche Leuchtspur
 
 /**
  * Geschoss im Direktschuss (Effekt shell, 0,3 s) von (x1, y1) nach (x2, y2): Kanone als heller, dicker Leuchtkopf; Panzerfaust,
@@ -370,9 +371,9 @@ export function drawEffect(ctx, e, zoom = 1, groundOnly = false) {
 }
 
 /** Höhe (Einheiten) von Mündung und Ziel einer Leuchtspur bzw. der Detonation beim Abfangen über dem Boden (Iso). */
-const GUN_H = 9;
-const HIT_H = 6;
-const AIRBURST_H = 72;
+export const GUN_H = 9;
+export const HIT_H = 6;
+export const AIRBURST_H = 72;
 
 /**
  * Aufrechte Teile eines Effekts in Iso (Transformation dpr, Bildschirmkoordinaten): Feuerball, Rauch und Funken der Explosion,
@@ -412,7 +413,7 @@ export function drawEffectUp(ctx, e, cam, at = (x, y) => cam.worldToScreen(x, y)
 
 // ---------- Mörsergranate ----------
 
-const ARC = (f) => 14 + 90 * Math.sin(Math.PI * f); // Flughöhe über dem Boden (wie der Iso-Renderer seit v4.x)
+export const ARC = (f) => 14 + 90 * Math.sin(Math.PI * f); // Flughöhe über dem Boden (wie der Iso-Renderer seit v4.x)
 
 /** Zielring einer Mörsergranate am Boden (gestrichelt, mit Kreuz); Iso in der Bodenebene, 2D in drawShell. */
 export function drawShellTarget(ctx, s, zoom = 1) {

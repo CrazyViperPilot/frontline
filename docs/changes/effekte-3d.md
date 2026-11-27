@@ -1,0 +1,1 @@
+**Effekte 3D** (Test, `?three=1`, Ansicht „3D“): Explosionen, Leuchtspuren, Geschosse, Mündungsfeuer, Mörsergranaten, Rauch, Feuer, Staub und Nebelwände entstehen in der 3D-Ansicht als Teilchen im Raum: Sie sehen aus wie bisher, werden aber von Häusern, Fahrzeugen und Bäumen davor verdeckt, und der Rauch ist zur Sonne hin hell.

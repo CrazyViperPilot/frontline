@@ -222,6 +222,7 @@ const ASSETS = [
   './js/render3d/ground3d.js',
   './js/render3d/billboards.js',
   './js/render3d/fog3d.js',
+  './js/render3d/fx3d.js',
   './js/render3d/units3d.js',
   './js/render3d/sun3d.js',
   './js/render3d/trees3d.js',

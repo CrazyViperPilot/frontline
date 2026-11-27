@@ -104,7 +104,8 @@ export const isoViewMethods = {
       drawCrater(ctx, c, scarAlpha(c, g.time, SC.craterLife, SC.craterFade));
     }
     this.drawRubble(ctx, inRect, relief ? (x, y) => this.groundAt(ctx, x, y) : () => setIsoGround(ctx, cam, dpr)); // Schutt zerstörter Straßen (Paket „Straßen“)
-    for (const b of g.bridges ?? []) if (inRect(b.x, b.y, b.len / 2 + ISO_PAD)) drawBridgeIso(ctx, cam, dpr, b, this.season); // Einheiten fahren darüber
+    // Einheiten fahren darüber; Ansicht 3D: Brücke ist ein Mesh im Durchlauf „Objekte“ (render3d/bridge3d.js), hier nur Gischt (und ohne Schattenkarte der Schatten)
+    for (const b of g.bridges ?? []) if (inRect(b.x, b.y, b.len / 2 + ISO_PAD)) drawBridgeIso(ctx, cam, dpr, b, this.season, relief && this.bridge3dGround ? this.bridge3dGround : 'all');
     setIsoGround(ctx, cam, dpr);
     drawCityGround(this, ctx, f.team, f.known, inRect); // Stadt: Straßen und Grundstücke
     setIsoGround(ctx, cam, dpr);

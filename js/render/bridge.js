@@ -324,9 +324,11 @@ const POST_GAP = 10; // Abstand der Geländerpfosten
 /**
  * Brücke isometrisch. Mit Gelände (cam.relief) stehen die Pfeiler im Wasser und die Fahrbahn liegt auf b.deckH, ohne Gelände
  * liegt sie knapp über dem flachen Boden. Transformation: beliebig (die Funktion setzt sie selbst, dpr). season wählt die Muster
- * der Fahrbahn (Asphalt, Gehwegplatten wie die Stadtstraßen) und im Winter Schneewälle statt der Rinne.
+ * der Fahrbahn (Asphalt, Gehwegplatten wie die Stadtstraßen) und im Winter Schneewälle statt der Rinne. part: 'all' (alles gemalt),
+ * 'foam' (nur die Gischt am Fuß der Stützen) und 'foam+shadow' (dazu der Schatten aufs Wasser): Ansicht 3D, in der render3d/bridge3d.js
+ * die Brücke selbst zeigt.
  */
-export function drawBridgeIso(ctx, cam, dpr, b, season = 'summer') {
+export function drawBridgeIso(ctx, cam, dpr, b, season = 'summer', part = 'all') {
   const water = cam.relief ? RELIEF.water : 0;
   const top = cam.relief ? b.deckH : 10; // Oberkante der Fahrbahn
   const lift = top - water; // über dem Wasser
@@ -360,10 +362,17 @@ export function drawBridgeIso(ctx, cam, dpr, b, season = 'summer') {
     ctx.closePath();
     ctx.fill();
   };
-  if (!b.broken) shadow(w0, w1);
+  if (part === 'foam') {
+    // keine gemalten Schatten (die Schattenkarte wirft sie)
+  } else if (!b.broken) shadow(w0, w1);
   else if (p > 0) {
     shadow(w0 + STUB, w0 + STUB + (gap * p) / 2);
     shadow(w1 - STUB - (gap * p) / 2, w1 - STUB);
+  }
+  if (part !== 'all') {
+    for (const u of piers(b)) for (const s of [-1, 1]) foam(ctx, scr(u, s * HALF * 0.55, 0), z);
+    cam.unpin();
+    return;
   }
   // Pfeiler, hinten zuerst: je zwei runde Stützen mit nassem Fuß und Gischt, darauf der Querträger (zerstört: Stümpfe)
   const near = scr(L / 2, HALF, 0).y > scr(L / 2, -HALF, 0).y ? 1 : -1; // die dem Betrachter zugewandte Seite (v-Vorzeichen)
@@ -707,3 +716,10 @@ export function drawBridgeBar(ctx, x, y, b) {
 
 /** Zeigt die Brücke einen Balken? Beschädigt (intakt) oder im Wiederaufbau. */
 export const bridgeBar = (b) => (!b.broken && b.hp < b.maxHp) || progressOf(b) > 0;
+
+// ---- Maße für die Ansicht 3D (render3d/bridge3d.js) -----------------------------------------------
+
+/** Maße und Farben der gemalten Brücke, damit das 3D-Netz dasselbe Bild gibt. */
+export const BRIDGE = { DECK, HALF, SLAB, RAIL_H, STUB, LANE, TRACK, SLEEPER_GAP, CAP_H, COL_R, LAMP_H, POST_GAP, POST_H, KERB_W, GUTTER_W, COL };
+/** Teile der gemalten Brücke: Pfeilerlagen, Laternen, Trümmer, Fortschritt des Wiederaufbaus, Striche der Mittellinie. */
+export const BRIDGE_PARTS = { piers, lamps, debris, progressOf, dashes: DASHES };

@@ -366,7 +366,7 @@ function paintPavers(base, joint, season, leaves) {
   return c;
 }
 
-const STREET = {
+export const STREET = {
   summer: { asphalt: '#4e514b', pavers: '#a3a197', joint: '#7d7b73' },
   autumn: { asphalt: '#4b4d48', pavers: '#9c9a90', joint: '#77756d' },
   winter: { asphalt: '#575a57', pavers: '#bfc3c4', joint: '#9a9ea0' },

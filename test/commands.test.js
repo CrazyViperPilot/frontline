@@ -98,3 +98,16 @@ test('Sammelpunkt per Knopf (Touch ohne Rechtsklick): Kaserne und Fabrikhalle ha
     assert.equal(rallyBtn(), undefined, b.def.name);
   }
 });
+
+test('Rahmenauswahl per Touch (Knopf „Auswahl“): Modus boxSelect, Antippen wählt wie sonst und beendet ihn', () => {
+  const g = new Game({ map: createEmptyMap() });
+  const c = new Controller(g, 0, new Camera(BALANCE.map.width * BALANCE.map.tile, BALANCE.map.height * BALANCE.map.tile));
+  const main = g.buildings.find((b) => b.team === 0);
+  const u = g.spawnUnit('rifleman', 0, main.x + 200, main.y + 200);
+  c.setMode('boxSelect');
+  assert.ok(/Rahmen/.test(c.hint()));
+  assert.deepEqual(c.commandCard().map((e) => e.label), ['Abbruch']);
+  c.leftClickWorld(u.x, u.y, false, 'touch');
+  assert.equal(c.view.mode, 'normal');
+  assert.ok(c.view.selection.has(u.id), 'Antippen wählt die Einheit');
+});

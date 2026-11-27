@@ -1,0 +1,1 @@
+**Rahmenauswahl per Finger** (Steuerung, Touch): Rechts gibt es auf Touch-Geräten den Knopf „Auswahl“; danach zieht ein Finger einen Rahmen statt die Karte zu schieben, und alle eigenen Einheiten darin sind gewählt, wie mit der Maus.

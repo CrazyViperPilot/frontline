@@ -222,8 +222,8 @@ export class Input {
     }
     if (d) {
       if (!d.dragging && !d.panning && d.mode !== 'wall' && Math.hypot(p.x - d.sx, p.y - d.sy) >= DRAG_PX) {
-        // Maus: Rahmenauswahl; Finger: Ziehen schiebt die Karte
-        if (e.pointerType !== 'touch' && d.mode === 'normal') d.dragging = true;
+        // Maus: Rahmenauswahl; Finger: Ziehen schiebt die Karte, außer im Modus Rahmenauswahl (Knopf „Auswahl“)
+        if ((e.pointerType !== 'touch' && d.mode === 'normal') || d.mode === 'boxSelect') d.dragging = true;
         else if (e.pointerType === 'touch') d.panning = true;
       }
       if (d.dragging) this.controller.setDragBox({ x1: d.sx, y1: d.sy, x2: p.x, y2: p.y });
@@ -289,8 +289,9 @@ export class Input {
       c.endWall(w.x, w.y, e.shiftKey);
       return;
     }
-    if (d.dragging && c.view.mode === 'normal') {
+    if (d.dragging && (c.view.mode === 'normal' || c.view.mode === 'boxSelect')) {
       c.selectBox({ x1: d.sx, y1: d.sy, x2: p.x, y2: p.y }, e.shiftKey);
+      if (c.view.mode === 'boxSelect') c.setMode('normal'); // ein Rahmen je Knopfdruck
       return;
     }
     if (e.target !== this.canvas && !d.dragging && e.pointerType !== 'touch') return; // Loslassen über dem HUD löst keinen Klick aus

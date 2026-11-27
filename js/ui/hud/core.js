@@ -47,6 +47,7 @@ export class Hud {
     this.soundBtn = q('[data-act=sound]');
     this.viewBtn = q('[data-act=view]');
     this.researchBtn = q('[data-act=research]');
+    this.selectBtn = q('[data-act=box]');
     this.res = {};
     for (const k of RES_KEYS) {
       this.res[k] = { box: q(`[data-res=${k}]`), val: q(`[data-res=${k}] .val`), rate: q(`[data-res=${k}] .rate`) };
@@ -103,6 +104,7 @@ export class Hud {
         ${g.research ? '<button type="button" class="city-fab research-fab" data-act="research" title="Forschungsmenü: Stufen und Forschungsbaum (U bei gewählter Hauptstadt)">🔬 Forschung</button>' : ''}
         <button type="button" class="city-fab flow-fab" data-act="flow" title="Wirtschaft: Einnahmen, Front-Lager, Einfuhr, Werke, Lager und Engpässe">📊 Wirtschaft</button>
         <button type="button" class="city-fab builder-fab" data-act="builder" title="Nächstes Baufahrzeug (J)">🚧 Bauer</button>
+        <button type="button" class="city-fab select-fab" data-act="box" title="Rahmenauswahl für Touch: danach mit einem Finger einen Rahmen um viele Einheiten ziehen (mit der Maus: Linksklick ziehen)">⬚ Auswahl</button>
         <button type="button" class="city-fab strike-fab" data-act="strike" title="Luftschlag (F4): startbereite Jets mit Bodenwaffen auf ein Ziel schicken">✈ Luftschlag</button>
       </div>
       <header class="top">
@@ -162,6 +164,7 @@ export class Hud {
       else if (act.dataset.act === 'help') this.app.toggleHelp?.();
       else if (act.dataset.act === 'builder') this.app.nextBuilder?.();
       else if (act.dataset.act === 'strike') this.app.airstrike?.();
+      else if (act.dataset.act === 'box') this.controller.setMode(this.controller.view.mode === 'boxSelect' ? 'normal' : 'boxSelect');
       else if (act.dataset.act === 'city') this.app.toggleCity?.();
       else if (act.dataset.act === 'market') this.app.toggleMarket?.();
       else if (act.dataset.act === 'research') this.app.toggleResearch?.();

@@ -11,6 +11,7 @@
 | Linksklick halten und ziehen (Maus) | Rahmenauswahl; Shift = hinzufügen |
 | Rechtsklick halten und ziehen (Maus) / Finger ziehen | **Karte verschieben** (ein kurzer Rechtsklick bleibt der Befehl Bewegen/Angreifen) |
 | Zwei Finger | Zoomen (Abstand) und Karte verschieben |
+| Knopf „⬚ Auswahl“ rechts (nur Touch) | **Rahmenauswahl per Finger**: danach zieht ein Finger einen Rahmen statt die Karte zu schieben, alle eigenen Einheiten darin werden gewählt; ein Rahmen je Knopfdruck, Antippen wählt wie sonst, erneut drücken oder Esc bricht ab |
 | Rechtsklick | Bewegen; auf Gegner = Angreifen; Gebäude gewählt = Sammelpunkt; (weiter unten) |
 | Kaserne oder Fabrikhalle gewählt | **G Sammelpunkt** (Knopf der Befehlskarte, auch per Touch, wo es keinen Rechtsklick gibt): danach Stelle auf der Karte antippen bzw. anklicken, neue Bodeneinheiten fahren dorthin; Heliport und Stellplatz haben den Knopf nicht |
 | A + Linksklick | Angriffsbewegung; auf eine intakte Brücke = sie beschießen, bis sie einstürzt (§7, nur so greift jemand eine Brücke an) |
@@ -81,7 +82,7 @@
   Befehlskarte mit Spalten à 50 × 48 px (Touch-Ziele; Tastenkürzel ausgeblendet), wischbar (Wischleiste, seit v5.182): Ausbildung eines Gebäudes in der oberen
   Zeile, die übrigen Aktionen (Baumodus, Abreißen, Abbruch, Abwählen …) darunter; beide Zeilen wischen gemeinsam, Schatten am Rand zeigt Inhalt dahinter.
   Ein Wischen zählt nicht als Tippen (Klick nur ohne Bewegung).
-  Die Karte liegt links neben der rechten Knopfspalte (Stadt, Forschung, Wirtschaft, Bauer, Luftschlag), die sich nicht überdeckt.
+  Die Karte liegt links neben der rechten Knopfspalte (Stadt, Forschung, Wirtschaft, Bauer, Auswahl nur auf Touch, Luftschlag), die sich nicht überdeckt.
   Der Knopf „▾“ neben der Minimap klappt Auswahl und Befehle ein (nur die Minimap
   bleibt, Zustand wird gemerkt, `localStorage` `frontline-hud-fold`). Die Kamera zentriert Ziele (Spielstart, Minimap-Klick, Meldung antippen, Taste für Basis) in der
   vom HUD nicht verdeckten Mitte (`camera.insetTop/insetBottom`). In 2D lässt sich die Karte so weit schieben, dass ihr unterer Rand über der Leiste unten

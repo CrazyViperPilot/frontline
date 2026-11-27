@@ -67,6 +67,14 @@ export const MODES = {
     hint: () => 'Mörser / Artillerie: Ziel auf der Karte anklicken (Kreis zeigt Reichweite) · Esc bricht ab',
     click: (c, wx, wy) => c.confirmMortarTarget(wx, wy),
   },
+  boxSelect: {
+    target: true,
+    hint: () => 'Rahmenauswahl: mit einem Finger einen Rahmen um die Einheiten ziehen · Antippen wählt wie sonst · Knopf „Auswahl“ oder Esc bricht ab',
+    click: (c, wx, wy, shift) => {
+      c.setMode('normal'); // Antippen statt Ziehen: normale Auswahl
+      c.leftClickWorld(wx, wy, shift, 'touch');
+    },
+  },
   rally: {
     target: true,
     hint: () => 'Sammelpunkt: Stelle auf der Karte antippen bzw. anklicken, neue Bodeneinheiten fahren dorthin · Esc bricht ab',

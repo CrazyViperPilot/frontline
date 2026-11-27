@@ -76,7 +76,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - renderMsgs()
   - expire(now)
 
-## top.js (7.4 KB)
+## top.js (7.6 KB)
 - topMethods
   - updateTop()
   - updateResources(g, t) – Ressourcenfelder (Wert, Rate, Tooltip), Markt- und Forschungsknopf

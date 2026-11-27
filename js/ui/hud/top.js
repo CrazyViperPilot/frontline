@@ -47,6 +47,8 @@ export const topMethods = {
     this.res.money.box.classList.toggle('mk-on', hasMarket(g, this.team));
     // Forschungsknopf leuchtet, solange eine Forschung läuft
     this.researchBtn?.classList.toggle('on', !!t.tech?.cur);
+    // Rahmenauswahl (Touch) ist an: Knopf leuchtet
+    this.selectBtn?.classList.toggle('on', this.controller.view.mode === 'boxSelect');
   },
 
   /** Punktebalken je Team; Eroberung: verbliebene Tickets und gehaltene Flaggen. */

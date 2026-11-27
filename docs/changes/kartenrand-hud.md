@@ -1,1 +1,0 @@
-**Kartenrand über den Leisten** (Steuerung, 2D): Ganz nach unten bzw. oben geschoben endet die Karte jetzt über der Leiste mit Übersichtskarte, Infofeld und Befehlen bzw. unter der Kopfleiste; der Streifen am Kartenrand, den die Leisten bisher verdeckten, ist erreichbar und bebaubar.

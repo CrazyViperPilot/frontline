@@ -7,7 +7,7 @@ import { loadMap } from './game/mapdata.js';
 import { AI } from './ai/ai.js';
 import { createLoop } from './core/loop.js';
 import { Sound } from './audio/sound.js';
-import { Camera } from './render/camera.js';
+import { Camera, TILT_MIN, TILT_MAX } from './render/camera.js';
 import { Renderer, MAX_DPR_SHARP, MAX_DPR_FAST } from './render/renderer.js';
 import { Minimap } from './render/minimap.js';
 import { Controller } from './ui/controller.js';
@@ -214,7 +214,7 @@ async function captureSave(s, ended = false, copyName = null) {
   const body = {
     format: SAVE_FORMAT,
     settings: s.settings,
-    view: { x: cam.x, y: cam.y, zoom: cam.zoom, iso: cam.iso, rot: cam.rot, speed: s.loop.speed },
+    view: { x: cam.x, y: cam.y, zoom: cam.zoom, iso: cam.iso, rot: cam.rot, turn: cam.turn, tilt: cam.tilt, speed: s.loop.speed }, // turn, tilt: freie Kamera (Ansicht 3D)
     snap: snapshotGame(g, s.ai),
   };
   const bytes = await pack(body);
@@ -483,7 +483,7 @@ const app = {
       return;
     }
     s.camera.rotate(dir);
-    s.hud.pushMessage(`Ansicht gedreht (${s.camera.rot * 90}°)`);
+    s.hud.pushMessage(`Ansicht gedreht (${Math.round((s.camera.yaw() * 180) / Math.PI) % 360}°)`);
   },
   toggleHelp() {
     if (overlay.dataset.kind === 'help') {
@@ -686,6 +686,8 @@ function buildSession(game, ai, opts, view) {
   if (view) {
     camera.iso = !!view.iso;
     camera.rot = view.rot ?? 0;
+    if (Number.isFinite(view.turn) && Math.abs(view.turn) <= Math.PI / 4) camera.turn = view.turn; // freie Kamera (seit „Freie Kamera“)
+    if (Number.isFinite(view.tilt)) camera.tilt = Math.min(TILT_MAX, Math.max(TILT_MIN, view.tilt));
     camera.zoom = view.zoom ?? 1;
   }
   camera.three = camera.iso && loadThree() && !!R3D;

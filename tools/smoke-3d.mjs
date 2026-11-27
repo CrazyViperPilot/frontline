@@ -43,7 +43,7 @@
 //    Spielszenen mit vielen Baustellen bzw. Gebäude-Wracks Iso | 3D, Messung gemalt / 3D (renderer.site3dOn, ruin3dOn) und einsinkendes Wrack (<out>/ruinen/).
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
-//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|ruinen|bruecke|mvp] [--citymin 10]
+//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|ruinen|bruecke|freikamera|mvp] [--citymin 10]
 //                                 [--what schau|karte] (nur mit props: nur Schauraum oder nur echte Karten)
 //                                 [--what werke|haeuser|grossbau|mil|fliegerhorst|baustelle|schutt|kartenstadt] (nur mit baukasten: nur Werke, Stadthäuser, Großbauten, Militärgebäude, Fliegerhorst, Baustellen, Schutt oder Kartenstadt)
 // 11. Kartenstadt (Paket „Kartenstadt 3D“): im Teil baukasten (--what kartenstadt) jede Art der Kartenstadt gemalt | 3D (4 Drehungen, Stimmungen);
@@ -51,7 +51,9 @@
 //    Bilder fertig sind), gleiche Menge Gebäude Iso und 3D, Messung gemalt gegen 3D (<out>/karte/).
 // 12. Brücken (Paket „Brücken 3D“, --only bruecke [--karte seed3,seed7,fest]): Brücken und Furtstangen gemalt | 3D (4 Drehungen, Nacht, Zoom, beschädigt,
 //    zerstört, Wiederaufbau, Furt, Eisenbahnbrücke der festen Karte), Einheiten auf der Fahrbahn, gleiche Menge, Messung gemalt gegen 3D (<out>/bruecke/).
-// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte, props und bruecke; „mvp“ nur ausdrücklich.
+// 13. Freie Kamera (Paket „Freie Kamera“, --only freikamera): 8 Drehwinkel × Neigung 30°/45°/60°: Prüfwürfel unter 1 px, Fotos der Spielszene,
+//    Klick, Ziehrahmen und Fahrbefehl mit echter Maus, gehaltene Taste dreht, Umschalt + Mausrad neigt (<out>/freikamera/).
+// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte, props, bruecke und freikamera; „mvp“ nur ausdrücklich.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { openGame, measureFps, DEVICES } from './smoke.mjs';
@@ -3267,6 +3269,169 @@ async function bridgePart() {
   }
 }
 
+// Freie Kamera (Paket „Freie Kamera“, --only freikamera): 8 Drehwinkel × Neigung 30°/45°/60°; Prüfwürfel (three gegen camera.worldToScreen),
+// Fotos einer Spielszene, Klick, Ziehrahmen und Fahrbefehl mit echter Maus (<out>/freikamera/).
+const FREE_YAWS = [0, 45, 90, 135, 180, 225, 270, 315];
+const FREE_TILTS = String(arg('neigung', '30,45,60')).split(',').map(Number); // --neigung 30 für einen kurzen Lauf
+const freeView = (g, yaw, tilt, zoom = 1) =>
+  g.run(
+    ({ yaw, tilt, zoom }) => {
+      const s = window.__frontline.session();
+      const cam = s.camera;
+      cam.rot = 0;
+      cam.turn = 0;
+      cam.turnBy((yaw * Math.PI) / 180);
+      cam.setTilt((tilt * Math.PI) / 180);
+      cam.zoom = zoom;
+      const hq = s.game.buildings.find((b) => b.main && b.team === 0);
+      cam.centerOn(hq?.x ?? cam.mapW / 2, hq?.y ?? cam.mapH / 2);
+      for (let i = 0; i < 3; i++) s.renderer.render(s.controller.view);
+    },
+    { yaw, tilt, zoom },
+  );
+
+async function freeCamera() {
+  const dir = 'freikamera';
+  await mkdir(join(out, dir), { recursive: true });
+  // 1. Prüfwürfel: three-Bild gegen camera.worldToScreen
+  let g = await openGame({ seed: 3, query: 'three=1&cubes=1&iso=1', scale, out });
+  try {
+    console.log('Freie Kamera, Prüfwürfel: Neigung  Drehung  größte Abweichung (px)');
+    for (const tilt of FREE_TILTS) {
+      for (const yaw of FREE_YAWS) {
+        for (const zoom of [0.5, 1.4]) {
+          await freeView(g, yaw, tilt, zoom);
+          const res = await g.run(() => window.__frontline.session().renderer.probe());
+          const worst = res.reduce((a, b) => (b.d > a.d ? b : a));
+          if (worst.d >= LIMIT || !Number.isFinite(worst.d)) fail++;
+          if (zoom === 1.4) console.log(`  ${String(tilt).padStart(2)}°  ${String(yaw).padStart(3)}°  ${worst.d.toFixed(4)}${worst.d >= LIMIT ? '  FEHLER' : ''}`);
+        }
+      }
+    }
+  } finally {
+    errors.push(...g.errors);
+    await g.close();
+  }
+  // 2. Spielszene: Fotos, Klick, Ziehrahmen, Fahrbefehl
+  g = await openGame({ seed: 3, query: 'three=1&iso=1', scale, out });
+  try {
+    const { page } = g;
+    const u = await g.run(() => {
+      const s = window.__frontline.session();
+      s.loop.paused = true;
+      const hq = s.game.buildings.find((b) => b.main && b.team === 0);
+      const t = s.game.spawnUnit('tank', 0, hq.x + 260, hq.y + 200);
+      return t ? { id: t.id, x: t.x, y: t.y } : null;
+    });
+    if (!u) throw new Error('Panzer für die Auswahl nicht gesetzt');
+    const screenOf = (wx, wy) =>
+      g.run(({ wx, wy }) => {
+        const s = window.__frontline.session();
+        const p = s.camera.worldToScreen(wx, wy);
+        const r = s.renderer.canvas.getBoundingClientRect();
+        return { x: r.left + p.x, y: r.top + p.y };
+      }, { wx, wy });
+    const unitNow = () => g.run((id) => {
+      const t = window.__frontline.session().game.units.find((v) => v.id === id);
+      return { x: t.x, y: t.y, sel: window.__frontline.session().controller.view.selection.has(id), order: t.order };
+    }, u.id);
+    const clear = () => g.run(() => {
+      const s = window.__frontline.session();
+      s.controller.view.selection.clear();
+      s.controller.cancel?.();
+    });
+    console.log('Freie Kamera, Bedienung: Neigung  Drehung  Klick  Rahmen (gewählt)  Rechtsklick (Strahl: Abstand Bodenpunkt, Ziel: Abstand Fahrziel, Welt-px)');
+    for (const tilt of FREE_TILTS) {
+      for (const yaw of FREE_YAWS) {
+        await freeView(g, yaw, tilt, 1.2);
+        await g.run((id) => {
+          const s = window.__frontline.session();
+          const t = s.game.units.find((v) => v.id === id);
+          s.camera.centerOn(t.x, t.y);
+          for (let i = 0; i < 3; i++) s.renderer.render(s.controller.view);
+        }, u.id);
+        await g.shot(`${dir}/neigung${tilt}-dreh${String(yaw).padStart(3, '0')}`);
+        const now = await unitNow();
+        // Klick auf den Panzer
+        await clear();
+        let p = await screenOf(now.x, now.y);
+        await page.mouse.click(p.x, p.y);
+        await page.waitForTimeout(120);
+        const click = (await unitNow()).sel;
+        // Ziehrahmen um den Panzer
+        await clear();
+        await page.mouse.move(p.x - 50, p.y - 50);
+        await page.mouse.down();
+        await page.mouse.move(p.x, p.y, { steps: 4 });
+        await page.mouse.move(p.x + 50, p.y + 40, { steps: 4 });
+        await page.mouse.up();
+        await page.waitForTimeout(120);
+        const box = (await unitNow()).sel;
+        const boxN = await g.run(() => window.__frontline.session().controller.view.selection.size);
+        // Fahrbefehl nur für den Panzer (fängt der Rahmen Soldaten mit, führe die Gruppe in Formation: Ziel des Panzers versetzt)
+        await g.run((id) => {
+          const sel = window.__frontline.session().controller.view.selection;
+          sel.clear();
+          sel.add(id);
+        }, u.id);
+        // Fahrbefehl: Rechtsklick auf einen Bodenpunkt 180 Welt-px daneben (gewählt)
+        const tx = now.x + 180;
+        const ty = now.y - 120;
+        const q = await screenOf(tx, ty);
+        // Sichtstrahl (Kamera) und was unter dem Zeiger liegt (dann richtet das Spiel den Befehl auf das Objekt aus)
+        const aim = await g.run(({ x, y }) => {
+          const s = window.__frontline.session();
+          const r = s.renderer.canvas.getBoundingClientRect();
+          const w = s.camera.screenToWorld(x - r.left, y - r.top);
+          const c = s.controller;
+          const hit = c.pick(w.x, w.y) ?? c.pickHouse?.(w.x, w.y) ?? c.pickCity?.(w.x, w.y) ?? c.pickBridge?.(w.x, w.y) ?? null;
+          return { x: w.x, y: w.y, hit: hit ? hit.type ?? hit.kind ?? 'Objekt' : null };
+        }, q);
+        const ray = Math.hypot(aim.x - tx, aim.y - ty);
+        await page.mouse.click(q.x, q.y, { button: 'right' });
+        await page.waitForTimeout(120);
+        const o = (await unitNow()).order;
+        const d = o && Number.isFinite(o.x) ? Math.hypot(o.x - tx, o.y - ty) : Infinity;
+        const ok = click && box && ray < 2 && (aim.hit || d < 16);
+        if (!ok) fail++;
+        const what = aim.hit ? ` (unter dem Zeiger: ${aim.hit}, Befehl ${o?.type ?? '–'})` : '';
+        console.log(`  ${String(tilt).padStart(2)}°  ${String(yaw).padStart(3)}°  ${click ? 'ja  ' : 'NEIN'}   ${box ? `ja (${boxN})` : 'NEIN'}    Strahl ${ray.toFixed(2)}, Ziel ${Number.isFinite(d) ? d.toFixed(1) : 'kein Befehl'}${what}${ok ? '' : '  FEHLER'}`);
+        await g.run(({ id, x, y }) => {
+          const t = window.__frontline.session().game.units.find((v) => v.id === id);
+          t.order = { type: 'idle' };
+          t.path = [];
+          t.x = x;
+          t.y = y;
+        }, { id: u.id, x: now.x, y: now.y });
+      }
+    }
+    // stufenloses Drehen mit gehaltener Taste (Ansicht 3D) und Neigen mit Umschalt + Mausrad
+    await freeView(g, 0, 30, 1);
+    await g.run(() => (window.__frontline.session().loop.paused = false));
+    await page.keyboard.down('.');
+    await page.waitForTimeout(500);
+    await page.keyboard.up('.');
+    const box = await g.run(() => window.__frontline.session().canvas?.getBoundingClientRect?.() ?? document.querySelector('canvas').getBoundingClientRect());
+    await page.mouse.move(box.left + box.width / 2, box.top + box.height / 2);
+    await page.keyboard.down('Shift');
+    for (let i = 0; i < 3; i++) await page.mouse.wheel(0, -100);
+    await page.keyboard.up('Shift');
+    await page.waitForTimeout(200);
+    const st = await g.run(() => {
+      const c = window.__frontline.session().camera;
+      return { yaw: (c.yaw() * 180) / Math.PI, tilt: (c.tilt * 180) / Math.PI };
+    });
+    const turned = st.yaw > 10 && st.yaw < 90;
+    const tilted = st.tilt > 40 && st.tilt <= 60;
+    if (!turned || !tilted) fail++;
+    console.log(`  Taste . 0,5 s: Drehung ${st.yaw.toFixed(1)}°${turned ? '' : '  FEHLER'}; Umschalt + 3 Rasten: Neigung ${st.tilt.toFixed(1)}°${tilted ? '' : '  FEHLER'}`);
+    await g.shot(`${dir}/tasten`);
+  } finally {
+    errors.push(...g.errors);
+    await g.close();
+  }
+}
+
 try {
   if (!only || only === 'kamera') await camera();
   if (!only || only === 'vergleich') await compare();
@@ -3283,6 +3448,7 @@ try {
   if (!only || only === 'karte') await karte();
   if (!only || only === 'props') await propsPart();
   if (!only || only === 'bruecke') await bridgePart();
+  if (!only || only === 'freikamera') await freeCamera();
 } catch (e) {
   console.error(`Abbruch: ${e.message}`);
   fail++;

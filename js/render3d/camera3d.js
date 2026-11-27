@@ -35,19 +35,20 @@ const _b = new THREE.Vector3();
 const _m = new THREE.Matrix4();
 
 /**
- * three-Kamera aus Camera setzen: Mitte (x, y) auf Höhe 0, Zoom, Drehung (ROT, 90°-Schritte) und Bildgröße in CSS-Pixeln
+ * three-Kamera aus Camera setzen: Mitte (x, y) auf Höhe 0, Zoom, Drehung (ROT bzw. camera.axes, stufenlos) und Neigung (camera.tiltNow) und Bildgröße in CSS-Pixeln
  * (viewW, viewH). Die Pixeldichte setzt der WebGLRenderer (setPixelRatio), insetTop/insetBottom wirken nur auf centerOn.
  */
 export function syncIsoCamera(cam3, cam) {
-  const [ra, rb, rc, rd] = ROT[cam.rot];
+  const [ra, rb, rc, rd] = cam.axes?.() ?? ROT[cam.rot]; // freie Kamera: stufenlose Drehung (Paket „Freie Kamera“)
   const k = Math.SQRT1_2;
   // Bodenrichtungen in Weltkoordinaten (Einheitsvektoren): rechts im Bild und zum Betrachter (Bild nach unten, depthDir)
   const rx = (ra - rc) * k;
   const ry = (rb - rd) * k;
   const tx = (ra + rc) * k;
   const ty = (rb + rd) * k;
-  const c = Math.cos(TILT);
-  const s = Math.sin(TILT);
+  const tilt = cam.tiltNow?.() ?? TILT; // freie Kamera: Neigung 30° … 60°; Höhen bleiben um HEIGHT_SCALE gestreckt (camera.heightK)
+  const c = Math.cos(tilt);
+  const s = Math.sin(tilt);
   _r.set(rx, 0, ry); // three: X = x, Z = y
   _b.set(c * tx, s, c * ty); // zum Betrachter: Bodenrichtung zum Betrachter und nach oben
   _u.crossVectors(_b, _r); // rechts × oben = zum Betrachter (rechtshändig)

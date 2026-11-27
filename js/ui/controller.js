@@ -146,7 +146,7 @@ export class Controller {
     for (const u of this.game.units) {
       if (!u.alive || u.house || !pred(u)) continue; // Besatzer wählt man über ihr Haus
       const p = cam.worldToScreen(u.x, u.y);
-      const d = Math.hypot(p.x - sp.x, p.y - unitLift(u) * cam.zoom - sp.y);
+      const d = Math.hypot(p.x - sp.x, p.y - cam.heightPx(unitLift(u)) - sp.y); // Höhe im Bild: freie Kamera neigt (camera.heightPx)
       if (d <= PICK_PX + u.def.radius * cam.zoom * 0.9 && d < bestD) {
         best = u;
         bestD = d;
@@ -163,7 +163,7 @@ export class Controller {
       const sp = cam.worldToScreen(wx, wy);
       for (const e of this.game.buildings) {
         if (!e.alive || !pred(e)) continue;
-        const roof = cam.screenToWorld(sp.x, sp.y + buildingHeight(e) * cam.zoom);
+        const roof = cam.screenToWorld(sp.x, sp.y + cam.heightPx(buildingHeight(e)));
         const hw = (e.w * BALANCE.map.tile) / 2;
         const hh = (e.h * BALANCE.map.tile) / 2;
         if (Math.abs(roof.x - e.x) <= hw && Math.abs(roof.y - e.y) <= hh) return e;
@@ -182,7 +182,7 @@ export class Controller {
       const sp = cam.worldToScreen(wx, wy);
       for (const h of houses) {
         if (!h.alive || !pred(h)) continue;
-        const roof = cam.screenToWorld(sp.x, sp.y + (TOWN_H[h.type] || 40) * cam.zoom);
+        const roof = cam.screenToWorld(sp.x, sp.y + cam.heightPx(TOWN_H[h.type] || 40));
         if (inside(h, roof.x, roof.y)) return h;
       }
     }
@@ -219,7 +219,7 @@ export class Controller {
       const m = mem?.get(c.id);
       if (!g.isVisible(this.team, c.x, c.y) && !(m && m.x === c.x && m.y === c.y)) continue;
       const p = cam.worldToScreen(c.x, c.y);
-      const d = Math.hypot(p.x - sp.x, p.y - (cam.iso ? 8 * cam.zoom : 0) - sp.y); // isometrisch: Mitte der Kiste über dem Boden
+      const d = Math.hypot(p.x - sp.x, p.y - (cam.iso ? cam.heightPx(8) : 0) - sp.y); // isometrisch: Mitte der Kiste über dem Boden
       if (d <= PICK_PX + 10 * cam.zoom && d < bd) {
         best = c;
         bd = d;
@@ -237,7 +237,7 @@ export class Controller {
     const cam = this.camera;
     const sp = cam.worldToScreen(wx, wy);
     for (const lift of [TOWN_H.house * 0.6, TOWN_H.hall, TOWN_H.factory * 0.8]) {
-      const p = cam.screenToWorld(sp.x, sp.y + lift * cam.zoom);
+      const p = cam.screenToWorld(sp.x, sp.y + cam.heightPx(lift));
       const e = own(cityEntityAt(g, p.x, p.y));
       if (e) return e;
     }
@@ -300,7 +300,7 @@ export class Controller {
     const units = this.game.units.filter((u) => {
       if (!u.alive || u.team !== this.team) return false;
       const p = cam.worldToScreen(u.x, u.y);
-      const y = cam.iso ? p.y - unitLift(u) * cam.zoom : p.y;
+      const y = cam.iso ? p.y - cam.heightPx(unitLift(u)) : p.y;
       return p.x >= sx0 && p.x <= sx1 && y >= sy0 && y <= sy1;
     });
     const sel = this.view.selection;

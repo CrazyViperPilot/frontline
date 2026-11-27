@@ -1,0 +1,1 @@
+**Freie Kamera**: In der Ansicht 3D dreht die Karte stufenlos (`,` / `.` gedrückt halten, zwei Finger drehen), Umschalt + Mausrad neigt den Blick von 30° bis 60°; Klick, Ziehrahmen und Befehle treffen in jeder Drehung und Neigung, der Spielstand merkt die Ansicht; isometrisch und 2D bleiben wie bisher (Test, `?three=1`).

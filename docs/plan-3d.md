@@ -419,6 +419,35 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   **Messung** „Objekte“ samt Schattenkarte (Software-WebGL, Zoom 1, 8 Bilder, Seed 3, Ausschnitt mit 2 Brücken und 13 Furtstangen), gemalt → 3D: Aus 61 → 66 ms, 53 → 56 Draw-Calls, 126 401 → 132 427 Dreiecke (Brücken 6 026); Hoch 144 → 155 ms, 107 → 115 Draw-Calls (je Netz einer
   im Bild und einer in der Schattenkarte, dazu die Furtstangen), 454 502 → 466 554 Dreiecke. Prüfschritt „gleiche Menge“ (Iso, alle gemalten Bilder fertig, malt so viele Brücken und Furtstangen, wie 3D Einträge und Instanzen hat): Seed 3 2 und 13, Seed 7 2 und 15, feste Karte 1 und 7 (Eisenbahnbrücke: 1 und 0), je Sommer und Winter gleich. Prüfteil `vergleich` unverändert
   (höchstens 1,43 %). Offen: Fahrbahnmuster als Textur, Kräuselringe der Furtstangen, Rampe/Übergang der Einheiten an den Brückenenden (Spielregel), Brückenköpfe der zerstörten Brücke ohne gezackte Bruchkante, wie `brokenEdge` von oben, auf echter GPU messen.
+- Freie Kamera: gebaut (`js/render/camera.js`, `js/render3d/camera3d.js`, Eingabe `js/ui/input.js`, Antippen `js/ui/controller.js`; Test `test/freecam.test.js`;
+  Prüfteil `smoke-3d.mjs --only freikamera [--neigung 30,45,60]`, Fotos `.smoke/3d/freikamera/neigung<30|45|60>-dreh<000 … 315>.png`, `tasten.png`). Nur in der
+  Ansicht 3D (`camera.three`): Drehung stufenlos = `rot · 90° + turn` (`turn` in ±45°, `rot` folgt der nächsten Vierteldrehung), Neigung `tilt` 30° bis 60°;
+  isometrisch und 2D rechnen bitgleich wie vorher (Test). **Bedienung:** `,` / `.` gedrückt halten dreht mit 90°/s (**nicht Q/E** wie hier geplant: Q und E sind
+  Tasten der Ausbildung bei gewählter Hauptstadt), zwei Finger drehen mit (Winkel zwischen den Fingern, Drehpunkt zwischen ihnen), Umschalt + Mausrad neigt
+  (Raste ≈ 5°; Strg + Rad ist auf Trackpads das Zoomen des Browsers), Knöpfe ⟲ ⟳ drehen weiter um 90° und behalten `turn`. Speicherstand: `view.turn`, `view.tilt`
+  (ältere Stände ohne: 0 und 30°); ohne three bleiben sie gespeichert, wirken aber nicht. Neigen mit Fingern: offen.
+  **Gemessen vor dem Plan** (grep über `js/`): mit festen Drehungen rechnen (a) die Kamera selbst (`worldToScreenFlat`, `screenToWorldFlat`, `isoMatrix`, `depthDir`,
+  `depth` mit `ROT[rot]`, Höhen als `h · zoom`), (b) `camera3d.syncIsoCamera` (`ROT`, `TILT`), (c) `layers/relief.js lightVec` (Sonne dreht mit `ROT[rot]`), (d) die
+  Maler, die je Vierteldrehung ein eigenes Bild wählen (`rot` als Schlüssel): `airbase.js` (`ROT_KEY`), `milbuild.js` (`variant`), `maptown.js` (`VROT`, Masten, Altbau-Hof),
+  `govquarter.js`, `stronghold.js`, `props.js`, `nature.js` (`rockLook`), `unitpaint.js`, `isoitems.js` und `isoview.js` (Bäume und Hof des Altbaus), `editor.js`
+  (Schlüssel); `game/fieldwork.js` und `ai/army/cover.js` meinen mit `rot` die Drehung von Feldbefestigungen, nicht die Kamera. (e) Höhen als `h · zoom` (Neigung 30°)
+  außerhalb der Kamera: Antippen und Ziehrahmen im Controller (`pickIso`, `pickB`, `pickHouse`, `pickCrate`, `pickCity`, `selectBox`), Balken, Sterne und Schilder
+  (`isoview.js`: `p.y − lift · z`), Rotoren, Nachbrenner und 2D-Symbole der Einheiten (`isoitems.js`: `setIsoAt(…, p.y − lift · z)`), alle gemalten Bilder (Sprite-Cache,
+  `isokit.js`, `isoBounds`). **Umgestellt:** (a) über `camera.axes()` (stufenlose Matrix statt `ROT[rot]`; bei turn 0 genau `ROT[rot]`), `squash()` (Boden: sin der
+  Neigung, bei 30° genau 0,5), `heightK()` / `heightPx(h)` (Höhen: cos Neigung / cos 30°, bei 30° genau 1), `screenToWorld` mit Gelände in 3D über den Sichtstrahl
+  (`rayToGround`: Gerade über dem Boden von der höchsten Geländehöhe abwärts, erste Schnittstelle = vorderste Fläche, dann Halbierung; klassisch weiter die bisherige
+  Näherung), `turnBy`, `setTilt`, `keepAt`; (b) `syncIsoCamera` mit `axes()` und `tiltNow()`; (c) `lightVec` mit `axes()` (Sonne, Boden- und Körperlicht drehen
+  stufenlos mit); (e) der Controller nimmt `heightPx` (Klick, Dach, Kiste, Ziehrahmen). (d) bleibt: gemalte Bilder wählen die nächste Vierteldrehung `rot`.
+  **Prüfung:** Node-Test (Bild ↔ Welt hin und zurück in 8 Drehwinkeln × 30°/45°/60°, `isoMatrix` passt dazu, stetig über die Vierteldrehung, Sichtstrahl trifft am Hügel
+  die vorderste Fläche, three-Kamera = `worldToScreen` mit Höhe unter 0,01 px, klassisch bitgleich mit der alten Formel); Prüfteil: Prüfwürfel in allen 24 Ansichten
+  und zwei Zoomstufen ERGEBNIS_WUERFEL, Klick, Ziehrahmen und Fahrbefehl mit echter Maus ERGEBNIS_BEDIENUNG, Taste `.` 0,5 s dreht 18°, Umschalt + 3 Rasten neigt auf 45,5°.
+  **Was in schräger Neigung (über 30°) und zwischen den Vierteldrehungen noch nicht passt** (Folgepakete, hier nicht umgebaut): (1) *Gemalte Billboards*, gemalt für 30° und
+  die nächste Vierteldrehung: Ausstellungsstücke und Bäume in den Höfen der Großbauten (Kaserne: Fahrzeuge stehen bei 60° sichtbar zu aufrecht), Fahne und Altbau-Hof
+  besetzter Häuser, Rotoren und Nachbrenner der Flieger (2D-Zwischenleinwand), Rauch der Stadtgebäude und Dampf der Kühltürme; zwischen zwei Vierteln (z. B. 45°) zeigen sie
+  die Ansicht des nächsten Viertels. (2) *Balken, Sterne, Schilder* über Einheiten und Gebäuden (`isoview.js`, `p.y − lift · z`) sitzen ab 45° zu hoch (bei 60° um gut
+  40 % der Höhe; Paket „Balken und Schilder“, dort `camera.heightPx`). (3) *Durchlauf „Boden“* (Straßen, Wege, Felder, Höfe, Bodenmarken, Kriegsnebel-Rand): liegt über
+  `isoMatrix` richtig auf dem Boden, gemalte Höhen darin (Bordsteine, Zäune der Höfe, Schatten) nehmen weiter 30° (Paket „Straßen und Wege 3D“ der anderen Sitzung).
+  (4) *Effekte* im Durchlauf „Effekte“ sind 3D, ihre gemalten Bodenteile (`isoFxGround`) liegen richtig. (5) Editor: unverändert (eigene Kamera ohne three; „Editor in 3D“).
 
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als

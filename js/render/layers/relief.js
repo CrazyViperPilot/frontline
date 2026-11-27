@@ -110,7 +110,7 @@ export const reliefMethods = {
 
   /** Lichtrichtung (Welt, z nach oben) für den WebGL-Boden: kommt von rechts oben im Bild, wie die Schatten der Gebäude. */
   lightVec() {
-    const [, , rc, rd] = [[1, 0, 0, 1], [0, -1, 1, 0], [-1, 0, 0, -1], [0, 1, -1, 0]][this.camera.rot];
+    const [, , rc, rd] = this.camera.axes(); // freie Kamera (Ansicht 3D): dreht stufenlos mit
     // Bildschirm „rechts oben“ entspricht der Weltrichtung (−rc, −rd); etwas nach rechts gedreht, damit Kämme nicht flach wirken
     const a = Math.atan2(-rd, -rc) + 0.35;
     const k = Math.sqrt(1 - LIGHT_ELEV * LIGHT_ELEV);

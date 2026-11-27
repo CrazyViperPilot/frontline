@@ -83,4 +83,5 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Baustellen und Ruinen 3D (Baustellen der Stadt in 5 Abschnitten, Schutt der Kartenstadt, Stadtruinen, Gebäude-Wracks) | – | `render3d/site3d.js`, `rubble3d.js` | `town3d.js`, `render/citysite.js`, `render/isobuild.js` `rubblePlan` | `site3d` |
 | Props in 3D (Zäune, Mauern, Militär, Industrie, Autos, Bänke, Ballen, Kisten) | – | `render3d/props3d.js` | `renderer3d.js` `prop3d` | `props3d` |
 | Brücken und Furtstangen in 3D (Pfeiler, Fahrbahn, zerstört, Wiederaufbau) | – | `render3d/bridge3d.js` | `renderer3d.js` `bridge3d`, `ford3d` | `bridge3d` |
+| Freie Kamera in 3D (stufenlos drehen, Neigung 30° bis 60°, Klick per Sichtstrahl) | `steuerung-oberflaeche` | `render/camera.js` `turnBy`, `setTilt`, `rayToGround` | `render3d/camera3d.js`, `ui/input.js`, `ui/controller.js` | `freecam` |
 | 3D, Kartenstadt (Häuser, Hallen, Mauern, Turm, Masten, Leitung) | `zone-gelaende` | `render3d/maptown3d.js` | `town3d.js`, `render/maptown.js` | `maptown3d` |

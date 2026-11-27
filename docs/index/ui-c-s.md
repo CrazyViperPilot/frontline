@@ -91,7 +91,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## hud.js (0.8 KB)
 - Hud (aus core.js) – DOM-HUD (docs/archiv/verlauf.md §5 ui/hud.js, §11.4): Ressourcen, Punkte, Zone,…
 
-## input.js (15 KB)
+## input.js (17 KB)
 - class Input
   - constructor({ canvas, minimap, camera, controller, hud = null, app = {} })
   - destroy()

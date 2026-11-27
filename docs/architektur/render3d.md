@@ -38,4 +38,7 @@ Licht und Schatten oder Achsen und Kamera der Ansicht 3D geht. Plan und Stand de
   selbst um. Flächen in Bild- oder Clip-Koordinaten (Billboards, Erdschnitt) brauchen `side: DoubleSide`.
 - Kamera orthografisch, 30° nach unten, Blick entlang −`camera.depthDir()`, Drehung aus `ROT[cam.rot]`; Bildbreite = viewW / zoom.
   Ergebnis: `projectWorld(x, y, h)` = `camera.worldToScreen(x, y)` (Prüfung `tools/smoke-3d.mjs`, unter 1 px).
+- Freie Kamera (nur `three`): Drehung `rot · 90° + turn` (`camera.axes()` statt `ROT[rot]`, `turn` in ±45°, `rot` = nächste Vierteldrehung für die
+  Wahl gemalter Bilder), Neigung `tilt` 30° … 60° (`tiltNow`, Boden `squash` = sin, Höhen `heightK` = cos/cos 30°, `heightPx(h)`); Bild → Welt mit Gelände
+  über den Sichtstrahl (`rayToGround`, vorderste Fläche). Bei turn 0 und 30° rechnet alles bitgleich wie vorher (Test `test/freecam.test.js`).
 - Pixeldichte: `gl.setPixelRatio(dpr)`.

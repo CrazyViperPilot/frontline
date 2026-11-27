@@ -3,6 +3,8 @@
 const DRAG_PX = 6; // ab dieser Strecke ist ein Druck ein Ziehen: Maus links = Rahmenauswahl, Maus rechts und Finger = Karte verschieben
 const EDGE_PX = 10; // Randscrollen: Abstand zum Fensterrand
 const SCROLL_PX = 900; // Kamerageschwindigkeit in Bildschirm-Pixeln je Sekunde
+const TURN_SPEED = Math.PI / 2; // freie Kamera (Ansicht 3D): Drehen mit gehaltenem , oder . in Bogenmaß je Sekunde (90°/s)
+const TILT_WHEEL = 0.0009; // freie Kamera: Neigung je Einheit deltaY von Umschalt + Mausrad (eine Raste ≈ 5°)
 
 export class Input {
   constructor({ canvas, minimap, camera, controller, hud = null, app = {} }) {
@@ -103,6 +105,8 @@ export class Input {
     let dx = 0;
     let dy = 0;
     const k = this.keys;
+    const turn = (k.has('.') ? 1 : 0) - (k.has(',') ? 1 : 0);
+    if (turn && this.camera.three) this.camera.turnBy(turn * TURN_SPEED * dt); // freie Kamera: stufenlos um die Bildmitte
     if (k.has('ArrowLeft')) dx -= 1;
     if (k.has('ArrowRight')) dx += 1;
     if (k.has('ArrowUp')) dy -= 1;
@@ -134,12 +138,19 @@ export class Input {
     const cx = (a.x + b.x) / 2;
     const cy = (a.y + b.y) / 2;
     const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    const ang = Math.atan2(b.y - a.y, b.x - a.x); // Ansicht 3D: Drehen der Finger dreht die Karte mit
     const last = this.pinch;
-    this.pinch = { dist, cx, cy };
+    this.pinch = { dist, cx, cy, ang };
     if (!last) return;
     this.camera.pan(cx - last.cx, cy - last.cy);
     const r = this.canvas.getBoundingClientRect();
     this.camera.zoomAt(dist / last.dist, cx - r.left, cy - r.top);
+    if (this.camera.three) {
+      let da = ang - last.ang;
+      if (da > Math.PI) da -= 2 * Math.PI;
+      else if (da < -Math.PI) da += 2 * Math.PI;
+      this.camera.turnBy(da, cx - r.left, cy - r.top);
+    }
   }
 
   onCanvasDown(e) {
@@ -300,6 +311,11 @@ export class Input {
 
   onWheel(e) {
     e.preventDefault();
+    if (e.shiftKey && this.camera.three) {
+      // freie Kamera: Umschalt + Mausrad neigt (nach oben steiler); manche Browser melden Umschalt + Rad als deltaX
+      this.camera.setTilt(this.camera.tilt - (e.deltaY || e.deltaX) * TILT_WHEEL);
+      return;
+    }
     const p = this.pos(e, this.canvas);
     const f = Math.min(1.25, Math.max(0.8, Math.exp(-e.deltaY * 0.0015)));
     this.camera.zoomAt(f, p.x, p.y);
@@ -415,10 +431,9 @@ export class Input {
         app.toggleView?.();
         return;
       case ',':
-        app.rotateView?.(-1);
-        return;
       case '.':
-        app.rotateView?.(1);
+        if (this.camera.three) this.keys.add(k); // Ansicht 3D: gedrückt halten dreht stufenlos (update, Paket „Freie Kamera“)
+        else app.rotateView?.(k === ',' ? -1 : 1);
         return;
       case 'y':
       case 'Y':

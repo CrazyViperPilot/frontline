@@ -137,7 +137,8 @@ export const KEYS = [
   ['Leertaste', 'Kamera auf Auswahl oder letzte Meldung · H = Hauptstadt'],
   ['+ / −', 'Spielgeschwindigkeit'],
   ['V', 'Ansicht umschalten: 2D von oben / isometrisch / 3D (three.js, Test)'],
-  [', / .', 'Isometrische Ansicht um 90° nach links / rechts drehen (auch Knöpfe ⟲ ⟳ oben)'],
+  [', / .', 'Isometrische Ansicht um 90° nach links / rechts drehen (auch Knöpfe ⟲ ⟳ oben); in 3D gedrückt halten = stufenlos drehen, zwei Finger drehen mit'],
+  ['Umschalt + Mausrad', 'Nur 3D: Blick neigen, von 30° (wie isometrisch) bis 60° (steiler von oben)'],
   ['P', 'Pause · im Pausenmenü legt „Speichern unter …“ eine Kopie der Partie als neuen Stand mit eigenem Namen an; die Partie spielt darin weiter'],
   ['Y', `Baumodus der Stadt an/aus: Werkzeug rechts wählen (gruppiert: Grundlagen, Wohnen & Gewerbe, Ressourcen, Einheiten, Stadt, Fliegerhorst), ` +
     `auf der Karte ein Rechteck ziehen (mit der Maus zeigt die Vorschau unter dem Zeiger schon vorher, wo gebaut würde, rot = hier nicht) (wo nichts im Weg steht; mit Baugebiet im Startmenü (Standard an) nur im eigenen Gebiet (in der Eroberung immer nur im eigenen Viertel, ` +

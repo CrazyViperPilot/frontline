@@ -1,8 +1,15 @@
-# Symbol-Index render (Teil 4 von 5, props.js bis works.js)
+# Symbol-Index render (Teil 4 von 5, paving.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## props.js (Fortsetzung)
+## paving.js (3.0 KB)
+- drawPlaza(ctx, p, S) – Platz p (Rechteck, evtl. gedreht) mit Plattenfugen und dunklerer Kante
+- drawWalk(ctx, r, S) – Bürgersteig r (Strecke x1/y1 → x2/y2, Breite w) mit Bordstein an beiden Kanten…
+- drawPaving(ctx, town, S, inRect, at) – Alle Plätze und Bürgersteige einer Kartenstadt
+
+## props.js (31 KB)
+- drawMapCarIso(ctx, cam, c, season) – Geparktes Auto der Karte in Iso (Fuß am Weltpunkt)
+- drawMapCarShadowIso(ctx, cam, c, dpr) – Iso: Schatten eines Autos (Umriss von oben am Boden)
 - drawMapCarTop(ctx, c, zoom, season) – Geparktes Auto von oben (2D, Weltkoordinaten, Kamera-Transformation gesetzt)
 - drawBenchIso(ctx, cam, b, season) – Parkbank in Iso (Fuß am Weltpunkt), in 16 Richtungen
 - drawBenchShadowIso(ctx, cam, b, dpr) – Iso: Schatten einer Bank (Umriss von oben am Boden)
@@ -138,13 +145,15 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - UNI_LAWNS – Rasen und Wege des Hofs (Weltkoordinaten relativ zur Mitte): vier Rasenflächen…
 - UNI_DIM – Maße und Farben für die 3D-Ansicht (render3d/bigbuild3d.js): Stufen, Turm, Farb…
 
-## ways.js (29 KB)
+## ways.js (30 KB)
 - STREET
 - groundPattern(ctx, kind, season) – Muster für Boden-Flächen: 'asphalt', 'pavers' (Gehweg), 'dirt', 'rut', 'gravel'…
 - patternMatrix(u) – Transformation eines Musters: flach (Weltkoordinaten) oder auf die Iso-Achsen u…
 - invalidateWays() – Karte wurde an Ort und Stelle verändert (Editor): Feldwege, Gleise und Felder b…
-- drawWays(ren, ctx, season) – Feldwege und Gleise unter allem anderen (direkt nach dem Boden)
-- drawCityRails(ren, ctx, list, key, season) – Gleise der Stadt zeichnen, mit denselben Farben und Maßen wie die Gleise der Ka…
+- waysStamp() – Stand der Muster und der Karte (Wege, Gleise, Felder): Ansicht 3D malt ihre Bod…
+- RAIL – Maße und Farben der Schienen (Ansicht 3D baut sie als Körper): halbe Spurweite,…
+- drawWays(ren, ctx, season, skip) – Feldwege und Gleise unter allem anderen (direkt nach dem Boden)
+- drawCityRails(ren, ctx, list, key, season, skip) – Gleise der Stadt zeichnen, mit denselben Farben und Maßen wie die Gleise der Ka…
 
 ## weatherfx.js (9.6 KB)
 - windDrift(t) – Weg des Windes bis zur Zeit t (px, Integral von 14 + 22 · Böe): Flocken treiben…
@@ -165,11 +174,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - forklift(g, u, v, col) – Gabelstapler (orange) mit Palette auf der Gabel nach +u.
 - ringTop(c, x, y, r, color, w)
 - roundShadow(c, x, y, r, h, a) – Schatten eines runden Baus der Höhe h: Scheibe r, nach rechts unten gezogen
-- discTop(c, x, y, r, color, edge) – Runde Scheibe mit Lichtverlauf und dünnem Rand
-- blockTop(c, x0, y0, x1, y1, H, wall, deck) – Gebäude mit Flachdach: Schatten, Attika, Dachfläche
-- pipeTop(c, pts, w, col) – Rohr von oben (Linienzug) mit Schatten und Glanzlinie
-- palletTop(c, x, y, s, col) – Palette von oben (Holzrand, Ware)
-- lorryTop(c, x, y, along, cabCol, load, o) – LKW von oben (Fahrerhaus bei +x bzw. +y)
-- forkliftTop(c, x, y, col) – Gabelstapler von oben mit Palette vorn (+x)
-- worksLift(kind, level) – Höhe (Weltpixel) über dem höchsten Teil, für das Schild darüber
-- worksBox(kind, level) – Bildmaße des gemalten Werks bei Maßstab 1 [x0, y0, x1, y1] über dem Ankerpunkt…

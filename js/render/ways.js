@@ -177,6 +177,7 @@ function paintTile(cols, seed, stones, size, leaves) {
 // Asphalt und Gehwegplatten als Foto (CC0 von ambientCG, Herkunft in textures/CLAUDE.md). Bis die Bilder geladen sind oder ohne
 // Browser gelten die gemalten Kacheln; danach werden die Muster einmal neu erzeugt.
 const PHOTO = { asphalt: null, pavers: null };
+let stamp = 0; // zählt hoch, wenn sich Wege, Gleise, Felder oder Muster ändern (Fotos geladen, invalidateWays)
 const PHOTO_URL = typeof Image === 'undefined' ? null : {
   asphalt: new URL('../../textures/asphalt.jpg', import.meta.url),
   pavers: new URL('../../textures/pavers.jpg', import.meta.url),
@@ -187,6 +188,7 @@ if (PHOTO_URL) {
     img.onload = () => {
       PHOTO[kind] = img;
       for (const k of [...patterns.keys()]) if (k.startsWith(`${kind}|`)) patterns.delete(k);
+      stamp++; // Ansicht 3D (render3d/ways3d.js): Bodenkacheln mit dem Foto neu malen
     };
     img.src = PHOTO_URL[kind].href;
   }
@@ -603,7 +605,16 @@ const cache = { key: '', map: null, relief: null, chunks: null, fields: null };
 /** Karte wurde an Ort und Stelle verändert (Editor): Feldwege, Gleise und Felder beim nächsten Bild neu bauen. */
 export function invalidateWays() {
   cache.map = null;
+  stamp++;
 }
+
+/** Stand der Muster und der Karte (Wege, Gleise, Felder): Ansicht 3D malt ihre Bodenkacheln neu, wenn er sich ändert. */
+export function waysStamp() {
+  return stamp;
+}
+
+/** Maße und Farben der Schienen (Ansicht 3D baut sie als Körper): halbe Spurweite, Breite des Kopfes, Farben je Jahreszeit. */
+export const RAIL = { gauge: GAUGE, half: 1.15, color: (season) => ({ rail: (PAL[season] ?? PAL.summer).rail, top: (PAL[season] ?? PAL.summer).railTop }) };
 
 /** Füllfarbe einer Ebene: Muster (an die Bodenebene angepasst) oder einfache Farbe. */
 function fillOf(ctx, layer, season, mat, z) {
@@ -642,7 +653,7 @@ const ALPHA = { wear: 0.42, loose: 0.3, rut: 0.85 }; // halbdurchsichtige Ebenen
  * Feldwege und Gleise unter allem anderen (direkt nach dem Boden). Flach (2D, Iso ohne Gelände) unter der gesetzten
  * Welt-Transformation, mit Gelände in Pfadkoordinaten wie die Stadtstraßen (eine Transformation je Bild).
  */
-export function drawWays(ren, ctx, season = 'summer') {
+export function drawWays(ren, ctx, season = 'summer', skip = null) {
   const g = ren.game;
   const map = g.map;
   if (typeof Path2D === 'undefined') return;
@@ -681,12 +692,12 @@ export function drawWays(ren, ctx, season = 'summer') {
   if (drape) ctx.setTransform(ren.dpr * z, 0, 0, ren.dpr * z, ren.dpr * ax, ren.dpr * ay);
   const sc = TEX / TEX_PX;
   const mat = typeof DOMMatrix !== 'undefined' ? (u ? new DOMMatrix([u[0] * sc, u[1] * sc, u[2] * sc, u[3] * sc, 0, 0]) : new DOMMatrix([sc, 0, 0, sc, 0, 0])) : null;
-  drawFieldLayers(ctx, cache.fields, R, season, mat, z); // Äcker und Weiden unter den Wegen (seit v5.44)
+  drawFieldLayers(ctx, cache.fields, R, season, mat, z, skip); // Äcker und Weiden unter den Wegen (seit v5.44)
   if (!shown.length) {
     ctx.restore();
     return;
   }
-  paintLayers(ctx, shown, ORDER, season, mat, z);
+  paintLayers(ctx, shown, skip ? ORDER.filter((l) => !skip.has(l)) : ORDER, season, mat, z);
   ctx.restore();
 }
 
@@ -729,7 +740,7 @@ function buildRailChunks(list, relief, u) {
  * Gleise der Stadt zeichnen, mit denselben Farben und Maßen wie die Gleise der Karte (Schotter, Schwellen, Schienen). `list` = { rails,
  * discs, bars } in Weltkoordinaten; `key` kennzeichnet den Inhalt (neu bauen nur bei Änderung).
  */
-export function drawCityRails(ren, ctx, list, key, season = 'summer') {
+export function drawCityRails(ren, ctx, list, key, season = 'summer', skip = null) {
   if (typeof Path2D === 'undefined') return;
   if (!list.rails.length && !list.discs.length) return;
   const cam = ren.camera;
@@ -756,6 +767,6 @@ export function drawCityRails(ren, ctx, list, key, season = 'summer') {
   if (drape) ctx.setTransform(ren.dpr * z, 0, 0, ren.dpr * z, ren.dpr * ax, ren.dpr * ay);
   const sc = TEX / TEX_PX;
   const mat = typeof DOMMatrix !== 'undefined' ? (u ? new DOMMatrix([u[0] * sc, u[1] * sc, u[2] * sc, u[3] * sc, 0, 0]) : new DOMMatrix([sc, 0, 0, sc, 0, 0])) : null;
-  paintLayers(ctx, shown, RAIL_LAYERS, season, mat, z);
+  paintLayers(ctx, shown, skip ? RAIL_LAYERS.filter((l) => !skip.has(l)) : RAIL_LAYERS, season, mat, z);
   ctx.restore();
 }

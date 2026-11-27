@@ -3,6 +3,14 @@
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
 ## works.js (Fortsetzung)
+- discTop(c, x, y, r, color, edge) – Runde Scheibe mit Lichtverlauf und dünnem Rand
+- blockTop(c, x0, y0, x1, y1, H, wall, deck) – Gebäude mit Flachdach: Schatten, Attika, Dachfläche
+- pipeTop(c, pts, w, col) – Rohr von oben (Linienzug) mit Schatten und Glanzlinie
+- palletTop(c, x, y, s, col) – Palette von oben (Holzrand, Ware)
+- lorryTop(c, x, y, along, cabCol, load, o) – LKW von oben (Fahrerhaus bei +x bzw. +y)
+- forkliftTop(c, x, y, col) – Gabelstapler von oben mit Palette vorn (+x)
+- worksLift(kind, level) – Höhe (Weltpixel) über dem höchsten Teil, für das Schild darüber
+- worksBox(kind, level) – Bildmaße des gemalten Werks bei Maßstab 1 [x0, y0, x1, y1] über dem Ankerpunkt…
 - worksTall(kind, level) – Höhe des höchsten Punkts im gemalten Bild (Weltpixel) je Art und Stufe 1 bis 3.
 - WORKS_PAL – Farben der Anlagen für die 3D-Werke (render3d/works3d.js), damit beide Darstell…
 - worksSteam(kind, level) – Dampffahnen eines Werks: [u, v, Höhe, Größe] ab der Mitte (Kühltürme des Kraftw…

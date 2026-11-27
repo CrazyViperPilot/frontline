@@ -167,8 +167,7 @@ export function drawCityGround(ren, ctx, team, known, inRect) {
     ctx.stroke();
   }
   drawAirfield(ren, ctx, team, known, inRect);
-  drawRoads(ren, ctx, team, known);
-  drawCityRailTracks(ren, ctx, team, known);
+  if (!ren.ways3dShown) drawCityStreets(ren, ctx, team, known); // Ansicht 3D: Straßen und Gleise stehen als Bodenschicht im 3D-Gelände (render3d/ways3d.js)
   if (ren.cityUi?.open) drawLoads(ren, ctx, team, known, inRect); // Baumodus: Auslastung der Straßen
   drawTerritory(ren, ctx, team);
   ctx.restore();
@@ -552,9 +551,53 @@ function railKey(list) {
 }
 
 /** Gleise zeichnen (ways.js: wie die Gleise der Karte, dieselben Farben und Maße), nach den Straßen. */
-function drawCityRailTracks(ren, ctx, team, known) {
+function drawCityRailTracks(ren, ctx, team, known, skip = null) {
   const list = cityRailPieces(ren.game, team, known);
-  drawCityRails(ren, ctx, list, railKey(list), ren.season ?? 'summer');
+  drawCityRails(ren, ctx, list, railKey(list), ren.season ?? 'summer', skip);
+}
+
+/**
+ * Straßen und Gleise der Stadt in einem Zug (Reihenfolge wie in drawCityGround). skip (wahlfrei): Ebenen, die nicht gemalt werden
+ * (Ansicht 3D baut die Schienen als Körper, render3d/ways3d.js).
+ */
+export function drawCityStreets(ren, ctx, team, known, skip = null) {
+  drawRoads(ren, ctx, team, known, skip);
+  drawCityRailTracks(ren, ctx, team, known, skip);
+}
+
+/**
+ * Stand der Straßen und Gleise der Städte für die Bodenkacheln der Ansicht 3D (render3d/ways3d.js): ruft add(x, y, wert) für jede
+ * sichtbare Straßen- und Gleiszelle (eigene immer, fremde nur erkundet) mit dem Mittelpunkt und einer Kennzahl, die sich mit Team, Art
+ * und Lage ändert. Liefert die Zahl der Zellen.
+ */
+export function cityStreetStamp(g, team, known, add) {
+  let cells = 0;
+  for (const c of g.city ?? []) {
+    for (const i of c.list) {
+      const k = c.kind[i];
+      if (k !== KIND_ID.road && k !== KIND_ID.rail) continue;
+      const col = i % c.cols;
+      const row = (i - col) / c.cols;
+      const x = c.x0 + (col + 0.5) * c.cell;
+      const y = c.y0 + (row + 0.5) * c.cell;
+      if (c.team !== team && !known(x, y)) continue; // unerkundet: nicht im Bild
+      cells++;
+      add(x, y, (Math.imul(i + 1, 2654435761) ^ (c.team * 40503 + k * 977)) | 0);
+    }
+  }
+  return cells;
+}
+
+/** Straßenzellen der Karte (g.roads: 1 Zone, 3 Stadtstraße; 2 Brücke zeichnet bridge.js): ruft add(x, y) je Zelle. Ändert sich mit g.roads.ver. */
+export function mapStreetCells(g, add) {
+  const R = g.roads;
+  if (!R) return;
+  const S = R.cell ?? CITY.cell;
+  for (let i = 0; i < R.kind.length; i++) {
+    if (!R.kind[i] || R.kind[i] === 2) continue;
+    const col = i % R.cols;
+    add((col + 0.5) * S, ((i - col) / R.cols + 0.5) * S);
+  }
 }
 
 // Straßen (v4.97): je Zelle nach den Straßennachbarn Gerade, Kurve, Sackgasse, T-Stück oder Kreuzung. Gehweg an Seiten ohne
@@ -964,7 +1007,7 @@ const STREET_ORDER = ['asphalt', 'panel', 'gutter', 'walk', 'kerb', 'mark', 'rim
  * Geländehöhe“: Bildschirm = Ursprung + Zoom · Punkt, also nur eine Transformation je Bild, solange die Drehung gleich bleibt.
  * Asphalt und Gehwegplatten als Muster (ways.js), ganz weit weg einfarbig.
  */
-function drawRoads(ren, ctx, team, known) {
+function drawRoads(ren, ctx, team, known, skip = null) {
   const g = ren.game;
   const cam = ren.camera;
   const drape = ren.draping();
@@ -1037,6 +1080,7 @@ function drawRoads(ren, ctx, team, known) {
   };
   const fine = z >= 0.45; // Kleinteile nur nah genug
   for (const layer of STREET_ORDER) {
+    if (skip?.has(layer)) continue;
     if (!fine && (layer === 'rim' || layer === 'lid' || layer === 'drain' || layer === 'kerb' || layer === 'railTop')) continue;
     ctx.fillStyle = fill(layer);
     for (const c of shown) {

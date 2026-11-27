@@ -88,7 +88,7 @@ const COL = {
     patchLight: 'rgba(255,255,255,0.16)',
   },
 };
-const FENCE = { fenceBase: 'rgba(36,30,18,0.32)', rail: '#8d6e49', gate: '#a3a9ab', post: '#64492f', cap: '#f4f6f8' };
+export const FENCE = { fenceBase: 'rgba(36,30,18,0.32)', rail: '#8d6e49', gate: '#a3a9ab', post: '#64492f', cap: '#f4f6f8' };
 
 // Musterkachel je Fläche und Jahreszeit, dazu die Farbe weit herausgezoomt (ohne Muster)
 const TEX_OF = {
@@ -185,6 +185,8 @@ export function fieldBales(f) {
 
 // ---------- Pfade ----------
 
+const NOPATH = { moveTo() {}, lineTo() {}, closePath() {} };
+
 /** Sammelt die Pfade je Kachel und Ebene; P projiziert einen Weltpunkt in Pfadkoordinaten, up: Iso mit Höhe (sonst von oben). */
 class Builder {
   constructor(P, up) {
@@ -192,6 +194,7 @@ class Builder {
     this.up = up;
     this.chunks = new Map();
     this.key = '0,0';
+    this.sink = null; // wahlfrei: Liste, in die Pfosten und Latten als Daten kommen (fieldFences, Ansicht 3D)
   }
 
   /** Alle folgenden Teile in die Kachel der Feldmitte (die Auswahl beim Zeichnen sucht mit PAD um den Bildausschnitt). */
@@ -200,6 +203,7 @@ class Builder {
   }
 
   path(layer) {
+    if (this.sink) return NOPATH; // nur Daten sammeln (fieldFences), nichts malen
     let c = this.chunks.get(this.key);
     if (!c) {
       const [cx, cy] = this.key.split(',').map(Number);
@@ -321,6 +325,7 @@ class Builder {
 
   /** Pfosten am Weltpunkt: in Iso aufrecht von h0 bis h1 (halbe Breite hw im Bild), von oben ein Quadrat. */
   post(layer, x, y, h0, h1, hw) {
+    this.sink?.push({ k: 'post', layer, x, y, h0, h1, hw });
     if (!this.up) {
       const r = hw * 1.3;
       this.quad(layer, [this.P(x - r, y - r), this.P(x + r, y - r), this.P(x + r, y + r), this.P(x - r, y + r)]);
@@ -332,6 +337,7 @@ class Builder {
 
   /** Latte von p nach q in Höhe h (Dicke t): in Iso ein schmales Band über dem Boden, von oben ein Strich. */
   rail(layer, p, q, h, t) {
+    this.sink?.push({ k: 'rail', layer, x1: p[0], y1: p[1], x2: q[0], y2: q[1], h, t });
     if (!this.up) {
       this.seg(layer, p, q, -t * 0.6, t * 0.6);
       return;
@@ -466,6 +472,21 @@ export function buildFields(map, relief, u) {
     else buildCrop(B, fr, f);
   }
   return B.chunks;
+}
+
+/**
+ * Zäune der Weiden als Daten (Ansicht 3D baut sie als Körper, render3d/ways3d.js): Pfosten { k: 'post', layer: 'post' | 'cap', x, y, h0, h1, hw } und Latten
+ * { k: 'rail', layer: 'rail' | 'gate', x1, y1, x2, y2, h, t } in Weltkoordinaten, Höhen über dem Boden. Dieselben Aufrufe wie buildFields, derselbe Zufall.
+ */
+export function fieldFences(map) {
+  const B = new Builder((x, y) => [x, y], false);
+  B.sink = [];
+  for (const f of map.town?.fields ?? []) {
+    if (!(f.w > 4 && f.h > 4) || f.kind !== 'pasture') continue;
+    B.at(f);
+    buildPasture(B, frameOf(f), f);
+  }
+  return B.sink;
 }
 
 // ---------- Muster ----------
@@ -736,7 +757,7 @@ function fillOf(ctx, layer, season, mat, z) {
  * Äcker und Weiden der sichtbaren Kacheln (R: sichtbarer Weltausschnitt). Die Transformation setzt drawWays (flach unter der
  * Welt-Transformation oder in Pfadkoordinaten mit Gelände); mat legt die Muster auf die Bodenebene.
  */
-export function drawFieldLayers(ctx, chunks, R, season, mat, z) {
+export function drawFieldLayers(ctx, chunks, R, season, mat, z, skip = null) {
   if (!chunks?.size) return;
   const c0 = Math.floor((R.x0 - PAD) / CHUNK);
   const c1 = Math.floor((R.x1 + PAD) / CHUNK);
@@ -749,6 +770,7 @@ export function drawFieldLayers(ctx, chunks, R, season, mat, z) {
   ctx.globalAlpha = 1;
   for (const layer of ORDER) {
     if (!fine && FINE.test(layer)) continue;
+    if (skip?.has(layer)) continue;
     let any = false;
     for (const c of shown) if (c.layers[layer]) any = true;
     if (!any) continue;

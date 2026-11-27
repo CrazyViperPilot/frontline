@@ -1,8 +1,15 @@
-# Symbol-Index render (Teil 2 von 5, govquarter.js bis landmarks.js)
+# Symbol-Index render (Teil 2 von 5, fx.js bis isokit.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## govquarter.js (Fortsetzung)
+## fx.js (Fortsetzung)
+- drawCrater(ctx, c, a) – Krater bzw. Brandfleck am Boden (Weltkoordinaten, auch Iso-Bodenebene)
+- drawWreck(ctx, w, zoom, a) – Fahrzeugwrack von oben ohne Modell (Ersatz für drawWreckTop in unitpaint.js): R…
+- drawWreckRubble(ctx, w, a) – Gebäudetrümmer von oben (Weltkoordinaten): verkohlter Boden, Schutthügel mit he…
+- drawMine(ctx, x, y, z) – Eigene Mine: Panzermine (olivgrüne Scheibe mit Rand, Druckplatte, Zünderkappe m…
+
+## govquarter.js (30 KB)
+- FOOT – halber Fußabdruck der Hauptstadt (3 × 3 Kacheln)
 - INNER – inneres Quadrat: Fußabdruck + CITY.fobMargin; nur hier stehen Teile mit Höhe
 - isCapital(b) – Hauptstadt mit Regierungsviertel? (erste FOB, fertig, lebt)
 - quarterRect(b) – Fläche des Viertels in Weltpixeln ab der Mitte der Hauptstadt: genau die Stadtz…
@@ -170,14 +177,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - vanTop(c, x, y, along, color, band, light)
 - tankTop(c, x, y, r, color)
 - heapTop(c, x, y, r, color)
-- logsTop(c, x0, y0, x1, y1, rows) – Holzstapel von oben: Stämme entlang x mit hellen Enden rechts
-- planksTop(c, x0, y0, x1, y1)
-- yellowTop(c, x0, y0, x1, y1)
-- railsTop(c, x0, x1, y)
-
-## isosprites.js (1.0 KB)
-- drawUnitSprite(ctx, cam, u, p, aim, lift, now, body) – Einheit in Iso (gemalt, unitpaint.js): Soldaten blicken zum Ziel, Türme folgen…
-- drawWreckSprite(ctx, cam, w, p) – Wrack als verkohltes Fahrzeugmodell am Boden (auch abgeschossene Hubschrauber)
-
-## landmarks.js (14 KB)
-- PLANT_TALL

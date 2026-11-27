@@ -29,6 +29,7 @@ import { mapPylons } from '../render/maptown.js';
 import { Nature3D } from './nature3d.js';
 import { Props3D } from './props3d.js';
 import { Bridge3D } from './bridge3d.js';
+import { Ways3D } from './ways3d.js';
 import { RELIEF } from '../game/relief.js';
 import { propSolids3d, propFlagColor } from '../render/mapprops.js';
 import { carLook3d, benchLook3d, baleLook3d } from '../render/props.js';
@@ -56,6 +57,10 @@ export class Renderer3D extends Renderer {
     this.groundScene.add(this.groundRoot);
     this.ground3d = new Ground3D(gl);
     this.groundRoot.add(this.ground3d.group);
+    this.ways3d = new Ways3D(gl, this.ground3d); // Straßen, Wege, Gleise, Felder, Pflaster als Kacheltexturen auf dem Höhennetz, Schienen als Körper (ways3d.js)
+    this.groundRoot.add(this.ways3d.group);
+    this.ways3dOn = true; // false: Straßen, Wege, Gleise, Felder und Pflaster wie in Iso gemalt (Prüfskript: Vergleich und Messung)
+    this.ways3dShown = false; // isoGround, drawCityGround: gemalte Bodenschicht weglassen, wenn dieses Bild sie in 3D zeigt
     // Objekte: 3D-Körper unter objRoot, Billboards in Clip-Koordinaten; Bild durchsichtig
     this.objScene = new THREE.Scene();
     this.objRoot = makeWorldRoot();
@@ -168,6 +173,7 @@ export class Renderer3D extends Renderer {
     this.bridge3dGround = on && this.bridge3dOn && !this.cubes ? (this.sun.on ? 'foam' : 'foam+shadow') : null; // Brücken und Furtstangen: Mesh im Durchlauf „Objekte“ (nur mit Relief, isoGround und isoItems prüfen es)
     this.frame3d = false; // Kamera für dieses Bild noch nicht gesetzt
     this.wires3dShown = false;
+    this.ways3dShown = false; // setzt terrain3d, wenn die Bodenschicht in diesem Bild aus three kommt
     super.render(view); // gleicht auch Relief und Größe ab
     if (on && this.cubes) this.markProbes();
   }
@@ -200,6 +206,9 @@ export class Renderer3D extends Renderer {
     this.sync3d();
     if (!this.terrainGL) this.terrainGL = seasonal(buildTerrain(f.g.map, 'gl'), this.season);
     this.ground3d.update(relief, this.terrainGL, this.lightVec(), f.now / 1000, this.season === 'winter' ? 1 : 0, this.cam3, this.mood); // Wasser: Blick und Stimmung
+    this.ways3dShown = this.ways3dOn && !this.cubes;
+    this.ways3d.group.visible = this.ways3dShown;
+    if (this.ways3dShown) this.ways3d.update(this, f); // Kacheln im Bild nachmalen (nur bei Änderung), Schienen
     if (this.cubes) this.syncCubes();
     this.gl.setClearColor(BG, 1);
     this.gl.render(this.groundScene, this.cam3);
@@ -450,6 +459,7 @@ export class Renderer3D extends Renderer {
     this.nature3d.dispose();
     this.props3d.dispose();
     this.bridges3d.dispose();
+    this.ways3d.dispose();
     this.fog3d.dispose();
     this.sun.dispose();
     this.gl.dispose();

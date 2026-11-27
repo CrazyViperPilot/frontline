@@ -43,7 +43,7 @@
 //    Spielszenen mit vielen Baustellen bzw. Gebäude-Wracks Iso | 3D, Messung gemalt / 3D (renderer.site3dOn, ruin3dOn) und einsinkendes Wrack (<out>/ruinen/).
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
-//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|ruinen|bruecke|freikamera|mvp] [--citymin 10]
+//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|ruinen|bruecke|freikamera|wege|mvp] [--citymin 10]
 //                                 [--what schau|karte] (nur mit props: nur Schauraum oder nur echte Karten)
 //                                 [--what werke|haeuser|grossbau|mil|fliegerhorst|baustelle|schutt|kartenstadt] (nur mit baukasten: nur Werke, Stadthäuser, Großbauten, Militärgebäude, Fliegerhorst, Baustellen, Schutt oder Kartenstadt)
 // 11. Kartenstadt (Paket „Kartenstadt 3D“): im Teil baukasten (--what kartenstadt) jede Art der Kartenstadt gemalt | 3D (4 Drehungen, Stimmungen);
@@ -53,7 +53,10 @@
 //    zerstört, Wiederaufbau, Furt, Eisenbahnbrücke der festen Karte), Einheiten auf der Fahrbahn, gleiche Menge, Messung gemalt gegen 3D (<out>/bruecke/).
 // 13. Freie Kamera (Paket „Freie Kamera“, --only freikamera): 8 Drehwinkel × Neigung 30°/45°/60°: Prüfwürfel unter 1 px, Fotos der Spielszene,
 //    Klick, Ziehrahmen und Fahrbefehl mit echter Maus, gehaltene Taste dreht, Umschalt + Mausrad neigt (<out>/freikamera/).
-// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte, props, bruecke und freikamera; „mvp“ nur ausdrücklich.
+// 14. Straßen und Wege (Paket „Straßen und Wege 3D“, --only wege [--karte seed3,seed7,fest] [--teile hang,gleis,feld,stadt,bruecke,pflaster,aenderung,messung]):
+//    Stadtstraßen, Feldwege, Gleise, Felder, Pflaster als Bodenschicht gemalt | 3D (4 Drehungen, Hang, Nacht, Winter, Zoom), Treffer der Schicht (eingefärbt),
+//    Neumalen nur bei Änderung, Messung gemalt gegen 3D (<out>/wege/).
+// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte, props, bruecke, freikamera und wege; „mvp“ nur ausdrücklich.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { openGame, measureFps, DEVICES } from './smoke.mjs';
@@ -1954,9 +1957,9 @@ async function nature() {
 }
 
 /** Zwei Bildschirmfotos (PNG-Puffer) nebeneinander als ein Bild speichern, links „alt (Iso)“, rechts „neu (3D)“. */
-async function sideBySide(g, file, a, b) {
+async function sideBySide(g, file, a, b, labels = ['alt (Iso)', 'neu (3D)']) {
   const url = await g.run(
-    async ({ a, b }) => {
+    async ({ a, b, labels }) => {
       const load = (s) => new Promise((ok) => { const i = new Image(); i.onload = () => ok(i); i.src = `data:image/png;base64,${s}`; });
       const [ia, ib] = await Promise.all([load(a), load(b)]);
       const c = document.createElement('canvas');
@@ -1969,7 +1972,7 @@ async function sideBySide(g, file, a, b) {
       x.drawImage(ia, 0, 0);
       x.drawImage(ib, ia.width + gap, 0);
       x.font = `bold ${Math.round(c.height / 28)}px sans-serif`;
-      for (const [t, px] of [['alt (Iso)', 10], ['neu (3D)', ia.width + gap + 10]]) {
+      for (const [t, px] of [[labels[0], 10], [labels[1], ia.width + gap + 10]]) {
         x.fillStyle = 'rgba(0,0,0,.6)';
         x.fillRect(px - 4, c.height - c.height / 18 - 8, x.measureText(t).width + 8, c.height / 18 + 4);
         x.fillStyle = '#fff';
@@ -1977,7 +1980,7 @@ async function sideBySide(g, file, a, b) {
       }
       return c.toDataURL('image/png');
     },
-    { a: a.toString('base64'), b: b.toString('base64') },
+    { a: a.toString('base64'), b: b.toString('base64'), labels },
   );
   await writeFile(file, Buffer.from(url.split(',')[1], 'base64'));
 }
@@ -3433,6 +3436,526 @@ async function freeCamera() {
   }
 }
 
+/**
+ * Teil „wege“ (--only wege [--karte seed3,seed7,fest], läuft auch ohne --only), Paket „Straßen und Wege 3D“: Stadtstraßen, Feldwege, Gleise, Felder und Pflaster
+ * als Bodenschicht (render3d/ways3d.js) gemalt neben 3D. Karten: Seed 3 und 7 (Spiel nach --citymin Minuten KI gegen KI, mit Stadt), East Europe Railway (nach 3 Minuten);
+ * Spiel angehalten, Schatten Hoch, Fluss. Je Karte Ausschnitte (<out>/wege/): steilster Hang an einem Feldweg bzw. Gleis (Zoom 1,6 und 1, 4 Drehungen), Stadt (4 Drehungen,
+ * Sommer, Winter, Nacht), Gleis, Feld, Brückenanschluss, Pflaster (eingesetzt: Platz und Bürgersteig am Hang); Fotos Iso | 3D und gemalt | 3D (nur die Bodenschicht anders).
+ * Prüft: (1) Treffer: mit eingefärbter Schicht (renderer.ways3d.tint) und ohne Objekte liegen die Mittelpunkte der Straßen, Wege, Gleise, Felder und des Pflasters
+ * im Bild (an camera.worldToScreen) auf der Schicht, auch am Hang (mindestens COVER %); (2) 3D mit Schicht und 3D mit gemalter Schicht unterscheiden sich im Ausschnitt um höchstens
+ * WEGE_DIFF % der Pixel (am steilen Feld bis 10 %: die Schicht trägt die Hangbeleuchtung des Bodens); (3) Neumalen nur bei Änderung (unverändert: 0 Kacheln in 5 Bildern); (4) Iso und 2D malen die Schicht wie bisher (ways3dShown aus); (5) Messung Draw-Calls,
+ * Dreiecke und Zeit „Gelände“ + „Boden“ gemalt gegen 3D, Zoom 0,35 / 1 / 1,6, Schatten Aus und Hoch, Malzeit je Kachel und Texturspeicher.
+ */
+const COVER = 95; // % der Prüfpunkte, die auf der Schicht liegen müssen
+const WEGE_DIFF = 12; // % abweichender Pixel zwischen gemalter und 3D-Schicht im Ausschnitt (Hangbeleuchtung der Schicht, Schienen und Zäune als Körper, Rand der Flächen)
+
+/** Orte einer Karte: steilster Feldweg-/Gleispunkt (Hang), steilster Gleispunkt, Feld mit dem größten Höhenunterschied, Brücke nächst der Hauptstadt, Stadtmitte. */
+const wegeSpots = (g) =>
+  g.run(async () => {
+    const { railList } = await import('/js/render/terrain.js');
+    const { KIND_ID } = await import('/js/data/citykinds.js');
+    const s = window.__frontline.session();
+    const game = s.game;
+    const rel = game.relief;
+    const town = game.map.town ?? {};
+    const W = s.camera.mapW;
+    const hq = game.buildings.find((b) => b.main && b.team === 0) ?? { x: W / 2, y: W / 2 };
+    const slope = (x, y) => {
+      const k = rel.gradAt(x, y);
+      return Math.hypot(k.x, k.y);
+    };
+    const inner = (x, y) => x > 500 && y > 500 && x < W - 500 && y < W - 500;
+    const best = { hang: null, rail: null };
+    const scan = (key, x1, y1, x2, y2) => {
+      const L = Math.hypot(x2 - x1, y2 - y1);
+      for (let t = 0; t < L; t += 16) {
+        const x = x1 + ((x2 - x1) * t) / L;
+        const y = y1 + ((y2 - y1) * t) / L;
+        const k = slope(x, y);
+        if (inner(x, y) && (!best[key] || k > best[key].k)) best[key] = { x, y, k };
+      }
+    };
+    for (const r of town.roads ?? []) if (r.dirt) scan('hang', r.x1, r.y1, r.x2, r.y2);
+    for (const r of railList(town)) {
+      scan('hang', r.x1, r.y1, r.x2, r.y2);
+      scan('rail', r.x1, r.y1, r.x2, r.y2);
+    }
+    // Feld mit dem größten Höhenunterschied
+    let field = null;
+    for (const f of town.fields ?? []) {
+      if (!inner(f.x, f.y)) continue;
+      let lo = Infinity;
+      let hi = -Infinity;
+      for (const [a, b] of [[0, 0], [-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        const h = rel.displayAt(f.x + (a * f.w) / 2, f.y + (b * f.h) / 2);
+        lo = Math.min(lo, h);
+        hi = Math.max(hi, h);
+      }
+      if (!field || hi - lo > field.dh) field = { x: f.x, y: f.y, dh: hi - lo, kind: f.kind };
+    }
+    // Brücke nächst der Hauptstadt
+    const bs = [...(game.bridges ?? [])].sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y));
+    const bridge = bs[0] ? { x: bs[0].x, y: bs[0].y, x1: bs[0].x1, y1: bs[0].y1, angle: bs[0].angle, len: bs[0].len } : null;
+    // Stadt: Mitte der Straßenzellen um die Hauptstadt
+    const c = game.city[0];
+    let n = 0;
+    let sx = 0;
+    let sy = 0;
+    for (const i of c.list) {
+      if (c.kind[i] !== KIND_ID.road) continue;
+      const col = i % c.cols;
+      const x = (col + 0.5) * c.cell;
+      const y = ((i - col) / c.cols + 0.5) * c.cell;
+      if (Math.hypot(x - hq.x, y - hq.y) < 500) {
+        n++;
+        sx += x;
+        sy += y;
+      }
+    }
+    // Zahlen vor dem Plan: Straßenzellen (Stadt und Karte), Gleislänge, Fläche der Felder, Wege
+    const rails = railList(town);
+    const cells = new Set();
+    for (const cc of game.city) for (const i of cc.list) if (cc.kind[i] === KIND_ID.road) cells.add(i);
+    if (game.roads) for (let i = 0; i < game.roads.kind.length; i++) if (game.roads.kind[i] === 1 || game.roads.kind[i] === 3) cells.add(i);
+    const dirt = (town.roads ?? []).filter((r) => r.dirt);
+    return {
+      hq: { x: hq.x, y: hq.y },
+      hang: best.hang,
+      rail: best.rail,
+      field,
+      bridge,
+      city: n ? { x: sx / n, y: sy / n, n } : { x: hq.x, y: hq.y, n },
+      counts: {
+        roadCells: cells.size,
+        dirtRoads: dirt.length,
+        dirtLen: Math.round(dirt.reduce((a, r) => a + Math.hypot(r.x2 - r.x1, r.y2 - r.y1), 0)),
+        rails: rails.length,
+        railLen: Math.round(rails.reduce((a, r) => a + Math.hypot(r.x2 - r.x1, r.y2 - r.y1), 0)),
+        fields: (town.fields ?? []).length,
+        fieldArea: Math.round((town.fields ?? []).reduce((a, f) => a + f.w * f.h, 0)),
+        plazas: (town.plazas ?? []).length,
+        walks: (town.walks ?? []).length,
+      },
+    };
+  });
+
+/** Bild in 3D mit Bodenschicht (on) oder mit der gemalten (off), alle gemalten Bilder fertig; Kacheln alle gemalt (kein Zeitbudget). */
+const wegeFrame = (g, on) =>
+  g.run(async (on) => {
+    const { spriteMissed } = await import('/js/render/spritecache.js');
+    const s = window.__frontline.session();
+    const r = s.renderer;
+    s.camera.three = true;
+    r.ways3dOn = on;
+    r.ways3d.budgetMs = 1e9;
+    for (let i = 0; i < 4 || (spriteMissed() && i < 150); i++) r.render(s.controller.view);
+    return r.ways3d.stats();
+  }, on);
+
+/** Anteil (%) abweichender Pixel (ein Kanal > 40) zwischen 3D mit Schicht und 3D mit gemalter Schicht, ohne Kopf- und Fußleiste der Bedienung. */
+const wegeDiff = (g) =>
+  g.run(async () => {
+    const { spriteMissed } = await import('/js/render/spritecache.js');
+    const s = window.__frontline.session();
+    const r = s.renderer;
+    const c = r.canvas;
+    const grab = (on) => {
+      s.camera.three = true;
+      r.ways3dOn = on;
+      r.ways3d.budgetMs = 1e9;
+      for (let i = 0; i < 4 || (spriteMissed() && i < 150); i++) r.render(s.controller.view);
+      return c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    };
+    const a = grab(false);
+    const b = grab(true);
+    r.ways3dOn = true;
+    let n = 0;
+    let all = 0;
+    const y0 = Math.round(c.height * 0.1);
+    const y1 = Math.round(c.height * 0.75);
+    for (let y = y0; y < y1; y++) {
+      for (let x = 0; x < c.width; x++) {
+        const i = (y * c.width + x) * 4;
+        all++;
+        if (Math.abs(a[i] - b[i]) > 40 || Math.abs(a[i + 1] - b[i + 1]) > 40 || Math.abs(a[i + 2] - b[i + 2]) > 40) n++;
+      }
+    }
+    return (n / all) * 100;
+  });
+
+/**
+ * Treffer: Schicht eingefärbt (Magenta), keine Objekte, Nebel und Wetter; Mittelpunkte der Straßen (kinds: 'dirt', 'rail', 'city', 'field', 'plaza') im Umkreis r um (x, y)
+ * an camera.worldToScreen: Anteil der Punkte im Bild, deren Pixel die Farbe der Schicht trägt.
+ */
+const wegeCover = (g, x, y, rot, zoom, kinds, r = 420) =>
+  g.run(async ({ x, y, rot, zoom, kinds, r }) => {
+    const { railList } = await import('/js/render/terrain.js');
+    const { KIND_ID } = await import('/js/data/citykinds.js');
+    const s = window.__frontline.session();
+    const ren = s.renderer;
+    const cam = s.camera;
+    const game = s.game;
+    cam.three = true;
+    cam.rot = rot;
+    cam.zoom = zoom;
+    cam.centerOn(x, y);
+    ren.ways3dOn = true;
+    ren.ways3d.budgetMs = 1e9;
+    const save = new Map(ren.swaps);
+    const level = ren.shadows;
+    for (const n of ['Objekte', 'Schatten', 'Schilder', 'Effekte', 'Nebel', 'Wetter', 'Balken', 'Anzeigen']) ren.swaps.set(n, null); // Schilder über den Gebäuden und Balken liegen sonst über den Prüfpunkten
+    ren.isoGround = ren.isoMarks = () => {}; // gemalte Bodenteile (Zone, Grundstücke, Gleisgrenze) liegen sonst über der Schicht
+    ren.sun.setLevel('off');
+    ren.ways3d.tint.value.set(1, 0, 1, 1);
+    const town = game.map.town ?? {};
+    const pts = [];
+    const near = (px, py) => Math.hypot(px - x, py - y) < r;
+    const line = (x1, y1, x2, y2, step) => {
+      const L = Math.hypot(x2 - x1, y2 - y1);
+      for (let t = 0; t <= L; t += step) {
+        const px = x1 + ((x2 - x1) * t) / L;
+        const py = y1 + ((y2 - y1) * t) / L;
+        if (near(px, py)) pts.push([px, py]);
+      }
+    };
+    if (kinds.includes('dirt')) for (const q of town.roads ?? []) if (q.dirt) line(q.x1, q.y1, q.x2, q.y2, 10);
+    if (kinds.includes('rail')) for (const q of railList(town)) line(q.x1, q.y1, q.x2, q.y2, 10);
+    if (kinds.includes('city')) {
+      for (const c of game.city) {
+        for (const i of c.list) {
+          if (c.kind[i] !== KIND_ID.road || game.roads?.kind[i] === 2) continue; // Brückenzellen malt bridge.js
+          const col = i % c.cols;
+          const px = (col + 0.5) * c.cell;
+          const py = ((i - col) / c.cols + 0.5) * c.cell;
+          if (near(px, py)) pts.push([px, py]);
+        }
+      }
+    }
+    if (kinds.includes('field')) {
+      for (const f of town.fields ?? []) {
+        if (!near(f.x, f.y)) continue;
+        const c = Math.cos(f.angle || 0);
+        const sn = Math.sin(f.angle || 0);
+        for (let a = -0.4; a <= 0.4; a += 0.2) for (let b = -0.4; b <= 0.4; b += 0.2) pts.push([f.x + a * f.w * c - b * f.h * sn, f.y + a * f.w * sn + b * f.h * c]);
+      }
+    }
+    if (kinds.includes('plaza')) for (const p of town.plazas ?? []) for (let a = -0.3; a <= 0.3; a += 0.3) for (let b = -0.3; b <= 0.3; b += 0.3) pts.push([p.x + a * p.w, p.y + b * p.h]);
+    for (let i = 0; i < 4; i++) ren.render(s.controller.view);
+    const c = ren.canvas;
+    const data = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    let inView = 0;
+    let hit = 0;
+    let worst = null;
+    for (const [px, py] of pts) {
+      const p = cam.worldToScreen(px, py);
+      const sx = Math.round(p.x * ren.dpr);
+      const sy = Math.round(p.y * ren.dpr);
+      if (sx < 8 || sy < 8 || sx >= c.width - 8 || sy >= c.height - 8) continue;
+      inView++;
+      let ok = false;
+      for (let dy = -1; dy <= 1 && !ok; dy++) {
+        for (let dx = -1; dx <= 1 && !ok; dx++) {
+          const i = ((sy + dy) * c.width + sx + dx) * 4;
+          ok = data[i] > 150 && data[i + 2] > 150 && data[i + 1] < 120; // Magenta (Boden und Zonen darunter tragen kein Rot und Blau ohne Grün)
+        }
+      }
+      if (ok) hit++;
+      else if (!worst) worst = [Math.round(px), Math.round(py)];
+    }
+    ren.ways3d.tint.value.set(0, 0, 0, 0);
+    delete ren.isoGround;
+    delete ren.isoMarks;
+    ren.swaps = save;
+    ren.sun.setLevel(level);
+    return { points: pts.length, inView, hit, firstMiss: worst };
+  }, { x, y, rot, zoom, kinds, r });
+
+async function wegePart() {
+  const dir = join(out, 'wege');
+  await mkdir(dir, { recursive: true });
+  const cityMin = Number(arg('citymin', 10));
+  const runs = [
+    ['seed3', 3, false, cityMin],
+    ['seed7', 7, false, cityMin],
+    ['fest', 3, true, 3],
+  ];
+  const want = arg('karte', null)?.split(',');
+  const parts = arg('teile', null)?.split(','); // --teile hang,gleis,feld,stadt,bruecke,pflaster,aenderung,messung: nur diese
+  const todo = (p) => !parts || parts.includes(p);
+  for (const [name, seed, fixed, minutes] of runs) {
+    if (want && !want.includes(name)) continue;
+    const g = await openGame({ seed, query: 'iso=1&three=1&shadows=high&river=1&weather=summer&wx=clear', scale: 1, out, start: !fixed });
+    try {
+      if (fixed) {
+        await g.page.evaluate(() => localStorage.setItem('frontline-kartenwahl', 'fest:east-europe-railway'));
+        await g.page.reload();
+        await g.page.waitForTimeout(1000);
+        await g.press('button.primary');
+        await g.page.waitForFunction(() => window.__frontline?.session()?.game);
+        await g.page.waitForTimeout(1500);
+      }
+      const has = await g.run(() => !!window.__frontline.session().renderer.ways3d);
+      if (!has) throw new Error('Ansicht 3D nicht aktiv (WebGL oder three.js fehlt)');
+      // Partie vorspulen: alle Teams mit KI, Simulation direkt (ohne Zeichnen)
+      await g.run(async () => {
+        const { AI } = await import('/js/ai/ai.js');
+        const s = window.__frontline.session();
+        s.loop.paused = true;
+        s.renderer.revealAll = true;
+        window.__ais = s.game.teams.map((_, t) => new AI(s.game, t, 'normal'));
+      });
+      for (let m = 0; m < minutes; m++) {
+        await g.run((m) => {
+          const s = window.__frontline.session();
+          while (s.game.time < (m + 1) * 60) {
+            for (const a of window.__ais) a.update(0.05);
+            s.game.update(0.05);
+          }
+        }, m);
+      }
+      const sp = await wegeSpots(g);
+      const cn = sp.counts;
+      console.log(`Wege ${name}: ${minutes} Spielminuten; ${cn.roadCells} Straßenzellen, ${cn.dirtRoads} Feldwege (${cn.dirtLen} px), ${cn.rails} Gleise (${cn.railLen} px), ${cn.fields} Felder (${cn.fieldArea} px²), Pflaster ${cn.plazas} Plätze und ${cn.walks} Bürgersteige; steilster Hang ${sp.hang ? sp.hang.k.toFixed(2) : '–'} bei ${sp.hang ? Math.round(sp.hang.x) + ',' + Math.round(sp.hang.y) : ''}`);
+      const cover = async (tag, x, y, rot, zoom, kinds, r) => {
+        const c = await wegeCover(g, x, y, rot, zoom, kinds, r);
+        const pct = c.inView ? (c.hit / c.inView) * 100 : 100;
+        const ok = c.inView > 0 && pct >= COVER;
+        if (!ok) fail++;
+        console.log(`Wege ${name}: Treffer ${tag}: ${c.hit}/${c.inView} Punkte (${kinds.join('+')}) auf der Schicht (${pct.toFixed(1)} %)${c.inView ? '' : '  KEINE PUNKTE IM BILD'}${ok ? '' : `  FEHLER (erster Fehlpunkt ${c.firstMiss})`}`);
+      };
+      const shotPair = async (tag, x, y, rot, zoom, opts = {}) => {
+        await look(g, x, y, rot, zoom);
+        if (opts.night) await g.run(() => (window.__frontline.session().renderer.mood = 'night'));
+        await mvpPair(g, dir, name, tag); // Iso | 3D
+        let st;
+        if (/drehung0$|nacht|winter|nah$|^feld$|zoom1$/.test(tag)) {
+          await wegeFrame(g, false);
+          await g.page.waitForTimeout(200);
+          const alt = await g.page.screenshot();
+          st = await wegeFrame(g, true);
+          await g.page.waitForTimeout(200);
+          const neu = await g.page.screenshot();
+          await sideBySide(g, join(dir, `${name}-${tag}-boden.png`), alt, neu, ['Boden gemalt (3D)', 'Boden 3D']); // gemalte Bodenschicht | 3D-Bodenschicht (beide in 3D)
+        } else st = await wegeFrame(g, true);
+        const d = await wegeDiff(g);
+        if (opts.night) await g.run(() => (window.__frontline.session().renderer.mood = null));
+        if (d > WEGE_DIFF) fail++;
+        console.log(`Wege ${name}: ${tag}: ${st.visible} Kacheln im Bild (Stufe ${st.d}), gemalt gegen 3D ${d.toFixed(2)} % Pixel abweichend${d > WEGE_DIFF ? '  FEHLER' : ''}`);
+        return st;
+      };
+      // --- Hang: Feldweg bzw. Gleis am steilsten Hang, Zoom 1,6 und 1, 4 Drehungen
+      if (sp.hang && todo('hang')) {
+        for (const rot of [0, 1, 2, 3]) {
+          await shotPair(`hang-zoom1.6-drehung${rot}`, sp.hang.x, sp.hang.y, rot, 1.6);
+          await cover(`Hang Drehung ${rot}`, sp.hang.x, sp.hang.y, rot, 1.6, ['dirt', 'rail'], 330);
+        }
+        await shotPair('hang-zoom1', sp.hang.x, sp.hang.y, 0, 1);
+      }
+      // --- Gleis (steilster Gleispunkt der Karte)
+      if (sp.rail && todo('gleis')) {
+        for (const rot of name === 'fest' ? [0, 1, 2, 3] : [0]) {
+          await shotPair(`gleis-drehung${rot}`, sp.rail.x, sp.rail.y, rot, 1.6);
+          await cover(`Gleis Drehung ${rot}`, sp.rail.x, sp.rail.y, rot, 1.6, ['rail'], 330);
+        }
+      }
+      // --- Feld (größter Höhenunterschied)
+      if (sp.field && todo('feld')) {
+        await shotPair('feld', sp.field.x, sp.field.y, 0, 1);
+        await cover('Feld', sp.field.x, sp.field.y, 0, 1, ['field'], 600);
+        await shotPair('feld-nah', sp.field.x, sp.field.y, 1, 1.6);
+      }
+      // --- Stadt: 4 Drehungen, Nacht, weit weg, Winter
+      if (sp.city.n && todo('stadt')) {
+        for (const rot of [0, 1, 2, 3]) {
+          await shotPair(`stadt-drehung${rot}`, sp.city.x, sp.city.y, rot, 1);
+          await cover(`Stadt Drehung ${rot}`, sp.city.x, sp.city.y, rot, 1, ['city'], 450);
+        }
+        await shotPair('stadt-nacht', sp.city.x, sp.city.y, 0, 1, { night: true });
+        await shotPair('stadt-zoom0.35', sp.city.x, sp.city.y, 0, 0.35);
+        await g.run(() => {
+          const s = window.__frontline.session();
+          s.renderer.season = 'winter';
+          s.renderer.terrainGL = null;
+          s.renderer.terrainIso = null;
+        });
+        for (const rot of [0, 2]) await shotPair(`stadt-winter-drehung${rot}`, sp.city.x, sp.city.y, rot, 1);
+        if (sp.hang) await shotPair('hang-winter', sp.hang.x, sp.hang.y, 0, 1.6);
+        await g.run(() => {
+          const s = window.__frontline.session();
+          s.renderer.season = 'summer';
+          s.renderer.terrainGL = null;
+          s.renderer.terrainIso = null;
+        });
+      }
+      // --- Brückenanschluss: Wege und Straßen an den Brückenköpfen, 4 Drehungen
+      if (sp.bridge && todo('bruecke')) {
+        const b = sp.bridge;
+        for (const rot of [0, 1, 2, 3]) {
+          await shotPair(`bruecke-drehung${rot}`, b.x, b.y, rot, 1);
+          await cover(`Brückenanschluss Drehung ${rot}`, b.x, b.y, rot, 1, ['dirt', 'city'], b.len / 2 + 200);
+        }
+      }
+      // --- Pflaster (nur Karten aus dem Editor haben es: Platz und Bürgersteig am Hang einsetzen)
+      if (todo('pflaster')) {
+        const at = sp.hang ?? sp.hq;
+        await g.run(async ({ x, y }) => {
+          const { invalidateWays } = await import('/js/render/ways.js');
+          const town = window.__frontline.session().game.map.town;
+          town.plazas = [...(town.plazas ?? []), { x: x + 60, y: y - 40, w: 96, h: 64, angle: 0.35 }];
+          town.walks = [...(town.walks ?? []), { x1: x - 180, y1: y + 80, x2: x + 140, y2: y + 150, w: 24 }];
+          invalidateWays();
+        }, at);
+        for (const rot of [0, 1]) {
+          await shotPair(`pflaster-drehung${rot}`, at.x + 20, at.y + 30, rot, 1.6);
+          await cover(`Pflaster Drehung ${rot}`, at.x + 20, at.y + 30, rot, 1.6, ['plaza'], 200);
+        }
+        await g.run(async () => {
+          const { invalidateWays } = await import('/js/render/ways.js');
+          const town = window.__frontline.session().game.map.town;
+          town.plazas = [];
+          town.walks = [];
+          invalidateWays();
+        });
+      }
+      // --- Neumalen nur bei Änderung; Iso und 2D wie bisher
+      if (todo('aenderung')) {
+      const idle = await g.run(() => {
+        const s = window.__frontline.session();
+        const r = s.renderer;
+        s.camera.three = true;
+        r.ways3dOn = true;
+        r.ways3d.budgetMs = 1e9;
+        for (let i = 0; i < 3; i++) r.render(s.controller.view);
+        let painted = 0;
+        for (let i = 0; i < 5; i++) {
+          r.render(s.controller.view);
+          painted += r.ways3d.stats().painted;
+        }
+        const shown3d = r.ways3dShown;
+        s.camera.three = false;
+        r.render(s.controller.view);
+        const shownIso = r.ways3dShown;
+        s.camera.iso = false;
+        r.render(s.controller.view);
+        const show2d = r.ways3dShown;
+        s.camera.iso = true;
+        s.camera.three = true;
+        return { painted, shown3d, shownIso, show2d };
+      });
+      const idleOk = idle.painted === 0 && idle.shown3d && !idle.shownIso && !idle.show2d;
+      if (!idleOk) fail++;
+      console.log(`Wege ${name}: unverändert malt ${idle.painted} Kacheln in 5 Bildern; Schicht in 3D ${idle.shown3d}, Iso ${idle.shownIso}, 2D ${idle.show2d}${idleOk ? '' : '  FEHLER'}`);
+      // Neue Straße: nur Kacheln in der Nähe malen neu
+      const road = await g.run(async () => {
+        const { KIND_ID } = await import('/js/data/citykinds.js');
+        const s = window.__frontline.session();
+        const game = s.game;
+        const hq = game.buildings.find((b) => b.main && b.team === 0);
+        const c = game.city[0];
+        s.camera.centerOn(hq.x, hq.y);
+        const r = s.renderer;
+        r.ways3d.budgetMs = 1e9;
+        for (let i = 0; i < 3; i++) r.render(s.controller.view);
+        let i = Math.floor(hq.y / c.cell) * c.cols + Math.floor(hq.x / c.cell) + 9;
+        while (c.kind[i] || c.blocked?.[i]) i++;
+        c.kind[i] = KIND_ID.road;
+        c.list.push(i);
+        game.time += 1;
+        r.render(s.controller.view);
+        const st = r.ways3d.stats();
+        r.render(s.controller.view);
+        const again = r.ways3d.stats().painted;
+        c.kind[i] = 0;
+        c.list.pop();
+        game.time += 1;
+        r.render(s.controller.view);
+        return { painted: st.painted, visible: st.visible, again, back: r.ways3d.stats().painted };
+      });
+      const roadOk = road.painted > 0 && road.painted <= 9 && road.painted < road.visible && road.again === 0;
+      if (!roadOk) fail++;
+      console.log(`Wege ${name}: eine neue Straßenzelle malt ${road.painted} von ${road.visible} Kacheln neu (danach ${road.again}), Rücknahme ${road.back}${roadOk ? '' : '  FEHLER'}`);
+      }
+      if (name !== 'seed3' || !todo('messung')) continue;
+      // --- Messung: Draw-Calls, Dreiecke, Zeit „Gelände“ + „Boden“, gemalt gegen 3D, Zoom, Schatten Aus und Hoch; Stadtausschnitt
+      const rows = [];
+      for (const zoom of [0.35, 1, 1.6]) {
+        await look(g, sp.city.x, sp.city.y, 0, zoom);
+        for (const level of ['off', 'high']) {
+          for (const on of [false, true]) {
+            const st = await g.run(({ level, on }) => {
+              const s = window.__frontline.session();
+              const r = s.renderer;
+              s.camera.three = true;
+              s.camera.iso = true;
+              r.setShadows(level);
+              r.ways3dOn = on;
+              r.ways3d.budgetMs = 1e9;
+              for (let i = 0; i < 3; i++) r.render(s.controller.view);
+              const info = r.gl.info;
+              info.autoReset = false;
+              let terrain = null;
+              const origT = r.terrain3d;
+              r.terrain3d = function (f) {
+                info.reset();
+                origT.call(this, f);
+                terrain = { calls: info.render.calls, tris: info.render.triangles };
+              };
+              try {
+                r.render(s.controller.view);
+              } finally {
+                r.terrain3d = origT;
+                info.autoReset = true;
+              }
+              return { ...terrain, ways: r.ways3d.stats() };
+            }, { level, on });
+            // Rechner unter Last (andere Prüfungen, Software-WebGL): kleinster von drei Läufen
+            let t = null;
+            for (let k = 0; k < 3; k++) {
+              const q = await timePasses(g, Math.max(3, Math.round(frames / 2)));
+              if (!t || q['Gelände'] + q.Boden < t['Gelände'] + t.Boden) t = q;
+            }
+            rows.push(`Zoom ${zoom} ${level === 'off' ? 'Aus ' : 'Hoch'} ${on ? '3D    ' : 'gemalt'}: Gelände ${t['Gelände'].toFixed(0)} + Boden ${t.Boden.toFixed(0)} = ${(t['Gelände'] + t.Boden).toFixed(0)} ms, Gelände-Durchlauf ${st.calls} Draw-Calls, ${st.tris} Dreiecke` + (on ? ` (Schicht: ${st.ways.drawn} Kacheln + ${st.ways.rails} Schienennetze, Stufe ${st.ways.d}, ${(st.ways.vbytes / 1e6).toFixed(0)} MB Textur im Bild, ${(st.ways.bytes / 1e6).toFixed(0)} MB gesamt)` : ''));
+          }
+        }
+      }
+      // Malkosten: alle Kacheln im Bild neu (Spiel angehalten), Zoom 1
+      await look(g, sp.city.x, sp.city.y, 0, 1);
+      const paint = await g.run(() => {
+        const s = window.__frontline.session();
+        const r = s.renderer;
+        s.camera.three = true;
+        r.ways3dOn = true;
+        r.setShadows('off');
+        r.ways3d.budgetMs = 1e9;
+        for (let i = 0; i < 3; i++) r.render(s.controller.view);
+        const res = [];
+        for (let i = 0; i < 3; i++) {
+          r.ways3d.invalidate();
+          const t0 = performance.now();
+          r.render(s.controller.view);
+          const st = r.ways3d.stats();
+          res.push({ painted: st.painted, ms: st.ms, frame: performance.now() - t0 });
+        }
+        r.setShadows('high');
+        return res;
+      });
+      const pm = paint.reduce((a, p) => a + p.ms, 0) / paint.length;
+      const pn = paint.reduce((a, p) => a + p.painted, 0) / paint.length;
+      console.log(`Wege Messung ${name} (Stadtausschnitt, ${frames} Bilder, Software-WebGL; „Gelände“ enthält die Kacheln, „Boden“ die gemalte Schicht):`);
+      for (const r of rows) console.log(`  ${r}`);
+      console.log(`  Malkosten: ${pn.toFixed(0)} Kacheln neu malen = ${pm.toFixed(0)} ms (${(pm / pn).toFixed(1)} ms je Kachel), Zeitbudget 12 ms je Bild`);
+      await g.run(() => {
+        const r = window.__frontline.session().renderer;
+        r.ways3dOn = true;
+        r.ways3d.budgetMs = 12;
+      });
+    } finally {
+      errors.push(...g.errors);
+      await g.close();
+    }
+  }
+}
+
 try {
   if (!only || only === 'kamera') await camera();
   if (!only || only === 'vergleich') await compare();
@@ -3448,6 +3971,7 @@ try {
   if (!only || only === 'natur') await nature();
   if (!only || only === 'karte') await karte();
   if (!only || only === 'props') await propsPart();
+  if (!only || only === 'wege') await wegePart();
   if (!only || only === 'bruecke') await bridgePart();
   if (!only || only === 'freikamera') await freeCamera();
 } catch (e) {

@@ -1,8 +1,19 @@
-# Symbol-Index render (Teil 3 von 5, landmarks.js bis props.js)
+# Symbol-Index render (Teil 3 von 5, isokit.js bis nature.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## landmarks.js (Fortsetzung)
+## isokit.js (Fortsetzung)
+- logsTop(c, x0, y0, x1, y1, rows) – Holzstapel von oben: Stämme entlang x mit hellen Enden rechts
+- planksTop(c, x0, y0, x1, y1)
+- yellowTop(c, x0, y0, x1, y1)
+- railsTop(c, x0, x1, y)
+
+## isosprites.js (1.0 KB)
+- drawUnitSprite(ctx, cam, u, p, aim, lift, now, body) – Einheit in Iso (gemalt, unitpaint.js): Soldaten blicken zum Ziel, Türme folgen…
+- drawWreckSprite(ctx, cam, w, p) – Wrack als verkohltes Fahrzeugmodell am Boden (auch abgeschossene Hubschrauber)
+
+## landmarks.js (14 KB)
+- PLANT_TALL
 - paintPlant(g, o) – Iso: große Fabrikhalle im Rahmen o = { long, a0, a1, b0, b1, seed }
 - plantTop(c, o) – 2D: große Fabrikhalle von oben im Rahmen o = { long, x0, x1, y0, y1 }
 - PYLON_TALL
@@ -173,12 +184,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - animalLook3d(a, now) – Tier für die Ansicht 3D: Haltung wie drawAnimalIso (Gehbild, Galopp, Äsen), Sch…
 - drawAnimalTopP(ctx, a, zoom, now) – Tier von oben (2D), gedreht nach a.angle, mit Schatten
 - natureModels() – Für Tests: alle Felsen- und Tiermodelle (Körper) bauen, ohne zu malen
-
-## paving.js (3.0 KB)
-- drawPlaza(ctx, p, S) – Platz p (Rechteck, evtl. gedreht) mit Plattenfugen und dunklerer Kante
-- drawWalk(ctx, r, S) – Bürgersteig r (Strecke x1/y1 → x2/y2, Breite w) mit Bordstein an beiden Kanten…
-- drawPaving(ctx, town, S, inRect, at) – Alle Plätze und Bürgersteige einer Kartenstadt
-
-## props.js (31 KB)
-- drawMapCarIso(ctx, cam, c, season) – Geparktes Auto der Karte in Iso (Fuß am Weltpunkt)
-- drawMapCarShadowIso(ctx, cam, c, dpr) – Iso: Schatten eines Autos (Umriss von oben am Boden)

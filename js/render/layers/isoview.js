@@ -83,9 +83,9 @@ export const isoViewMethods = {
         drawPark(ctx, p, z, this.season, rails);
       }
     }
-    // Plätze und Bürgersteige der Karte scharf auf dem Boden (paving.js)
+    // Plätze und Bürgersteige der Karte scharf auf dem Boden (paving.js); Ansicht 3D: Bodenschicht im Gelände (render3d/ways3d.js)
     setIsoGround(ctx, cam, dpr);
-    drawPaving(ctx, g.map.town, 1, inRect, relief ? (x, y) => this.groundAt(ctx, x, y) : null);
+    if (!this.ways3dShown) drawPaving(ctx, g.map.town, 1, inRect, relief ? (x, y) => this.groundAt(ctx, x, y) : null);
     // Höfe der Altbauten (Paket „Wohnhaus“, maptown.js): Hof, Weg und Schatten unter den Einheiten
     for (const b of g.map.town?.buildings ?? []) {
       if (b.kind !== 'house' || !inRect(b.x, b.y, ISO_PAD)) continue;
@@ -94,7 +94,7 @@ export const isoViewMethods = {
       drawHouseYard(ctx, b, z, this.season, cam.rot | 0, !!this.houseYard3d); // Ansicht 3D: Schatten wirft das Haus-Mesh
     }
     setIsoGround(ctx, cam, dpr);
-    drawWays(this, ctx, this.season); // Feldwege und Gleise scharf auf dem Boden (seit v5.31, ways.js)
+    if (!this.ways3dShown) drawWays(this, ctx, this.season); // Feldwege, Gleise und Felder scharf auf dem Boden (seit v5.31, ways.js); Ansicht 3D: Bodenschicht
     this.drawQuarterGrounds(f, true); // Regierungsviertel: Rasen, Wege, Platz (govquarter.js), unter Kratern und Einheiten
     setIsoGround(ctx, cam, dpr);
     for (const c of g.craters ?? []) {

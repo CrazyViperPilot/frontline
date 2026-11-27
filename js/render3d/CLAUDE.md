@@ -26,6 +26,7 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `site3d.js` – Baustellen der Stadt (5 Abschnitte, n = 1 bis 3, Gerüst, Kran, Planen in Zonenfarbe). `siteGeometry`, `siteKey`
 - `rubble3d.js` – Schutt (Kartenstadt, Stadtzellen, Wracks) aus `rubblePlan`, 16 Varianten. `rubbleGeometry`, `rubbleKey`
 - `bridge3d.js` – Brücken (Pfeiler, Fahrbahn, Geländer, zerstört, Wiederaufbau) und Furtstangen (`bridge3dOn`). `Bridge3D`, `bridgeSolids`
+- `ways3d.js` – Bodenschicht: Straßen, Wege, Gleise, Felder, Pflaster als Kacheltexturen auf dem Höhennetz, Schienen als Körper (`ways3dOn`). `Ways3D`, `tileIndex`, `railGeometry`
 - `maptown3d.js` – Kartenstadt (Häuser, Hallen, Fabriken, Mauern, Zug, Turm, Mast), Leitung als Linien. `mapTownGeometry`, `Wires3D`
 
 ## Besonderheiten

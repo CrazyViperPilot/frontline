@@ -80,6 +80,7 @@ export class Renderer3D extends Renderer {
     this.big3dOn = true; // false: Großbauten (Kaserne, Fabrikhalle, Lagerhalle, Güterbahnhof, Universität), Regierungsgebäude und -viertel gemalt
     this.hall3d = null; // nur während des Durchlaufs „Objekte“ gesetzt (Regierungsgebäude, gov3d.js)
     this.quarter3d = null; // ebenso (Regierungsviertel)
+    this.airbase3dOn = true; // false: Fliegerhorst (Stellplatz, Tower, Kerosintank, Munitionslager; airbase3d.js) gemalt
     this.mil3dOn = true; // false: Militärgebäude (FOB, Mauer, Tor, Mörser, Flugabwehr, Phalanx, Turm, Bohrer, Baustellen) gemalt
     this.mil3d = null; // nur während des Durchlaufs „Objekte“ gesetzt (mil3d.js)
     this.fort3d = null; // ebenso: Ausbauten besetzter Häuser (Sandsäcke, MG-Nest, Draht; stronghold.js), schaltet auch mil3dOn
@@ -230,7 +231,7 @@ export class Renderer3D extends Renderer {
     const lowest = (x, y, r) => (relief ? Math.min(relief.displayAt(x - r, y - r), relief.displayAt(x + r, y - r), relief.displayAt(x - r, y + r), relief.displayAt(x + r, y + r)) : 0); // tiefste Ecke wie baseHeight
     // Großbauten (bigbuild3d.js, gov3d.js): eine Anlage aus vielen Objekten der Tiefenliste steht einmal, auf der tiefsten Ecke ihres Quadrats
     this.house3d = (o) => {
-      if (o.kind === 'bigpart') return this.big3dOn && this.towns3d.add(o, (p) => lowest(p.x, p.y, p.size / 2));
+      if (o.kind === 'bigpart') return (o.part?.t === 'ab' ? this.airbase3dOn : this.big3dOn) && this.towns3d.add(o, (p) => lowest(p.x, p.y, p.size / 2));
       const on = o.kind === 'town' ? this.towns3dOn : o.kind === 'uni' ? this.big3dOn : hasMapTown3d(o) ? this.maptown3dOn : this.works3dOn;
       return on && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
     };

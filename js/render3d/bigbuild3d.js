@@ -2,8 +2,9 @@
 // aus render/bigbuild.js (je Stufe 1 bis 3) und die Universität aus render/university.js, mit denselben Maßen, Farben und Bauteilen
 // wie gemalt, dazu die Rückseiten (Fenster, Tore, Streifen), die gemalt nie zu sehen sind. Örtliche Koordinaten ab der Mitte der Anlage:
 // u = Welt-x, v = Welt-y, h = Höhe. Die Körper kommen aus bigPlan (bigbuild.js, dieselbe Liste wie das gemalte Bild); Bäume und
-// Ausstellungsstücke (Einheitenmodelle) bleiben gemalte Billboards, ebenso der Fliegerhorst (Paket „Fliegerhorst 3D“) und der Boden
-// (Höfe, Gleise, Pflaster, Rasen: Durchlauf „Boden“ in citylayer.js, liegt zwischen Gelände und Objekten). Gemalte Schatten entfallen
+// Ausstellungsstücke (Einheitenmodelle) bleiben gemalte Billboards, ebenso der Boden
+// (Höfe, Gleise, Pflaster, Rasen: Durchlauf „Boden“ in citylayer.js, liegt zwischen Gelände und Objekten); der Fliegerhorst steht in
+// airbase3d.js. Gemalte Schatten entfallen
 // (Schattenkarte). Teamfarbe: Streifen, Fahnen und Turmbanner tragen aInfo.y = 97 und nehmen die Farbe der Instanz (instanceColor),
 // eine Geometrie je Art und Stufe für alle Teams. Kein Rauch, keine Bewegung (wie Werke 3D).
 import { Kit3D } from './kit3d.js';
@@ -15,10 +16,10 @@ import { hashXY } from '../render/color.js';
 
 const TEAM0 = '#3a6fb3'; // Platzhalter der Teamfarbe in der Geometrie (die Instanz tönt sie um)
 
-/** Großbauten aus bigbuild.js, die hier in 3D stehen (der Fliegerhorst aus airbase.js folgt mit „Fliegerhorst 3D“). */
+/** Großbauten aus bigbuild.js, die hier in 3D stehen (der Fliegerhorst aus airbase.js steht in airbase3d.js). */
 export const BIG3D_KINDS = ['barracks', 'factory', 'warehouse', 'station'];
 export const hasBig3d = (kind) => BIG3D_KINDS.includes(kind);
-/** Körper eines Plans (bigPlan), die hier Mesh werden; Bäume, Ausstellungsstücke und Fliegerhorst-Teile bleiben gemalt. */
+/** Körper eines Plans (bigPlan), die hier Mesh werden; Bäume und Ausstellungsstücke bleiben gemalt (Fliegerhorst-Teile: airbase3d.js). */
 export const isBig3dPart = (p) => p.t === 'box' || p.t === 'cyl' || p.t === 'flag';
 
 export const bigKey = (kind, level) => `${kind}|${clampLv(level)}`;

@@ -19,6 +19,7 @@ Licht und Schatten oder Achsen und Kamera der Ansicht 3D geht. Plan und Stand de
 - Props (t 6, 7, 8, 14, 16: Autos, Bänke, Kisten, Ballen, Props der Karte) über `prop3d(t, o)` und `crate3d` (`props3d.js`, Schalter `props3dOn`); Busch und Fels
   der Karte gehen über `nature3d`. Zäune, Mauern: je Kachel eine Instanz (Arme schon in der Kachel verbunden); Fahnentuch: Teamfarbe der Instanz.
 - Militärgebäude (`type 4`, Art ohne Hauptstadt) über `mil3d(b, color)`, Ausbauten besetzter Häuser über `fort3d(h)` (`mil3d.js`, Schalter `mil3dOn`): Familie „mil“ in `town3d.js`, eine Geometrie je Art und Variante (Mauer: Nachbarmaske in Weltrichtung, Baustelle: Stufe, beschädigt: dunklere Farben), Teamfarbe der Instanz; Fahne der besetzten Häuser bleibt gemalt (flattert).
+- Fliegerhorst (Körper `t 'ab'` der Großbauten `stand`, `atc`, `ktank`, `mdepot`; `airbase3d.js`, Schalter `airbase3dOn`): Familie „airbase“ in `town3d.js` wie „big“ (eine Instanz je Anlage über `at`, Teamfarbe der Instanz); Dach der Überdachung und Röhre des Shelters sind ein zweiter, halb durchsichtiger Satz (`glass`, `alpha`: Material mit `uOpacity`, ohne Tiefe und Schatten, `renderOrder` 5), damit der abgestellte Jet zu sehen bleibt. Boden bleibt gemalt (Durchlauf „Boden“).
 - Kartenstadt (`maptown3d.js`): dieselbe Familienliste (`house3d`, `maptown3dOn`); Instanz mit Drehung und Streckung (`yaw`, `scale` der Familie), Leitung als Linien (`Wires3D`, ersetzt den gemalten Durchlauf „Leitungen“ über `wires3dShown`).
 - WebGL-Leinwand nicht im DOM, ohne Kantenglättung.
 

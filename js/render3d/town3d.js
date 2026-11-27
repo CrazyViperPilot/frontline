@@ -20,6 +20,7 @@ import { hasWorks3d, worksGeometry, worksKey } from './works3d.js';
 import { hasBig3d, bigGeometry, bigKey, uniGeometry, uniKey, isBig3dPart } from './bigbuild3d.js';
 import { hallGeometry, quarterGeometry, quarterKey } from './gov3d.js';
 import { milGeometryOf, milKey, fortGeometry } from './mil3d.js';
+import { airbaseKey, airbaseGeometry, airbaseGlass, airbaseAlpha } from './airbase3d.js';
 import { hasMapTown3d, mapTownKey, mapTownGeometry, mapTownYaw, mapTownScale } from './maptown3d.js';
 import { pylonYaw } from '../render/maptown.js';
 
@@ -788,7 +789,8 @@ const CAP0 = 16; // erste Größe eines Satzes (wächst bei Bedarf auf das Doppe
 
 /**
  * Gebäudefamilien: name (für stats), has(b): gehört das Objekt (cityBuildings) dazu, key(b), geometry(b) (null: gemalt lassen),
- * team: true = Teamfarbe je Instanz (instanceColor) statt je Geometrie, yaw(b) (wahlfrei) = Drehung der Instanz um z (Bogenmaß), scale(b) (wahlfrei) = Streckung [x, y] vor der Drehung. Neue Familie (Großbauten, Militär …): eine Zeile hier.
+ * team: true = Teamfarbe je Instanz (instanceColor) statt je Geometrie, yaw(b) (wahlfrei) = Drehung der Instanz um z (Bogenmaß), scale(b) (wahlfrei) = Streckung [x, y] vor der Drehung,
+ * glass(b) (wahlfrei) = Geometrie der halb durchsichtigen Teile (eigener Satz „…|glass“, Deckkraft alpha: Zahl oder Funktion von b, ohne Schatten). Neue Familie (Großbauten, Militär …): eine Zeile hier.
  */
 export const FAMILIES = [
   {
@@ -837,6 +839,18 @@ export const FAMILIES = [
     geometry: (b) => quarterGeometry(b.turn, b.mask),
     team: true,
   },
+  // Fliegerhorst (Paket „Fliegerhorst 3D“, airbase3d.js): Körper 'ab' einer Großanlage, wie 'big' eine Instanz je Anlage; Dach der Überdachung
+  // (Stufe 2) und Röhre des Shelters (Stufe 3) als halb durchsichtiger Satz (glass), damit der abgestellte Jet zu sehen bleibt
+  {
+    name: 'airbase',
+    has: (b) => b.kind === 'bigpart' && b.part?.t === 'ab' && !!b.plan,
+    at: (b) => b.plan,
+    key: (b) => airbaseKey(b.plan.k, b.plan.lv),
+    geometry: (b) => airbaseGeometry(b.plan.k, b.plan.lv),
+    glass: (b) => airbaseGlass(b.plan.k, b.plan.lv),
+    alpha: (b) => airbaseAlpha(b.plan.k, b.plan.lv),
+    team: true,
+  },
   // Militärgebäude (Paket „Militärgebäude 3D“, mil3d.js): { kind: 'mil', x, y, b, color } mit b aus game.buildings
   {
     name: 'mil',
@@ -879,6 +893,7 @@ export class Town3D {
   constructor(families = FAMILIES) {
     this.families = families;
     this.material = makeKitMaterial();
+    this.glassMats = new Map(); // Deckkraft → Material der halb durchsichtigen Sätze (fam.glass)
     this.group = new THREE.Group();
     this.group.name = 'stadthaeuser';
     this.sets = new Map(); // Familie|Schlüssel → { mesh, n, cap, fam }
@@ -889,26 +904,35 @@ export class Town3D {
   /** Bildanfang: Licht, Schnee, Nacht und Schattenstärke für alle Gebäude (setKitFrame), Zähler leeren. */
   begin(frame) {
     setKitFrame(this.material, frame);
+    for (const m of this.glassMats.values()) setKitFrame(m, frame);
     for (const s of this.sets.values()) s.n = 0;
     this.count = 0;
     this.seen.clear();
   }
 
-  /** Satz einer Variante, beim ersten Gebrauch angelegt; ist er voll, wird er verdoppelt. */
-  setOf(id, fam, geo, need) {
+  /** Material der halb durchsichtigen Sätze mit Deckkraft alpha (je Wert eines, beim ersten Gebrauch angelegt). */
+  glassMat(alpha) {
+    let m = this.glassMats.get(alpha);
+    if (!m) this.glassMats.set(alpha, (m = makeKitMaterial({ opacity: alpha })));
+    return m;
+  }
+
+  /** Satz einer Variante, beim ersten Gebrauch angelegt; ist er voll, wird er verdoppelt. glass = Material eines halb durchsichtigen Satzes (kein Schatten). */
+  setOf(id, fam, geo, need, glass = null) {
     let s = this.sets.get(id);
     if (s && need <= s.cap) return s;
     const cap = s ? s.cap * 2 : CAP0;
-    const mesh = new THREE.InstancedMesh(geo, this.material, cap);
+    const mesh = new THREE.InstancedMesh(geo, glass ?? this.material, cap);
     mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     if (fam.team) {
       mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3), 3);
       mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
     }
     mesh.frustumCulled = false;
-    mesh.castShadow = true;
+    mesh.castShadow = !glass; // durchscheinende Teile werfen keinen Schatten (gemalt ein schwacher)
     mesh.receiveShadow = true;
-    mesh.layers.enable(CAST);
+    if (!glass) mesh.layers.enable(CAST);
+    else mesh.renderOrder = 5; // nach den undurchsichtigen Körpern, vor den Billboards (renderOrder 10)
     mesh.count = 0;
     mesh.visible = false;
     if (s) {
@@ -919,7 +943,7 @@ export class Town3D {
       s.mesh = mesh;
       s.cap = cap;
     } else {
-      s = { mesh, n: 0, cap, fam };
+      s = { mesh, n: 0, cap, fam, glass: !!glass };
       this.sets.set(id, s);
     }
     this.group.add(mesh);
@@ -942,7 +966,16 @@ export class Town3D {
     }
     if (typeof h === 'function') h = h(at);
     const id = `${fam.name}|${fam.key(b)}`;
-    const s = this.setOf(id, fam, geo, (this.sets.get(id)?.n ?? 0) + 1);
+    this.place(id, fam, geo, b, at, h, null);
+    const gg = fam.glass?.(b);
+    if (gg) this.place(`${id}|glass`, fam, gg, b, at, h, this.glassMat(typeof fam.alpha === 'function' ? fam.alpha(b) : fam.alpha ?? 0.6));
+    this.count++;
+    return true;
+  }
+
+  /** Eine Instanz in den Satz id (Geometrie geo, glass = Material eines halb durchsichtigen Satzes) schreiben. */
+  place(id, fam, geo, b, at, h, glass) {
+    const s = this.setOf(id, fam, geo, (this.sets.get(id)?.n ?? 0) + 1, glass);
     const m = s.mesh.instanceMatrix.array;
     const o = s.n * 16;
     m.fill(0, o, o + 16);
@@ -962,8 +995,6 @@ export class Town3D {
     m[o + 14] = h;
     if (fam.team) s.mesh.instanceColor.array.set(rgbOfTeam(at.color ?? b.color), s.n * 3);
     s.n++;
-    this.count++;
-    return true;
   }
 
   /** Bildende: Zahl je Satz setzen, leere Sätze verstecken. */
@@ -989,7 +1020,7 @@ export class Town3D {
     const out = { houses: 0, calls: 0, tris: 0 };
     for (const s of this.sets.values()) {
       if (!s.n || (name && s.fam.name !== name)) continue;
-      out.houses += s.n;
+      if (!s.glass) out.houses += s.n;
       out.calls++;
       out.tris += (s.mesh.geometry.getAttribute('position').count / 3) * s.n;
     }
@@ -999,5 +1030,6 @@ export class Town3D {
   dispose() {
     for (const s of this.sets.values()) s.mesh.dispose(); // Geometrie gehört dem Zwischenspeicher (townGeometry, worksGeometry)
     this.material.dispose();
+    for (const m of this.glassMats.values()) m.dispose();
   }
 }

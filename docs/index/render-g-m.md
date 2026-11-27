@@ -1,6 +1,9 @@
-# Symbol-Index render (Teil 2 von 4, groundtex.js bis mapprops.js)
+# Symbol-Index render (Teil 2 von 4, ground.js bis mapprops.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
+
+## ground.js (Fortsetzung)
+- getGround() – Gemeinsamer WebGL-Boden (ein Kontext für Spiel und Editor) oder null, wenn WebG…
 
 ## groundtex.js (4.3 KB)
 - DETAIL_N – Texel je Kante (Zweierpotenz: Mipmaps und Kachelung auch in WebGL 1)
@@ -177,4 +180,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## mapprops.js (16 KB)
 - propLooksOf(props, st, version) – Aussehen aller sichtbaren Props: [{ i, x, y, kind, mask, along, gate, rubble, v…
 - forgetPropLooks(props) – Zwischengespeichertes Aussehen und Zellindex einer Prop-Liste verwerfen (Editor…
-- propLooks(g, team, all) – Aussehen der Props einer Partie für `team`: der Zustand, den das Team zuletzt g…

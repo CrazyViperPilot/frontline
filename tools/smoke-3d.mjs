@@ -32,6 +32,9 @@
 // 10. Props (Paket „Props 3D“, --only props): Zäune, Mauern, Militär, Industrie, Zivil, Autos, Bänke, Ballen, Kisten gemalt neben 3D: echte
 //    Karten (Seed 3, 7; Land und Stadt, 0 und 10 Spielminuten) und Schauraum mit jeder Art (4 Drehungen, Winter, Nacht); Zählung
 //    „x/x Props in 3D“ (Fehler bei übrigen Billboards), Draw-Calls, Dreiecke und Zeit „Objekte“ gemalt gegen 3D. Fotos <out>/props/.
+// 12. Fliegerhorst (Paket „Fliegerhorst 3D“): im Baukasten-Teil (--what fliegerhorst) je Art (Stellplatz, Tower, Kerosintank, Munitionslager) und Stufe gemalt + 4 Drehungen
+//    je Stimmung und mit Teamfarben (<out>/baukasten/fliegerhorst-*); im Stadt-Teil ein Ausschnitt mit dem Fliegerhorst (seed3-fliegerhorst-*) und die Messung gemalt / 3D
+//    (Draw-Calls, Dreiecke, Zeit „Objekte“, renderer.airbase3dOn).
 // 11. Militärgebäude (Paket „Militärgebäude 3D“): im Baukasten-Teil (--what mil) alle Arten, Mauermasken, Tore, Baustellen in Stufen, beschädigt und
 //    Teamfarben gemalt neben 3D (<out>/baukasten/mil-*); im Stadt-Teil ein Ausschnitt mit den meisten Militärgebäuden, ein ausgebautes Haus und
 //    die Messung gemalt / 3D (Draw-Calls, Dreiecke, Zeit „Objekte“, renderer.mil3dOn).
@@ -39,7 +42,7 @@
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
 //                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|mvp] [--citymin 10]
 //                                 [--what schau|karte] (nur mit props: nur Schauraum oder nur echte Karten)
-//                                 [--what werke|haeuser|grossbau|mil|kartenstadt] (nur mit baukasten: nur Werke, Stadthäuser, Großbauten, Militärgebäude oder Kartenstadt)
+//                                 [--what werke|haeuser|grossbau|mil|fliegerhorst|kartenstadt] (nur mit baukasten: nur Werke, Stadthäuser, Großbauten, Militärgebäude, Fliegerhorst oder Kartenstadt)
 // 11. Kartenstadt (Paket „Kartenstadt 3D“): im Teil baukasten (--what kartenstadt) jede Art der Kartenstadt gemalt | 3D (4 Drehungen, Stimmungen);
 //    Teil karte (--only karte [--karte seed3,seed7,fest]): Ausschnitte echter Karten (Seed 3, 7, East Europe Railway) Iso | 3D (Iso erst, wenn alle gemalten
 //    Bilder fertig sind), gleiche Menge Gebäude Iso und 3D, Messung gemalt gegen 3D (<out>/karte/).
@@ -741,6 +744,7 @@ async function baukasten() {
       const { quarterItems, drawQuarterIso } = await import('/js/render/govquarter.js');
       const big3 = await import('/js/render3d/bigbuild3d.js');
       const gov3 = await import('/js/render3d/gov3d.js');
+      const ab3 = await import('/js/render3d/airbase3d.js'); // Fliegerhorst (Paket „Fliegerhorst 3D“)
       // Militärgebäude (Paket „Militärgebäude 3D“): kind 'mil' mit mil = { type, v, dmg } (v wie milVariant: Mauermaske, 'u'/'v'/'Lu+' …, Dachaufbau, 's0' … 's8');
       // gemalt über drawMilIso (Drehung 0), die Nachbarn der Mauer oder des Tors stellt setMilWalls aus der Variante nach.
       const mil3 = await import('/js/render3d/mil3d.js');
@@ -764,20 +768,24 @@ async function baukasten() {
         }
         return { b, all: [b, ...others] };
       };
-      window.__kitBig = ({ kind, lv, color, season, night, rots, mil, W: BW = 320, H: BH = 270 }) => {
+      window.__kitBig = ({ kind, lv, color, season, night, rots, mil, ab, W: BW = 320, H: BH = 270 }) => {
         const bk = ['barracks', 'factory', 'warehouse', 'station'].includes(kind);
-        const geo = kind === 'mil' ? mil3.milGeometry(mil.type, mil.v, mil.dmg ? 1 : 0) : bk ? big3.bigGeometry(kind, lv) : kind === 'uni' ? big3.uniGeometry(lv) : kind === 'hall' ? gov3.hallGeometry() : gov3.quarterGeometry(lv, 0b111101111);
+        const isAb = kind === 'ab'; // Fliegerhorst (Paket „Fliegerhorst 3D“): ab = { k: 'stand' | 'atc' | 'ktank' | 'mdepot' }, undurchsichtiger Satz und Glas
+        const glassGeo = isAb ? ab3.airbaseGlass(ab.k, lv) : null;
+        const geo = isAb ? ab3.airbaseGeometry(ab.k, lv) : kind === 'mil' ? mil3.milGeometry(mil.type, mil.v, mil.dmg ? 1 : 0) : bk ? big3.bigGeometry(kind, lv) : kind === 'uni' ? big3.uniGeometry(lv) : kind === 'hall' ? gov3.hallGeometry() : gov3.quarterGeometry(lv, 0b111101111);
         // Zoom und Anker aus den Ecken der Geometrie in allen Drehungen (Bild: x = (u' − v')·K, y = (u' + v')·K/2 − h)
-        const pos = geo.getAttribute('position');
+        const poss = [geo, glassGeo].filter(Boolean).map((q) => q.getAttribute('position'));
         const ext = (rot) => {
           const m = ROT[rot];
           let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
-          for (let i = 0; i < pos.count; i++) {
-            const u = m[0] * pos.getX(i) + m[1] * pos.getY(i);
-            const v = m[2] * pos.getX(i) + m[3] * pos.getY(i);
-            const x = (u - v) * Math.SQRT1_2;
-            const y = (u + v) * Math.SQRT1_2 * 0.5 - pos.getZ(i);
-            x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+          for (const pos of poss) {
+            for (let i = 0; i < pos.count; i++) {
+              const u = m[0] * pos.getX(i) + m[1] * pos.getY(i);
+              const v = m[2] * pos.getX(i) + m[3] * pos.getY(i);
+              const x = (u - v) * Math.SQRT1_2;
+              const y = (u + v) * Math.SQRT1_2 * 0.5 - pos.getZ(i);
+              x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+            }
           }
           return [x0, x1, y0, y1];
         };
@@ -800,7 +808,12 @@ async function baukasten() {
         const capital = { x: X, y: Y, team: Math.max(0, Math.min(3, lv)), cx: X / 32 - 1.5, cy: Y / 32 - 1.5, w: 3, h: 3 };
         // gemalt: shape = nur Körper, die auch 3D werden (Umriss), full = mit Bäumen und Ausstellungsstücken
         const paint = (pc, shapeOnly) => {
-          if (kind === 'mil') {
+          if (isAb) {
+            // alle Körper der Anlage (airbaseBodies über bigPlan, 2 × 2 Zellen) nach Tiefe wie im Spiel; der Boden bleibt weg (gemalt im Durchlauf „Boden“)
+            const items = bigPlan(ab.k, lv, X, Y, 128, 0).bodies.map((p) => ({ ...partFoot(p), kind: 'bigpart', part: p, color, damage: 0 }));
+            items.sort((a, b) => cam.depth(a.x, a.y) - cam.depth(b.x, b.y));
+            for (const it of items) drawTownBuilding(pc, cam, it, season);
+          } else if (kind === 'mil') {
             const it = milItem(mil);
             setMilWalls(it.all);
             drawMilIso(pc, cam, it.b, color);
@@ -840,6 +853,32 @@ async function baukasten() {
         const mesh = kit.kitTeamMesh(geo, mat, color);
         mesh.position.set(X, Y, 0);
         root.add(mesh);
+        const gmat = glassGeo ? kit.makeKitMaterial({ opacity: ab3.airbaseAlpha(ab.k, lv) }) : null;
+        const gmesh = glassGeo ? kit.kitTeamMesh(glassGeo, gmat, color) : null;
+        if (gmesh) {
+          gmesh.castShadow = false; // wie Town3D: durchscheinende Teile werfen keinen Schatten
+          gmesh.layers.set(0);
+          gmesh.renderOrder = 5;
+          gmesh.position.set(X, Y, 0);
+          root.add(gmesh);
+        }
+        // Jet-Attrappe (ab.jets): zwei dunkle Rümpfe mit Tragflächen, Nase nach Norden, auf den Plätzen des Stellplatzes: zeigt, dass der Jet durch Dach und Röhre zu sehen bleibt
+        let jets = null;
+        if (isAb && ab.jets) {
+          const jk = new kit.Kit3D();
+          for (const x of [-25.6, 25.6]) {
+            jk.box(x - 3, x + 3, -22, 18, 3, 9, '#59636d', '#6f7a85', { mat: null });
+            jk.box(x - 14, x + 14, -2, 10, 4, 5.4, '#4b545d', '#5f6a74', { mat: null });
+            jk.box(x - 6, x + 6, 12, 18, 3, 9, '#4b545d', '#5f6a74', { mat: null });
+          }
+          jets = kit.kitMesh(jk.geometry(), mat);
+          jets.position.set(X, Y, 0);
+          root.add(jets);
+        }
+        const frame = (o) => {
+          kit.setKitFrame(mat, o);
+          if (gmat) kit.setKitFrame(gmat, o);
+        };
         const light0 = (rot) => {
           const [, , rc, rd] = [[1, 0, 0, 1], [0, -1, 1, 0], [-1, 0, 0, -1], [0, 1, -1, 0]][rot];
           const a = Math.atan2(-rd, -rc) + 0.35;
@@ -852,7 +891,7 @@ async function baukasten() {
           aim(rot);
           syncIsoCamera(cam3, cam);
           const light = light0(rot);
-          kit.setKitFrame(mat, { light, snow: season === 'winter' ? 1 : 0, night: night ? 1 : 0, shade: BALANCE.shadows3d.opacity[mood ?? 'none'] });
+          frame({ light, snow: season === 'winter' ? 1 : 0, night: night ? 1 : 0, shade: BALANCE.shadows3d.opacity[mood ?? 'none'] });
           gl.setClearColor(BG, 1);
           sun.update(cam3, light, null);
           gl.shadowMap.needsUpdate = true;
@@ -871,11 +910,13 @@ async function baukasten() {
         sun.setLevel('off');
         aim(0);
         syncIsoCamera(cam3, cam);
-        kit.setKitFrame(mat, { light: light0(0), snow: season === 'winter' ? 1 : 0, night: 0, shade: 0.4 });
+        frame({ light: light0(0), snow: season === 'winter' ? 1 : 0, night: 0, shade: 0.4 });
         gl.render(scene, cam3);
         const flat0 = canvas(BW, BH);
         flat0.getContext('2d').drawImage(cv, 0, 0);
         root.remove(mesh);
+        if (gmesh) root.remove(gmesh);
+        if (jets) root.remove(jets);
         const boxes = { painted: bbox(shape), three: bbox(flat0) };
         if (mood) {
           for (const c of [painted, ...panels]) {
@@ -884,7 +925,7 @@ async function baukasten() {
             drawMood(x, mood, BW, BH);
           }
         }
-        return { painted, panels, W: BW, H: BH, DPR, tris: geo.getAttribute('position').count / 3, calls, boxes, tex: kit.kitTexturesReady() };
+        return { painted, panels, W: BW, H: BH, DPR, tris: (geo.getAttribute('position').count + (glassGeo ? glassGeo.getAttribute('position').count : 0)) / 3, calls, boxes, tex: kit.kitTexturesReady() };
       };
       /** Bogen aus Zeilen von Feldern (Leinwände) mit Beschriftung je Feld, als PNG-Daten-URL. */
       window.__kitSheet = (rows, RH = 290, FW = W) => {
@@ -1112,6 +1153,61 @@ async function baukasten() {
       }, { type, vs, teams: TEAMS });
       await save(`mil-${type}-teams`, res);
     }
+    // Fliegerhorst (Paket „Fliegerhorst 3D“, --what fliegerhorst): je Art und Stimmung ein Bogen mit Stufe 1 bis 3 (gemalt + 4 Drehungen), je Art ein Bogen
+    // mit den Teamfarben; Draw-Calls: einer, mit Glas (Überdachung Stufe 2, Shelter Stufe 3) zwei. Gemalt zeichnet Schatten und Konturen mit, daher die weitere Toleranz.
+    const AK = [['stand', [1, 2, 3]], ['atc', [1, 2, 3]], ['ktank', [1, 2, 3]], ['mdepot', [1, 2, 3]]];
+    const atris = {};
+    for (const [kind, levels] of what && what !== 'fliegerhorst' ? [] : AK) {
+      for (const season of ['summer', 'winter']) {
+        for (const night of [false, true]) {
+          const res = await g.run(({ kind, levels, season, night, color }) => {
+            const rows = [];
+            const stats = [];
+            for (const lv of levels) {
+              const r = window.__kitBig({ kind: 'ab', ab: { k: kind }, lv, color, season, night, rots: [0, 1, 2, 3], W: 300, H: 300 });
+              rows.push([[r.painted, `${kind}${lv} gemalt`], ...r.panels.map((c, i) => [c, `3D Drehung ${i}`])]);
+              stats.push({ lv, tris: r.tris, calls: r.calls, boxes: r.boxes, tex: r.tex });
+            }
+            return { url: window.__kitSheet(rows, 300, 300), stats };
+          }, { kind, levels, season, night, color: TEAMS[0] });
+          await save(`fliegerhorst-${kind}-${season}-${night ? 'nacht' : 'tag'}`, res.url);
+          for (const s of res.stats) {
+            const [p, t] = [s.boxes.painted, s.boxes.three];
+            const dev = Math.max(...p.map((v, i) => Math.abs(v - t[i])));
+            const want = kind === 'stand' && s.lv >= 2 ? 2 : 1;
+            atris[`${kind}${s.lv}`] = s.tris;
+            const bad = !s.tex || t[2] < 0 || (!night && dev > BOX_TOL + 10) || s.calls !== want;
+            if (bad) fail++;
+            if (bad || (season === 'summer' && !night)) console.log(`Fliegerhorst ${kind}${s.lv} ${season} ${night ? 'Nacht' : 'Tag'}: ${s.tris} Dreiecke, ${s.calls} Draw-Call(s), Umriss gemalt ${p.join(',')} / 3D ${t.join(',')} (±${dev} px)${s.tex ? '' : ', Fotos fehlen'}${bad ? '  FEHLER' : ''}`);
+          }
+        }
+      }
+      if (kind === 'stand' && (!what || what === 'fliegerhorst')) {
+        const jet = await g.run(({ color }) => {
+          const rows = [];
+          for (const lv of [2, 3]) {
+            const r = window.__kitBig({ kind: 'ab', ab: { k: 'stand', jets: true }, lv, color, season: 'summer', night: false, rots: [0, 1, 2, 3], W: 300, H: 300 });
+            rows.push([[r.painted, `stand${lv} gemalt`], ...r.panels.map((c, i) => [c, `3D mit Jets, Drehung ${i}`])]);
+          }
+          return window.__kitSheet(rows, 300, 300);
+        }, { color: TEAMS[0] });
+        await save('fliegerhorst-stand-jets', jet);
+      }
+      const res = await g.run(({ kind, levels, teams }) => {
+        const rows = [];
+        for (const lv of levels) {
+          const row = [];
+          for (const color of teams) {
+            const r = window.__kitBig({ kind: 'ab', ab: { k: kind }, lv, color, season: 'summer', night: false, rots: [0], W: 240, H: 240 });
+            row.push([r.painted, `${kind}${lv} gemalt`], [r.panels[0], '3D']);
+          }
+          rows.push(row);
+        }
+        return window.__kitSheet(rows, 240, 240);
+      }, { kind, levels, teams: TEAMS });
+      await save(`fliegerhorst-${kind}-teams`, res);
+    }
+    if (Object.keys(atris).length) console.log(`Baukasten: Dreiecke je Fliegerhorst-Variante ${Object.entries(atris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
     if (Object.keys(mtris).length) console.log(`Baukasten: Dreiecke je Militärvariante ${Object.entries(mtris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
     console.log(`Baukasten: Dreiecke je Werk ${Object.entries(wtris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
     if (Object.keys(btris).length) console.log(`Baukasten: Dreiecke je Großbau ${Object.entries(btris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
@@ -1251,6 +1347,32 @@ async function city() {
       for (let rot = 0; rot < 4; rot++) {
         await look(g, mspot.x, mspot.y, rot, 1);
         await mvpPair(g, dir, 'seed3', `militaer-${season}-drehung${rot}`);
+      }
+      // Ort mit den meisten Fliegerhorst-Bausteinen der eigenen Seite im Bild (Paket „Fliegerhorst 3D“): Mittelpunkt, Zahl und Arten mit Stufe; Jets in der Nähe
+      const aspot = await g.run(async () => {
+        const { cityBuildings } = await import('/js/render/citylayer.js');
+        const s = window.__frontline.session();
+        const plans = new Map();
+        for (const b of cityBuildings(s.game, 0, () => true, () => true)) if (b.kind === 'bigpart' && b.part.t === 'ab') plans.set(b.plan, b.plan);
+        const air = [...plans.keys()];
+        const R = 380;
+        let best = null;
+        for (const c of air) {
+          const near = air.filter((o) => Math.hypot(o.x - c.x, o.y - c.y) < R);
+          if (!best || near.length > best.n) {
+            const kinds = {};
+            for (const o of near) kinds[`${o.k}${o.lv}`] = (kinds[`${o.k}${o.lv}`] ?? 0) + 1;
+            best = { n: near.length, x: near.reduce((a, o) => a + o.x, 0) / near.length, y: near.reduce((a, o) => a + o.y, 0) / near.length, kinds, all: air.length };
+          }
+        }
+        const jets = best ? s.game.units.filter((u) => u.alive && u.team === 0 && u.def.air && Math.hypot(u.x - best.x, u.y - best.y) < R).length : 0;
+        return best ? { ...best, jets } : { x: s.camera.mapW / 2, y: s.camera.mapH / 2, n: 0, kinds: {}, all: 0, jets: 0 };
+      });
+      console.log(`Stadt ${season}: Fliegerhorst-Ausschnitt ${aspot.n} Bausteine (eigene Seite insgesamt ${aspot.all}) ${JSON.stringify(aspot.kinds)}, ${aspot.jets} Luftfahrzeuge in der Nähe`);
+      if (!aspot.n) fail++;
+      for (let rot = 0; rot < 4; rot++) {
+        await look(g, aspot.x, aspot.y, rot, 1);
+        await mvpPair(g, dir, 'seed3', `fliegerhorst-${season}-drehung${rot}`);
       }
       // Ausbauten besetzter Häuser (stronghold.js): ein Haus der Kartenstadt bekommt Sandsäcke, MG-Nest und Draht, Foto Iso | 3D
       const fort = await g.run(async () => {
@@ -1399,6 +1521,45 @@ async function city() {
       await g.run(() => {
         window.__frontline.session().renderer.mil3dOn = true;
       });
+      // Fliegerhorst (Paket „Fliegerhorst 3D“): gemalt, 3D (alles andere bleibt 3D); Ausschnitt mit den meisten Bausteinen
+      await look(g, aspot.x, aspot.y, 0, 1);
+      const rows4 = [];
+      for (const level of ['off', 'high']) {
+        for (const air of [false, true]) {
+          const st = await g.run(({ level, air }) => {
+            const s = window.__frontline.session();
+            const r = s.renderer;
+            s.camera.three = true;
+            r.setShadows(level);
+            r.airbase3dOn = air;
+            for (let i = 0; i < 3; i++) r.render(s.controller.view);
+            const info = r.gl.info;
+            const orig = r.objects3d;
+            let obj = null;
+            info.autoReset = false;
+            r.objects3d = function (f) {
+              info.reset();
+              orig.call(this, f);
+              obj = { calls: info.render.calls, tris: info.render.triangles };
+            };
+            try {
+              r.render(s.controller.view);
+            } finally {
+              r.objects3d = orig;
+              info.autoReset = true;
+            }
+            return { ...obj, air: r.towns3d.stats('airbase') };
+          }, { level, air });
+          const t = await timePasses(g, frames);
+          if (air && !st.air.houses) fail++;
+          rows4.push(`${level === 'off' ? 'Aus ' : 'Hoch'} ${air ? 'Fliegerhorst 3D' : 'gemalt         '}: Objekte ${t.Objekte.toFixed(0)} ms, ${st.calls} Draw-Calls, ${st.tris} Dreiecke${air ? ` (Fliegerhorst: ${st.air.houses}/${st.air.calls} Varianten/${st.air.tris} Dreiecke)` : ''}`);
+        }
+      }
+      await g.run(() => {
+        window.__frontline.session().renderer.airbase3dOn = true;
+      });
+      console.log(`Stadt Messung Fliegerhorst (Seed 3, Ausschnitt mit ${aspot.n} Bausteinen ${JSON.stringify(aspot.kinds)}, Zoom 1, ${frames} Bilder, Software-WebGL; Draw-Calls und Dreiecke in „Objekte“ samt Schattenkarte):`);
+      for (const r of rows4) console.log(`  ${r}`);
       console.log(`Stadt Messung Militär (Seed 3, Ausschnitt mit ${mspot.n} Militärgebäuden ${JSON.stringify(mspot.kinds)}, Zoom 1, ${frames} Bilder, Software-WebGL; Draw-Calls und Dreiecke in „Objekte“ samt Schattenkarte):`);
       for (const r of rows3) console.log(`  ${r}`);
       console.log(`Stadt Messung Großbauten (Seed 3, Ausschnitt mit ${bspot.n} Großbauten ${JSON.stringify(bspot.kinds)}, Zoom 1, ${frames} Bilder, Software-WebGL; Draw-Calls und Dreiecke in „Objekte“ samt Schattenkarte):`);

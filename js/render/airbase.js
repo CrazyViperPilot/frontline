@@ -1188,6 +1188,15 @@ function depotTop(c, team, lv) {
   }
 }
 
+/**
+ * Maße, Farben und Deckkraft für die 3D-Ansicht (render3d/airbase3d.js): dieselben Zahlen wie das gemalte Bild, damit beide gleich aussehen.
+ * EXT = Ausdehnung je Teil, CAN = Überdachung, HS = Shelter, CAMO/CAMO_COL = Tarnflecken, SEE2/SEE3 = Deckkraft von Dach und Röhre.
+ */
+export const AB_DIM = {
+  EXT, CAN, HS, CAMO, CAMO_COL, SEE2, SEE3, FIXED,
+  CONCW, SHELL, HEAD, EARTH, GRASS, GRASS2, LAWN, OLIVE, YEL, WHITE, RED, TANKC, GRAVEL, ROOF, COL, PANEL,
+};
+
 // ---------- Schnittstelle ----------
 
 const ROT_KEY = (p, rot) => (FIXED.has(p.id) ? rot : 0);

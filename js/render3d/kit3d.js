@@ -309,7 +309,7 @@ export class Kit3D {
   frustum(u, v, r0, r1, h0, h1, col, o = {}) {
     const n = o.n ?? 16;
     const C = colOf(col);
-    const info = this.info({ mat: o.mat ?? null, snow: o.snow });
+    const info = this.info({ mat: o.mat ?? null, snow: o.snow, win: o.win }); // o.win: Leuchtwert (Glaskanzel nachts, GLOW_NIGHT)
     const slope = (r0 - r1) / (h1 - h0 || 1);
     const ring = (k) => {
       const a = (k / n) * TAU;
@@ -1092,6 +1092,7 @@ uniform float uAlpha[${KIT_MATS.length}];
 uniform vec3 uSnowCol;
 uniform vec3 uWarm;
 uniform vec3 uNightGlow;
+uniform float uOpacity;
 varying vec3 vN;
 varying vec3 vCol;
 varying vec2 vUv;
@@ -1117,7 +1118,7 @@ void main() {
   // beleuchtete Fenster: am Tag warm wie gemalt, nachts heller und mehr davon (Wert ≤ 1 + (NIGHT_MORE − 1) · uNight)
   float on = 1.0 - step(1.0 + ${(NIGHT_MORE - 1).toFixed(2)} * uNight, vInfo.y);
   c = mix(c, mix(uWarm * (0.84 + 0.16 * d), uNightGlow, uNight), on);
-  gl_FragColor = vec4(c, 1.0);
+  gl_FragColor = vec4(c, uOpacity);
 }`;
 
 let texArray = null; // gemeinsame Texturebenen aller Kit-Materialien
@@ -1177,8 +1178,11 @@ export const kitTexturesReady = () => texReady;
 
 const v3 = (c) => new THREE.Vector3(...c.map((x) => x / 255));
 
-/** Ein ShaderMaterial für alle Gebäude des Baukastens (Licht, Fotos, Schnee, Nachtfenster, Schatten der Sonne). */
-export function makeKitMaterial() {
+/**
+ * Ein ShaderMaterial für alle Gebäude des Baukastens (Licht, Fotos, Schnee, Nachtfenster, Schatten der Sonne). opacity < 1: halb
+ * durchsichtig (Dach der Überdachung, Röhre des Shelters; schreibt keine Tiefe), Standard 1.
+ */
+export function makeKitMaterial({ opacity = 1 } = {}) {
   const mat = new THREE.ShaderMaterial({
     uniforms: THREE.UniformsUtils.merge([
       THREE.UniformsLib.lights,
@@ -1195,12 +1199,15 @@ export function makeKitMaterial() {
         uSnowCol: { value: v3(SNOW_COL) },
         uWarm: { value: v3(rgbOf(WARM)) },
         uNightGlow: { value: v3([255, 236, 170]) },
+        uOpacity: { value: opacity },
       },
     ]),
     vertexShader: VS,
     fragmentShader: FS,
     vertexColors: true,
     lights: true,
+    transparent: opacity < 1,
+    depthWrite: opacity >= 1,
   });
   mat.uniforms.uTex.value = textures();
   mat.uniforms.uTexOn.value = texReady ? 1 : 0;

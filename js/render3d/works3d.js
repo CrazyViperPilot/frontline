@@ -862,3 +862,5 @@ export function worksGeometry(kind, level) {
 
 // Für maptown3d.js (Kartenstadt 3D): Rolltor und Lkw der Werke wiederverwendet
 export { gate as gate3d, lorry as lorry3d };
+// Für airbase3d.js (Fliegerhorst 3D): Tank, Auffangwanne, Palette, Gabelstapler, Wände und Fensterband der Werke wiederverwendet
+export { tank as tank3d, bund as bund3d, pallet as pallet3d, forklift as forklift3d, walls as walls3d, strip as strip3d };

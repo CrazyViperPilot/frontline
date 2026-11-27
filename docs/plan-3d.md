@@ -344,6 +344,34 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   Partie wächst je Lauf etwas anders): Aus 48 → 55 Draw-Calls, 233 351 → 235 057 Dreiecke, 140 → 166 ms, Hoch 94 → 108, 702 814 → 706 244, 426 → 474 ms. Die +7 (Aus) bzw. +14
   (Hoch) Draw-Calls sind auf echter GPU die Größe, die zählt; der Zeitunterschied liegt im Rauschen (bis 15 bis 20 % je Lauf). Offen: wehende Fahnen; Altbau-Hof samt Ausbauten (mit „Kartenstadt 3D“);
   Förderbänder und Torbewegung (Tor offen/zu ist ein Zustand, keine Bewegung); fern grobe Varianten (Draht, Gerüst, Fugen), falls echte Geräte es brauchen.
+- Fliegerhorst 3D: gebaut (`js/render3d/airbase3d.js`: Stellplatz Stufe 1 (offen mit Bodenstromgerät, Feuerlöscher, Flutlicht, Leitkegeln), Stufe 2 (Überdachung) und Stufe 3
+  (Flugzeugschutzbau), Tower (Radar ab Stufe 2, Wetterradar-Kuppel in Stufe 3), Kerosintank (2 bis 4 Tanks) und Munitionslager (1 bis 3 Bunker, Wachturm in Stufe 3) je Stufe 1 bis 3
+  aus `airbaseBodies` (`render/airbase.js`); Test `test/airbase3d.test.js`; Prüfteile `smoke-3d.mjs --only baukasten --what fliegerhorst` (Bogen je Art und Stimmung mit gemalt + 4 Drehungen,
+  Teamfarben, Jet-Attrappen im Stellplatz: `fliegerhorst-*.png`) und `--only stadt --citymin 20` (Ausschnitt `seed3-fliegerhorst-*`, Messung)). `airbase.js` gibt nur seine Maße und Farben
+  heraus (`AB_DIM`: Ausdehnung `EXT`, Überdachung `CAN`, Shelter `HS`, Tarnflecken, Deckkraft), das Gemalte ändert sich nicht. Neu: `uOpacity` und `makeKitMaterial({ opacity })` in `kit3d.js`
+  (Material halb durchsichtig, ohne Tiefe), Option `win` bei `Kit3D.frustum` (Glaskanzel nachts hell), Familienfelder `glass(b)` und `alpha` in `town3d.js` (`Town3D.add` stellt dann einen
+  zweiten Satz `…|glass` auf, `castShadow` aus, `renderOrder` 5), Familie `airbase` in `FAMILIES`, Schalter `renderer.airbase3dOn` (false = Fliegerhorst gemalt); aus `works3d.js` mitgenutzt: `tank3d`,
+  `bund3d`, `pallet3d`, `forklift3d`, `lorry3d`, `walls3d`, `strip3d`. **Gemessen vor dem Plan** (KI gegen KI, Seed 3 und 7, nur Team 0): nach 20 Spielminuten je Team Stellplatz Stufe 3 (Shelter) 5 bis 6,
+  Tower Stufe 3 2, Kerosintank Stufe 3 2, Munitionslager Stufe 3 2; nach 10 min auch Stufe 1 und 2 (beide Teams zusammen: Seed 3 nach 10 min 6 Bausteine Stufe 1, nach 20 min 12 Stufe 3). Im Bild (Seed 3, 20 min, Zoom 1, Ausschnitt mit
+  den meisten Bausteinen) 6 Bausteine in 4 Arten (3 Shelter, Tower, Tank, Munitionslager, alle Stufe 3), eigene Seite insgesamt 11. Dreiecke je Variante (Stufe 1/2/3): Stellplatz 374/820 (davon Glas 4)/974
+  (Glas 252), Tower 1 030/1 708/2 080, Kerosintank 794/994/1 272, Munitionslager 1 369/1 628/1 915; Testgrenze 6 000. Umriss: Node-Test die Geometrie innerhalb der Vereinigung der gemalten
+  Bildgrenzen aller Teile (`isoBounds` mit `EXT`, ±3 px) und innerhalb der Ausdehnung, Höhe ≥ 70 % der Teilhöhe; Prüfteil Drehung 0 ±1 bis ±9 px (Shelter ±9, Tank ±7 bis ±9: gemalt zeichnet
+  Schatten, Konturen und Anschüttung mit). **Messung** (Seed 3, 20 Spielminuten, 6 Bausteine, 5 Varianten, „Objekte“ samt Schattenkarte, Software-WebGL, 8 Bilder; Häuser, Werke, Großbauten, Militär 3D):
+  Schatten Aus gemalt 69 Draw-Calls, 223 061 Dreiecke, 74 ms → Fliegerhorst 3D 74, 231 218 (Fliegerhorst 8 189), 78 ms; Hoch gemalt 136, 681 726, 237 ms → 145, 697 316, 251 ms. Die +5 (Aus) bzw. +9 (Hoch)
+  Draw-Calls (je Art und Stufe einer, die Shelter ein zweiter für das Glas) sind auf echter GPU die Größe, die zählt; der Zeitunterschied liegt im Rauschen. **Entscheidungen:** (1) *Eine Instanz je Anlage*
+  wie bei den Großbauten (`at: b.plan`, alle Körper eines Plans teilen sich eine Geometrie je Art und Stufe, Teamfarbe der Instanz: Bänder von Tower, Radom und Tankwagen, Tankbänder, Torflügel des Shelters,
+  Torschilder der Bunker, Fahne). (2) *Halb durchsichtig:* das Wellblech-Satteldach der Überdachung (Deckkraft 0,56) und die Röhre des Shelters samt Tarnflecken (0,64) liegen in `airbaseGlass`, alles andere
+  (Stützen, Binder, Rinnen, Ortgang, Erdanschüttung, Stirn- und Rückwand, Torflügel, Lüfter) deckend wie gemalt; der abgestellte Jet (3D-Einheit) bleibt durch Dach und Röhre zu sehen (Fotos mit Attrappen
+  `fliegerhorst-stand-jets`), Tiefe schreibt das Glas nicht, Einheiten und Billboards (renderOrder 10) dahinter malen darüber, davor stimmt. Durchscheinende Teile werfen keinen Schatten: der Shelter wirft
+  nur Anschüttung, Wände und Tor, gemalt ein schwacher auch die Röhre. Tarnflecken sind Dreiecksfächer mit den Normalen der Röhre knapp darüber (je Flanke gespiegelt), mit der Röhre doppelt überblendet.
+  (3) *Weltachsen:* gemalt liegen nur Überdachung und Shelter in der Welt fest, die übrigen Teile malt `airbase.js` je Bild in Ansichtsachsen; 3D stellt alles fest in die Welt und dreht mit der Kamera
+  (Tor des Shelters nach Norden, Tankwagen, Autos, Gabelstapler, Parkplatz, Windsack nach Osten). Rückseiten ergänzt (Stirnwand und Rückwand beidseitig, Laibung der Toröffnung, Fenster, Tür und Streifen des Towers
+  an allen Wänden, Räder und Gitter des Bodenstromgeräts beidseitig, Hügelrückseite der Bunker). (4) *Starr:* die drehende Radarantenne (Winkel 0,9) und das blinkende Warnlicht des Towers (rote Kugel).
+  (5) *Nachts:* Lampen (Flutlicht, Laternen, Torlampen) und die Glaskanzel des Towers leuchten (`GLOW_NIGHT`). (6) *Weggelassen:* Fugen der Röhrenringe, Schmutzstreifen, Grasbüschel, Wellenlinien des Dachs,
+  Lamellen der Abgasöffnung nur als Streifen. **Der Boden bleibt gemalt** (Beton mit Fugen, Führungslinien, Innenraum, Parkplatz, Schotter, auch die Rollbahn: Durchlauf „Boden“ in `citylayer.js`).
+  Jets: in der Stadt-Szene stand 1 Luftfahrzeug in der Nähe (Seed 3, 20 min), keiner auf einem Stellplatz; Jets sind 3D-Einheiten, ihr Rollen auf der Bahn ist kein Teil dieses Pakets.
+  Offen: Radarantenne und Warnlicht animieren; Windsack nach dem Wind; Schatten der halb durchsichtigen Röhre; Rollbahn und Boden in 3D („Straßen und Wege 3D“/„Bodenmarken“); Fugen und Schmutz der Röhre;
+  fern grobe Varianten (Tanks mit je 300 Dreiecken, Zäune des Munitionslagers), falls echte Geräte es brauchen.
 
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als

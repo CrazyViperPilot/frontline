@@ -1,11 +1,17 @@
-# Symbol-Index render3d (Teil 1 von 3, bigbuild3d.js bis kit3d.js)
+# Symbol-Index render3d (Teil 1 von 3, airbase3d.js bis kit3d.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render3d/`. Pfade relativ zu `js/render3d/`.
+
+## airbase3d.js (28 KB)
+- airbaseKey(kind, level)
+- airbaseAlpha(kind, level) – Deckkraft der halb durchsichtigen Teile: Dach der Überdachung (Stufe 2) bzw. Rö…
+- airbaseGeometry(kind, level) – Undurchsichtige Geometrie einer Art ('stand', 'atc', 'ktank', 'mdepot') und Stu…
+- airbaseGlass(kind, level) – Halb durchsichtige Teile (Dach der Überdachung, Röhre des Shelters mit Tarnflec…
 
 ## bigbuild3d.js (13 KB)
 - BIG3D_KINDS – Großbauten aus bigbuild.js, die hier in 3D stehen (der Fliegerhorst aus airbase…
 - hasBig3d(kind)
-- isBig3dPart(p) – Körper eines Plans (bigPlan), die hier Mesh werden; Bäume, Ausstellungsstücke u…
+- isBig3dPart(p) – Körper eines Plans (bigPlan), die hier Mesh werden; Bäume und Ausstellungsstück…
 - bigKey(kind, level)
 - uniKey(level)
 - bigGeometry(kind, level) – Geometrie einer Großbau-Art (Kaserne, Fabrikhalle, Lagerhalle, Güterbahnhof) un…
@@ -85,7 +91,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - waterStats() – Zählung fürs Prüfskript: Dreiecke des Wassers (0 = kein Wasser im Netz)
   - dispose()
 
-## kit3d.js (59 KB)
+## kit3d.js (60 KB)
 - KIT_MATS – Materialfotos der Gebäude in der Reihenfolge der Texturebenen (aInfo.x − 1)
 - TEAM_WIN – aInfo.y für Flächen in Teamfarbe (Werke): der Shader nimmt die Farbe der Instan…
 - NIGHT_MORE – nachts brennt Licht in so viel mehr Fenstern (Faktor auf den Anteil)

@@ -1,0 +1,1 @@
+**Wetter in 3D** (§ Wetter, nur Bild): Regen, Schnee und Nebelbänke sind Teilchen in echter Tiefe (Gebäude und Einheiten davor verdecken sie, Regen schlägt als Ringe auf dem Gelände auf, Nebel liegt als Bänke in vier Höhen), bei Regen glänzt der nasse Boden (dunkler, Pfützen spiegeln den Himmel, Sonnenglanz auf Dächern) (Test, `?three=1`)

@@ -27,6 +27,7 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `rubble3d.js` – Schutt (Kartenstadt, Stadtzellen, Wracks) aus `rubblePlan`, 16 Varianten. `rubbleGeometry`, `rubbleKey`
 - `bridge3d.js` – Brücken (Pfeiler, Fahrbahn, Geländer, zerstört, Wiederaufbau) und Furtstangen (`bridge3dOn`). `Bridge3D`, `bridgeSolids`
 - `ways3d.js` – Bodenschicht: Straßen, Wege, Gleise, Felder, Pflaster als Kacheltexturen auf dem Höhennetz, Schienen als Körper (`ways3dOn`). `Ways3D`, `tileIndex`, `railGeometry`
+- `weather3d.js` – Wetter in 3D: Regen mit Ringen, Schnee, Nebelbänke (Teilchen, Tiefentest), nasser Boden (`weather3dOn`). `Weather3D`, `weatherShares`, `wetGround`
 - `maptown3d.js` – Kartenstadt (Häuser, Hallen, Fabriken, Mauern, Zug, Turm, Mast), Leitung als Linien. `mapTownGeometry`, `Wires3D`
 
 ## Besonderheiten

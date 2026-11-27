@@ -1,4 +1,4 @@
-# Symbol-Index render3d (Teil 1 von 3, airbase3d.js bis kit3d.js)
+# Symbol-Index render3d (Teil 1 von 4, airbase3d.js bis kit3d.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render3d/`. Pfade relativ zu `js/render3d/`.
 
@@ -101,11 +101,11 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - buildSkirt() – Erdschnitt: vier Seiten, je Feinpunkt oben (sichtbare Geländehöhe) und unten (S…
   - uploadRelief(relief) – Höhen und Neigungen aus relief.fine übernehmen
   - setTexture(src) – Bodenbild (Canvas) als Textur: ohne Farbraum-Umrechnung (wie ground.js), nicht…
-  - update(relief, tex, light, time, snow, cam3, mood) – Vor dem Zeichnen: Gelände, Bodenbild, Licht (Weltvektor, z oben), Zeit (s) und…
+  - update(relief, tex, light, time, snow, cam3, mood, wet) – Vor dem Zeichnen: Gelände, Bodenbild, Licht (Weltvektor, z oben), Zeit (s) und…
   - waterStats() – Zählung fürs Prüfskript: Dreiecke des Wassers (0 = kein Wasser im Netz)
   - dispose()
 
-## kit3d.js (60 KB)
+## kit3d.js (61 KB)
 - KIT_MATS – Materialfotos der Gebäude in der Reihenfolge der Texturebenen (aInfo.x − 1)
 - TEAM_WIN – aInfo.y für Flächen in Teamfarbe (Werke): der Shader nimmt die Farbe der Instan…
 - NIGHT_MORE – nachts brennt Licht in so viel mehr Fenstern (Faktor auf den Anteil)

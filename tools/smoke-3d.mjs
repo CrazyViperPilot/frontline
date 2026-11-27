@@ -43,7 +43,7 @@
 //    Spielszenen mit vielen Baustellen bzw. Gebäude-Wracks Iso | 3D, Messung gemalt / 3D (renderer.site3dOn, ruin3dOn) und einsinkendes Wrack (<out>/ruinen/).
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
-//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|ruinen|bruecke|freikamera|wege|mvp] [--citymin 10]
+//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|ruinen|bruecke|freikamera|wege|wetter|mvp] [--citymin 10]
 //                                 [--what schau|karte] (nur mit props: nur Schauraum oder nur echte Karten)
 //                                 [--what werke|haeuser|grossbau|mil|fliegerhorst|baustelle|schutt|kartenstadt] (nur mit baukasten: nur Werke, Stadthäuser, Großbauten, Militärgebäude, Fliegerhorst, Baustellen, Schutt oder Kartenstadt)
 // 11. Kartenstadt (Paket „Kartenstadt 3D“): im Teil baukasten (--what kartenstadt) jede Art der Kartenstadt gemalt | 3D (4 Drehungen, Stimmungen);
@@ -56,7 +56,9 @@
 // 14. Straßen und Wege (Paket „Straßen und Wege 3D“, --only wege [--karte seed3,seed7,fest] [--teile hang,gleis,feld,stadt,bruecke,pflaster,aenderung,messung]):
 //    Stadtstraßen, Feldwege, Gleise, Felder, Pflaster als Bodenschicht gemalt | 3D (4 Drehungen, Hang, Nacht, Winter, Zoom), Treffer der Schicht (eingefärbt),
 //    Neumalen nur bei Änderung, Messung gemalt gegen 3D (<out>/wege/).
-// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte, props, bruecke, freikamera und wege; „mvp“ nur ausdrücklich.
+// 15. Wetter (Paket „Wetter 3D“, --only wetter): Regen, Schnee und Nebel gemalt | 3D (4 Drehungen, Nacht, Zoom, mit Kriegsnebel), Zähler der Teilchen und
+//    Nebellagen, Tiefentest, Wirkung gegen das Bild ohne Wetter, Messung gemalt gegen 3D (Zeit „Wetter“, Draw-Calls) (<out>/wetter/).
+// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte, props, bruecke, freikamera, wege und wetter; „mvp“ nur ausdrücklich.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { openGame, measureFps, DEVICES } from './smoke.mjs';
@@ -168,6 +170,7 @@ async function compare() {
           s.loop.paused = true;
           s.renderer.big3dOn = false;
           s.renderer.mil3dOn = false; // ebenso Militärgebäude und Ausbauten (Paket „Militärgebäude 3D“)
+          s.renderer.weather3dOn = false; // ebenso das Wetter (Paket „Wetter 3D“: Flocken sind Teilchen, nicht dieselben wie gemalt)
         });
         for (const [rot, zoom] of [[0, 1], [1, 0.6], [2, 1.6], [3, 0.35]]) {
           await view(g, rot, zoom, 150, 100);
@@ -3956,6 +3959,121 @@ async function wegePart() {
   }
 }
 
+/**
+ * Teil „wetter“ (--only wetter, läuft auch ohne --only), Paket „Wetter 3D“: Regen, Schnee und Nebel in 3D (render3d/weather3d.js) neben dem
+ * gemalten Wetter. Seed 3 mit Einheiten vor der Hauptstadt, Schatten Hoch; je Wetter Iso | 3D in 4 Drehungen am Tag und in der Nacht, dazu
+ * Zoom 0,5 und 1,6 und Regen mit Kriegsnebel (<out>/wetter/). Prüft: Teilchen und Nebellagen werden gezeichnet (Zähler > 0), alle Netze testen
+ * die Tiefe und schreiben keine (Gebäude davor verdecken), das Bild weicht von dem ohne Wetter ab (mindestens 2 % der Pixel). Misst die Zeit
+ * der Durchläufe „Wetter“ und „Objekte“, die Zeit je Bild, Draw-Calls und Dreiecke des Wetters mit gemaltem und mit 3D-Wetter,
+ * Schatten Aus und Hoch (renderer.weather3dOn).
+ */
+async function weatherPart() {
+  const dir = join(out, 'wetter');
+  await mkdir(dir, { recursive: true });
+  const rows = [];
+  for (const [wx, season, tag, extra] of [['rain', 'autumn', 'regen', ''], ['snow', 'winter', 'schnee', ''], ['fog', 'autumn', 'nebel', ''], ['rain', 'autumn', 'kriegsnebel', '&fog=1']]) {
+    const g = await openGame({ seed: 3, query: `iso=1&three=1&shadows=high&weather=${season}&wx=${wx}${extra}`, scale: 1, out });
+    try {
+      const spot = await g.run(() => {
+        const s = window.__frontline.session();
+        s.loop.paused = true;
+        const hq = s.game.buildings.find((b) => b.main && b.team === 0);
+        const types = ['tank', 'ifv', 'rifleman'];
+        for (let i = 0; i < 12; i++) s.game.spawnUnit(types[i % 3], i % 2, hq.x + 140 + (i % 4) * 40, hq.y + 200 + Math.floor(i / 4) * 40);
+        return { x: hq.x, y: hq.y };
+      });
+      // 1. Zähler, Tiefentest, Wirkung gegen das Bild ohne Wetter
+      const chk = await g.run(() => {
+        const s = window.__frontline.session();
+        const r = s.renderer;
+        const w = s.game.weather;
+        s.camera.three = true;
+        r.mood = null;
+        for (let i = 0; i < 3; i++) r.render(s.controller.view);
+        const stats = { ...r.weather3d.stats };
+        const wet = r.wet;
+        const meshes = r.weather3d.group.children.filter((m) => m.visible);
+        const depthOk = meshes.length > 0 && meshes.every((m) => m.material.depthTest && !m.material.depthWrite);
+        const c = r.canvas;
+        const grab = () => {
+          for (let i = 0; i < 3; i++) r.render(s.controller.view);
+          return c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+        };
+        const a = grab();
+        w.on = false;
+        const b = grab();
+        w.on = true;
+        let n = 0;
+        for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - b[i]) > 12 || Math.abs(a[i + 1] - b[i + 1]) > 12 || Math.abs(a[i + 2] - b[i + 2]) > 12) n++;
+        return { stats, depthOk, wet, diff: (100 * n) / (a.length / 4), meshes: meshes.length };
+      });
+      const want = wx === 'rain' ? chk.stats.rain > 0 && chk.stats.splash > 0 && chk.wet > 0.9 : wx === 'snow' ? chk.stats.snow > 0 : chk.stats.fog === 4;
+      const ok = want && chk.depthOk && chk.diff >= 2;
+      if (!ok) fail++;
+      console.log(`Wetter ${tag}: Teilchen ${JSON.stringify(chk.stats)}, ${chk.meshes} Netze mit Tiefentest ohne Tiefenschreiben ${chk.depthOk ? 'ja' : 'NEIN'}, Nässe ${chk.wet.toFixed(2)}, Bild weicht vom Bild ohne Wetter ab: ${chk.diff.toFixed(1)} %${ok ? '' : '  FEHLER'}`);
+      // 2. Fotos
+      const quick = tag === 'kriegsnebel';
+      for (const mood of quick ? [null] : [null, 'night']) {
+        await g.run((mood) => (window.__frontline.session().renderer.mood = mood), mood);
+        for (let rot = 0; rot < (quick ? 1 : 4); rot++) {
+          await look(g, spot.x + 120, spot.y + 120, rot, 1);
+          await mvpPair(g, dir, tag, `${mood ?? 'tag'}-drehung${rot}`);
+        }
+      }
+      await g.run(() => (window.__frontline.session().renderer.mood = null));
+      if (!quick) {
+        for (const zoom of [0.5, 1.6]) {
+          await look(g, spot.x + 120, spot.y + 120, 0, zoom);
+          await mvpPair(g, dir, tag, `tag-zoom${zoom}`);
+        }
+      }
+      if (quick) continue;
+      // 3. Messung (Zoom 1, Drehung 0): gemalt gegen 3D, Schatten Aus und Hoch
+      await look(g, spot.x + 120, spot.y + 120, 0, 1);
+      for (const level of ['off', 'high']) {
+        for (const on of [false, true]) {
+          const st = await g.run(({ level, on }) => {
+            const s = window.__frontline.session();
+            const r = s.renderer;
+            s.camera.three = true;
+            r.setShadows(level);
+            r.weather3dOn = on;
+            for (let i = 0; i < 3; i++) r.render(s.controller.view);
+            const info = r.gl.info;
+            const orig = r.weather3dPass;
+            let st = null;
+            info.autoReset = false;
+            r.weather3dPass = function (f) {
+              info.reset();
+              orig.call(this, f);
+              st = { calls: info.render.calls, tris: info.render.triangles };
+            };
+            try {
+              r.render(s.controller.view);
+            } finally {
+              r.weather3dPass = orig;
+              info.autoReset = true;
+            }
+            return { ...st, stats: { ...r.weather3d.stats } };
+          }, { level, on });
+          const t = await timePasses(g, frames);
+          rows.push(`${tag.padEnd(7)} ${level === 'off' ? 'Aus ' : 'Hoch'} ${on ? '3D    ' : 'gemalt'}: Wetter ${t.Wetter.toFixed(1)} ms, Objekte ${t.Objekte.toFixed(0)} ms, Bild ${t.Bild.toFixed(0)} ms, Wetter-Bild ${st.calls} Draw-Calls, ${st.tris} Dreiecke${on ? ` (Teilchen: Regen ${st.stats.rain}, Ringe ${st.stats.splash}, Flocken ${st.stats.snow}, Nebellagen ${st.stats.fog})` : ''}`);
+        }
+      }
+      await g.run(() => {
+        const r = window.__frontline.session().renderer;
+        r.weather3dOn = true;
+        r.setShadows('high');
+      });
+    } finally {
+      errors.push(...g.errors);
+      await g.close();
+    }
+  }
+  console.log(`Wetter Messung (Zoom 1, Drehung 0, ${frames} Bilder, Software-WebGL; „Wetter“ = Durchlauf, Draw-Calls und Dreiecke nur dort):`);
+  for (const r of rows) console.log(`  ${r}`);
+}
+
 try {
   if (!only || only === 'kamera') await camera();
   if (!only || only === 'vergleich') await compare();
@@ -3971,6 +4089,7 @@ try {
   if (!only || only === 'natur') await nature();
   if (!only || only === 'karte') await karte();
   if (!only || only === 'props') await propsPart();
+  if (!only || only === 'wetter') await weatherPart();
   if (!only || only === 'wege') await wegePart();
   if (!only || only === 'bruecke') await bridgePart();
   if (!only || only === 'freikamera') await freeCamera();

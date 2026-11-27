@@ -21,6 +21,8 @@ import { Town3D } from './town3d.js';
 import { quarterMask, INNER, _quarter } from '../render/govquarter.js';
 import { isMilBuilding } from '../render/milbuild.js';
 import { FORT_DIM, worksMask } from '../render/stronghold.js';
+import { Wires3D, hasMapTown3d } from './maptown3d.js';
+import { mapPylons } from '../render/maptown.js';
 import { Nature3D } from './nature3d.js';
 import { Props3D } from './props3d.js';
 import { propSolids3d, propFlagColor } from '../render/mapprops.js';
@@ -78,6 +80,10 @@ export class Renderer3D extends Renderer {
     this.mil3dOn = true; // false: Militärgebäude (FOB, Mauer, Tor, Mörser, Flugabwehr, Phalanx, Turm, Bohrer, Baustellen) gemalt
     this.mil3d = null; // nur während des Durchlaufs „Objekte“ gesetzt (mil3d.js)
     this.fort3d = null; // ebenso: Ausbauten besetzter Häuser (Sandsäcke, MG-Nest, Draht; stronghold.js), schaltet auch mil3dOn
+    this.maptown3dOn = true; // false: Kartenstadt (Häuser, Hallen, Fabriken, Mauern, Zug, Bahnhof, Turm, Mast) und Leitungen gemalt
+    this.wires3d = new Wires3D(); // Hochspannungsleitung als Linien (maptown3d.js), statt des gemalten Durchlaufs „Leitungen“
+    this.objRoot.add(this.wires3d.group);
+    this.wires3dShown = false; // drawPowerWires: gemalte Leitungen weglassen, wenn dieses Bild sie in 3D zeigt
     this.nature3d = new Nature3D(); // Büsche, Felsen, Tiere als InstancedMesh je Form (nature3d.js), gezeigt über bush3d, rock3d, animal3d
     this.objRoot.add(this.nature3d.group);
     this.bush3d = this.rock3d = this.animal3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
@@ -138,8 +144,14 @@ export class Renderer3D extends Renderer {
     this.propShadow3d = on && this.props3dOn && this.sun.on && !this.cubes;
     this.crateShadow2d = on && this.props3dOn && !this.sun.on && !this.cubes;
     this.frame3d = false; // Kamera für dieses Bild noch nicht gesetzt
+    this.wires3dShown = false;
     super.render(view); // gleicht auch Relief und Größe ab
     if (on && this.cubes) this.markProbes();
+  }
+
+  /** Altbau-Hof (render/maptown.js drawHouseYard): ohne gemalten Schlagschatten, wenn das Haus ein Mesh ist und seinen Schatten selbst wirft. */
+  get houseYard3d() {
+    return this.camera.iso && this.camera.three && this.maptown3dOn && !this.cubes;
   }
 
   /** three-Kamera einmal je Bild aus Camera setzen. */
@@ -208,7 +220,7 @@ export class Renderer3D extends Renderer {
     // Großbauten (bigbuild3d.js, gov3d.js): eine Anlage aus vielen Objekten der Tiefenliste steht einmal, auf der tiefsten Ecke ihres Quadrats
     this.house3d = (o) => {
       if (o.kind === 'bigpart') return this.big3dOn && this.towns3d.add(o, (p) => lowest(p.x, p.y, p.size / 2));
-      const on = o.kind === 'town' ? this.towns3dOn : o.kind === 'uni' ? this.big3dOn : this.works3dOn;
+      const on = o.kind === 'town' ? this.towns3dOn : o.kind === 'uni' ? this.big3dOn : hasMapTown3d(o) ? this.maptown3dOn : this.works3dOn;
       return on && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
     };
     this.hall3d = !this.big3dOn ? null : (b, color) => this.towns3d.add({ kind: 'hall', x: b.x, y: b.y, color }, cam.pinned ?? (relief ? relief.displayAt(b.x, b.y) : 0));
@@ -222,6 +234,11 @@ export class Renderer3D extends Renderer {
       if (this.towns3d.seen.has(b)) return true; // alle Gruppen der Hauptstadt als ein Mesh (Bitmaske der freien Gruppen)
       return this.towns3d.add({ kind: 'quarter', x: b.x, y: b.y, turn: _quarter.turnOf(b), mask: quarterMask(this.game.grid, b), color: this.game.teams[b.team].color, src: b }, () => lowest(b.x, b.y, INNER));
     };
+    // Hochspannungsleitung (feste Karten): Linien von Mast zu Mast mit dem Gelände am Mast, gezeichnet mit den Objekten (Tiefentest)
+    const net = this.maptown3dOn ? mapPylons(this.game.map) : null;
+    this.wires3dShown = !!net?.size && !this.cubes;
+    this.wires3d.mesh.visible = false;
+    if (this.wires3dShown) this.wires3d.update(net, (x, y) => (relief ? relief.displayAt(x, y) : 0), (x, y) => f.inRect(x, y, 700));
     // Büsche, Felsen, Tiere (nature3d.js): Höhe wie das Billboard
     this.nature3d.begin(light, season);
     if (this.nature3dOn) {

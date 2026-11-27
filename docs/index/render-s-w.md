@@ -1,8 +1,26 @@
-# Symbol-Index render (Teil 4 von 4, sprites.js bis works.js)
+# Symbol-Index render (Teil 4 von 4, season.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## sprites.js (Fortsetzung)
+## season.js (6.1 KB)
+- seasonal(img, season, kind, f, variant) – Bild in der Jahreszeit (Sommer: das Bild selbst)
+- setRoofSnow(on)
+- roofSnowOn() – Liegt gerade Schnee (Iso-Stadt im Winter)? Für Rasen und Laub der Stadtgebäude…
+- snowy(color) – Dachfarbe unter Schnee (Hex-Farbe); ohne Schnee unverändert
+
+## spritecache.js (7.6 KB)
+- spriteDpr() – Gerätepixel je CSS-Pixel des laufenden Bilds (für den Maßstab der Bilder)
+- spriteMissed() – Fehlte in diesem Bild ein Bild (Budget)? Wer nur bei Bedarf neu zeichnet (Edito…
+- clearSprites() – Alle Bilder verwerfen (z. B. wenn die Materialfotos geladen sind, materials.js)…
+- spriteFrame(r) – Zu Beginn jedes Bilds aufrufen (Renderer): merkt die Gerätepixel, setzt das Zei…
+- sprite(key, scale, bounds, paint) – Bild der Variante `key` für `scale` Gerätepixel je Einheit
+- peek(key, scale) – Vorhandenes Bild der Variante `key` (Maßstab am nächsten an `scale`), ohne neu…
+- setBlitSink(fn) – Abgriff für blit setzen oder mit null lösen: sink(ctx, img, x, y, w, h) bekommt…
+- blit(ctx, e, x, y, f) – Eintrag e so zeichnen, dass sein Ankerpunkt bei (x, y) liegt; f = Zeichenkoordi…
+- spriteStats() – Für Tests und Fehlersuche: Zahl der Bilder und Bildpunkte im Speicher
+
+## sprites.js (25 KB)
+- shade(hex, f) – Farbe abdunkeln (f = 0 unverändert, 1 schwarz)
 - tint(hex, f) – Farbe aufhellen (f = 0 unverändert, 1 weiß)
 - hexA(hex, a) – Hex-Farbe mit Alpha als rgba-String
 - hpColor(frac) – Farbe für Lebensbalken: grün, gelb, rot

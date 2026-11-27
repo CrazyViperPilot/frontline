@@ -20,6 +20,8 @@ import { hasWorks3d, worksGeometry, worksKey } from './works3d.js';
 import { hasBig3d, bigGeometry, bigKey, uniGeometry, uniKey, isBig3dPart } from './bigbuild3d.js';
 import { hallGeometry, quarterGeometry, quarterKey } from './gov3d.js';
 import { milGeometryOf, milKey, fortGeometry } from './mil3d.js';
+import { hasMapTown3d, mapTownKey, mapTownGeometry, mapTownYaw, mapTownScale } from './maptown3d.js';
+import { pylonYaw } from '../render/maptown.js';
 
 // ---------- Gemeinsames ----------
 
@@ -786,7 +788,7 @@ const CAP0 = 16; // erste Größe eines Satzes (wächst bei Bedarf auf das Doppe
 
 /**
  * Gebäudefamilien: name (für stats), has(b): gehört das Objekt (cityBuildings) dazu, key(b), geometry(b) (null: gemalt lassen),
- * team: true = Teamfarbe je Instanz (instanceColor) statt je Geometrie. Neue Familie (Großbauten, Militär …): eine Zeile hier.
+ * team: true = Teamfarbe je Instanz (instanceColor) statt je Geometrie, yaw(b) (wahlfrei) = Drehung der Instanz um z (Bogenmaß), scale(b) (wahlfrei) = Streckung [x, y] vor der Drehung. Neue Familie (Großbauten, Militär …): eine Zeile hier.
  */
 export const FAMILIES = [
   {
@@ -850,6 +852,15 @@ export const FAMILIES = [
     key: (b) => `fort|${b.W}|${b.D}|${b.mask}`,
     geometry: (b) => fortGeometry(b.W, b.D, b.mask),
     team: false,
+  },
+  {
+    name: 'maptown', // Kartenstadt (Häuser, Hallen, Fabriken, Mauern, Zug, Bahnhof, Wachturm, Fabrikhalle, Strommast; maptown3d.js)
+    has: hasMapTown3d,
+    key: mapTownKey,
+    geometry: mapTownGeometry,
+    team: false,
+    yaw: (b) => mapTownYaw(b, b.kind === 'pylon' ? pylonYaw(b) : 0), // Mast quer zur Leitung, Zug und Bahnsteig mit ihrem Winkel, Längsachse in y
+    scale: mapTownScale, // Häuser: eine Geometrie je Stil und Farbe, gestreckt auf das Maß des Hauses
   },
 ];
 
@@ -936,6 +947,16 @@ export class Town3D {
     const o = s.n * 16;
     m.fill(0, o, o + 16);
     m[o] = m[o + 5] = m[o + 10] = m[o + 15] = 1;
+    const yaw = fam.yaw?.(b) ?? 0;
+    const sc = fam.scale?.(b) ?? null;
+    if (yaw || sc) {
+      const c = Math.cos(yaw);
+      const sn = Math.sin(yaw);
+      m[o] = c * (sc?.[0] ?? 1);
+      m[o + 1] = sn * (sc?.[0] ?? 1);
+      m[o + 4] = -sn * (sc?.[1] ?? 1);
+      m[o + 5] = c * (sc?.[1] ?? 1);
+    }
     m[o + 12] = at.x;
     m[o + 13] = at.y;
     m[o + 14] = h;

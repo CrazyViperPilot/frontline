@@ -1,8 +1,16 @@
-# Symbol-Index render (Teil 3 von 4, maptown.js bis sprites.js)
+# Symbol-Index render (Teil 3 von 4, mapprops.js bis renderer.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## maptown.js (Fortsetzung)
+## mapprops.js (Fortsetzung)
+- drawPropsTop(ctx, looks, inRect, zoom, season, flagOf) – 2D (Weltkoordinaten): erst alle Schatten, dann alle Props, damit kein Schatten…
+- drawPropsMini(ctx, looks, minPx) – Minimap (Weltkoordinaten, Transformation gesetzt): Kacheln als Zellen, Einzelst…
+
+## maptown.js (98 KB)
+- setMapTown(map) – Zu Beginn jedes Bilds (Renderer): Felder der Karte merken (Gehöfte erkennt man…
+- mapPylons(map) – Strommasten der Karte mit Richtung und Nachfolger (pylonNet), neu berechnet, we…
+- drawHouseYard(ctx, b, zoom, season, rot, no3dShadow) – Iso, Bodendurchgang (seit Paket „Wohnhaus“): Hof, Vorplatz, Weg und Schatten ei…
+- houseYardIso(b, rot) – Hofmauer eines Altbaus in der Drehung rot (für Sandsäcke und Fahne, stronghold.…
 - houseYardTrees(b, rot)
 - drawMapIso(ctx, cam, b) – Iso: Gebäude b der Karte gemalt; false = nicht hier
 - drawMapTop(ctx, b, zoom) – 2D: Gebäude b der Karte von oben (Weltkoordinaten, Kamera-Transformation gesetz…
@@ -10,6 +18,51 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawMapTown2D(ctx, town, inRect, zoom, season, gone, ruined) – 2D: Parks, Gebäude, Bänke, Stadtbäume und geparkte Autos der Karte über dem Gel…
 - drawMapCars2D(ctx, town, inRect, zoom, season) – 2D: parkende Autos der Karte, nach den Straßen der Stadt (sonst lägen sie darun…
 - drawMapTownMini(ctx, town, season) – Minimap: Parks und Gebäude der Karte als Flächen (je Farbe ein Pfad); Weltkoord…
+- mapInfo (= infoOf)
+- towerSide
+- q8
+- TW
+- TW_SIDE
+- TW_HUT
+- TW_RADAR
+- TW_ANT
+- TW_LAMP
+- TW_LEG
+- TW_DECK
+- TW_GRATE
+- TW_WALL
+- TW_RIM
+- TW_ROOF
+- TW_GLASS
+- TW_RAIL
+- PLASTER
+- TILES
+- SLATE
+- BRICK
+- SHUTTER
+- TIMBER
+- FACH_WALL
+- NEU_WALL
+- NEU_ACC
+- BARN
+- HALL_WALL
+- HALL_BAND
+- METAL_ROOF
+- FACT_WALL
+- FACT_ROOF
+- SKY
+- CONC
+- YARD
+- CONTAINER
+- ALT_WALL
+- ALT_ROOF
+- ALT_STONE
+- ALT_QUOIN
+- ALT_H
+- ALT_RH
+- altPlan
+- spots
+- pylonYaw(b) – Richtung der Traversen eines Masts (Bogenmaß, Welt, ungerundet) für die Ansicht…
 
 ## marks.js (18 KB)
 - drawSelectMark(ctx, e, z, hover, iso, scale) – Auswahl- bzw. Hover-Markierung eines Objekts am Boden
@@ -134,23 +187,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - fogTone (aus fog.js)
 - blur121 (aus fog.js)
 - updateFogLayer (aus fog.js)
-
-## season.js (6.1 KB)
-- seasonal(img, season, kind, f, variant) – Bild in der Jahreszeit (Sommer: das Bild selbst)
-- setRoofSnow(on)
-- roofSnowOn() – Liegt gerade Schnee (Iso-Stadt im Winter)? Für Rasen und Laub der Stadtgebäude…
-- snowy(color) – Dachfarbe unter Schnee (Hex-Farbe); ohne Schnee unverändert
-
-## spritecache.js (7.6 KB)
-- spriteDpr() – Gerätepixel je CSS-Pixel des laufenden Bilds (für den Maßstab der Bilder)
-- spriteMissed() – Fehlte in diesem Bild ein Bild (Budget)? Wer nur bei Bedarf neu zeichnet (Edito…
-- clearSprites() – Alle Bilder verwerfen (z. B. wenn die Materialfotos geladen sind, materials.js)…
-- spriteFrame(r) – Zu Beginn jedes Bilds aufrufen (Renderer): merkt die Gerätepixel, setzt das Zei…
-- sprite(key, scale, bounds, paint) – Bild der Variante `key` für `scale` Gerätepixel je Einheit
-- peek(key, scale) – Vorhandenes Bild der Variante `key` (Maßstab am nächsten an `scale`), ohne neu…
-- setBlitSink(fn) – Abgriff für blit setzen oder mit null lösen: sink(ctx, img, x, y, w, h) bekommt…
-- blit(ctx, e, x, y, f) – Eintrag e so zeichnen, dass sein Ankerpunkt bei (x, y) liegt; f = Zeichenkoordi…
-- spriteStats() – Für Tests und Fehlersuche: Zahl der Bilder und Bildpunkte im Speicher
-
-## sprites.js (25 KB)
-- shade(hex, f) – Farbe abdunkeln (f = 0 unverändert, 1 schwarz)

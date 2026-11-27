@@ -398,7 +398,7 @@ function altbau(g, o) {
 }
 
 /** Boden des Altbaus im Rahmen des Hausbilds (Iso, örtlich): Hof, Vorplatz, Weg, Schlagschatten, Kontaktschatten. */
-function altGround(c, o, season) {
+function altGround(c, o, season, no3dShadow = false) {
   const f = frameOf(o.long);
   const p = altPlan(o);
   const rect = (a0, a1, b0, b1, fill) => {
@@ -416,6 +416,7 @@ function altGround(c, o, season) {
     // Fußspuren im Schnee
     for (let i = 0; i < 6; i++) rect(p.dA - 1.4 + (i % 2) * 1.6, p.dA - 0.4 + (i % 2) * 1.6, p.hb1 + 6 + i * 2, p.hb1 + 6.8 + i * 2, 'rgba(120,130,140,0.35)');
   }
+  if (no3dShadow) return; // Ansicht 3D mit Haus als Mesh: Schatten wirft das Mesh (render3d/maptown3d.js)
   // Schlagschatten des Hauses (Licht von links oben) und dunkler Kontaktschatten rund um den Wandfuß
   const [u0, u1, v0, v1] = f.R(p.ha0, p.ha1, p.hb0, p.hb1);
   // Schlagschatten nach links unten (+v, wie die übrigen Häuser und die Bäume): Wände, dazu der Walm als Spitze
@@ -1670,7 +1671,7 @@ function viewToWorld(rot, u, v) {
  * Iso, Bodendurchgang (seit Paket „Wohnhaus“): Hof, Vorplatz, Weg und Schatten eines Altbaus unter den Einheiten. Weltkoordinaten
  * auf dem Iso-Boden (setIsoGround bzw. groundAt gesetzt), wie drawPark. false = kein Altbau.
  */
-export function drawHouseYard(ctx, b, zoom, season, rot = 0) {
+export function drawHouseYard(ctx, b, zoom, season, rot = 0, no3dShadow = false) {
   if (b.kind !== 'house') return false;
   const info = infoOf(b);
   if (info.style !== 'alt') return false;
@@ -1678,10 +1679,10 @@ export function drawHouseYard(ctx, b, zoom, season, rot = 0) {
   const s = season === 'winter' || season === 'autumn' ? season : 'summer';
   const r = Math.max(o.W, o.D) / 2 + YARD_M + 14;
   const [ra, rb, rc, rd] = VROT[rot & 3];
-  const key = `mhy|${info.c}|${(info.seed >>> 3) % 8}|${o.W}|${o.D}|${rot & 3}|${s}`;
+  const key = `mhy|${info.c}|${(info.seed >>> 3) % 8}|${o.W}|${o.D}|${rot & 3}|${s}${no3dShadow ? '|n' : ''}`;
   putTop(ctx, b.x, b.y, zoom, key, [-r, -r, r, r], (c) => {
     c.transform(ra, rb, rc, rd, 0, 0);
-    altGround(c, o, s);
+    altGround(c, o, s, no3dShadow);
   });
   return true;
 }
@@ -2142,4 +2143,17 @@ export function drawMapTownMini(ctx, town, season = 'summer') {
     for (const b of town.buildings ?? []) if (b.kind === kind) ctx.rect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h);
     ctx.fill();
   }
+}
+
+// ---------- Für render3d/maptown3d.js (Ansicht 3D: dieselben Maße, Farben und Aussehen als Geometrie) ----------
+
+export {
+  infoOf as mapInfo, towerSide, q8, TW, TW_SIDE, TW_HUT, TW_RADAR, TW_ANT, TW_LAMP, TW_LEG, TW_DECK, TW_GRATE, TW_WALL, TW_RIM, TW_ROOF,
+  TW_GLASS, TW_RAIL, PLASTER, TILES, SLATE, BRICK, SHUTTER, TIMBER, FACH_WALL, NEU_WALL, NEU_ACC, BARN, HALL_WALL, HALL_BAND, METAL_ROOF,
+  FACT_WALL, FACT_ROOF, SKY, CONC, YARD, CONTAINER, ALT_WALL, ALT_ROOF, ALT_STONE, ALT_QUOIN, ALT_H, ALT_RH, altPlan, spots,
+};
+
+/** Richtung der Traversen eines Masts (Bogenmaß, Welt, ungerundet) für die Ansicht 3D (maptown3d.js); 0 für andere Gebäude. */
+export function pylonYaw(b) {
+  return mapPylons(fieldMap).get(b)?.ang ?? 0;
 }

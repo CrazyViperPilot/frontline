@@ -79,3 +79,4 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Großbauten 3D | – | `render3d/bigbuild3d.js`, `gov3d.js` | `town3d.js` | `kit3d` |
 | Militärgebäude 3D (FOB, Mauer, Tor, Mörser, Flak, Phalanx, Turm, Bohrer, Baustellen, Ausbauten) | – | `render3d/mil3d.js` | `town3d.js` | `mil3d` |
 | Props in 3D (Zäune, Mauern, Militär, Industrie, Autos, Bänke, Ballen, Kisten) | – | `render3d/props3d.js` | `renderer3d.js` `prop3d` | `props3d` |
+| 3D, Kartenstadt (Häuser, Hallen, Mauern, Turm, Masten, Leitung) | `zone-gelaende` | `render3d/maptown3d.js` | `town3d.js`, `render/maptown.js` | `maptown3d` |

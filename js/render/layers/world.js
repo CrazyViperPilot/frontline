@@ -19,6 +19,7 @@ const WRECK_FIRE = 20;
 export const worldMethods = {
   /** Hochspannungsleitungen zwischen den Strommasten der Karte (über allen Objekten; feste Karten, landmarks.js). */
   drawPowerWires(f) {
+    if (this.wires3dShown) return; // Ansicht 3D: Leitungen sind Linien in der Szene (render3d/maptown3d.js Wires3D)
     const net = mapPylons(this.game.map);
     if (!net.size) return;
     const { ctx, cam, inRect, dpr } = f;

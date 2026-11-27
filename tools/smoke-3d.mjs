@@ -37,10 +37,13 @@
 //    die Messung gemalt / 3D (Draw-Calls, Dreiecke, Zeit „Objekte“, renderer.mil3dOn).
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
-//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|props|mvp] [--citymin 10]
+//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|mvp] [--citymin 10]
 //                                 [--what schau|karte] (nur mit props: nur Schauraum oder nur echte Karten)
-//                                 [--what werke|haeuser|grossbau|mil] (nur mit baukasten: nur Werke, nur Stadthäuser, nur Großbauten oder nur Militärgebäude fotografieren)
-// Ohne --only laufen die Teile 1 bis 6, 8 und 9; „mvp“ nur ausdrücklich.
+//                                 [--what werke|haeuser|grossbau|mil|kartenstadt] (nur mit baukasten: nur Werke, Stadthäuser, Großbauten, Militärgebäude oder Kartenstadt)
+// 11. Kartenstadt (Paket „Kartenstadt 3D“): im Teil baukasten (--what kartenstadt) jede Art der Kartenstadt gemalt | 3D (4 Drehungen, Stimmungen);
+//    Teil karte (--only karte [--karte seed3,seed7,fest]): Ausschnitte echter Karten (Seed 3, 7, East Europe Railway) Iso | 3D (Iso erst, wenn alle gemalten
+//    Bilder fertig sind), gleiche Menge Gebäude Iso und 3D, Messung gemalt gegen 3D (<out>/karte/).
+// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte und props; „mvp“ nur ausdrücklich.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { openGame, measureFps, DEVICES } from './smoke.mjs';
@@ -1113,6 +1116,7 @@ async function baukasten() {
     console.log(`Baukasten: Dreiecke je Werk ${Object.entries(wtris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
     if (Object.keys(btris).length) console.log(`Baukasten: Dreiecke je Großbau ${Object.entries(btris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
     console.log(`Baukasten: Dreiecke je Variante ${Object.entries(tris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
+    if (!what || what === 'kartenstadt') await kartenstadt(g, dir, save, BOX_TOL); // Paket „Kartenstadt 3D“
   } finally {
     errors.push(...g.errors);
     await g.close();
@@ -1564,10 +1568,12 @@ async function sideBySide(g, file, a, b) {
 async function mvpPair(g, dir, dev, name) {
   const shots = [];
   for (const three of [false, true]) {
-    await g.run((three) => {
+    await g.run(async (three) => {
       const s = window.__frontline.session();
+      const { spriteMissed } = await import('/js/render/spritecache.js');
       s.camera.three = three;
-      for (let i = 0; i < 4; i++) s.renderer.render(s.controller.view);
+      // gemalte Bilder kommen mit Zeitbudget (6 ms je Bild, spritecache.js): so lange malen, bis keins mehr fehlt (sonst fehlen in Iso Gebäude)
+      for (let i = 0; i < 4 || (spriteMissed() && i < 150); i++) s.renderer.render(s.controller.view);
     }, three);
     await g.page.waitForTimeout(250);
     shots.push(await g.page.screenshot());
@@ -2215,6 +2221,409 @@ async function propsPart() {
   }
 }
 
+/**
+ * Kartenstadt (Paket „Kartenstadt 3D“, im Teil baukasten mit --what kartenstadt oder ohne --what): je Art der Kartenstadt (Haus je Stil
+ * und Farbe, Halle Sattel- und Tonnendach, Fabrik, Mauer, Zugteile, Wachturm, Bahnhof, Bahnsteig, Fabrikhalle, Strommast) ein echtes
+ * Gebäude aus den Karten Seed 3 und East Europe Railway: Bogen gemalt (maptown.js drawMapIso) | 3D in den 4 Drehungen, je Stimmung
+ * (Sommer/Winter × Tag/Nacht) nach <out>/baukasten/kartenstadt-<art>-<stimmung>.png, dazu je Hausstil ein Bogen mit allen Farben.
+ * Prüft: Materialfotos geladen, 3D-Gebäude sichtbar, ein Draw-Call je Gebäude, Umriss in Drehung 0 wie gemalt (±BOX_TOL plus 8 % der Größe).
+ */
+async function kartenstadt(g, dir, save, BOX_TOL) {
+  await g.run(async () => {
+    const THREE = await import('/js/vendor/three/three.module.min.js');
+    const { Camera, ISO_K } = await import('/js/render/camera.js');
+    const { drawMapIso, setMapTown, mapInfo, pylonYaw } = await import('/js/render/maptown.js');
+    const { setRoofSnow } = await import('/js/render/season.js');
+    const { materialsReady } = await import('/js/render/materials.js');
+    const { drawMood } = await import('/js/render/mood.js');
+    const { LIGHT_ELEV } = await import('/js/render/ground.js');
+    const { BALANCE } = await import('/js/data/balance.js');
+    const { spriteFrame, spriteMissed } = await import('/js/render/spritecache.js');
+    const { generateMap } = await import('/js/game/map.js');
+    const { FIXED_MAPS } = await import('/js/data/maps/index.js');
+    const kit = await import('/js/render3d/kit3d.js');
+    const m3 = await import('/js/render3d/maptown3d.js');
+    const { makeWorldRoot, makeIsoCamera, syncIsoCamera } = await import('/js/render3d/camera3d.js');
+    const { Sun3D, CATCH, CAST } = await import('/js/render3d/sun3d.js');
+    const mat = kit.makeKitMaterial();
+    for (let i = 0; i < 100 && !(materialsReady() && kit.kitTexturesReady()); i++) await new Promise((ok) => setTimeout(ok, 50));
+    // Vertreter je Art aus echten Karten
+    const reps = new Map();
+    for (const map of [generateMap(3), FIXED_MAPS[0].map]) {
+      setMapTown(map);
+      for (const b of map.town.buildings) {
+        const info = mapInfo(b);
+        let id = b.kind;
+        if (b.kind === 'house') id = `${info.style}-${info.c}`;
+        else if (b.kind === 'train') id = `train-${b.part}`;
+        else if (b.kind === 'hall') id = `hall-${info.vault ? 'tonne' : 'sattel'}`;
+        else if (b.kind === 'wall' && Math.max(b.w, b.h) > 150) continue;
+        if (!reps.has(id)) reps.set(id, { b, map });
+      }
+    }
+    window.__mapReps = [...reps.keys()];
+    const DPR = 2;
+    const BG = '#7a9e58';
+    const bg = [0x7a, 0x9e, 0x58];
+    const cv = document.createElement('canvas');
+    const gl = new THREE.WebGLRenderer({ canvas: cv, antialias: false, preserveDrawingBuffer: true });
+    gl.setPixelRatio(DPR);
+    const scene = new THREE.Scene();
+    const root = makeWorldRoot();
+    scene.add(root);
+    const cam3 = makeIsoCamera();
+    const ground = new THREE.BufferGeometry();
+    const MW = BALANCE.map.width;
+    const MH = BALANCE.map.height;
+    ground.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, MW, 0, 0, MW, MH, 0, 0, 0, 0, MW, MH, 0, 0, MH, 0], 3));
+    const sun = new Sun3D(gl, scene, root, ground);
+    const canvas = (w, h) => {
+      const c = document.createElement('canvas');
+      c.width = w * DPR;
+      c.height = h * DPR;
+      return c;
+    };
+    const bbox = (c) => {
+      const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+      for (let y = 0; y < c.height; y++) {
+        for (let x = 0; x < c.width; x++) {
+          const i = (y * c.width + x) * 4;
+          if (Math.abs(d[i] - bg[0]) + Math.abs(d[i + 1] - bg[1]) + Math.abs(d[i + 2] - bg[2]) < 60) continue;
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+        }
+      }
+      return [x0, y0, x1, y1].map((v) => Math.round(v / DPR));
+    };
+    const light0 = (rot) => {
+      const [, , rc, rd] = [[1, 0, 0, 1], [0, -1, 1, 0], [-1, 0, 0, -1], [0, 1, -1, 0]][rot];
+      const a = Math.atan2(-rd, -rc) + 0.35;
+      const k = Math.sqrt(1 - LIGHT_ELEV * LIGHT_ELEV);
+      return [Math.cos(a) * k, Math.sin(a) * k, LIGHT_ELEV];
+    };
+    window.__kitMap = ({ id, season, night, rots }) => {
+      const { b, map } = reps.get(id);
+      setMapTown(map);
+      const geo = m3.mapTownGeometry(b);
+      const sc = m3.mapTownScale(b) ?? [1, 1];
+      const tall = geo.boundingBox.max.z + 10;
+      const dia = (b.w + b.h) * ISO_K;
+      const ZOOM = Math.min(2.2, 420 / (dia + 40));
+      const py = (tall + dia * 0.25 + 6) * ZOOM;
+      const W = Math.round((dia + 40) * ZOOM);
+      const H = Math.round(py + (dia * 0.25 + 10) * ZOOM);
+      const cam = new Camera(MW, MH);
+      cam.iso = true;
+      cam.resize(W, H);
+      const aim = (rot) => {
+        cam.rot = rot;
+        cam.zoom = ZOOM;
+        cam.x = b.x;
+        cam.y = b.y;
+        const p = cam.screenToWorldFlat(W / 2, H - py);
+        cam.x = p.x;
+        cam.y = p.y;
+      };
+      const mood = night ? 'night' : null;
+      setRoofSnow(season === 'winter');
+      const painted = canvas(W, H);
+      const pc = painted.getContext('2d');
+      aim(0);
+      for (let i = 0; i < 16; i++) {
+        spriteFrame(DPR);
+        pc.setTransform(DPR, 0, 0, DPR, 0, 0);
+        pc.fillStyle = BG;
+        pc.fillRect(0, 0, W, H);
+        drawMapIso(pc, cam, b);
+        if (!spriteMissed()) break;
+      }
+      setRoofSnow(false);
+      gl.setSize(W, H, false);
+      sun.setLevel('high');
+      sun.setMood(mood);
+      const mesh = new THREE.InstancedMesh(geo, mat, 1);
+      const m = new THREE.Matrix4();
+      m.compose(new THREE.Vector3(b.x, b.y, 0), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), m3.mapTownYaw(b, b.kind === 'pylon' ? pylonYaw(b) : 0)), new THREE.Vector3(sc[0], sc[1], 1));
+      mesh.setMatrixAt(0, m);
+      mesh.frustumCulled = false;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      mesh.layers.enable(CAST);
+      root.add(mesh);
+      const panels = [];
+      let calls = 0;
+      for (const rot of rots) {
+        aim(rot);
+        syncIsoCamera(cam3, cam);
+        const light = light0(rot);
+        kit.setKitFrame(mat, { light, snow: season === 'winter' ? 1 : 0, night: night ? 1 : 0, shade: BALANCE.shadows3d.opacity[mood ?? 'none'] });
+        gl.setClearColor(BG, 1);
+        sun.update(cam3, light, null);
+        gl.shadowMap.needsUpdate = true;
+        cam3.layers.set(CATCH);
+        gl.render(scene, cam3);
+        cam3.layers.set(0);
+        gl.autoClear = false;
+        gl.clearDepth();
+        gl.render(scene, cam3);
+        gl.autoClear = true;
+        calls = gl.info.render.calls;
+        const c = canvas(W, H);
+        c.getContext('2d').drawImage(cv, 0, 0);
+        panels.push(c);
+      }
+      sun.setLevel('off');
+      aim(0);
+      syncIsoCamera(cam3, cam);
+      kit.setKitFrame(mat, { light: light0(0), snow: season === 'winter' ? 1 : 0, night: 0, shade: 0.4 });
+      gl.render(scene, cam3);
+      const flat0 = canvas(W, H);
+      flat0.getContext('2d').drawImage(cv, 0, 0);
+      root.remove(mesh);
+      mesh.dispose();
+      const boxes = { painted: bbox(painted), three: bbox(flat0) };
+      if (mood) {
+        for (const c of [painted, ...panels]) {
+          const x = c.getContext('2d');
+          x.setTransform(DPR, 0, 0, DPR, 0, 0);
+          drawMood(x, mood, W, H);
+        }
+      }
+      return { painted, panels, W, H, tris: (geo.getAttribute('position').count / 3) | 0, calls, boxes, tex: kit.kitTexturesReady(), size: Math.max(b.w, b.h) };
+    };
+    /** Bogen aus Zeilen von Feldern (Leinwand, Beschriftung), jede Zeile so hoch wie ihr höchstes Feld. */
+    window.__mapSheet = (rows) => {
+      const gap = 6;
+      const rh = rows.map((r) => Math.max(...r.map(([c]) => c.height / DPR)));
+      const rw = rows.map((r) => r.reduce((a, [c]) => a + c.width / DPR + gap, -gap));
+      const sheet = document.createElement('canvas');
+      sheet.width = Math.max(...rw) * DPR;
+      sheet.height = (rh.reduce((a, v) => a + v + gap, -gap)) * DPR;
+      const sc = sheet.getContext('2d');
+      sc.fillStyle = '#111';
+      sc.fillRect(0, 0, sheet.width, sheet.height);
+      let y = 0;
+      rows.forEach((row, j) => {
+        let x = 0;
+        for (const [c, t] of row) {
+          sc.setTransform(DPR, 0, 0, DPR, x * DPR, y * DPR);
+          sc.drawImage(c, 0, 0, c.width / DPR, c.height / DPR);
+          sc.font = 'bold 13px sans-serif';
+          sc.fillStyle = 'rgba(0,0,0,.6)';
+          sc.fillRect(4, c.height / DPR - 22, sc.measureText(t).width + 8, 18);
+          sc.fillStyle = '#fff';
+          sc.fillText(t, 8, c.height / DPR - 8);
+          x += c.width / DPR + gap;
+        }
+        y += rh[j] + gap;
+      });
+      return sheet.toDataURL('image/png');
+    };
+  });
+  const ids = await g.run(() => window.__mapReps);
+  const trisOf = {};
+  const worst = [];
+  const first = new Set(); // Häuser: Stimmungen nur für die erste Farbe je Stil (die Farben stehen im Bogen …-farben)
+  for (const id of ids) {
+    const style = id.match(/^(alt|klinker|fach|neu|farm)-/)?.[1];
+    if (style && first.has(style)) continue;
+    if (style) first.add(style);
+    for (const season of ['summer', 'winter']) {
+      for (const night of [false, true]) {
+        const name = `kartenstadt-${id}-${season}-${night ? 'nacht' : 'tag'}`;
+        const res = await g.run(({ id, season, night }) => {
+          const r = window.__kitMap({ id, season, night, rots: [0, 1, 2, 3] });
+          return { url: window.__mapSheet([[[r.painted, `${id} gemalt`], ...r.panels.map((c, i) => [c, `3D Drehung ${i}`])]]), tris: r.tris, calls: r.calls, boxes: r.boxes, tex: r.tex, size: r.size };
+        }, { id, season, night });
+        await save(name, res.url);
+        const [p, t] = [res.boxes.painted, res.boxes.three];
+        const dev = Math.max(...p.map((v, i) => Math.abs(v - t[i])));
+        const tol = BOX_TOL + 0.08 * res.size;
+        trisOf[id] = res.tris;
+        const bad = !res.tex || t[2] < 0 || res.calls !== 1 || (!night && dev > tol);
+        if (bad) fail++;
+        if (!night) worst.push([dev, id, season]);
+        if (bad || (season === 'summer' && !night)) {
+          console.log(`Kartenstadt ${id} ${season} ${night ? 'Nacht' : 'Tag'}: ${res.tris} Dreiecke, ${res.calls} Draw-Call(s), Umriss gemalt ${p.join(',')} / 3D ${t.join(',')} (±${dev} px, Grenze ${tol.toFixed(0)})${res.tex ? '' : ', Fotos fehlen'}${bad ? '  FEHLER' : ''}`);
+        }
+      }
+    }
+  }
+  // Farben der Hausstile: je Stil eine Zeile je Farbe (gemalt | 3D Drehung 0)
+  for (const style of ['alt', 'klinker', 'fach', 'neu', 'farm']) {
+    const res = await g.run(({ style, ids }) => {
+      const rows = [];
+      for (const id of ids.filter((i) => i.startsWith(`${style}-`))) {
+        const r = window.__kitMap({ id, season: 'summer', night: false, rots: [0] });
+        rows.push([[r.painted, `${id} gemalt`], [r.panels[0], `${id} 3D`]]);
+      }
+      return rows.length ? window.__mapSheet(rows) : null;
+    }, { style, ids });
+    if (res) await save(`kartenstadt-${style}-farben`, res);
+  }
+  console.log(`Kartenstadt: Dreiecke je Variante ${Object.entries(trisOf).map(([k, v]) => `${k} ${v}`).join(', ')}`);
+  worst.sort((a, b) => b[0] - a[0]);
+  console.log(`Kartenstadt: größte Umrissabweichung ${worst.slice(0, 3).map(([d, id, s]) => `${id} ${s} ${d} px`).join(', ')}`);
+}
+
+/**
+ * Teil „karte“ (Paket „Kartenstadt 3D“, --only karte, läuft auch ohne --only): Ausschnitte echter Karten, in denen die Kartenstadt zu
+ * sehen ist (Seed 3 Stadtmitte Sommer und Winter, Seed 7, feste Karte East Europe Railway: Fabrikhalle, Bahnhof, Mastlinie), Fotos Iso | 3D
+ * in 4 Drehungen nach <out>/karte/. Messung je Ausschnitt (Drehung 0, Zoom 1, Software-WebGL): Draw-Calls, Dreiecke und Zeit „Objekte“ mit
+ * gemalter Kartenstadt (maptown3dOn = false) und in 3D, Schatten Aus und Hoch. Fehler, wenn in 3D kein Gebäude der Kartenstadt als Mesh
+ * erscheint (an der Mastlinie: keine Leitung).
+ */
+async function karte() {
+  const dir = join(out, 'karte');
+  await mkdir(dir, { recursive: true });
+  const runs = [
+    ['seed3', 3, false, 'summer'],
+    ['seed3', 3, false, 'winter'],
+    ['seed7', 7, false, 'summer'],
+    ['fest', 3, true, 'summer'],
+    ['fest', 3, true, 'winter'],
+  ];
+  const want = arg('karte', null)?.split(','); // --karte seed7,fest: nur diese Karten (Standard alle)
+  for (const [name, seed, fixed, season] of runs) {
+    if (want && !want.includes(name)) continue;
+    const wx = season === 'winter' ? 'snow' : 'clear';
+    const g = await openGame({ seed, query: `iso=1&three=1&shadows=high&weather=${season}&wx=${wx}`, scale: 1, out, start: !fixed });
+    try {
+      if (fixed) {
+        await g.page.evaluate(() => localStorage.setItem('frontline-kartenwahl', 'fest:east-europe-railway'));
+        await g.page.reload();
+        await g.page.waitForTimeout(1000);
+        await g.press('button.primary');
+        await g.page.waitForFunction(() => window.__frontline?.session()?.game);
+        await g.page.waitForTimeout(1500);
+      }
+      const spots = await g.run(() => {
+        const s = window.__frontline.session();
+        s.loop.paused = true;
+        s.renderer.revealAll = true;
+        s.camera.three = true;
+        const bl = s.game.map.town.buildings;
+        const R = 420;
+        const near = (c, kinds) => bl.filter((o) => Math.hypot(o.x - c.x, o.y - c.y) < R && (!kinds || kinds.includes(o.kind)));
+        const centroid = (list) => ({ x: list.reduce((a, o) => a + o.x, 0) / list.length, y: list.reduce((a, o) => a + o.y, 0) / list.length });
+        let best = null;
+        for (const b of bl) {
+          if (b.kind !== 'house') continue;
+          const n = near(b, ['house', 'hall', 'factory']).length;
+          if (!best || n > best.n) best = { n, b };
+        }
+        const out = [];
+        if (best) {
+          const list = near(best.b, ['house', 'hall', 'factory']);
+          out.push({ name: 'stadt', ...centroid(list), n: list.length, kinds: [...new Set(list.map((o) => o.kind))].join(',') });
+        }
+        for (const kind of ['plant', 'station', 'tower', 'wall']) {
+          const b = bl.find((o) => o.kind === kind);
+          if (b && (kind !== 'wall' || out.length < 3)) out.push({ name: kind, x: b.x, y: b.y, n: near(b).length, kinds: kind });
+        }
+        const py = bl.filter((o) => o.kind === 'pylon');
+        if (py.length > 2) {
+          const m = py[Math.floor(py.length / 2)];
+          out.push({ name: 'masten', x: m.x, y: m.y, n: py.length, kinds: 'pylon' });
+        }
+        return out;
+      });
+      for (const spot of spots) {
+        if (!fixed && spot.name !== 'stadt' && spot.name !== 'tower') continue; // zufällige Karten: Stadtmitte und Wachturm
+        if (fixed && spot.name === 'wall') continue;
+        console.log(`Karte ${name} ${season} ${spot.name}: ${spot.n} Gebäude in der Nähe (${spot.kinds})`);
+        const tag = `${name}-${season}-${spot.name}`;
+        for (let rot = 0; rot < 4; rot++) {
+          await look(g, spot.x, spot.y, rot, spot.name === 'plant' ? 0.7 : 1);
+          await mvpPair(g, dir, tag, `drehung${rot}`);
+        }
+        if (season !== 'summer') continue;
+        await look(g, spot.x, spot.y, 0, spot.name === 'plant' ? 0.7 : 1);
+        // gleiche Menge: jedes nicht zerstörte Gebäude der Kartenstadt im Bild wird in Iso gemalt (alle Bilder fertig) und in 3D ein Mesh
+        const same = await g.run(async () => {
+          const s = window.__frontline.session();
+          const r = s.renderer;
+          const { spriteMissed } = await import('/js/render/spritecache.js');
+          const { hasMapTown3d } = await import('/js/render3d/maptown3d.js');
+          const orig = r.drawTownItemIso;
+          const count = (three) => {
+            s.camera.three = three;
+            r.maptown3dOn = true;
+            let n = 0;
+            r.drawTownItemIso = function (f, o) {
+              const hs = f.g.houseBySrc?.get(o);
+              if (hasMapTown3d(o) && !(hs && hs.ruined && f.known(hs.x, hs.y))) n++;
+              return orig.call(this, f, o);
+            };
+            try {
+              for (let i = 0; i < 3 || (spriteMissed() && i < 150); i++) {
+                n = 0;
+                r.render(s.controller.view);
+              }
+            } finally {
+              r.drawTownItemIso = orig;
+            }
+            return { n, missed: spriteMissed() };
+          };
+          const iso = count(false);
+          const d3 = count(true);
+          return { iso, d3, meshes: r.towns3d.stats('maptown').houses };
+        });
+        const sameOk = same.iso.n === same.d3.n && same.d3.n === same.meshes && !same.iso.missed;
+        if (!sameOk) fail++;
+        console.log(`Karte ${tag}: gleiche Menge Iso ${same.iso.n} gemalt (fehlende Bilder: ${same.iso.missed}), 3D ${same.d3.n} Gebäude, ${same.meshes} Meshes${sameOk ? '' : '  FEHLER'}`);
+        const rows = [];
+        let any = 0;
+        for (const level of ['off', 'high']) {
+          for (const on of [false, true]) {
+            const st = await g.run(({ level, on }) => {
+              const s = window.__frontline.session();
+              const r = s.renderer;
+              s.camera.three = true;
+              r.setShadows(level);
+              r.maptown3dOn = on;
+              for (let i = 0; i < 3; i++) r.render(s.controller.view);
+              const info = r.gl.info;
+              const orig = r.objects3d;
+              let obj = null;
+              info.autoReset = false;
+              r.objects3d = function (f) {
+                info.reset();
+                orig.call(this, f);
+                obj = { calls: info.render.calls, tris: info.render.triangles };
+              };
+              try {
+                r.render(s.controller.view);
+              } finally {
+                r.objects3d = orig;
+                info.autoReset = true;
+              }
+              return { ...obj, map: r.towns3d.stats('maptown'), wires: r.wires3d.mesh.visible ? r.wires3d.count : 0 };
+            }, { level, on });
+            const t = await timePasses(g, frames);
+            if (on && !st.map.houses) fail++;
+            if (on && spot.name === 'masten' && !st.wires) fail++;
+            if (on) any += st.map.houses;
+            rows.push(`${level === 'off' ? 'Aus ' : 'Hoch'} ${on ? '3D    ' : 'gemalt'}: Objekte ${t.Objekte.toFixed(0)} ms, ${st.calls} Draw-Calls, ${st.tris} Dreiecke` + (on ? ` (Kartenstadt: ${st.map.houses} Gebäude/${st.map.calls} Varianten/${st.map.tris} Dreiecke${st.wires ? `, ${st.wires} Leitungsfelder` : ''})` : ''));
+          }
+        }
+        await g.run(() => {
+          window.__frontline.session().renderer.maptown3dOn = true;
+        });
+        console.log(`Karte Messung ${tag} (Zoom ${spot.name === 'plant' ? 0.7 : 1}, ${frames} Bilder, Software-WebGL; Draw-Calls und Dreiecke in „Objekte“ samt Schattenkarte):`);
+        for (const r of rows) console.log(`  ${r}`);
+        if (!any) console.log('  FEHLER: keine Kartenstadt in 3D');
+      }
+    } finally {
+      errors.push(...g.errors);
+      await g.close();
+    }
+  }
+}
+
 try {
   if (!only || only === 'kamera') await camera();
   if (!only || only === 'vergleich') await compare();
@@ -2227,6 +2636,7 @@ try {
   if (!only || only === 'wasser') await water();
   if (only === 'mvp') await mvp();
   if (!only || only === 'natur') await nature();
+  if (!only || only === 'karte') await karte();
   if (!only || only === 'props') await propsPart();
 } catch (e) {
   console.error(`Abbruch: ${e.message}`);

@@ -91,7 +91,7 @@ export const isoViewMethods = {
       if (b.kind !== 'house' || !inRect(b.x, b.y, ISO_PAD)) continue;
       if (relief) this.groundAt(ctx, b.x, b.y);
       else setIsoGround(ctx, cam, dpr);
-      drawHouseYard(ctx, b, z, this.season, cam.rot | 0);
+      drawHouseYard(ctx, b, z, this.season, cam.rot | 0, !!this.houseYard3d); // Ansicht 3D: Schatten wirft das Haus-Mesh
     }
     setIsoGround(ctx, cam, dpr);
     drawWays(this, ctx, this.season); // Feldwege und Gleise scharf auf dem Boden (seit v5.31, ways.js)

@@ -186,7 +186,7 @@ test('Gebäudefamilie „mil“: Militärgebäude und Ausbauten teilen sich Town
   assert.equal(mil.key({ kind: 'mil', b: { ...b, hp: 49 } }), 'tower|flak|1');
   assert.ok(isMilBuilding(b) && !isMilBuilding({ type: 'fob', main: true }) && isMilBuilding({ type: 'fob' }));
   assert.ok(fort.has({ kind: 'fort' }) && fort.key({ W: 64, D: 56, mask: 7 }) === 'fort|64|56|7');
-  for (const f of FAMILIES) assert.ok(['town', 'works', 'big', 'mil'].includes(f.name));
+  for (const f of FAMILIES) assert.ok(['town', 'works', 'big', 'mil', 'maptown'].includes(f.name));
 });
 
 test('Ausbauten besetzter Häuser 3D: Sandsäcke, MG-Nest und Draht je Maske, gültig und innerhalb des Umfelds', () => {

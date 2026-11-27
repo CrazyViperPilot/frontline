@@ -88,6 +88,10 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
   Iso | 3D in 4 Drehungen, Sommer und Winter (`.smoke/3d/stadt/`), Draw-Calls, Dreiecke und Zeit „Objekte“ mit gemalten gegen
   3D-Stadthäuser und 3D-Werke (`renderer.towns3dOn`, `works3dOn`). Dazu ein Ausschnitt mit den meisten Großbauten samt Hauptstadt und Regierungsviertel
   (Fotos `seed3-grossbau-*`), Messung gemalt / ohne Großbauten 3D / alles 3D (`renderer.big3dOn`); der Lauf dauert gut 10 min.
+  `--only baukasten --what kartenstadt`: jede Art der Kartenstadt (Haus je Stil und Farbe, Halle, Fabrik, Mauer, Zug, Turm, Bahnhof, Bahnsteig,
+  Fabrikhalle, Mast) gemalt neben 3D in 4 Drehungen und Stimmungen (`.smoke/3d/baukasten/kartenstadt-*.png`; Fehler bei mehr als einem Draw-Call
+  je Gebäude, fehlenden Fotos, abweichendem Umriss). `--only karte`: Ausschnitte echter Karten (Seed 3, 7, East Europe Railway mit Fabrikhalle,
+  Bahnhof, Mastlinie) Iso | 3D in 4 Drehungen (`.smoke/3d/karte/`) und Messung gemalt gegen 3D (`renderer.maptown3dOn`, Schatten Aus/Hoch); Prüfschritt „gleiche Menge“: so viele Gebäude der Kartenstadt wie in Iso (alle gemalten Bilder fertig, `spriteMissed()` false) gemalt werden, so viele Meshes stehen in 3D (`--karte seed3,seed7,fest` wählt Karten). Iso-Fotos erst nach fertigem Sprite-Cache (Zeitbudget 6 ms je Bild, sonst fehlen Gebäude).
   `--only wasser`: See (Seed 3, `river=0`) und Fluss an der Brücke (Seed 4, `river=1`), Hubschrauber und Panzer am Wasser; Iso | 3D in
   4 Drehungen Tag und Nacht, Zoom 0,5/1,6, Sommer und Winter (`.smoke/3d/wasser/`); Zeit „Gelände“, Draw-Calls ohne und mit 3D-Wasser.
   `--only props`: alle Props gemalt neben 3D: echte Karten (Seed 3 und 7) mit Ausschnitt „Land“ (die meisten Props der Karte) und „Stadt“

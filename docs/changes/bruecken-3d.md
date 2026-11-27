@@ -1,1 +1,0 @@
-**Brücken 3D** (§6 „Fluss“, nur Bild): In der Ansicht 3D stehen Brücken (Pfeiler, Fahrbahn auf Geländehöhe der Ufer, Geländer, Laternen, Eisenbahnbrücke, zerstört, im Wiederaufbau) und Furtstangen als echte Körper mit Schatten, Einheiten fahren sichtbar auf der Fahrbahn (Test, `?three=1`).

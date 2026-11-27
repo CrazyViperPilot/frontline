@@ -171,7 +171,11 @@ export class Camera {
     if (dy) this.pan(0, dy); // Ziel in die Mitte des unverdeckten Bereichs (pan: Inhalt folgt dem Versatz)
   }
 
-  /** Mitte so begrenzen, dass der Ausschnitt möglichst in der Karte bleibt (zu groß: zentriert). Isometrisch: Mitte in der Karte. */
+  /**
+   * Mitte so begrenzen, dass der Ausschnitt möglichst in der Karte bleibt (zu groß: zentriert). Isometrisch: Mitte in der Karte.
+   * 2D: Der obere bzw. untere Kartenrand darf bis an die Kopfleiste bzw. die Leiste unten (Minimap, Infofeld, Befehle) rücken
+   * (insetTop, insetBottom), sonst bliebe der Streifen dahinter unerreichbar (dort nicht bauen, nichts antippen).
+   */
   clamp() {
     if (this.iso) {
       this.x = clamp(this.x, 0, this.mapW);
@@ -180,8 +184,12 @@ export class Camera {
     }
     const hw = this.viewW / (2 * this.zoom);
     const hh = this.viewH / (2 * this.zoom);
+    const top = (this.insetTop || 0) / this.zoom;
+    const bottom = (this.insetBottom || 0) / this.zoom;
+    const lo = hh - top;
+    const hi = this.mapH - hh + bottom;
     this.x = hw * 2 >= this.mapW ? this.mapW / 2 : clamp(this.x, hw, this.mapW - hw);
-    this.y = hh * 2 >= this.mapH ? this.mapH / 2 : clamp(this.y, hh, this.mapH - hh);
+    this.y = lo >= hi ? this.mapH / 2 + (bottom - top) / 2 : clamp(this.y, lo, hi); // zu groß: Karte in der freien Mitte
   }
 
   /** Bildschirmecken (Welt, Boden auf Höhe 0) im Uhrzeigersinn: oben links, oben rechts, unten rechts, unten links. */

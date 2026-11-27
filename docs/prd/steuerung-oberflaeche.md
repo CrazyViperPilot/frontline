@@ -84,7 +84,9 @@
   Die Karte liegt links neben der rechten Knopfspalte (Stadt, Forschung, Wirtschaft, Bauer, Luftschlag), die sich nicht überdeckt.
   Der Knopf „▾“ neben der Minimap klappt Auswahl und Befehle ein (nur die Minimap
   bleibt, Zustand wird gemerkt, `localStorage` `frontline-hud-fold`). Die Kamera zentriert Ziele (Spielstart, Minimap-Klick, Meldung antippen, Taste für Basis) in der
-  vom HUD nicht verdeckten Mitte (`camera.insetTop/insetBottom`). Tooltips der Befehlstasten gibt es nur mit Maus (Hover), nicht auf Touch.
+  vom HUD nicht verdeckten Mitte (`camera.insetTop/insetBottom`). In 2D lässt sich die Karte so weit schieben, dass ihr unterer Rand über der Leiste unten
+  (Minimap, Infofeld, Befehle) und ihr oberer Rand unter der Kopfleiste liegt:
+  auch der Streifen dahinter ist erreichbar (bauen, antippen). Tooltips der Befehlstasten gibt es nur mit Maus (Hover), nicht auf Touch.
   Tablet (Lenovo Tab M11, iPad Air) und Desktop behalten das bisherige Layout; auf Touch-Geräten (ohne Maus) sind Infofeld und Befehlskarte
   wischbar hoch/runter und links/rechts, wenn ihr Inhalt nicht hineinpasst, und unten bleibt Platz für den Home-Balken (`safe-area-inset-bottom`).
 - Auf der Karte: Munitions-/Treibstoffbalken bei gewählten Einheiten, Warnzeichen bei Einheiten ohne Munition,

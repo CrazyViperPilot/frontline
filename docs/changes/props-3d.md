@@ -1,0 +1,1 @@
+**Props 3D** (Test, `?three=1`, Ansicht „3D“): Zäune, Mauern, Sandsäcke, Zelte, Container, Tanks, Fässer und alle übrigen Props der Karte sowie geparkte Autos, Parkbänke, Heuballen und Versorgungskisten stehen als echte 3D-Körper im Bild, auch von hinten, mit Schnee im Winter, Fahnen in Teamfarbe, Trümmern und Toren, und werfen echte Schatten.

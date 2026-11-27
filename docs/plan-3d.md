@@ -242,6 +242,36 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   199 → 244 ms, 18 → 42 Draw-Calls; offen (191 Büsche, 50 Felsen) Aus 44 → 55 ms, Hoch 139 → 164 ms. Natur-Draw-Calls im Bild 11 bis 16
   (je Buschart 2, Felsen ≤ 4, Tiere je Haltung). Offen: Gesteinsfoto (`mat: 'rock'`) fehlt den 3D-Felsen (Flächenfarben bleiben),
   Herbstlaub am Boden unter den Sträuchern fehlt in 3D (wie bei den Bäumen).
+- Props 3D: gebaut (`js/render3d/props3d.js`, Test `test/props3d.test.js`, Prüfteil `smoke-3d.mjs --only props`, Fotos `.smoke/3d/props/`). Alle
+  Props der Karte (`mapprops.js`: Zäune, Mauern, Militär, Industrie, Raffinerie, Zivil, Kriegsspuren), geparkte Autos, Parkbänke, Heuballen
+  und Versorgungskisten (`props.js`) aus denselben Körperlisten wie die gemalten Bilder über den Körper-Wandler: kein neues Bauteil in `kit3d.js`
+  nötig (nichts nachzutragen). Hooks `prop3d(t, o)` (t 6, 7, 14, 16) und `crate3d` (t 8 und die Kiste auf dem Rücken eines Trägers) in
+  `isoObjects`, Höhe wie das Billboard (`cam.pinned`), Schalter `renderer.props3dOn`; Busch und Fels unter den Props der Karte laufen über
+  `nature3d` (`DELEGATE_AS` in `civprops.js`). **Gemessen vor dem Plan** (Seed 3, 7, KI gegen KI, 0 und 10 Spielminuten): nur 76 Props der Karte
+  (Zufallskarte, rund ein Dutzend Gruppen), bis 85 nach 10 Minuten (die KI baut Feldstellungen: Sandsäcke, Hesco …); dazu 264/272 Autos, 140/84
+  Bänke, 106/87 Ballen, 6 Kisten; im Bild (Fenster 1 400²) höchstens 13 Props der Karte (Land) bzw. 109 Autos und Bänke (Stadt), 4 Ballen, 1 Kiste;
+  Die feste Karte hat noch keine Props. Dreiecke je Form (gerade Kachel bzw. Einzelstück, Sommer = Winter): Holzzaun 276, Metallzaun 360, Maschendraht 816,
+  Betonmauer 156, Steinmauer 324, Sandsack 240, Hesco 696, Container 600, Tank 1 268 bis 2 036, Destillationskolonne 3 876 (größte, Testgrenze 5 000),
+  Auto 556 bis 616, Bank 204, Ballen 356, Kiste 288. **Entscheidungen:** (1) *Zäune und Mauern je Kachel, nicht als verschmolzene Linie:* die Kachel ist
+  schon durchgehende Geometrie (`fenceModel`: Arme bis zur Zellkante, Verbindung nach den vier Nachbarn, Ecke, T, Kreuz, Ende, Tor, Trümmer wie
+  gemalt); Instancing je Form hält die Draw-Calls bei der Zahl der verschiedenen Formen (je Linie wenige), und eine Zerstörung (`propVersion`) ändert
+  nur eine Instanz statt die ganze Linie neu zu bauen; Kacheln stehen je auf ihrer Geländehöhe (wie gemalt, an Hängen kann ein Absatz entstehen).
+  (2) *Eine Geometrie je Inhalt:* Formen mit gleicher Prüfsumme der Ecken teilen Geometrie und Draw-Call (Detail- und Farbvarianten, die ein Modell
+  nicht ändert). (3) *Fahnen:* das Tuch trägt `FLAG_MARK`, die Ecken `aTeam = 1`, der Shader nimmt die Farbe der Instanz (`propFlagColor`: Besitzer der
+  nächsten Flagge, sonst Editorfarbe, sonst weiß); eine Geometrie für alle Teams, wie bei den Werken. (4) *Durchscheinende Körper* (Maschendraht, Glas,
+  Tarnnetz) je Deckkraft eine eigene Form ohne Schatten. (5) *Schatten:* alles Undurchsichtige wirft über die Schattenkarte, die gemalten Schatten der Props
+  fallen dann weg (`propShadow3d`); ohne Karte bleiben sie gemalt, die 3D-Kiste bekommt dann einen Fußschatten (`crateShadow2d`). Der Schimmer der
+  Kisten am Boden bleibt gemalt (`drawCrateGlow`). (6) `vary` (Schotter, Stein) als Flächenfarbe je Fläche wie gemalt; Materialfotos (`mat`) fehlen,
+  Flächenfarben bleiben (wie bei den Felsen). (7) Auto, Bank, Ballen: ganze Modelle (Auto „top“ mit beiden Seiten, Ballen mit beiden Stirnseiten),
+  Maßstab wie gemalt (Auto 1,5), Drehung stufenlos. Messung „Objekte“ samt Schattenkarte (Software-WebGL, Zoom 1, 8 Bilder, ruhiger Lauf), gemalt → 3D:
+  Land (Seed 3, 18 Props in 13 Formen, 9 156 Dreiecke) Aus 80 → 88 ms, 24 → 36 Draw-Calls, Hoch 235 → 239 ms, 46 → 74; Stadt (Seed 3, 109 Autos und Bänke in
+  24 Formen, 45 416 Dreiecke) Aus 85 → 100 ms, 9 → 33 Draw-Calls, 96 390 → 141 624 Dreiecke, Hoch 212 → 225 ms, 18 → 66, 372 062 → 462 676; nach 10 Minuten (28 Formen)
+  Aus 87 → 97 ms, 17 → 45, Hoch 218 → 287 ms, 27 → 83 (Rauschen etwa 10 bis 20 %, Lauf mit anderer Last bis 30 % mehr). Schauraum mit jeder Art in
+  Reihen zu sechs (Worst Case, jede Form verschieden: 192 Props in 120 Formen, 55 144 Dreiecke): Aus 35 → 51 ms, 65 → 185 Draw-Calls, Hoch 131 → 173 ms, 100 → 325.
+  Die Draw-Calls je Bild wachsen mit der Zahl verschiedener Formen, nicht der Props; auf echter GPU zählen sie. Offen: Autos je Lackfarbe eine Form
+  (Farbe je Instanz über `aTeam` ginge, die Modelle mischen aber Abtönungen aus der Lackfarbe, `carModel`: Stadtausschnitt 24 Formen auf etwa 10 senken);
+  Furtstangen (`bridge.js`, Paket „Brücken 3D“), Wracks und Ruinen bleiben Billboards; Materialfotos; bewegte Teile (Schranke offen/zu ist ein Tor-Zustand,
+  keine Bewegung); durchscheinende Teile werfen keinen Schatten (gemalt ein schwacher).
 
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als

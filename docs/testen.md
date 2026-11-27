@@ -90,6 +90,11 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
   (Fotos `seed3-grossbau-*`), Messung gemalt / ohne Großbauten 3D / alles 3D (`renderer.big3dOn`); der Lauf dauert gut 10 min.
   `--only wasser`: See (Seed 3, `river=0`) und Fluss an der Brücke (Seed 4, `river=1`), Hubschrauber und Panzer am Wasser; Iso | 3D in
   4 Drehungen Tag und Nacht, Zoom 0,5/1,6, Sommer und Winter (`.smoke/3d/wasser/`); Zeit „Gelände“, Draw-Calls ohne und mit 3D-Wasser.
+  `--only props`: alle Props gemalt neben 3D: echte Karten (Seed 3 und 7) mit Ausschnitt „Land“ (die meisten Props der Karte) und „Stadt“
+  (die meisten Autos, Bänke, Ballen), 0 und 10 Spielminuten, 4 Drehungen, Winter; Schauraum mit jeder Art in Reihen zu sechs (Linie mit
+  Ecke, Tor zu und offen, Trümmer, Einzelstücke mit Fahne, Lagen) in 4 Drehungen Sommer und Winter und bei Nacht (`.smoke/3d/props/`).
+  Zählung „x/x Props in 3D“ (Fehler, wenn ein Prop-Billboard übrig bleibt), Draw-Calls, Dreiecke und Zeit „Objekte“ gemalt gegen 3D
+  (`renderer.props3dOn`, Schatten Aus und Hoch). Node-Test: `test/props3d.test.js`.
 - `node tools/smoke-3d.mjs --only mvp` (Paket „MVP-Messung“, nur ausdrücklich, gut 10 min): Rundgang je Gerät desktop, tablet, phone
   (Ansicht umschalten, Drehungen, Zoom, Wald, Hang, Winter; Fotos alt/neu nebeneinander nach `.smoke/3d/mvp/`), Auswahl per Klick/Tippen
   und Befehl in 3D (Fehler, wenn nicht), Bildrate Iso und 3D Aus/Mittel/Hoch nach `--gametime` Spielminuten Zeitraffer; Zahlen auch in

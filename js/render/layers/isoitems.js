@@ -8,7 +8,7 @@ import { drawTownBuilding, drawTeamBuilding, drawCar, drawBench, drawRubble, dra
 import { parkDeco } from '../terrain.js';
 import { houseYardTrees, houseYardIso } from '../maptown.js';
 import { drawUnitSprite, drawWreckSprite } from '../isosprites.js';
-import { drawMapCarIso, drawMapCarShadowIso, drawBenchIso, drawBenchShadowIso, drawCrateIso, drawBaleIso, drawBaleShadowIso } from '../props.js';
+import { drawMapCarIso, drawMapCarShadowIso, drawBenchIso, drawBenchShadowIso, drawCrateIso, drawCrateGlow, drawBaleIso, drawBaleShadowIso } from '../props.js';
 import { fieldBales } from '../fields.js';
 import { propLooks, drawPropIso, drawPropShadowIso, propFlagColor } from '../mapprops.js';
 import { drawTreeIso, drawBushIso, drawRockIso, natureShadowIso, drawAnimalIso } from '../nature.js';
@@ -114,11 +114,23 @@ export const isoItemMethods = {
       ctx.ellipse(p.x, p.y + 0.5 * z, 7.5 * z, 3 * z, 0, 0, Math.PI * 2);
       cam.unpin();
     }
+    // Ansicht 3D ohne Schattenkarte: die 3D-Kiste hat keinen gemalten Schatten im Bild mehr
+    if (this.crateShadow2d) for (const it of items) if (it.t === 8) {
+      if (relief) cam.pin(this.baseHeight(it));
+      const p = cam.worldToScreen(it.o.x, it.o.y);
+      const z = cam.zoom;
+      const s = it.o.ground ? 16 : 13;
+      ctx.moveTo(p.x + 9 * z * s / 16, p.y + 0.5 * z);
+      ctx.ellipse(p.x, p.y + 0.5 * z, 9 * z * s / 16, 4.5 * z * s / 16, 0, 0, Math.PI * 2);
+      cam.unpin();
+    }
     ctx.fillStyle = 'rgba(10,18,8,0.24)';
     ctx.fill();
     // Schatten der geparkten Autos, Bänke (seit v5.43) und Ballen (seit v5.44): Umriss von oben am Boden (props.js)
     for (const it of items) {
       if (it.t !== 6 && it.t !== 7 && it.t !== 14 && it.t !== 16) continue;
+      // Ansicht 3D mit Schattenkarte: das Mesh wirft ihn selbst (render3d/props3d.js; Busch und Fels der Karte: nature3d.js)
+      if ((it.t === 16 && (it.o.kind === 'bush' || it.o.kind === 'rock') ? this.natureShadow3d && this.props3dOn : this.propShadow3d)) continue;
       if (relief) cam.pin(this.baseHeight(it));
       if (it.t === 6) drawMapCarShadowIso(ctx, cam, it.o, dpr);
       else if (it.t === 7) drawBenchShadowIso(ctx, cam, it.o, dpr);
@@ -143,13 +155,15 @@ export const isoItemMethods = {
       }
       else if (it.t === 2) { if (!this.rock3d?.(it.o) && !drawRockIso(ctx, cam, it.o, this.season)) drawRock(ctx, cam, it.o); } // 3D: render3d/nature3d.js
       else if (it.t === 13) { if (!this.bush3d?.(it.o)) drawBushIso(ctx, cam, it.o, this.season); }
-      else if (it.t === 6) { if (!drawMapCarIso(ctx, cam, it.o, this.season)) drawCar(ctx, cam, it.o); } // gemalt (props.js, seit v5.43)
-      else if (it.t === 7) { if (!drawBenchIso(ctx, cam, it.o, this.season)) drawBench(ctx, cam, it.o); }
-      else if (it.t === 14) drawBaleIso(ctx, cam, it.o, this.season);
-      else if (it.t === 16) drawPropIso(ctx, cam, it.o, this.season, propFlagColor(g, it.o)); // Zäune, Mauern … (mapprops.js)
+      // Auto, Bank, Ballen, Prop der Karte, Kiste: 3D (render3d/props3d.js über prop3d, crate3d, nur im Durchlauf „Objekte“ der Ansicht 3D), sonst gemalt (props.js, seit v5.43)
+      else if (it.t === 6) { if (!this.prop3d?.(6, it.o) && !drawMapCarIso(ctx, cam, it.o, this.season)) drawCar(ctx, cam, it.o); }
+      else if (it.t === 7) { if (!this.prop3d?.(7, it.o) && !drawBenchIso(ctx, cam, it.o, this.season)) drawBench(ctx, cam, it.o); }
+      else if (it.t === 14) { if (!this.prop3d?.(14, it.o)) drawBaleIso(ctx, cam, it.o, this.season); }
+      else if (it.t === 16) { if (!this.prop3d?.(16, it.o)) drawPropIso(ctx, cam, it.o, this.season, propFlagColor(g, it.o)); } // Zäune, Mauern … (mapprops.js)
       else if (it.t === 8) {
         const s = it.o.ground ? 16 : 13;
-        if (!drawCrateIso(ctx, cam, it.o.x, it.o.y, s, 0, it.o.ground ? glow : 0)) drawCrate(ctx, cam, it.o.x, it.o.y, s, 0, it.o.ground ? glow : 0);
+        if (this.crate3d?.(it.o.x, it.o.y, s, 0)) drawCrateGlow(ctx, cam, it.o.x, it.o.y, s, it.o.ground ? glow : 0); // Schimmer bleibt gemalt
+        else if (!drawCrateIso(ctx, cam, it.o.x, it.o.y, s, 0, it.o.ground ? glow : 0)) drawCrate(ctx, cam, it.o.x, it.o.y, s, 0, it.o.ground ? glow : 0);
       }
       else if (it.t === 12) drawFordPostIso(ctx, cam, it.o);
       else if (it.t === 15) { if (!this.quarter3d?.(it.o)) drawQuarterIso(ctx, cam, it.o, g.teams[it.o.b.team].color, this.season); } // Regierungsviertel (3D: render3d/gov3d.js)
@@ -178,7 +192,7 @@ export const isoItemMethods = {
         this.drawUnitIsoAt(f, it.o);
         if (it.o.crate) {
           ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-          if (!drawCrateIso(ctx, cam, it.o.x, it.o.y, 10, unitLift(it.o) + 14)) drawCrate(ctx, cam, it.o.x, it.o.y, 10, unitLift(it.o) + 14); // Kiste auf dem Rücken
+          if (!this.crate3d?.(it.o.x, it.o.y, 10, unitLift(it.o) + 14) && !drawCrateIso(ctx, cam, it.o.x, it.o.y, 10, unitLift(it.o) + 14)) drawCrate(ctx, cam, it.o.x, it.o.y, 10, unitLift(it.o) + 14); // Kiste auf dem Rücken
         }
       }
       cam.unpin();

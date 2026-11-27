@@ -20,6 +20,9 @@ import { Trees3D } from './trees3d.js';
 import { Town3D } from './town3d.js';
 import { quarterMask, INNER, _quarter } from '../render/govquarter.js';
 import { Nature3D } from './nature3d.js';
+import { Props3D } from './props3d.js';
+import { propSolids3d, propFlagColor } from '../render/mapprops.js';
+import { carLook3d, benchLook3d, baleLook3d } from '../render/props.js';
 import { bushLook3d, rockLook3d, animalLook3d } from '../render/nature.js';
 import { BALANCE } from '../data/balance.js';
 import { treeLook3d } from '../render/nature.js';
@@ -76,6 +79,12 @@ export class Renderer3D extends Renderer {
     this.nature3dOn = true; // false: Büsche, Felsen, Tiere wie in Iso gemalt (Prüfskript: Vergleich und Messung)
     this.natureShadow3d = false; // isoShadows: gemalte Schatten der Büsche und Felsen weglassen (3D wirft sie selbst)
     this.animalShadow2d = false; // isoShadows: Fußschatten der 3D-Tiere gemalt (ohne Schattenkarte)
+    this.props3d = new Props3D(); // Props der Karte, Autos, Bänke, Ballen, Kisten als InstancedMesh je Form (props3d.js), gezeigt über prop3d, crate3d
+    this.objRoot.add(this.props3d.group);
+    this.prop3d = this.crate3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
+    this.props3dOn = true; // false: Props wie in Iso gemalt (Prüfskript: Vergleich und Messung)
+    this.propShadow3d = false; // isoShadows: gemalte Schatten der Props weglassen (3D wirft sie selbst)
+    this.crateShadow2d = false; // isoShadows: Fußschatten der 3D-Kisten gemalt (ohne Schattenkarte)
     // Nebel: eigene Szene über allem (ohne Tiefentest), gleiche Geometrie wie der Boden
     this.fogScene = new THREE.Scene();
     this.fogRoot = makeWorldRoot();
@@ -121,6 +130,8 @@ export class Renderer3D extends Renderer {
     this.treeShadow3d = on && this.trees3dOn && this.sun.on && !this.cubes;
     this.natureShadow3d = on && this.nature3dOn && this.sun.on && !this.cubes;
     this.animalShadow2d = on && this.nature3dOn && !this.sun.on && !this.cubes;
+    this.propShadow3d = on && this.props3dOn && this.sun.on && !this.cubes;
+    this.crateShadow2d = on && this.props3dOn && !this.sun.on && !this.cubes;
     this.frame3d = false; // Kamera für dieses Bild noch nicht gesetzt
     super.render(view); // gleicht auch Relief und Größe ab
     if (on && this.cubes) this.markProbes();
@@ -209,6 +220,27 @@ export class Renderer3D extends Renderer {
       this.rock3d = (o) => this.nature3d.rock(rockLook3d(o, season), o.x, o.y, at(o));
       this.animal3d = (a, now) => this.nature3d.animal(animalLook3d(a, now), a, at(a));
     }
+    // Props (props3d.js): Höhe wie das Billboard; Auto, Bank, Ballen, Kisten und Props der Karte; Busch und Fels der Karte über nature3d
+    this.props3d.begin(light);
+    if (this.props3dOn) {
+      const props = this.props3d;
+      const at = (o) => cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0);
+      this.prop3d = (t, o) => {
+        if (t === 16) {
+          const m = propSolids3d(o, season);
+          if (m.S) return props.add(m, o.x, o.y, at(o), o.flag ? propFlagColor(f.g, o) : null);
+          t = m.t; // Prop mit vorhandenem Maler: Auto, Bank, Ballen, Busch, Fels
+          o = m.o;
+        }
+        if (t === 6) return props.add(carLook3d(o, season), o.x, o.y, at(o), null, 'car');
+        if (t === 7) return props.add(benchLook3d(o, season), o.x, o.y, at(o), null, 'bench');
+        if (t === 14) return props.add(baleLook3d(o, season), o.x, o.y, at(o), null, 'bale');
+        if (t === 13) return this.nature3dOn && this.nature3d.bush(bushLook3d(o, season), o.x, o.y, at(o));
+        if (t === 2) return this.nature3dOn && this.nature3d.rock(rockLook3d(o, season), o.x, o.y, at(o));
+        return false;
+      };
+      this.crate3d = (x, y, s, base) => props.crate(x, y, s, base, at({ x, y }));
+    }
     try {
       for (const it of f.items) {
         const o = it.o;
@@ -228,6 +260,7 @@ export class Renderer3D extends Renderer {
       this.tree3d = null;
       this.house3d = this.hall3d = this.quarter3d = null;
       this.bush3d = this.rock3d = this.animal3d = null;
+      this.prop3d = this.crate3d = null;
       this.shadow3d = false;
       f.ctx = ctx;
     }
@@ -235,6 +268,7 @@ export class Renderer3D extends Renderer {
     this.trees3d.end();
     this.towns3d.end();
     this.nature3d.end();
+    this.props3d.end();
     bb.end();
     const gl = this.gl;
     gl.setClearColor(0x000000, 0);
@@ -303,6 +337,7 @@ export class Renderer3D extends Renderer {
     this.trees3d.dispose();
     this.towns3d.dispose();
     this.nature3d.dispose();
+    this.props3d.dispose();
     this.fog3d.dispose();
     this.sun.dispose();
     this.gl.dispose();

@@ -32,7 +32,8 @@
 //                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|karte|mvp] [--citymin 10]
 //                                 [--what werke|haeuser|kartenstadt] (nur mit baukasten: nur Werke, nur Stadthäuser oder nur die Kartenstadt fotografieren)
 // 10. Kartenstadt (Paket „Kartenstadt 3D“): im Teil baukasten (--what kartenstadt) jede Art der Kartenstadt gemalt | 3D (4 Drehungen, Stimmungen);
-//    Teil karte (--only karte): Ausschnitte echter Karten (Seed 3, 7, East Europe Railway) Iso | 3D, Messung gemalt gegen 3D (<out>/karte/).
+//    Teil karte (--only karte [--karte seed3,seed7,fest]): Ausschnitte echter Karten (Seed 3, 7, East Europe Railway) Iso | 3D (Iso erst, wenn alle gemalten
+//    Bilder fertig sind), gleiche Menge Gebäude Iso und 3D, Messung gemalt gegen 3D (<out>/karte/).
 // Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt) und karte; „mvp“ nur ausdrücklich.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -1129,10 +1130,12 @@ async function sideBySide(g, file, a, b) {
 async function mvpPair(g, dir, dev, name) {
   const shots = [];
   for (const three of [false, true]) {
-    await g.run((three) => {
+    await g.run(async (three) => {
       const s = window.__frontline.session();
+      const { spriteMissed } = await import('/js/render/spritecache.js');
       s.camera.three = three;
-      for (let i = 0; i < 4; i++) s.renderer.render(s.controller.view);
+      // gemalte Bilder kommen mit Zeitbudget (6 ms je Bild, spritecache.js): so lange malen, bis keins mehr fehlt (sonst fehlen in Iso Gebäude)
+      for (let i = 0; i < 4 || (spriteMissed() && i < 150); i++) s.renderer.render(s.controller.view);
     }, three);
     await g.page.waitForTimeout(250);
     shots.push(await g.page.screenshot());
@@ -1741,7 +1744,9 @@ async function karte() {
     ['fest', 3, true, 'summer'],
     ['fest', 3, true, 'winter'],
   ];
+  const want = arg('karte', null)?.split(','); // --karte seed7,fest: nur diese Karten (Standard alle)
   for (const [name, seed, fixed, season] of runs) {
+    if (want && !want.includes(name)) continue;
     const wx = season === 'winter' ? 'snow' : 'clear';
     const g = await openGame({ seed, query: `iso=1&three=1&shadows=high&weather=${season}&wx=${wx}`, scale: 1, out, start: !fixed });
     try {
@@ -1795,6 +1800,39 @@ async function karte() {
         }
         if (season !== 'summer') continue;
         await look(g, spot.x, spot.y, 0, spot.name === 'plant' ? 0.7 : 1);
+        // gleiche Menge: jedes nicht zerstörte Gebäude der Kartenstadt im Bild wird in Iso gemalt (alle Bilder fertig) und in 3D ein Mesh
+        const same = await g.run(async () => {
+          const s = window.__frontline.session();
+          const r = s.renderer;
+          const { spriteMissed } = await import('/js/render/spritecache.js');
+          const { hasMapTown3d } = await import('/js/render3d/maptown3d.js');
+          const orig = r.drawTownItemIso;
+          const count = (three) => {
+            s.camera.three = three;
+            r.maptown3dOn = true;
+            let n = 0;
+            r.drawTownItemIso = function (f, o) {
+              const hs = f.g.houseBySrc?.get(o);
+              if (hasMapTown3d(o) && !(hs && hs.ruined && f.known(hs.x, hs.y))) n++;
+              return orig.call(this, f, o);
+            };
+            try {
+              for (let i = 0; i < 3 || (spriteMissed() && i < 150); i++) {
+                n = 0;
+                r.render(s.controller.view);
+              }
+            } finally {
+              r.drawTownItemIso = orig;
+            }
+            return { n, missed: spriteMissed() };
+          };
+          const iso = count(false);
+          const d3 = count(true);
+          return { iso, d3, meshes: r.towns3d.stats('maptown').houses };
+        });
+        const sameOk = same.iso.n === same.d3.n && same.d3.n === same.meshes && !same.iso.missed;
+        if (!sameOk) fail++;
+        console.log(`Karte ${tag}: gleiche Menge Iso ${same.iso.n} gemalt (fehlende Bilder: ${same.iso.missed}), 3D ${same.d3.n} Gebäude, ${same.meshes} Meshes${sameOk ? '' : '  FEHLER'}`);
         const rows = [];
         let any = 0;
         for (const level of ['off', 'high']) {

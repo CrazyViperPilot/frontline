@@ -104,6 +104,8 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
   Zoom 0,5/1,6, Nacht, Winter (`.smoke/3d/effekte/`); Verdeckung durch ein Haus (3D ändert im Fenster deutlich weniger Pixel als Iso);
   50 Explosionen: Zeit „Effekte“ Iso gegen 3D; 150 Explosionen: alle Teilchen gezeichnet (Wachsen). Node-Test: `test/fx3d.test.js`.
 - Mit `device: 'tablet'` bzw. `'phone'` öffnet es das Spiel mit Bildschirm, Pixeldichte und Touch des Geräts.
+  Eigene Geräte: `'ipadair'` (iPad Air M1 quer, 1180 × 820), `'ipadairhoch'` (820 × 1180), `'ipadsafari'` bzw. `'ipadsafariquer'` (sichtbare Fläche
+  in Safari mit Tableiste und Adresszeile, 820 × 1040 bzw. 1180 × 690).
 - `press(sel)` tippt dort (sonst Klick).
 - `measureFps(g, ms)` misst Bildrate und langsamstes Bild.
 - Die Bildraten der Ausgabe schwanken je Rechner (ohne GPU ist Iso deutlich langsamer) und sind kein Fehler.

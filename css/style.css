@@ -527,9 +527,10 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---- Tablet (Touch, normale Höhe, z. B. iPad Air quer 1180 × 820 und hoch 820 × 1180) --------------------------------------------
    Infofeld und Befehlskarte sind höher bzw. breiter als ihr Platz: beide wischbar hoch/runter und links/rechts, statt abgeschnitten.
-   Unten Platz für den Home-Balken (safe-area). Nur ohne Maus (hover: none): auf dem Desktop ragen die Tooltips der Knöpfe über den
-   Rand der Befehlskarte hinaus und würden mit overflow abgeschnitten. Das Telefon quer (max-height: 520px) hat eigene Regeln unten. */
-@media (hover: none) and (min-height: 521px) {
+   Unten Platz für den Home-Balken (safe-area). Nur auf Touch-Geräten: auf dem Desktop ragen die Tooltips der Knöpfe über den
+   Rand der Befehlskarte hinaus und würden mit overflow abgeschnitten. any-pointer: coarse, weil ein iPad mit Trackpad (Magic Keyboard)
+   „hover“ melden kann, der Touchscreen aber bleibt. Das Telefon quer (max-height: 520px) hat eigene Regeln unten. */
+@media (hover: none) and (min-height: 521px), (any-pointer: coarse) and (min-height: 521px) {
   .bottom { padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
   .sel, .cmd { overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
   .sel { min-width: 200px; }

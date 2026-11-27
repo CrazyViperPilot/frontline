@@ -33,6 +33,8 @@ export const DEVICES = {
   phone: 'Pixel 7 landscape',
   ipadair: IPAD_AIR,
   ipadairhoch: { ...IPAD_AIR, viewport: { width: 820, height: 1180 } },
+  ipadsafari: { ...IPAD_AIR, viewport: { width: 820, height: 1040 } }, // hoch, Safari mit Tableiste und Adresszeile
+  ipadsafariquer: { ...IPAD_AIR, viewport: { width: 1180, height: 690 } },
 };
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json' };

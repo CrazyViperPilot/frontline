@@ -301,6 +301,20 @@ void main() { gl_FragColor = vC; }`;
 
 // ---------- Nasser Boden ----------
 
+// Nasser Boden (Darstellung, keine Spielwerte): Nässe dunkelt leicht ab und lässt es dezent glänzen; Pfützen sind selten und klein, liegen
+// eher in Senken (niedrig, nahe dem Wasserspiegel) und auf Wegen, Straßen und Pflaster als auf Gras, spiegeln dunkel (Himmelsfarbe stark
+// abgedunkelt) und haben einen weichen Rand.
+const WET_DARK = 0.16; // Abdunkelung bei voller Nässe (0 … 1)
+const WET_SAT = 0.15; // mehr Sättigung bei voller Nässe
+const WET_GLOSS = 0.10; // breiter Sonnenglanz auf nassem Boden (Stärke)
+const PUDDLE_AT = 0.65; // Schwelle des Rauschens für Pfützen (höher = seltener, kleiner)
+const PUDDLE_SOFT = 0.07; // Breite des weichen Rands
+const PUDDLE_LOW = 0.07; // Zuschlag in Senken (Gelände nahe dem Wasserspiegel)
+const PUDDLE_PATH = 0.12; // Zuschlag auf Wegen, Straßen und Pflaster (wo keine Wiese ist)
+const PUDDLE_MIRROR = 0.55; // Deckkraft der dunklen Spiegelung in der Pfütze
+const PUDDLE_SKY = 0.2; // Himmelsfarbe in der Pfütze (Anteil, dunkel)
+const PUDDLE_GLINT = 0.25; // Sonnenglanz in der Pfütze (Stärke)
+
 /**
  * Boden-Shader (FS_GROUND bzw. FS_GROUND3D aus ground3d.js) um nassen Boden erweitern: uWet 0 … 1 (Regen voll, Nebel feucht), dunkler und
  * satter, ruhige flache Flecken (Pfützen) spiegeln den Himmel (uSky, Fresnel mit uEye), Glanz der Sonne (uSun, uLight); im Winter gedämpft.
@@ -311,16 +325,17 @@ export function wetGround(fs) {
   if (uWet > 0.001 && uSkirt < 0.5 && vH >= uWater) {
     float wk = uWet * (1.0 - 0.55 * uSnow);
     float calm = 1.0 - smoothstep(0.03, 0.14, slope);
-    float pn = 0.55 * nz(vPos + 1500.0, 5.0) + 0.45 * nz(vPos + 2600.0, 1.8);
-    float pud = smoothstep(0.60, 0.72, pn) * calm * (1.0 - rk) * wk;
-    col *= 1.0 - 0.24 * wk;
+    float low = 1.0 - smoothstep(uWater + 4.0, uWater + 70.0, vH);
+    float pn = 0.55 * nz(vPos + 1500.0, 5.0) + 0.45 * nz(vPos + 2600.0, 1.8) + ${PUDDLE_LOW.toFixed(2)} * low + ${PUDDLE_PATH.toFixed(2)} * (1.0 - veg);
+    float pud = smoothstep(${PUDDLE_AT.toFixed(2)}, ${(PUDDLE_AT + PUDDLE_SOFT).toFixed(2)}, pn) * calm * (1.0 - rk) * wk;
+    col *= 1.0 - ${WET_DARK.toFixed(2)} * wk;
     float lum = dot(col, vec3(0.30, 0.59, 0.11));
-    col = mix(vec3(lum), col, 1.0 + 0.22 * wk);
+    col = mix(vec3(lum), col, 1.0 + ${WET_SAT.toFixed(2)} * wk);
     float ct = clamp(dot(n, uEye), 0.0, 1.0);
     float fr = 0.05 + 0.55 * pow(1.0 - ct, 3.0);
-    col = mix(col, uSky * 0.85, pud * (0.35 + fr));
+    col = mix(col, col * 0.4 + uSky * ${PUDDLE_SKY.toFixed(2)}, pud * ${PUDDLE_MIRROR.toFixed(2)} * (0.7 + 0.6 * fr));
     float sp = max(dot(reflect(-uLight, n), uEye), 0.0);
-    col += uSun * (0.16 * pow(sp, 14.0) * (1.0 - rk) * wk + 0.65 * pud * pow(sp, 90.0));
+    col += uSun * (${WET_GLOSS.toFixed(2)} * pow(sp, 14.0) * (1.0 - rk) * wk + ${PUDDLE_GLINT.toFixed(2)} * pud * pow(sp, 90.0));
   }
   gl_FragColor = vec4(col, 1.0);`;
   return fs.replace('uniform float uSkirt;', 'uniform float uSkirt;\n' + head).replace('  gl_FragColor = vec4(col, 1.0);\n}', wet + '\n}');

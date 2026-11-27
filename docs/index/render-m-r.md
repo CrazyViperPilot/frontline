@@ -1,8 +1,13 @@
-# Symbol-Index render (Teil 3 von 4, mapprops.js bis renderer.js)
+# Symbol-Index render (Teil 3 von 4, mapprops.js bis reliefimg.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
 ## mapprops.js (Fortsetzung)
+- FLAG_MARK – Farbe des Fahnentuchs in den Körpern für die Ansicht 3D: render3d/props3d.js er…
+- propSolids3d(o, season) – Körper eines Props für die Ansicht 3D (render3d/props3d.js): { S, key, yaw } in…
+- propFlagColor(g, o) – Farbe der Fahne eines Props: in der Eroberung der Besitzer der nächsten Flagge…
+- drawPropIso(ctx, cam, o, season, flag) – Prop in Iso (Fuß am Weltpunkt)
+- drawPropShadowIso(ctx, cam, o, season, dpr) – Iso: Schatten eines Props, scharf begrenzt nach links unten
 - drawPropsTop(ctx, looks, inRect, zoom, season, flagOf) – 2D (Weltkoordinaten): erst alle Schatten, dann alle Props, damit kein Schatten…
 - drawPropsMini(ctx, looks, minPx) – Minimap (Weltkoordinaten, Transformation gesetzt): Kacheln als Zellen, Einzelst…
 
@@ -176,14 +181,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## reliefimg.js (7.5 KB)
 - reliefLayers(relief, width, height) – Ebenen für das Geländebild der Karte (Größe = Karte × RELIEF_SCALE): mat = Mate…
 - reliefTiles(relief, width, height) – Geländebild für den Karteneditor in Kacheln (mat und shade wie reliefLayers), d…
-- updateReliefTiles(t, relief, x0, y0, x1, y1) – Weltrechteck [x0, x1] × [y0, y1] des Editor-Geländebilds neu zeichnen (nach Heb…
-- drawReliefTiles(ctx, t, layer, ox, oy, s, vw, vh) – Sichtbare Kacheln einer Ebene ('mat' oder 'shade') zeichnen
-
-## renderer.js (1.8 KB)
-- Renderer (aus core.js) – Haupt-Renderer (docs/archiv/verlauf.md §5 render/renderer.js)
-- MAX_DPR_SHARP (aus consts.js)
-- MAX_DPR_FAST (aus consts.js)
-- makeFogLayer (aus fog.js)
-- fogTone (aus fog.js)
-- blur121 (aus fog.js)
-- updateFogLayer (aus fog.js)

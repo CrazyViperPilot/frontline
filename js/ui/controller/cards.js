@@ -19,7 +19,7 @@ import { hasUnlock } from '../../game/research.js';
 import { RESEARCH } from '../../data/research.js';
 import { canShellRoads } from '../../game/roadwar.js';
 import { presetKinds, presetOf } from '../../game/logistics.js';
-import { isCarrier } from './util.js';
+import { isCarrier, landTrainer } from './util.js';
 import { mainRoadPlan, needsMainRoad } from '../../game/city/commands.js';
 import { MODES } from './modes.js';
 
@@ -633,6 +633,15 @@ export const cardMethods = {
           enabled: !reason,
           reason,
           action: () => this.train(u),
+        }),
+      );
+    }
+    // Sammelpunkt per Knopf (auch per Touch, wo es keinen Rechtsklick gibt): danach Stelle auf der Karte antippen
+    if (blds.some(landTrainer)) {
+      card.push(
+        entry('Sammel\u00adpunkt', 'G', {
+          tip: 'Sammelpunkt setzen (G): danach Stelle auf der Karte antippen bzw. anklicken, neue Bodeneinheiten fahren dorthin. Mit der Maus geht auch Rechtsklick.',
+          action: () => this.setMode('rally'),
         }),
       );
     }

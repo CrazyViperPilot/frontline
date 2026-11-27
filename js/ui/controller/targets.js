@@ -9,7 +9,7 @@ import { lineCells } from '../../game/grid.js';
 import { BUILDINGS } from '../../data/buildings.js';
 import { canSeat, ownWork, isWarehouse } from '../../game/logistics.js';
 import { canGarrison, canEnter } from '../../game/garrison.js';
-import { WALL_MAX, isCarrier } from './util.js';
+import { WALL_MAX, isCarrier, landTrainer } from './util.js';
 import { propAt } from '../../game/propfire.js';
 import { PROPS } from '../../data/props.js';
 import { canFieldwork, fieldSpotWhy } from '../../game/fieldwork.js';
@@ -192,6 +192,20 @@ export const targetMethods = {
 
   confirmClearRubble(wx, wy, shift) {
     this.confirmCellOrder('clearRubble', wx, wy, shift);
+  },
+
+  /** Sammelpunkt (Knopf der Befehlskarte, auch per Touch): alle gewählten Gebäude, die Bodeneinheiten ausbilden, schicken neue Einheiten dorthin. */
+  confirmRally(wx, wy) {
+    const blds = this.selected().filter((e) => e.kind === 'building' && landTrainer(e));
+    if (!blds.length) {
+      this.message('Kein Gebäude gewählt, das Bodeneinheiten ausbildet');
+      this.setMode('normal');
+      return;
+    }
+    let ok = false;
+    for (const b of blds) ok = this.issue({ type: 'rally', buildingId: b.id, x: wx, y: wy }).ok || ok;
+    if (ok) this.moveMarker(wx, wy);
+    this.setMode('normal');
   },
 
   /** Mörser-Ziel: Klick auf die Karte, alle gewählten Mörser in Reichweite feuern dorthin. */

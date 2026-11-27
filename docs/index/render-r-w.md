@@ -1,6 +1,19 @@
-# Symbol-Index render (Teil 4 von 4, season.js bis works.js)
+# Symbol-Index render (Teil 4 von 4, reliefimg.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
+
+## reliefimg.js (Fortsetzung)
+- updateReliefTiles(t, relief, x0, y0, x1, y1) – Weltrechteck [x0, x1] × [y0, y1] des Editor-Geländebilds neu zeichnen (nach Heb…
+- drawReliefTiles(ctx, t, layer, ox, oy, s, vw, vh) – Sichtbare Kacheln einer Ebene ('mat' oder 'shade') zeichnen
+
+## renderer.js (1.8 KB)
+- Renderer (aus core.js) – Haupt-Renderer (docs/archiv/verlauf.md §5 render/renderer.js)
+- MAX_DPR_SHARP (aus consts.js)
+- MAX_DPR_FAST (aus consts.js)
+- makeFogLayer (aus fog.js)
+- fogTone (aus fog.js)
+- blur121 (aus fog.js)
+- updateFogLayer (aus fog.js)
 
 ## season.js (6.1 KB)
 - seasonal(img, season, kind, f, variant) – Bild in der Jahreszeit (Sommer: das Bild selbst)

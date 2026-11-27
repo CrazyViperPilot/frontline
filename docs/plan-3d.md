@@ -233,6 +233,33 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   die gemalten Gebäudeschatten. Gemalte Billboards (Wand links hell) bleiben bis zur Umstellung ihrer Familie so; der Bruch verschwindet
   mit Stufe 2. Verworfen: Sonne nach links drehen (alle Schatten fielen nach rechts, 3D-Boden wiche von Iso ab) und gemalte Gebäude
   umfärben (Aufwand für eine Übergangszeit). Frage an Daniel nur, falls er links helle Wände im 3D-Bild ausdrücklich will.
+- Effekte 3D: gebaut (`js/render3d/fx3d.js`, Test `test/fx3d.test.js`, Prüfskript `node tools/smoke-fx3d.mjs`, eigene Datei neben `smoke-3d.mjs`,
+  Fotos `.smoke/3d/effekte/`). Der Durchlauf „Effekte“ ist in 3D ersetzt (`Renderer3D.fx3dPass`, Schalter `renderer.fx3dOn`): Bodenteile (Zielring,
+  Feuerschein, Druckring) gemalt wie bisher (`isoFxGround`, aus `isoEffects` herausgelöst), dann Explosion (Rauch, Blitz, Feuerball, Kern, Brocken,
+  Funken), Leuchtspur, Flak, Kanonen- und Raketengeschoss mit Rauchspur, Mündungsfeuer, Abfangen, Mörsergranate im Bogen, Rauchsäulen, Feuer mit
+  Flammenzungen und Glut, Staub am Bagger und Nebelwand als Teilchen in three, danach Minen und Wegziel gemalt. Krater lagen schon als Bodenbild im
+  Durchlauf „Boden“; Trümmer und Ruinen gehören zu „Baustellen und Ruinen 3D“. **Gemessen vor dem Plan** (Seeds 3, 7 und 5 mit Eroberung, KI gegen KI
+  je 25 Spielminuten): im Mittel 0,1 bis 0,2 Effekte gleichzeitig auf der Karte, im Bildausschnitt höchstens 5 bis 7 (3 Explosionen, 1 bis 3 Geschosse,
+  1 Leuchtspur), dazu bis 31 rauchende Wracks; Leistung also unkritisch, die 50 Explosionen des Plans sind der Stresstest. **Entscheidungen:**
+  (1) *Ein Teilchen-Typ, ein Draw-Call:* jedes Teilchen ist ein Strich von A nach B (Weltpunkte plus Versatz in der Bildebene), ohne Länge ein Fleck;
+  Formen im Fragment-Shader nachgebaut wie die gemalten Flecken (`dot`: weich, beleuchtete Schwade, Wolke), dazu Flammenzunge, Brocken, Strich mit
+  Verlauf der Breite (Funken, Leuchtspur, Spitzen des Mündungsfeuers), Scheibe. Alle Maße aus den Iso-Malern (`fx.js` exportiert dafür `partsOf`,
+  `SIZE`, `fireCol`, `smokeIn`, `ARC` …): „× Zoom in Bildschirm-px“ ist in three dasselbe Maß in Welt-px; das Bild gleicht dem gemalten.
+  (2) *Verdeckung:* eigene Szene nach „Objekte“, nur die Farbe wird gelöscht, der Tiefenpuffer von „Objekte“ bleibt: 3D-Häuser, Einheiten und Bäume
+  davor verdecken Feuerbälle (bisher immer obenauf), Billboards (noch gemalte Gebäude) nicht. Jedes Effektbild ist eine Gruppe mit der Tiefe seines
+  Fußpunkts, zum Betrachter gerückt (Explosion 24 × Größe, Rauchsäule 8 × Größe, damit der Feuerball vor der getroffenen Einheit und der Rauch über
+  dem eigenen Dach bleibt); Gruppen von hinten nach vorn sortiert, innerhalb der Gruppe Malreihenfolge wie gemalt. Gelände verdeckt nicht (wie bei den
+  Billboards: der untere Rand eines Feuerballs am Hang würde sonst abgeschnitten). (3) *Licht:* die Schwaden sind zur Sonne hin hell (`lightVec` in
+  der Bildebene, rechts oben) statt fest links oben wie gemalt. Der Blitz bleibt Leuchtfleck plus gemalter Feuerschein am Boden: ein echtes Punktlicht
+  bräuchte Lichtquellen in allen eigenen Shadern (Baukasten, Natur, Props, Einheiten, Boden), das gehört zu „Tag und Nacht 3D“. (4) *Kopie:* nur das
+  Rechteck der Teilchen wird in die 2D-Leinwand kopiert. (5) *Wachsen:* Platz für 4 096 Teilchen, darüber neue Geometrie (three merkt sich die
+  Instanzzahl beim ersten Zeichnen, `_maxInstanceCount`; neue Attribute allein zeichneten nur die alte Zahl). Messung (Software-WebGL, Seed 3,
+  Zoom 0,8, 8 Bilder): Durchlauf „Effekte“ ohne Effekte 0,1 ms; 1 Explosion Iso 0,2, 3D 12 ms; 50 Explosionen (1 420 Teilchen, ein Draw-Call)
+  Iso 2,2, 3D 34 ms. Davon sind etwa 11 ms das Auslesen der WebGL-Leinwand (fest, unabhängig von der Fläche; dieselbe Kopie haben „Gelände“ mit
+  188 ms und „Objekte“ mit 103 ms im selben Bild), der Rest Füllrate der großen Flecken in Software; auf echter GPU zu messen. Offen: Punktlicht
+  (siehe oben); Leuchtspuren dünner als ein Gerätepixel werden blasser statt flimmernd gezeichnet; Rauch treibt wie gemalt nach rechts im Bild
+  (kein Weltwind). Nebenbefund für „Kartenstadt 3D“: Hallen der Kartenstadt (`kind: 'hall'`) fängt die Familie des Regierungsgebäudes in
+  `town3d.js` (`has: (b) => b.kind === 'hall'`); in 3D stehen sie als Kuppelbau statt als Lagerhalle (Seed 3, Halle bei 2280, 8876).
 - Büsche und Felsen 3D: gebaut (`js/render3d/nature3d.js`, Test `test/nature3d.test.js`, Prüfteil `smoke-3d.mjs --only natur`, Fotos
   `.smoke/3d/natur/`). Büsche (Strauch, Beerenstrauch, Farn, junge Fichte) aus dem Baukasten und mit dem Shader der Bäume (`Geo`,
   `TREE_VS`/`TREE_FS` aus `trees3d.js`; Palette, Blattmuster, Schnee), je Art 2 Formen als `InstancedMesh`; Herbstlaub, im Winter

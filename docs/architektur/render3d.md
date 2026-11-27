@@ -10,6 +10,8 @@ Licht und Schatten oder Achsen und Kamera der Ansicht 3D geht. Plan und Stand de
   Jedes three-Bild wird an seiner Stelle in die 2D-Leinwand kopiert; Bodenmarken, Wetter, Stimmung, Balken gemalt.
 - „Objekte“: `setBlitSink` macht aus jedem `blit` ein Billboard mit der Tiefe des Fußpunkts (`clipDepth`); was nicht über `blit`
   malt (Rotoren, Flammen), kommt über eine 2D-Zwischenleinwand obenauf.
+- „Effekte“ (`fx3dPass`, `fx3d.js`, Schalter `fx3dOn`): Bodenteile gemalt (`isoFxGround`), Teilchen in eigener Szene ohne Löschen der Tiefe aus
+  „Objekte“ (3D-Körper davor verdecken, Gelände nicht), Kopie nur des Teilchen-Rechtecks; Minen und Wegziel danach gemalt (`isoMoveMark`).
 - Einheiten (`unit3d`), Bäume (`tree3d`), Häuser, Werke und Großbauten (`house3d`), Regierungsgebäude (`hall3d`), Regierungsviertel (`quarter3d`) fragt
   `isoObjects` nur in „Objekte“; `trees3dOn`, `towns3dOn`, `works3dOn`, `big3dOn` schalten auf gemalt (Dampf der Werke: `drawWorksSteam`).
 - Großbauten bestehen in `cityBuildings` aus vielen Objekten (`bigpart`, je Körper) mit gemeinsamem `plan`: `Town3D` zeigt die Anlage einmal je Bild

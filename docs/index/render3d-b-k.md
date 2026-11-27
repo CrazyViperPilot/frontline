@@ -39,6 +39,33 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - update(fog, t) – fog = relief.fogData(...): { cols, rows, data, stamp }; t = Zeit in Sekunden (W…
   - dispose() – Geometrie und Rauschtextur gehören dem Boden; hier nur Material und Nebeltextur
 
+## fx3d.js (27 KB)
+- SOFT – Formen (Fragment-Shader)
+- LIT – weiche Schwade, zur Sonne hin hell (Rauchsäulen)
+- PUFF – Wolke mit festerem Rand (Feuerball, Explosionsrauch, Flakwolke)
+- FLAME – Flammenzunge vom Fuß A zur Spitze B
+- CHUNK – Brocken: Rechteck 2r × 1,2r
+- LINE – Strich mit runden Enden, Breite von A nach B verlaufend
+- DISC – Scheibe mit hartem Rand (Glut, Funken des Feuers)
+- class Fx3D
+  - constructor()
+  - grow(n) – Platz für mindestens n Teilchen (Inhalt dieses Bildes bleibt)
+  - begin(cam3, root, zoom, dpr, light) – Neues Bild
+  - view(x, y, h, dir) – Weltpunkt (x, y, Höhe) im Bildraum: [rechts, oben, zum Betrachter] in Welt-px;…
+  - group(x, y, h, bias) – Neue Gruppe (ein Effektbild) am Fußpunkt (x, y, Höhe h), um bias Welt-px zum Be…
+  - anchor(x, y, h) – Fußpunkt für die folgenden Flecken und Striche wechseln, ohne neue Gruppe
+  - push(ax, ay, ah, a0, bx, by, bh, oax, oay, obx, oby, w0, w1, ext, rot, col, a, kind) – Ein Teilchen roh anhängen (siehe Attribute im Vertex-Shader)
+  - blob(col, ox, oy, r, a, kind, rot) – Fleck am Fußpunkt, Versatz (ox rechts, oy oben) und Halbmesser r in Welt-px, De…
+  - line(col, x1, y1, x2, y2, w0, w1, a, kind, ext, a0) – Strich in der Bildebene am Fußpunkt von (x1, y1) nach (x2, y2); Halbbreiten w0,…
+  - seg(col, P, Q, w0, w1, a, ext, a0) – Strich zwischen zwei Weltpunkten P, Q = [x, y, Höhe] (Leuchtspur, Rauchspur)
+  - end() – Bild fertig: Gruppen von hinten nach vorn in die Instanzpuffer kopieren
+  - rect(viewW, viewH, dpr) – Rechteck der Teilchen in Gerätepixeln der Leinwand ({ x, y, w, h }, auf die Lei…
+  - count() – Teilchen dieses Bildes (Messung, Prüfskript)
+  - dispose()
+- effect3d(fx, e, ground) – Ein Effekt aus game.effects (wie drawEffectUp): explosion, tracer, shell, inter…
+- shell3d(fx, s, ground) – Mörsergranate in der Luft (drawShellIso): Bogen über dem Boden, Rauchspur, Glut…
+- smoke3d(fx, q, t, ground) – Eine Rauchquelle (Renderer.smokeSources, ohne Minen): Rauchsäule mit Feuer (bre…
+
 ## gov3d.js (13 KB)
 - hallGeometry()
 - quarterKey(turn, mask)

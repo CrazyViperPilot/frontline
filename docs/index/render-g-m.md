@@ -1,8 +1,18 @@
-# Symbol-Index render (Teil 2 von 4, iso.js bis mapprops.js)
+# Symbol-Index render (Teil 2 von 4, groundtex.js bis mapprops.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## iso.js (Fortsetzung)
+## groundtex.js (4.3 KB)
+- DETAIL_N – Texel je Kante (Zweierpotenz: Mipmaps und Kachelung auch in WebGL 1)
+- groundDetail() – Kachelbare Detailtextur, DETAIL_N² RGBA (Uint8Array)
+
+## indprops.js (11 KB)
+- isIndSingle(kind) – Gibt es ein Modell dieser Art hier?
+- indModel(kind, v, d, w, rubble, stack) – Körper eines Einzelstücks der Industrie (Modellrichtung)
+
+## iso.js (11 KB)
+- TOWN_H – Höhe (Bildschirm-Pixel bei Zoom 1) der Stadtgebäude und der Spielgebäude je Typ
+- flying(u) – Wird die Einheit über allem gezeichnet (fliegt)? Jets am Boden (abgestellt, rol…
 - unitLift(u)
 - CAPITAL_H – Hauptstadt (Regierungsgebäude, cityhall.js): Höhe der Ebene für Lebensbalken un…
 - buildingHeight(b)
@@ -168,8 +178,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - propLooksOf(props, st, version) – Aussehen aller sichtbaren Props: [{ i, x, y, kind, mask, along, gate, rubble, v…
 - forgetPropLooks(props) – Zwischengespeichertes Aussehen und Zellindex einer Prop-Liste verwerfen (Editor…
 - propLooks(g, team, all) – Aussehen der Props einer Partie für `team`: der Zustand, den das Team zuletzt g…
-- FLAG_MARK – Farbe des Fahnentuchs in den Körpern für die Ansicht 3D: render3d/props3d.js er…
-- propSolids3d(o, season) – Körper eines Props für die Ansicht 3D (render3d/props3d.js): { S, key, yaw } in…
-- propFlagColor(g, o) – Farbe der Fahne eines Props: in der Eroberung der Besitzer der nächsten Flagge…
-- drawPropIso(ctx, cam, o, season, flag) – Prop in Iso (Fuß am Weltpunkt)
-- drawPropShadowIso(ctx, cam, o, season, dpr) – Iso: Schatten eines Props, scharf begrenzt nach links unten

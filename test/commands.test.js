@@ -11,6 +11,8 @@ import { Camera } from '../js/render/camera.js';
 import { BALANCE } from '../js/data/balance.js';
 import { CITY } from '../js/data/city.js';
 import { BUILDINGS } from '../js/data/buildings.js';
+import { UNITS } from '../js/data/units.js';
+import { mkGame } from './util.js';
 
 test('Befehlsregister: jeder Eintrag hat einen Handler, unbekannte und geerbte Typen werden abgewiesen', () => {
   for (const [k, c] of Object.entries(COMMANDS)) assert.equal(typeof c.run, 'function', k);
@@ -65,4 +67,47 @@ test('Hilfe (F1): Zahlen und Tasten aus den Daten, nichts undefiniert', () => {
   assert.match(text, new RegExp(`Straßen tragen ${CITY.transport.cap} Waren je s`));
   assert.match(text, new RegExp(`sieht als Radar ${CITY.air.atcSight} px`));
   assert.match(text, new RegExp(`${BUILDINGS.mortar.hotkey} ${BUILDINGS.mortar.name}`));
+});
+
+test('Sammelpunkt per Knopf (Touch ohne Rechtsklick): Kaserne und Fabrikhalle haben ihn, Antippen der Karte setzt den Punkt', () => {
+  const g = mkGame();
+  const c = new Controller(g, 0, new Camera(BALANCE.map.width * BALANCE.map.tile, BALANCE.map.height * BALANCE.map.tile));
+  const trainers = [...g.entities.values()].filter((e) => e.kind === 'building' && e.team === 0 && e.produces?.length);
+  const land = trainers.filter((b) => b.produces.some((u) => u === 'rifleman' || u === 'tank'));
+  assert.ok(land.length >= 2, 'Kaserne und Fabrikhalle');
+  const rallyBtn = () => c.commandCard().find((e) => e.label.replace('­', '') === 'Sammelpunkt');
+  for (const b of land) {
+    c.view.selection.clear();
+    c.view.selection.add(b.id);
+    const btn = rallyBtn();
+    assert.ok(btn, `${b.def.name}: Knopf fehlt`);
+    assert.equal(btn.hotkey, 'G');
+    btn.action();
+    assert.equal(c.view.mode, 'rally');
+    const x = b.x + 333;
+    const y = b.y - 222;
+    c.leftClickWorld(x, y, false, 'touch');
+    assert.equal(c.view.mode, 'normal');
+    assert.deepEqual([b.rallyX, b.rallyY], [x, y], `${b.def.name}: Sammelpunkt gesetzt`);
+    assert.ok(c.view.selection.has(b.id), 'Auswahl bleibt');
+  }
+  // Nur Luftfahrzeuge (Heliport, Stellplatz): kein Knopf
+  for (const b of trainers.filter((t) => !land.includes(t) && t.produces.every((u) => UNITS[u].air))) {
+    c.view.selection.clear();
+    c.view.selection.add(b.id);
+    assert.equal(rallyBtn(), undefined, b.def.name);
+  }
+});
+
+test('Rahmenauswahl per Touch (Knopf „Auswahl“): Modus boxSelect, Antippen wählt wie sonst und beendet ihn', () => {
+  const g = new Game({ map: createEmptyMap() });
+  const c = new Controller(g, 0, new Camera(BALANCE.map.width * BALANCE.map.tile, BALANCE.map.height * BALANCE.map.tile));
+  const main = g.buildings.find((b) => b.team === 0);
+  const u = g.spawnUnit('rifleman', 0, main.x + 200, main.y + 200);
+  c.setMode('boxSelect');
+  assert.ok(/Rahmen/.test(c.hint()));
+  assert.deepEqual(c.commandCard().map((e) => e.label), ['Abbruch']);
+  c.leftClickWorld(u.x, u.y, false, 'touch');
+  assert.equal(c.view.mode, 'normal');
+  assert.ok(c.view.selection.has(u.id), 'Antippen wählt die Einheit');
 });

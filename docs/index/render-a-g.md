@@ -1,4 +1,4 @@
-# Symbol-Index render (Teil 1 von 4, airbase.js bis iso.js)
+# Symbol-Index render (Teil 1 von 4, airbase.js bis ground.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
@@ -30,7 +30,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawBridgeBar(ctx, x, y, b) – Lebens- bzw. Baubalken über der Brückenmitte; (x, y) = Bildschirmpunkt (CSS-Pix…
 - bridgeBar(b) – Zeigt die Brücke einen Balken? Beschädigt (intakt) oder im Wiederaufbau
 
-## camera.js (8.2 KB)
+## camera.js (8.6 KB)
 - ISO_K – Isometrische Ansicht: Bodenebene um 45° gedreht und in der Höhe halbiert (Welta…
 - ROT – Drehung der isometrischen Ansicht in 90°-Schritten: Matrix [ra, rb, rc, rd] auf…
 - class Camera
@@ -114,9 +114,20 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawFieldLayers(ctx, chunks, R, season, mat, z) – Äcker und Weiden der sichtbaren Kacheln (R: sichtbarer Weltausschnitt)
 
 ## fx.js (35 KB)
+- ease(k) – erst schnell, dann langsam
 - scarRng(seed) – Kleiner Zufallsgenerator je Narbe bzw. Effekt (gleiche Form in jedem Bild)
+- SIZE
+- partsOf(e) – Feste Teile einer Explosion: Flammenwolken, Rauchwolken, Funken, Brocken (Richt…
+- fireCol(k, i)
+- smokeIn(k) – Rauch kommt nach dem Blitz
+- MISSILE – Lenkwaffen und Raketen ziehen eine Rauchspur
+- FLAK – Flugabwehr: rötliche Leuchtspur
 - drawEffect(ctx, e, zoom, groundOnly) – Effekt (game.effects): tracer (Leuchtspur), shell (Geschoss), explosion, interc…
+- GUN_H – Höhe (Einheiten) von Mündung und Ziel einer Leuchtspur bzw. der Detonation beim…
+- HIT_H
+- AIRBURST_H
 - drawEffectUp(ctx, e, cam, at) – Aufrechte Teile eines Effekts in Iso (Transformation dpr, Bildschirmkoordinaten…
+- ARC(f) – Flughöhe über dem Boden (wie der Iso-Renderer seit v4.x)
 - drawShellTarget(ctx, s, zoom) – Zielring einer Mörsergranate am Boden (gestrichelt, mit Kreuz); Iso in der Bode…
 - drawShell(ctx, s, zoom) – Mörsergranate in der Luft von oben (2D, Weltkoordinaten): Zielring, Schatten am…
 - drawShellIso(ctx, cam, s, at) – Mörsergranate in Iso (Bildschirmkoordinaten, Transformation dpr): Bogen über de…
@@ -151,15 +162,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - NOISE_N
 - noiseTexture() – Kachelbare Rauschtextur (NOISE_N², RGBA), fester Startwert
 - getGround() – Gemeinsamer WebGL-Boden (ein Kontext für Spiel und Editor) oder null, wenn WebG…
-
-## groundtex.js (4.3 KB)
-- DETAIL_N – Texel je Kante (Zweierpotenz: Mipmaps und Kachelung auch in WebGL 1)
-- groundDetail() – Kachelbare Detailtextur, DETAIL_N² RGBA (Uint8Array)
-
-## indprops.js (11 KB)
-- isIndSingle(kind) – Gibt es ein Modell dieser Art hier?
-- indModel(kind, v, d, w, rubble, stack) – Körper eines Einzelstücks der Industrie (Modellrichtung)
-
-## iso.js (11 KB)
-- TOWN_H – Höhe (Bildschirm-Pixel bei Zoom 1) der Stadtgebäude und der Spielgebäude je Typ
-- flying(u) – Wird die Einheit über allem gezeichnet (fliegt)? Jets am Boden (abgestellt, rol…

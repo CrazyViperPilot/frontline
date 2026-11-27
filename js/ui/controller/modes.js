@@ -67,6 +67,11 @@ export const MODES = {
     hint: () => 'Mörser / Artillerie: Ziel auf der Karte anklicken (Kreis zeigt Reichweite) · Esc bricht ab',
     click: (c, wx, wy) => c.confirmMortarTarget(wx, wy),
   },
+  rally: {
+    target: true,
+    hint: () => 'Sammelpunkt: Stelle auf der Karte antippen bzw. anklicken, neue Bodeneinheiten fahren dorthin · Esc bricht ab',
+    click: (c, wx, wy) => c.confirmRally(wx, wy),
+  },
   layBridge: {
     target: true,
     hint: () => 'Brückenleger: Flusszelle am Ufer anklicken, dort liegt die Brücke nach 8 s · Esc bricht ab',

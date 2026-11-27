@@ -33,6 +33,7 @@ export const KEYS = [
   ['Linksklick / Tippen', 'Auswählen · Shift = hinzufügen · Doppelklick = alle dieses Typs im Bild · mit gewählten Einheiten: Boden = Gehen, Gegner = Angriff'],
   ['Ziehen (Maus)', 'Rahmenauswahl (nur Einheiten)'],
   ['Rechtsklick', 'Bewegen · auf Gegner = angreifen · Gebäude gewählt = Sammelpunkt · halten und ziehen = Karte schieben · Eroberung: Ziele in fremden gesperrten Vierteln werden abgelehnt'],
+  ['G', 'Kaserne oder Fabrikhalle gewählt: Sammelpunkt setzen (Knopf, auch per Touch), dann Stelle antippen bzw. anklicken; neue Bodeneinheiten fahren dorthin'],
   ['Touch', 'Ein Finger ziehen = Karte schieben · zwei Finger = Zoomen und Schieben'],
   ['Q', 'Pionier gewählt: Mine legen (dann Stelle anklicken; getarnt, bei gegnerischen Fahrzeugen, Infanterie löst nicht aus) · Taste F im Kasernenmenü = Pionier ausbilden'],
   ['C-130 gewählt', 'Befehlskarte „Fallschirm absetzen“ (ohne Taste): Zielpunkt anklicken, das Flugzeug fliegt hin und setzt die Passagiere im Umkreis 80 px ab; ' +

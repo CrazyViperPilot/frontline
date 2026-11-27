@@ -12,6 +12,7 @@
 | Rechtsklick halten und ziehen (Maus) / Finger ziehen | **Karte verschieben** (ein kurzer Rechtsklick bleibt der Befehl Bewegen/Angreifen) |
 | Zwei Finger | Zoomen (Abstand) und Karte verschieben |
 | Rechtsklick | Bewegen; auf Gegner = Angreifen; Gebäude gewählt = Sammelpunkt; (weiter unten) |
+| Kaserne oder Fabrikhalle gewählt | **G Sammelpunkt** (Knopf der Befehlskarte, auch per Touch, wo es keinen Rechtsklick gibt): danach Stelle auf der Karte antippen bzw. anklicken, neue Bodeneinheiten fahren dorthin; Heliport und Stellplatz haben den Knopf nicht |
 | A + Linksklick | Angriffsbewegung; auf eine intakte Brücke = sie beschießen, bis sie einstürzt (§7, nur so greift jemand eine Brücke an) |
 | S | Stopp |
 | F (Einheiten gewählt) | **Formation** wechseln (seit v4.48, nach Age of Empires II): Locker → Linie → Keil → Kolonne; gilt für alle folgenden Marsch- und Angriffsbefehle (Rechtsklick/Tippen und A), ab zwei Bodeneinheiten. (weiter unten) |
@@ -84,7 +85,8 @@
   Der Knopf „▾“ neben der Minimap klappt Auswahl und Befehle ein (nur die Minimap
   bleibt, Zustand wird gemerkt, `localStorage` `frontline-hud-fold`). Die Kamera zentriert Ziele (Spielstart, Minimap-Klick, Meldung antippen, Taste für Basis) in der
   vom HUD nicht verdeckten Mitte (`camera.insetTop/insetBottom`). Tooltips der Befehlstasten gibt es nur mit Maus (Hover), nicht auf Touch.
-  Tablet (Lenovo Tab M11) und Desktop behalten das bisherige Layout.
+  Tablet (Lenovo Tab M11, iPad Air) und Desktop behalten das bisherige Layout; auf Touch-Geräten (ohne Maus) sind Infofeld und Befehlskarte
+  wischbar hoch/runter und links/rechts, wenn ihr Inhalt nicht hineinpasst, und unten bleibt Platz für den Home-Balken (`safe-area-inset-bottom`).
 - Auf der Karte: Munitions-/Treibstoffbalken bei gewählten Einheiten, Warnzeichen bei Einheiten ohne Munition,
   Route gewählter LKW als gestrichelte Linie mit Pfeil, Bauradius gewählter FOBs als gestrichelter Kreis.
 - **Aussehen der Anzeigen auf der Karte** (`js/render/marks.js`; nur Bild, eine Gruppe nach der anderen):

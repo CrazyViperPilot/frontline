@@ -25,7 +25,15 @@ import { createRequire } from 'node:module';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url)); // Repo-Wurzel: das Spiel liegt direkt hier
 /** Geräteprofile: Playwright-Gerät (Name) oder eigene Werte. Bei benannten Geräten setzt Playwright Bildschirm und Pixeldichte. */
-export const DEVICES = { desktop: null, tablet: 'iPad Pro 11 landscape', phone: 'Pixel 7 landscape' };
+// Gerät: Name aus den Playwright-Geräten oder eigene Angaben (iPad Air M1: 1180 × 820 CSS-Pixel, Pixeldichte 2, Touch)
+const IPAD_AIR = { viewport: { width: 1180, height: 820 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' };
+export const DEVICES = {
+  desktop: null,
+  tablet: 'iPad Pro 11 landscape',
+  phone: 'Pixel 7 landscape',
+  ipadair: IPAD_AIR,
+  ipadairhoch: { ...IPAD_AIR, viewport: { width: 820, height: 1180 } },
+};
 
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.webmanifest': 'application/manifest+json' };
 
@@ -69,7 +77,7 @@ export async function openGame({ seed = 3, query = '', scale = 1, out = '.smoke'
   const browser = await chromium.launch();
   let ctx = { viewport: { width, height }, deviceScaleFactor: scale };
   if (DEVICES[device]) {
-    const { defaultBrowserType, ...d } = devices[DEVICES[device]]; // wir nehmen immer Chromium
+    const { defaultBrowserType, ...d } = typeof DEVICES[device] === 'string' ? devices[DEVICES[device]] : DEVICES[device]; // wir nehmen immer Chromium
     ctx = d;
   }
   const page = await (await browser.newContext(ctx)).newPage();

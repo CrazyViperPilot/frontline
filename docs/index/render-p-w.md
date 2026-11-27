@@ -1,6 +1,10 @@
-# Symbol-Index render (Teil 4 von 4, refprops.js bis works.js)
+# Symbol-Index render (Teil 4 von 4, props.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
+
+## props.js (Fortsetzung)
+- crateSolids3d() – Versorgungskiste als Körper in Einheiten einer Kiste mit 16 Welt-Pixeln Kantenl…
+- drawCrateGlow(ctx, cam, x, y, s, glow) – Schimmer unter einer Kiste am Boden (glow 0 … 1): bleibt gemalt, auch wenn die…
 
 ## refprops.js (30 KB)
 - isRefSingle(kind) – Gibt es ein Modell dieser Art hier?
@@ -123,6 +127,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - UNI_DIM – Maße und Farben für die 3D-Ansicht (render3d/bigbuild3d.js): Stufen, Turm, Farb…
 
 ## ways.js (29 KB)
+- STREET
 - groundPattern(ctx, kind, season) – Muster für Boden-Flächen: 'asphalt', 'pavers' (Gehweg), 'dirt', 'rut', 'gravel'…
 - patternMatrix(u) – Transformation eines Musters: flach (Weltkoordinaten) oder auf die Iso-Achsen u…
 - invalidateWays() – Karte wurde an Ort und Stelle verändert (Editor): Feldwege, Gleise und Felder b…

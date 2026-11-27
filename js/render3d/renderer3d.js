@@ -28,6 +28,8 @@ import { Wires3D, hasMapTown3d } from './maptown3d.js';
 import { mapPylons } from '../render/maptown.js';
 import { Nature3D } from './nature3d.js';
 import { Props3D } from './props3d.js';
+import { Bridge3D } from './bridge3d.js';
+import { RELIEF } from '../game/relief.js';
 import { propSolids3d, propFlagColor } from '../render/mapprops.js';
 import { carLook3d, benchLook3d, baleLook3d } from '../render/props.js';
 import { bushLook3d, rockLook3d, animalLook3d } from '../render/nature.js';
@@ -103,6 +105,11 @@ export class Renderer3D extends Renderer {
     this.props3dOn = true; // false: Props wie in Iso gemalt (Prüfskript: Vergleich und Messung)
     this.propShadow3d = false; // isoShadows: gemalte Schatten der Props weglassen (3D wirft sie selbst)
     this.crateShadow2d = false; // isoShadows: Fußschatten der 3D-Kisten gemalt (ohne Schattenkarte)
+    this.bridges3d = new Bridge3D(); // Brücken und Furtstangen (bridge3d.js), gezeigt über bridge3d (Brücke) und ford3d (Furtstange)
+    this.objRoot.add(this.bridges3d.group);
+    this.bridge3d = this.ford3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
+    this.bridge3dOn = true; // false: Brücken und Furtstangen gemalt (Prüfskript: Vergleich und Messung)
+    this.bridge3dGround = null; // isoGround: null = Brücken gemalt, 'foam' = nur Gischt am Fuß der Stützen (Mesh mit Schattenkarte), 'foam+shadow' = dazu gemalter Schatten
     // Nebel: eigene Szene über allem (ohne Tiefentest), gleiche Geometrie wie der Boden
     this.fogScene = new THREE.Scene();
     this.fogRoot = makeWorldRoot();
@@ -158,6 +165,7 @@ export class Renderer3D extends Renderer {
     this.animalShadow2d = on && this.nature3dOn && !this.sun.on && !this.cubes;
     this.propShadow3d = on && this.props3dOn && this.sun.on && !this.cubes;
     this.crateShadow2d = on && this.props3dOn && !this.sun.on && !this.cubes;
+    this.bridge3dGround = on && this.bridge3dOn && !this.cubes ? (this.sun.on ? 'foam' : 'foam+shadow') : null; // Brücken und Furtstangen: Mesh im Durchlauf „Objekte“ (nur mit Relief, isoGround und isoItems prüfen es)
     this.frame3d = false; // Kamera für dieses Bild noch nicht gesetzt
     this.wires3dShown = false;
     super.render(view); // gleicht auch Relief und Größe ab
@@ -285,6 +293,12 @@ export class Renderer3D extends Renderer {
       };
       this.crate3d = (x, y, s, base) => props.crate(x, y, s, base, at({ x, y }));
     }
+    // Brücken und Furtstangen (bridge3d.js): Brücke auf Fahrbahnhöhe über dem Wasser, Furtstange im Wasser
+    this.bridges3d.begin(light);
+    if (this.bridge3dGround && relief) {
+      this.bridge3d = (b) => this.bridges3d.bridge(b, season, relief);
+      this.ford3d = (p) => this.bridges3d.ford(p, RELIEF.water);
+    }
     try {
       for (const it of f.items) {
         const o = it.o;
@@ -305,6 +319,7 @@ export class Renderer3D extends Renderer {
       this.house3d = this.hall3d = this.quarter3d = this.mil3d = this.fort3d = this.ruin3d = null;
       this.bush3d = this.rock3d = this.animal3d = null;
       this.prop3d = this.crate3d = null;
+      this.bridge3d = this.ford3d = null;
       this.shadow3d = false;
       f.ctx = ctx;
     }
@@ -313,6 +328,7 @@ export class Renderer3D extends Renderer {
     this.towns3d.end();
     this.nature3d.end();
     this.props3d.end();
+    this.bridges3d.end();
     bb.end();
     const gl = this.gl;
     gl.setClearColor(0x000000, 0);
@@ -433,6 +449,7 @@ export class Renderer3D extends Renderer {
     this.towns3d.dispose();
     this.nature3d.dispose();
     this.props3d.dispose();
+    this.bridges3d.dispose();
     this.fog3d.dispose();
     this.sun.dispose();
     this.gl.dispose();

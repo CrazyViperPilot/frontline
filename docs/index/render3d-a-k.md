@@ -31,6 +31,20 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - stats() – Messung: Seiten, Vierecke, Leerungen
   - dispose()
 
+## bridge3d.js (15 KB)
+- bridgeSolids(b, season, o) – Körper einer Brücke in Brückenkoordinaten
+- postSolids() – Furtstange: Pfahl mit nassem Fuß, Holz, rot-weißen Bändern und dunkler Kappe, F…
+- bridgeState(b, season, relief) – Zustand einer Brücke, der das Netz bestimmt (Schlüssel) und was es dazu braucht
+- class Bridge3D
+  - constructor()
+  - begin(light) – Bildanfang: Sonne (Welt, z oben)
+  - mesh(geo, cap)
+  - bridge(b, season, relief) – Brücke b zeigen (Netz bei geändertem Zustand neu bauen)
+  - ford(p, h) – Furtstange am Weltpunkt p auf Wasserhöhe h
+  - end() – Bildende: nicht gezeigte Brücken verstecken, Zahl der Furtstangen setzen
+  - stats() – Im Bild: Zahl der Brücken und Furtstangen, sichtbare Netze (= Draw-Calls ohne S…
+  - dispose()
+
 ## camera3d.js (3.9 KB)
 - HEIGHT_SCALE – Höhenfaktor der Wurzelgruppe: 1/cos 30° ≈ 1,1547, damit eine Höhe h im Bild h ·…
 - makeWorldRoot() – Wurzelgruppe: Kinder in Weltkoordinaten (x, y, h), siehe Kopf der Datei

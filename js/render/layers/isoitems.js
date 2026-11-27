@@ -81,6 +81,8 @@ export const isoItemMethods = {
     }
     for (const a of g.animals ?? []) if (inRect(a.x, a.y, 40) && seen(a.x, a.y)) items.push({ k: cam.depth(a.x, a.y), t: 11, o: a });
     for (const p of fordPosts(g.map, relief)) if (inRect(p.x, p.y, 30)) items.push({ k: cam.depth(p.x, p.y), t: 12, o: p });
+    // Ansicht 3D: Brücken sind Meshes im Durchlauf „Objekte“ (render3d/bridge3d.js), nicht mehr im Durchlauf „Boden“ gemalt (isoview.js)
+    if (this.bridge3dGround && relief) for (const b of g.bridges ?? []) if (inRect(b.x, b.y, b.len / 2 + ISO_PAD)) items.push({ k: cam.depth(b.x, b.y), t: 17, o: b });
     const air = [];
     for (const u of g.units) {
       if (!u.alive || u.house || !shown(u) || !inRect(u.x, u.y, PAD)) continue;
@@ -165,7 +167,8 @@ export const isoItemMethods = {
         if (this.crate3d?.(it.o.x, it.o.y, s, 0)) drawCrateGlow(ctx, cam, it.o.x, it.o.y, s, it.o.ground ? glow : 0); // Schimmer bleibt gemalt
         else if (!drawCrateIso(ctx, cam, it.o.x, it.o.y, s, 0, it.o.ground ? glow : 0)) drawCrate(ctx, cam, it.o.x, it.o.y, s, 0, it.o.ground ? glow : 0);
       }
-      else if (it.t === 12) drawFordPostIso(ctx, cam, it.o);
+      else if (it.t === 12) { if (!this.ford3d?.(it.o)) drawFordPostIso(ctx, cam, it.o); } // 3D: render3d/bridge3d.js
+      else if (it.t === 17) this.bridge3d?.(it.o); // Brücke (nur Ansicht 3D, sonst im Durchlauf „Boden“ gemalt)
       else if (it.t === 15) { if (!this.quarter3d?.(it.o)) drawQuarterIso(ctx, cam, it.o, g.teams[it.o.b.team].color, this.season); } // Regierungsviertel (3D: render3d/gov3d.js)
       else if (it.t === 11) {
         const a = it.o;

@@ -23,7 +23,7 @@ import { crateSolids3d } from '../render/props.js';
 const CAP = 512; // Instanzen je Form und Bild; darüber malt der Renderer wie bisher
 const CAP_CAR = 2048;
 
-const VS = `
+export const VS = `
 uniform float uS;
 varying vec3 vN;
 varying vec3 vCol;
@@ -45,7 +45,7 @@ void main() {
   gl_Position = projectionMatrix * viewMatrix * m * vec4(position, 1.0);
 }`;
 
-const FS = `
+export const FS = `
 uniform vec3 uLight;
 uniform float uAlpha;
 varying vec3 vN;

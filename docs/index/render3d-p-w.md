@@ -15,7 +15,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - stats() – Props im Bild je Art und sichtbare Sätze (= Draw-Calls ohne Schattenkarte), Dre…
   - dispose()
 
-## renderer3d.js (25 KB)
+## renderer3d.js (26 KB)
 - class Renderer3D
   - constructor(canvas, game, camera, team, gl, opts) – gl: fertiger THREE.WebGLRenderer (make3D)
   - setShadows(level) – Schattenstufe 'off' | 'mid' | 'high' (BALANCE.shadows3d), sofort wirksam; Aus:…

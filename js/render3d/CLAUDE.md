@@ -24,6 +24,7 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `mil3d.js` – Militärgebäude (FOB, Mauer, Tor, Mörser, Flak, Phalanx, Turm, Bohrer, Baustellen), Ausbauten besetzter Häuser. `milGeometry`, `fortGeometry`
 - `airbase3d.js` – Fliegerhorst (Stellplatz mit Überdachung oder Shelter, Tower, Kerosintank, Munitionslager), Dach und Röhre halb durchsichtig. `airbaseGeometry`, `airbaseGlass`
 - `bridge3d.js` – Brücken (Pfeiler, Fahrbahn, Geländer, zerstört, Wiederaufbau) und Furtstangen (`bridge3dOn`). `Bridge3D`, `bridgeSolids`
+- `weather3d.js` – Wetter in 3D: Regen mit Ringen, Schnee, Nebelbänke (Teilchen, Tiefentest), nasser Boden (`weather3dOn`). `Weather3D`, `weatherShares`, `wetGround`
 - `maptown3d.js` – Kartenstadt (Häuser, Hallen, Fabriken, Mauern, Zug, Turm, Mast), Leitung als Linien. `mapTownGeometry`, `Wires3D`
 
 ## Besonderheiten

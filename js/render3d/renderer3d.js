@@ -15,6 +15,9 @@ import { Ground3D } from './ground3d.js';
 import { Billboards } from './billboards.js';
 import { Units3D } from './units3d.js';
 import { Fog3D } from './fog3d.js';
+import { Weather3D, weatherShares } from './weather3d.js';
+import { setKitWet } from './kit3d.js';
+import { drawMood } from '../render/mood.js';
 import { Fx3D, effect3d, shell3d, smoke3d } from './fx3d.js';
 import { drawMine } from '../render/fx.js';
 import { bridgeUnder } from '../game/river.js';
@@ -120,6 +123,14 @@ export class Renderer3D extends Renderer {
     this.fx3d = new Fx3D();
     this.fxRoot.add(this.fx3d.mesh);
     this.fx3dOn = true;
+    // Wetter: eigene Szene nach „Nebel“, Tiefentest gegen den Tiefenpuffer aus „Objekte“ (weather3d.js); false: Regen, Schnee, Nebel gemalt wie in Iso
+    this.weatherScene = new THREE.Scene();
+    this.weatherRoot = makeWorldRoot();
+    this.weatherScene.add(this.weatherRoot);
+    this.weather3d = new Weather3D(this.ground3d.uniforms.uNoise.value);
+    this.weatherRoot.add(this.weather3d.group);
+    this.weather3dOn = true;
+    this.wet = 0; // Nässe des Bodens und der Dächer dieses Bildes (0 … 1), aus dem Wetter
     this.scratch = null; // 2D-Leinwand für alles, was im Durchlauf „Objekte“ nicht über blit läuft (liegt über den Billboards)
     this.cubes = !!opts.cubes;
     this.probes = null; // Prüfpunkte der Würfel (testscene.js), beim ersten 3D-Bild
@@ -129,6 +140,7 @@ export class Renderer3D extends Renderer {
       ['Flieger', null], // Luftfahrzeuge zeichnet „Objekte“ mit (Tiefe statt „immer obenauf“)
       ['Effekte', (r, f) => r.fx3dPass(f)],
       ['Nebel', (r, f) => r.fog3dPass(f)],
+      ['Wetter', (r, f) => r.weather3dPass(f)],
     ];
     if (this.cubes) for (const n of ['Boden', 'Schatten', 'Objekte', 'Wetter']) sw.push([n, null]);
     this.swaps = new Map(sw); // Iso-Durchlauf → Ersatz (null = auslassen)
@@ -163,6 +175,8 @@ export class Renderer3D extends Renderer {
     this.propShadow3d = on && this.props3dOn && this.sun.on && !this.cubes;
     this.crateShadow2d = on && this.props3dOn && !this.sun.on && !this.cubes;
     this.bridge3dGround = on && this.bridge3dOn && !this.cubes ? (this.sun.on ? 'foam' : 'foam+shadow') : null; // Brücken und Furtstangen: Mesh im Durchlauf „Objekte“ (nur mit Relief, isoGround und isoItems prüfen es)
+    this.wet = on && this.weather3dOn && !this.cubes ? weatherShares(this.game.weather).wet : 0;
+    setKitWet(this.wet);
     this.frame3d = false; // Kamera für dieses Bild noch nicht gesetzt
     this.wires3dShown = false;
     super.render(view); // gleicht auch Relief und Größe ab
@@ -196,7 +210,7 @@ export class Renderer3D extends Renderer {
     if (!relief) return this.isoTerrain(f);
     this.sync3d();
     if (!this.terrainGL) this.terrainGL = seasonal(buildTerrain(f.g.map, 'gl'), this.season);
-    this.ground3d.update(relief, this.terrainGL, this.lightVec(), f.now / 1000, this.season === 'winter' ? 1 : 0, this.cam3, this.mood); // Wasser: Blick und Stimmung
+    this.ground3d.update(relief, this.terrainGL, this.lightVec(), f.now / 1000, this.season === 'winter' ? 1 : 0, this.cam3, this.mood, this.wet); // Wasser: Blick und Stimmung; Nässe bei Regen
     if (this.cubes) this.syncCubes();
     this.gl.setClearColor(BG, 1);
     this.gl.render(this.groundScene, this.cam3);
@@ -353,9 +367,52 @@ export class Renderer3D extends Renderer {
     if (!f.relief) return this.isoFog(f);
     this.sync3d();
     this.fog3d.update(this.fogData(f.g.fog[f.team]), f.now / 1000);
-    this.gl.setClearColor(0x000000, 0);
-    this.gl.render(this.fogScene, this.cam3);
+    // nur Farbe löschen: die Tiefe aus „Objekte“ braucht das Wetter danach (Nebel selbst testet keine Tiefe)
+    const gl = this.gl;
+    gl.setClearColor(0x000000, 0);
+    gl.autoClear = false;
+    gl.clear(true, false, false);
+    try {
+      gl.render(this.fogScene, this.cam3);
+    } finally {
+      gl.autoClear = true;
+    }
     this.copy3d(f.ctx);
+  }
+
+  /**
+   * Durchlauf „Wetter“: Regen, Schnee und Nebelbänke als Teilchen in three (weather3d.js) mit Tiefentest gegen „Objekte“, dazu der
+   * gemalte Schleier (eine Fläche) und die Lichtstimmung. Ohne Relief oder mit weather3dOn = false wie in Iso (drawSky).
+   */
+  weather3dPass(f) {
+    if (!this.weather3dOn || !f.relief) return this.drawSky(f);
+    const { ctx, dpr } = f;
+    const cam = this.camera;
+    const sh = this.weather3d.update(cam, f.relief, f.g.weather, f.now / 1000, dpr);
+    if (sh.rain + sh.snow + sh.fog > 0.01) {
+      this.sync3d();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const veil = (rgb, a) => {
+        ctx.fillStyle = `rgba(${rgb},${Math.min(1, a).toFixed(3)})`;
+        ctx.fillRect(0, 0, this.cssW, this.cssH);
+      };
+      if (sh.rain > 0.01) veil('22,32,48', 0.2 * sh.rain); // trübes Licht unter den Wolken
+      if (sh.snow > 0.01) veil('218,227,238', 0.12 * sh.snow);
+      if (sh.fog > 0.01) veil('198,206,208', 0.1 * sh.fog);
+      this.weatherRoot.updateMatrixWorld();
+      const gl = this.gl;
+      gl.setClearColor(0x000000, 0);
+      gl.autoClear = false;
+      gl.clear(true, false, false); // Tiefe aus „Objekte“ bleibt: Gebäude, Einheiten und Bäume davor verdecken
+      try {
+        gl.render(this.weatherScene, this.cam3);
+      } finally {
+        gl.autoClear = true;
+      }
+      this.copy3d(ctx);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawMood(ctx, this.mood, this.cssW, this.cssH); // Lichtstimmung (mood.js), wie drawSky
   }
 
   /**
@@ -446,6 +503,7 @@ export class Renderer3D extends Renderer {
     this.props3d.dispose();
     this.bridges3d.dispose();
     this.fog3d.dispose();
+    this.weather3d.dispose();
     this.sun.dispose();
     this.gl.dispose();
     this.gl.forceContextLoss();

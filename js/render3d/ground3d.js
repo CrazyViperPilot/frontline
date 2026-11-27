@@ -11,6 +11,7 @@ import { RELIEF, FINE_N } from '../game/relief.js';
 import { FS_GROUND, SKIRT_BOTTOM, NOISE_N, noiseTexture } from '../render/ground.js';
 import { groundDetail, DETAIL_N } from '../render/groundtex.js';
 import { HEIGHT_SCALE } from './camera3d.js';
+import { wetGround } from './weather3d.js';
 
 const W = BALANCE.map.width;
 const STEP = RELIEF.step;
@@ -106,9 +107,11 @@ void main() {
 
 // Boden-Shader für die Ansicht 3D: FS_GROUND unverändert, nur vorn eine Zeile: mit 3D-Wasser (uWater3d = 1) verwirft er Punkte, die das
 // Wasser ohnehin deckend übermalt (tiefer als 0,6 px unter dem Spiegel), statt dort Gras, Fels und Wasser umsonst zu rechnen.
-const FS_GROUND3D = FS_GROUND.replace('uniform float uSkirt;', 'uniform float uSkirt;\nuniform float uWater3d;').replace(
-  'void main() {',
-  'void main() {\n  if (uWater3d > 0.5 && uSkirt < 0.5 && vH < uWater - 0.6) discard;',
+const FS_GROUND3D = wetGround( // nasser Boden bei Regen (weather3d.js)
+  FS_GROUND.replace('uniform float uSkirt;', 'uniform float uSkirt;\nuniform float uWater3d;').replace(
+    'void main() {',
+    'void main() {\n  if (uWater3d > 0.5 && uSkirt < 0.5 && vH < uWater - 0.6) discard;',
+  ),
 );
 
 /** Himmel und Sonnenglanz je Lichtstimmung (render/mood.js; ohne Stimmung wie „day“); Nacht: dunkel wie der Boden, kein Glanz. */
@@ -146,6 +149,10 @@ export class Ground3D {
       uWater: { value: RELIEF.water },
       uSnow: { value: 0 },
       uWater3d: { value: 1 }, // 1 = 3D-Wasser deckt, Boden darunter verwerfen (FS_GROUND3D)
+      uWet: { value: 0 }, // Nässe 0 … 1 (weather3d.js wetGround); Blick, Himmel und Sonne teilt das Wasser (uEye, uSky, uSun)
+      uEye: { value: new THREE.Vector3(0, 0, 1) },
+      uSky: { value: new THREE.Vector3() },
+      uSun: { value: new THREE.Vector3() },
     };
     const mat = (skirt) =>
       new THREE.ShaderMaterial({ uniforms: { ...shared, uSkirt: { value: skirt } }, vertexShader: VS, fragmentShader: FS_GROUND3D, side: THREE.DoubleSide }); // wie ground.js: ohne Weglassen von Rückseiten
@@ -207,7 +214,7 @@ export class Ground3D {
   /** Wasser-Material: durchsichtig am Rand, Tiefentest gegen den Boden, zum Betrachter versetzt (kein Flimmern an der Uferlinie). */
   waterMaterial(shared) {
     const m = new THREE.ShaderMaterial({
-      uniforms: { uNoise: shared.uNoise, uLight: shared.uLight, uTime: shared.uTime, uWater: shared.uWater, uSnow: shared.uSnow, uEye: { value: new THREE.Vector3(0, 0, 1) }, uSky: { value: new THREE.Vector3() }, uSun: { value: new THREE.Vector3() } },
+      uniforms: { uNoise: shared.uNoise, uLight: shared.uLight, uTime: shared.uTime, uWater: shared.uWater, uSnow: shared.uSnow, uEye: shared.uEye, uSky: shared.uSky, uSun: shared.uSun },
       vertexShader: VS,
       fragmentShader: FS_WATER,
       side: THREE.DoubleSide,
@@ -354,13 +361,14 @@ export class Ground3D {
    * Vor dem Zeichnen: Gelände, Bodenbild, Licht (Weltvektor, z oben), Zeit (s) und Winter (Schnee 0/1) abgleichen; für das Wasser
    * die three-Kamera (Blickrichtung) und die Lichtstimmung (render/mood.js, null = ohne).
    */
-  update(relief, tex, light, time, snow, cam3 = null, mood = null) {
+  update(relief, tex, light, time, snow, cam3 = null, mood = null, wet = 0) {
     if (relief !== this.relief || relief.version !== this.version) this.uploadRelief(relief);
     if (tex !== this.texSrc) this.setTexture(tex);
     const u = this.uniforms;
     u.uLight.value.set(light[0], light[1], light[2]);
     u.uTime.value = time;
     u.uSnow.value = snow;
+    u.uWet.value = wet;
     u.uWater3d.value = this.water.visible ? 1 : 0; // ausgeblendet (Prüfskript „vorher“): Boden malt sein Wasser selbst
     if (cam3) {
       // zum Betrachter: z-Achse der Kamera, aus three (X = x, Y = Höhe · HEIGHT_SCALE, Z = y) zurück in Weltachsen

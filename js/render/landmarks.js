@@ -277,3 +277,6 @@ export function drawWires(ctx, net, pt, lw, inView) {
   }
   ctx.stroke();
 }
+
+// Für render3d/maptown3d.js (Ansicht 3D): Farben der Fabrikhalle und Maße des Mastes
+export { BRICK as PLANT_BRICK, CLAD as PLANT_CLAD, ROOF as PLANT_ROOF, SKY as PLANT_SKY, STEEL as PLANT_STEEL, PY };

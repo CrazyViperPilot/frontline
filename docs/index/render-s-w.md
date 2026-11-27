@@ -1,8 +1,23 @@
-# Symbol-Index render (Teil 4 von 4, stronghold.js bis works.js)
+# Symbol-Index render (Teil 4 von 4, sprites.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## stronghold.js (Fortsetzung)
+## sprites.js (Fortsetzung)
+- hexA(hex, a) – Hex-Farbe mit Alpha als rgba-String
+- hpColor(frac) – Farbe für Lebensbalken: grün, gelb, rot
+- fitText(ctx, text, x, y, px, zoom, maxW) – Text in Weltkoordinaten, Schriftgröße in Bildschirm-Pixeln (px), verkleinert be…
+- drawBar(ctx, x, y, w, h, frac, color, px, ticks) – Lebensbalken (Welt-Maße)
+- drawUnit(ctx, u, color, zoom, aim, now, iso) – Einheit von oben
+- drawUnitSymbol(ctx, x, y, a, color, k, air)
+- drawBuilding(ctx, b, color, zoom, pic)
+- CRATE_MARK – Markierung (Gurtschloss, Minimap)
+- drawCrate(ctx, x, y, s, zoom, glow) – Versorgungskiste von oben: olivgrüne Kiste (Kantenlänge s) mit zwei Gurten und…
+- drawStar(ctx, x, y, r, zoom) – Goldener Stern (Kommandeur) mit Mittelpunkt (x, y), Radius r (Welt-Maße); gemal…
+- drawAnimalTop(ctx, a, zoom) – Tier von oben (Weltkoordinaten, gedreht nach Laufrichtung): Reh mit hellem Spie…
+- drawAnimalSide(ctx, a, x, y, k, right) – Tier in der Seitenansicht (isometrisch, Bildschirmkoordinaten): Fußpunkt (x, y)…
+
+## stronghold.js (16 KB)
+- worksMask(h) – Ausbauten eines Hauses als Bitmaske: 1 Sandsäcke, 2 MG-Nest, 4 Stacheldraht
 - drawHouseWorksIso(ctx, cam, h, part, body) – Ausbauten eines Hauses isometrisch (Ankerpunkt = Hausmitte am Boden, Kamera mit…
 - drawHouseFlagIso(ctx, cam, h, color, t, body) – Fahne am besetzten Haus (Iso): Mast an der linken Ecke des Hauses (außen; Altba…
 - drawHouseWorksTop(ctx, h, zoom) – Ausbauten von oben (2D, Weltkoordinaten, Kamera-Transformation gesetzt)

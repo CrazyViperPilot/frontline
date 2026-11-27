@@ -999,6 +999,11 @@ void main() {
   #include <worldpos_vertex>
   #include <shadowmap_vertex>
   vec3 r = mat3(modelMatrix) * normal; // three-Raum → zurück in Spielachsen (wie units3d.js)
+  #ifdef USE_INSTANCING
+  mat3 mI = mat3(instanceMatrix); // Instanz um z gedreht und in x, y gestreckt (Kartenstadt 3D): Normale mit der Gegenstreckung
+  vec3 sI = vec3(length(mI[0]), length(mI[1]), length(mI[2]));
+  r = mat3(modelMatrix) * (mI * (normal / (sI * sI)));
+  #endif
   vN = normalize(vec3(r.x, r.z, r.y / uS));
   vCol = color;
   vUv = aUv;

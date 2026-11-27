@@ -859,3 +859,6 @@ export function worksGeometry(kind, level) {
   }
   return g;
 }
+
+// Für maptown3d.js (Kartenstadt 3D): Rolltor und Lkw der Werke wiederverwendet
+export { gate as gate3d, lorry as lorry3d };

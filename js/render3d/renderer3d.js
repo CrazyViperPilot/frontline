@@ -18,6 +18,8 @@ import { Fog3D } from './fog3d.js';
 import { Sun3D, CATCH } from './sun3d.js';
 import { Trees3D } from './trees3d.js';
 import { Town3D } from './town3d.js';
+import { Wires3D, hasMapTown3d } from './maptown3d.js';
+import { mapPylons } from '../render/maptown.js';
 import { Nature3D } from './nature3d.js';
 import { bushLook3d, rockLook3d, animalLook3d } from '../render/nature.js';
 import { BALANCE } from '../data/balance.js';
@@ -66,6 +68,10 @@ export class Renderer3D extends Renderer {
     this.house3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
     this.towns3dOn = true; // false: Stadthäuser wie in Iso als gemalte Billboards (Prüfskript: Messung vorher/nachher)
     this.works3dOn = true; // false: Werke und Kraftwerk gemalt
+    this.maptown3dOn = true; // false: Kartenstadt (Häuser, Hallen, Fabriken, Mauern, Zug, Bahnhof, Turm, Mast) und Leitungen gemalt
+    this.wires3d = new Wires3D(); // Hochspannungsleitung als Linien (maptown3d.js), statt des gemalten Durchlaufs „Leitungen“
+    this.objRoot.add(this.wires3d.group);
+    this.wires3dShown = false; // drawPowerWires: gemalte Leitungen weglassen, wenn dieses Bild sie in 3D zeigt
     this.nature3d = new Nature3D(); // Büsche, Felsen, Tiere als InstancedMesh je Form (nature3d.js), gezeigt über bush3d, rock3d, animal3d
     this.objRoot.add(this.nature3d.group);
     this.bush3d = this.rock3d = this.animal3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
@@ -118,8 +124,14 @@ export class Renderer3D extends Renderer {
     this.natureShadow3d = on && this.nature3dOn && this.sun.on && !this.cubes;
     this.animalShadow2d = on && this.nature3dOn && !this.sun.on && !this.cubes;
     this.frame3d = false; // Kamera für dieses Bild noch nicht gesetzt
+    this.wires3dShown = false;
     super.render(view); // gleicht auch Relief und Größe ab
     if (on && this.cubes) this.markProbes();
+  }
+
+  /** Altbau-Hof (render/maptown.js drawHouseYard): ohne gemalten Schlagschatten, wenn das Haus ein Mesh ist und seinen Schatten selbst wirft. */
+  get houseYard3d() {
+    return this.camera.iso && this.camera.three && this.maptown3dOn && !this.cubes;
   }
 
   /** three-Kamera einmal je Bild aus Camera setzen. */
@@ -184,7 +196,12 @@ export class Renderer3D extends Renderer {
     this.unit3d = (f, u, aim, lift) => this.units3d.show(u, cam.pinned ?? (relief ? relief.displayAt(u.x, u.y) : 0), lift, aim, f.now);
     // Stadthäuser: Sonne, Schnee, Nacht und Schattenstärke wie Boden und Schattenfänger; Höhe wie das Billboard (cam.pin)
     this.towns3d.begin({ light, snow: season === 'winter' ? 1 : 0, night: this.mood === 'night' ? 1 : 0, shade: BALANCE.shadows3d.opacity[this.mood ?? 'none'] ?? BALANCE.shadows3d.opacity.none });
-    this.house3d = (o) => (o.kind === 'town' ? this.towns3dOn : this.works3dOn) && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
+    this.house3d = (o) => (o.kind === 'town' ? this.towns3dOn : hasMapTown3d(o) ? this.maptown3dOn : this.works3dOn) && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
+    // Hochspannungsleitung (feste Karten): Linien von Mast zu Mast mit dem Gelände am Mast, gezeichnet mit den Objekten (Tiefentest)
+    const net = this.maptown3dOn ? mapPylons(this.game.map) : null;
+    this.wires3dShown = !!net?.size && !this.cubes;
+    this.wires3d.mesh.visible = false;
+    if (this.wires3dShown) this.wires3d.update(net, (x, y) => (relief ? relief.displayAt(x, y) : 0), (x, y) => f.inRect(x, y, 700));
     // Büsche, Felsen, Tiere (nature3d.js): Höhe wie das Billboard
     this.nature3d.begin(light, season);
     if (this.nature3dOn) {

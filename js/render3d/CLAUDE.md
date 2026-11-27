@@ -17,6 +17,7 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `kit3d.js` – Gebäude-Baukasten (Teile wie isokit.js). `Kit3D`, `makeKitMaterial`, `setKitFrame`, `kitMesh`
 - `town3d.js` – Gebäudefamilien (Stadthäuser 1 × 1, Werke), InstancedMesh je Variante. `townGeometry`, `FAMILIES`, `Town3D`
 - `works3d.js` – Werke aus dem Baukasten, Teamfarbe je Instanz. `worksGeometry`, `worksKey`
+- `maptown3d.js` – Kartenstadt (Häuser, Hallen, Fabriken, Mauern, Zug, Turm, Mast), Leitung als Linien. `mapTownGeometry`, `Wires3D`
 
 ## Besonderheiten
 - 3D-Gegenstück eines Iso-Malers: Hook im Maler (`house3d`, `tree3d`, `bush3d` …, nur im Durchlauf „Objekte“), Schalter `…3dOn` im Renderer.

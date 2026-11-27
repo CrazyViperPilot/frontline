@@ -12,6 +12,7 @@ Licht und Schatten oder Achsen und Kamera der Ansicht 3D geht. Plan und Stand de
   malt (Rotoren, Flammen), kommt über eine 2D-Zwischenleinwand obenauf.
 - Einheiten (`unit3d`), Bäume (`tree3d`), Häuser und Werke (`house3d`) fragt `isoObjects` nur in „Objekte“; `trees3dOn`, `towns3dOn`,
   `works3dOn` schalten auf gemalt (Dampf der Werke: `drawWorksSteam`). Einheit mit Mesh: gemalt nur Rotoren, Nachbrenner; Schatten wirft das Mesh.
+- Kartenstadt (`maptown3d.js`): dieselbe Familienliste (`house3d`, `maptown3dOn`); Instanz mit Drehung und Streckung (`yaw`, `scale` der Familie), Leitung als Linien (`Wires3D`, ersetzt den gemalten Durchlauf „Leitungen“ über `wires3dShown`).
 - WebGL-Leinwand nicht im DOM, ohne Kantenglättung.
 
 ## Licht und Schatten (`sun3d.js`)

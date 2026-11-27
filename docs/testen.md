@@ -85,6 +85,10 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
   `--only stadt`: Seed 3, KI gegen KI bis `--citymin` Spielminuten, Stadt an der Hauptstadt und ein Ausschnitt mit den meisten Werken
   Iso | 3D in 4 Drehungen, Sommer und Winter (`.smoke/3d/stadt/`), Draw-Calls, Dreiecke und Zeit „Objekte“ mit gemalten gegen
   3D-Stadthäuser und 3D-Werke (`renderer.towns3dOn`, `works3dOn`).
+  `--only baukasten --what kartenstadt`: jede Art der Kartenstadt (Haus je Stil und Farbe, Halle, Fabrik, Mauer, Zug, Turm, Bahnhof, Bahnsteig,
+  Fabrikhalle, Mast) gemalt neben 3D in 4 Drehungen und Stimmungen (`.smoke/3d/baukasten/kartenstadt-*.png`; Fehler bei mehr als einem Draw-Call
+  je Gebäude, fehlenden Fotos, abweichendem Umriss). `--only karte`: Ausschnitte echter Karten (Seed 3, 7, East Europe Railway mit Fabrikhalle,
+  Bahnhof, Mastlinie) Iso | 3D in 4 Drehungen (`.smoke/3d/karte/`) und Messung gemalt gegen 3D (`renderer.maptown3dOn`, Schatten Aus/Hoch).
   `--only wasser`: See (Seed 3, `river=0`) und Fluss an der Brücke (Seed 4, `river=1`), Hubschrauber und Panzer am Wasser; Iso | 3D in
   4 Drehungen Tag und Nacht, Zoom 0,5/1,6, Sommer und Winter (`.smoke/3d/wasser/`); Zeit „Gelände“, Draw-Calls ohne und mit 3D-Wasser.
 - `node tools/smoke-3d.mjs --only mvp` (Paket „MVP-Messung“, nur ausdrücklich, gut 10 min): Rundgang je Gerät desktop, tablet, phone

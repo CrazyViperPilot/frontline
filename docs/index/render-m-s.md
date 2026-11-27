@@ -1,11 +1,62 @@
-# Symbol-Index render (Teil 3 von 4, maptown.js bis stronghold.js)
+# Symbol-Index render (Teil 3 von 4, maptown.js bis sprites.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
 ## maptown.js (Fortsetzung)
+- drawHouseYard(ctx, b, zoom, season, rot, no3dShadow) – Iso, Bodendurchgang (seit Paket „Wohnhaus“): Hof, Vorplatz, Weg und Schatten ei…
+- houseYardIso(b, rot) – Hofmauer eines Altbaus in der Drehung rot (für Sandsäcke und Fahne, stronghold.…
+- houseYardTrees(b, rot)
+- drawMapIso(ctx, cam, b) – Iso: Gebäude b der Karte gemalt; false = nicht hier
+- drawMapTop(ctx, b, zoom) – 2D: Gebäude b der Karte von oben (Weltkoordinaten, Kamera-Transformation gesetz…
+- drawPark(ctx, p, zoom, season, rails) – Park p als Bodenbild: in 2D mit der Kamera-Transformation, iso mit der Bodentra…
 - drawMapTown2D(ctx, town, inRect, zoom, season, gone, ruined) – 2D: Parks, Gebäude, Bänke, Stadtbäume und geparkte Autos der Karte über dem Gel…
 - drawMapCars2D(ctx, town, inRect, zoom, season) – 2D: parkende Autos der Karte, nach den Straßen der Stadt (sonst lägen sie darun…
 - drawMapTownMini(ctx, town, season) – Minimap: Parks und Gebäude der Karte als Flächen (je Farbe ein Pfad); Weltkoord…
+- mapInfo (= infoOf)
+- towerSide
+- q8
+- TW
+- TW_SIDE
+- TW_HUT
+- TW_RADAR
+- TW_ANT
+- TW_LAMP
+- TW_LEG
+- TW_DECK
+- TW_GRATE
+- TW_WALL
+- TW_RIM
+- TW_ROOF
+- TW_GLASS
+- TW_RAIL
+- PLASTER
+- TILES
+- SLATE
+- BRICK
+- SHUTTER
+- TIMBER
+- FACH_WALL
+- NEU_WALL
+- NEU_ACC
+- BARN
+- HALL_WALL
+- HALL_BAND
+- METAL_ROOF
+- FACT_WALL
+- FACT_ROOF
+- SKY
+- CONC
+- YARD
+- CONTAINER
+- ALT_WALL
+- ALT_ROOF
+- ALT_STONE
+- ALT_QUOIN
+- ALT_H
+- ALT_RH
+- altPlan
+- spots
+- pylonYaw(b) – Richtung der Traversen eines Masts (Bogenmaß, Welt, ungerundet) für die Ansicht…
 
 ## marks.js (18 KB)
 - drawSelectMark(ctx, e, z, hover, iso, scale) – Auswahl- bzw. Hover-Markierung eines Objekts am Boden
@@ -142,18 +193,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## sprites.js (25 KB)
 - shade(hex, f) – Farbe abdunkeln (f = 0 unverändert, 1 schwarz)
 - tint(hex, f) – Farbe aufhellen (f = 0 unverändert, 1 weiß)
-- hexA(hex, a) – Hex-Farbe mit Alpha als rgba-String
-- hpColor(frac) – Farbe für Lebensbalken: grün, gelb, rot
-- fitText(ctx, text, x, y, px, zoom, maxW) – Text in Weltkoordinaten, Schriftgröße in Bildschirm-Pixeln (px), verkleinert be…
-- drawBar(ctx, x, y, w, h, frac, color, px, ticks) – Lebensbalken (Welt-Maße)
-- drawUnit(ctx, u, color, zoom, aim, now, iso) – Einheit von oben
-- drawUnitSymbol(ctx, x, y, a, color, k, air)
-- drawBuilding(ctx, b, color, zoom, pic)
-- CRATE_MARK – Markierung (Gurtschloss, Minimap)
-- drawCrate(ctx, x, y, s, zoom, glow) – Versorgungskiste von oben: olivgrüne Kiste (Kantenlänge s) mit zwei Gurten und…
-- drawStar(ctx, x, y, r, zoom) – Goldener Stern (Kommandeur) mit Mittelpunkt (x, y), Radius r (Welt-Maße); gemal…
-- drawAnimalTop(ctx, a, zoom) – Tier von oben (Weltkoordinaten, gedreht nach Laufrichtung): Reh mit hellem Spie…
-- drawAnimalSide(ctx, a, x, y, k, right) – Tier in der Seitenansicht (isometrisch, Bildschirmkoordinaten): Fußpunkt (x, y)…
-
-## stronghold.js (16 KB)
-- worksMask(h) – Ausbauten eines Hauses als Bitmaske: 1 Sandsäcke, 2 MG-Nest, 4 Stacheldraht

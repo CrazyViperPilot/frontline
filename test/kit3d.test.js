@@ -212,7 +212,7 @@ test('Werke 3D: alle Arten und Stufen, sparsam, gültig und im Iso-Umriss wie da
 });
 
 test('Gebäudefamilien: Stadthäuser und Werke teilen sich Town3D, Werke tönt die Instanz', () => {
-  assert.deepEqual(FAMILIES.map((f) => f.name), ['town', 'works']);
+  assert.deepEqual(FAMILIES.map((f) => f.name), ['town', 'works', 'maptown']); // Kartenstadt: test/maptown3d.test.js
   const [town, works] = FAMILIES;
   assert.ok(town.has({ kind: 'town' }) && !town.has({ kind: 'power' }));
   assert.ok(works.has({ kind: 'power' }) && !works.has({ kind: 'town' }) && !works.has({ kind: 'uni' }));

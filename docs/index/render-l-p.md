@@ -1,6 +1,14 @@
-# Symbol-Index render (Teil 3 von 4, mapprops.js bis refprops.js)
+# Symbol-Index render (Teil 3 von 4, landmarks.js bis props.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
+
+## landmarks.js (Fortsetzung)
+- PLANT_STEEL (= STEEL) – Für render3d/maptown3d.js (Ansicht 3D): Farben der Fabrikhalle und Maße des Mas…
+- PY – Für render3d/maptown3d.js (Ansicht 3D): Farben der Fabrikhalle und Maße des Mas…
+
+## mappreview.js (3.3 KB)
+- drawMapPreview(canvas, map) – Zeichnet die Karte `map` in das Canvas `canvas` (ganze Fläche)
+- drawPowerLines(ctx, buildings, lw) – Leitungen zwischen Strommasten derselben Linie (Kartenreihenfolge) als dünne Li…
 
 ## mapprops.js (16 KB)
 - propLooksOf(props, st, version) – Aussehen aller sichtbaren Props: [{ i, x, y, kind, mask, along, gate, rubble, v…
@@ -174,9 +182,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - carLook3d(c, season) – Auto: { key, S, yaw, k, charred } aus dem Modell „top“ (beide Seiten, beide End…
 - benchLook3d(b, season) – Parkbank: { key, S, yaw, k }
 - baleLook3d(b, season) – Ballen: beide Stirnseiten mit Ringen (gemalt nur die vordere)
-- crateSolids3d() – Versorgungskiste als Körper in Einheiten einer Kiste mit 16 Welt-Pixeln Kantenl…
-- drawCrateGlow(ctx, cam, x, y, s, glow) – Schimmer unter einer Kiste am Boden (glow 0 … 1): bleibt gemalt, auch wenn die…
-
-## refprops.js (30 KB)
-- isRefSingle(kind) – Gibt es ein Modell dieser Art hier?
-- refModel(kind, v, d, w, rubble) – Körper eines Einzelstücks der Raffinerie (Modellrichtung)

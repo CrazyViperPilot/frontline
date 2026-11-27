@@ -1,0 +1,1 @@
+**Straßen und Wege 3D** (§6 „Gelände“, §15 „Stadt“, nur Bild): In der Ansicht 3D liegen Stadtstraßen, Feldwege, Gleise, Felder und Pflaster als Bodenschicht auf dem Gelände (am Hang ohne Versatz, Hügel verdecken sie), Schienen und Weidezäune sind echte Körper (Test, `?three=1`).

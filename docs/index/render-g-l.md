@@ -1,8 +1,16 @@
-# Symbol-Index render (Teil 2 von 4, ground.js bis mappreview.js)
+# Symbol-Index render (Teil 2 von 4, govquarter.js bis landmarks.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## ground.js (Fortsetzung)
+## govquarter.js (Fortsetzung)
+- _quarter – Für Tests: Plan, Gruppen und Hilfen
+- QUARTER_PAL – Farben für die 3D-Ansicht (render3d/gov3d.js)
+
+## ground.js (27 KB)
+- SKIRT_BOTTOM – Unterkante des Erdschnitts am Kartenrand
+- LIGHT_ELEV – Lichthöhe (z-Anteil des Lichtvektors)
+- FOG_EXPLORED_ALPHA – Nebel über Erkundetem: abgedunkelt, nicht schwarz (0 … 255)
+- FS_GROUND – Rauschen kommt aus einer kachelbaren Textur (noiseTexture), das ist auf Handys…
 - FS_FOG – Kriegsnebel (seit v5.49 gemalt): Unerforschtes unter einer dunklen Wolkendecke…
 - NOISE_N
 - noiseTexture() – Kachelbare Rauschtextur (NOISE_N², RGBA), fester Startwert
@@ -173,9 +181,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - PLANT_CLAD (= CLAD) – Für render3d/maptown3d.js (Ansicht 3D): Farben der Fabrikhalle und Maße des Mas…
 - PLANT_ROOF (= ROOF) – Für render3d/maptown3d.js (Ansicht 3D): Farben der Fabrikhalle und Maße des Mas…
 - PLANT_SKY (= SKY) – Für render3d/maptown3d.js (Ansicht 3D): Farben der Fabrikhalle und Maße des Mas…
-- PLANT_STEEL (= STEEL) – Für render3d/maptown3d.js (Ansicht 3D): Farben der Fabrikhalle und Maße des Mas…
-- PY – Für render3d/maptown3d.js (Ansicht 3D): Farben der Fabrikhalle und Maße des Mas…
-
-## mappreview.js (3.3 KB)
-- drawMapPreview(canvas, map) – Zeichnet die Karte `map` in das Canvas `canvas` (ganze Fläche)
-- drawPowerLines(ctx, buildings, lw) – Leitungen zwischen Strommasten derselben Linie (Kartenreihenfolge) als dünne Li…

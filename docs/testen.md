@@ -108,6 +108,11 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
   drei Panzer auf der Fahrbahn, 4 Drehungen, Nacht, Zoom 0,5/1,6, beschädigt, zerstört, Wiederaufbau, Furt (`.smoke/3d/bruecke/`); Prüfschritte „gleiche Menge“ (Iso malt so viele
   Brücken und Furtstangen wie 3D Einträge und Instanzen hat), „Einheiten auf der Fahrbahn“ (Mesh auf `b.deckH`), Messung gemalt gegen 3D (`renderer.bridge3dOn`, Schatten Aus/Hoch).
   Node-Test: `test/bridge3d.test.js`.
+  `--only wege [--karte seed3,seed7,fest] [--teile hang,gleis,feld,stadt,bruecke,pflaster,aenderung,messung]`: Straßen, Feldwege, Gleise, Felder und Pflaster als Bodenschicht gemalt neben 3D
+  (Seed 3 und 7 nach `--citymin` Minuten mit Stadt, East Europe Railway): steilster Hang am Feldweg bzw. Gleis in 4 Drehungen (Zoom 1,6), Stadt (4 Drehungen, Nacht, Winter, Zoom 0,35), Gleis, Feld,
+  Brückenanschluss, eingesetztes Pflaster (`.smoke/3d/wege/`: `<karte>-<name>.png` Iso | 3D, `…-boden.png` gemalte | 3D-Bodenschicht). Prüfschritte „Treffer“ (Schicht eingefärbt, ohne Objekte und Bodenmarken:
+  mindestens 95 % der Mittelpunkte der Straßen, Wege, Felder liegen auf der Schicht), gemalt gegen 3D unter 12 % Pixel, „Neumalen nur bei Änderung“ (unverändert 0 Kacheln, eine neue Straßenzelle höchstens 9),
+  Iso und 2D ohne Bodenschicht, Messung Draw-Calls, Dreiecke und Zeit „Gelände“ + „Boden“ (`renderer.ways3dOn`, Zoom 0,35/1/1,6, Schatten Aus/Hoch). Node-Test: `test/ways3d.test.js`.
 - `node tools/smoke-3d.mjs --only mvp` (Paket „MVP-Messung“, nur ausdrücklich, gut 10 min): Rundgang je Gerät desktop, tablet, phone
   (Ansicht umschalten, Drehungen, Zoom, Wald, Hang, Winter; Fotos alt/neu nebeneinander nach `.smoke/3d/mvp/`), Auswahl per Klick/Tippen
   und Befehl in 3D (Fehler, wenn nicht), Bildrate Iso und 3D Aus/Mittel/Hoch nach `--gametime` Spielminuten Zeitraffer; Zahlen auch in

@@ -19,7 +19,7 @@ import { drawHouseWorksIso, drawHouseFlagIso } from '../stronghold.js';
 import { drawUnitShadowIso } from '../unitpaint.js';
 import { cityBuildings } from '../citylayer.js';
 import { townLift } from '../townhouses.js';
-import { drawWorksSteam } from '../works.js';
+import { drawWorksSteam, WORKS_KINDS } from '../works.js';
 import { ISO_PAD, SC } from './consts.js';
 
 export const isoItemMethods = {
@@ -152,7 +152,7 @@ export const isoItemMethods = {
         if (!drawCrateIso(ctx, cam, it.o.x, it.o.y, s, 0, it.o.ground ? glow : 0)) drawCrate(ctx, cam, it.o.x, it.o.y, s, 0, it.o.ground ? glow : 0);
       }
       else if (it.t === 12) drawFordPostIso(ctx, cam, it.o);
-      else if (it.t === 15) drawQuarterIso(ctx, cam, it.o, g.teams[it.o.b.team].color, this.season); // Regierungsviertel
+      else if (it.t === 15) { if (!this.quarter3d?.(it.o)) drawQuarterIso(ctx, cam, it.o, g.teams[it.o.b.team].color, this.season); } // Regierungsviertel (3D: render3d/gov3d.js)
       else if (it.t === 11) {
         const a = it.o;
         const p = cam.worldToScreen(a.x, a.y);
@@ -167,7 +167,7 @@ export const isoItemMethods = {
       else if (it.t === 4) {
         const b = it.o;
         setRoofSnow(this.season === 'winter'); // Winter: Schnee auf Dächern und Wällen (milbuild.js)
-        drawTeamBuilding(ctx, cam, b, g.teams[b.team].color);
+        if (!(isCapital(b) && this.hall3d?.(b, g.teams[b.team].color))) drawTeamBuilding(ctx, cam, b, g.teams[b.team].color); // Regierungsgebäude in 3D: render3d/gov3d.js
         setRoofSnow(false);
         if (!b.built && b.team === team) {
           const p = cam.worldToScreen(b.x, b.y);
@@ -197,9 +197,9 @@ export const isoItemMethods = {
     const fort = hs && this.fortShown(hs, known) ? hs : null; // besetztes oder ausgebautes Haus (seit v5.48, stronghold.js)
     const body = fort ? houseYardIso(o, cam.rot | 0) : null; // Altbau mit Hof: Säcke vor der Hofmauer, Fahne an ihrer Ecke
     if (fort) drawHouseWorksIso(ctx, cam, fort, 'back', body); // Draht hinter dem Haus
-    // 3D (render3d/town3d.js house3d, nur im Durchlauf „Objekte“ der Ansicht 3D): Stadthaus 1 × 1 oder Werk als Mesh, sonst gemalt
+    // 3D (render3d/town3d.js house3d, nur im Durchlauf „Objekte“ der Ansicht 3D): Stadthaus 1 × 1, Werk oder Großbau (bigpart, uni) als Mesh, sonst gemalt
     const mesh = this.house3d?.(o) ?? false;
-    if (mesh && o.kind !== 'town') drawWorksSteam(ctx, cam, o); // Dampf der Kühltürme bleibt gemalt (Effekt)
+    if (mesh && WORKS_KINDS.includes(o.kind)) drawWorksSteam(ctx, cam, o); // Dampf der Kühltürme bleibt gemalt (Effekt)
     if (!mesh && (o.part?.t !== 'tree' || !(this.tree3d?.(o.part) || drawTreeIso(ctx, cam, o.part, this.season)))) drawTownBuilding(ctx, cam, o, this.season); // Bäume der Großbauten gemalt (nature.js)
     if (fort) {
       drawHouseWorksIso(ctx, cam, fort, 'front', body); // Sandsäcke, MG-Nest, Draht davor

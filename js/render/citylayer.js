@@ -107,7 +107,8 @@ export function cityBuildings(game, team, known, inRect) {
     const damage = e ? 1 - e.hp / e.def.hp : 0;
     if (big && BIG_KINDS.has(k)) {
       // Großbau (seit v5.03): jeder Körper ein eigenes Objekt, damit die Tiefenordnung auch große Anlagen richtig zeigt (bigbuild.js)
-      bigPlan(k, lv, ctr.x, ctr.y, sizeOf(k) * c.cell, openOf(c, k, i)).bodies.forEach((p, n) => out.push({ ...partFoot(p), kind: 'bigpart', part: p, color, damage: n ? 0 : damage }));
+      const plan = { k, lv, x: ctr.x, y: ctr.y, size: sizeOf(k) * c.cell, color }; // ganze Anlage: die Ansicht 3D zeigt sie einmal (render3d/bigbuild3d.js)
+      bigPlan(k, lv, ctr.x, ctr.y, plan.size, openOf(c, k, i)).bodies.forEach((p, n) => out.push({ ...partFoot(p), kind: 'bigpart', part: p, color, damage: n ? 0 : damage, plan }));
       continue;
     }
     if (big) {

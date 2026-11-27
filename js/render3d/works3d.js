@@ -76,7 +76,7 @@ function stripAll(k, [u0, u1, v0, v1], h0, h1, a, b, face, step, glow = false) {
 }
 
 /** Sheddach auf Höhe h: n Zähne entlang u, schräge Dachflächen, senkrechte Glasbänder nach +u, Giebeldreiecke vorn und hinten. */
-function sawRoof(k, u0, u1, v0, v1, h, n, rh, roof, wall) {
+export function sawRoof(k, u0, u1, v0, v1, h, n, rh, roof, wall) {
   const w = (u1 - u0) / n;
   for (let i = 0; i < n; i++) {
     const a = u0 + i * w;

@@ -17,6 +17,8 @@ import {
 import { CAR_COLORS, HEDGE, LAWN, LAWN2, PATH, PAVE, PLAZA, ASPH, DECK, shade, tint, clampLv, k3, rnd } from '../render/isokit.js';
 import { mix, rgbOf } from '../render/color.js';
 import { hasWorks3d, worksGeometry, worksKey } from './works3d.js';
+import { hasBig3d, bigGeometry, bigKey, uniGeometry, uniKey, isBig3dPart } from './bigbuild3d.js';
+import { hallGeometry, quarterGeometry, quarterKey } from './gov3d.js';
 
 // ---------- Gemeinsames ----------
 
@@ -800,6 +802,38 @@ export const FAMILIES = [
     geometry: (b) => worksGeometry(b.kind, b.level),
     team: true,
   },
+  // Großbauten (Paket „Großbauten 3D“, name 'big' für stats): at(b) = Gegenstück, das den Ort und die Teamfarbe der Instanz trägt und
+  // nur einmal je Bild gezeigt wird (Kaserne, Fabrikhalle … bestehen aus vielen Körpern, jeder ein Objekt der Tiefenliste)
+  {
+    name: 'big',
+    has: (b) => b.kind === 'bigpart' && !!b.plan && hasBig3d(b.plan.k) && isBig3dPart(b.part),
+    at: (b) => b.plan,
+    key: (b) => bigKey(b.plan.k, b.plan.lv),
+    geometry: (b) => bigGeometry(b.plan.k, b.plan.lv),
+    team: true,
+  },
+  {
+    name: 'big',
+    has: (b) => b.kind === 'uni',
+    key: (b) => uniKey(b.level),
+    geometry: (b) => uniGeometry(b.level),
+    team: true,
+  },
+  {
+    name: 'big',
+    has: (b) => b.kind === 'hall',
+    key: () => 'hall',
+    geometry: () => hallGeometry(),
+    team: true,
+  },
+  {
+    name: 'big',
+    has: (b) => b.kind === 'quarter',
+    at: (b) => b.src,
+    key: (b) => quarterKey(b.turn, b.mask),
+    geometry: (b) => quarterGeometry(b.turn, b.mask),
+    team: true,
+  },
 ];
 
 const teamRgb = new Map(); // Farbe (Text) → [r, g, b] in 0…1, ohne Farbumrechnung wie die Eckfarben
@@ -821,6 +855,7 @@ export class Town3D {
     this.group.name = 'stadthaeuser';
     this.sets = new Map(); // Familie|Schlüssel → { mesh, n, cap, fam }
     this.count = 0;
+    this.seen = new Set(); // Gegenstücke (fam.at), die in diesem Bild schon stehen
   }
 
   /** Bildanfang: Licht, Schnee, Nacht und Schattenstärke für alle Gebäude (setKitFrame), Zähler leeren. */
@@ -828,6 +863,7 @@ export class Town3D {
     setKitFrame(this.material, frame);
     for (const s of this.sets.values()) s.n = 0;
     this.count = 0;
+    this.seen.clear();
   }
 
   /** Satz einer Variante, beim ersten Gebrauch angelegt; ist er voll, wird er verdoppelt. */
@@ -862,22 +898,31 @@ export class Town3D {
     return s;
   }
 
-  /** Gebäude b (cityBuildings) am Boden der Höhe h; false, wenn es kein 3D-Gebäude gibt (dann malt der Renderer). */
+  /**
+   * Gebäude b (cityBuildings) am Boden der Höhe h (Zahl oder Funktion des Gegenstücks, nur beim ersten Mal gerufen); false, wenn es
+   * kein 3D-Gebäude gibt (dann malt der Renderer). Familien mit at: eine Anlage aus vielen Objekten steht einmal (weitere: true).
+   */
   add(b, h) {
     const fam = this.families.find((f) => f.has(b));
     if (!fam) return false;
     const geo = fam.geometry(b);
     if (!geo) return false;
+    const at = fam.at ? fam.at(b) : b;
+    if (fam.at) {
+      if (this.seen.has(at)) return true;
+      this.seen.add(at);
+    }
+    if (typeof h === 'function') h = h(at);
     const id = `${fam.name}|${fam.key(b)}`;
     const s = this.setOf(id, fam, geo, (this.sets.get(id)?.n ?? 0) + 1);
     const m = s.mesh.instanceMatrix.array;
     const o = s.n * 16;
     m.fill(0, o, o + 16);
     m[o] = m[o + 5] = m[o + 10] = m[o + 15] = 1;
-    m[o + 12] = b.x;
-    m[o + 13] = b.y;
+    m[o + 12] = at.x;
+    m[o + 13] = at.y;
     m[o + 14] = h;
-    if (fam.team) s.mesh.instanceColor.array.set(rgbOfTeam(b.color), s.n * 3);
+    if (fam.team) s.mesh.instanceColor.array.set(rgbOfTeam(at.color ?? b.color), s.n * 3);
     s.n++;
     this.count++;
     return true;

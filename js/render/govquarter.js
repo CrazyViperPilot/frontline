@@ -753,3 +753,6 @@ export function drawQuarterTop(ctx, grid, b, color, zoom = 1, season = 'summer')
 
 /** Für Tests: Plan, Gruppen und Hilfen. */
 export const _quarter = { PLAN, GROUPS, groupAt, groupRect, tv, tRect, tAxis, extOf, turnOf };
+
+/** Farben für die 3D-Ansicht (render3d/gov3d.js). */
+export const QUARTER_PAL = { SAND, RED, STONE, MOD, MGLASS, GUARD, GOLD, TALL };

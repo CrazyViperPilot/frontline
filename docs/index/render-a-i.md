@@ -60,6 +60,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - DOME_TOP – Scheitel der Kuppel (≈ 77 Weltpixel), darauf die Laterne
 - drawCityHallIso(ctx, cam, b, color) – Isometrisch: das Regierungsgebäude als Bild aus dem Zwischenspeicher, gleich fü…
 - drawCityHallTop(ctx, b, color, zoom, season) – 2D von oben (Weltkoordinaten, Kontext skaliert)
+- HALL_PAL – Farben für die 3D-Ansicht (render3d/gov3d.js); Maße: M und DOME_TOP
 
 ## citylayer.js (62 KB)
 - cityBuildings(game, team, known, inRect) – Gebäude als Stadthaus-Objekte { x, y, w, h, kind, … } für die Iso-Ansicht (1 ×…
@@ -132,6 +133,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawQuarterIso(ctx, cam, o, color, season) – Iso: eine Gruppe des Viertels (Objekt aus quarterItems) als Bild aus dem Zwisch…
 - drawQuarterTop(ctx, grid, b, color, zoom, season) – 2D: alle Teile des Viertels (ohne Boden und ohne das Regierungsgebäude) in eine…
 - _quarter – Für Tests: Plan, Gruppen und Hilfen
+- QUARTER_PAL – Farben für die 3D-Ansicht (render3d/gov3d.js)
 
 ## ground.js (27 KB)
 - SKIRT_BOTTOM – Unterkante des Erdschnitts am Kartenrand
@@ -157,4 +159,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - unitLift(u)
 - CAPITAL_H – Hauptstadt (Regierungsgebäude, cityhall.js): Höhe der Ebene für Lebensbalken un…
 - buildingHeight(b)
-- setIsoAt(ctx, cam, dpr, sx, sy, wx, wy, scale) – Transform: Weltpunkt (wx, wy) landet im Bildschirmpunkt (sx, sy), Boden isometr…

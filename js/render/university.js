@@ -511,3 +511,6 @@ export function drawUniversityTop(ctx, b) {
 
 /** Rasen und Wege des Hofs (Weltkoordinaten relativ zur Mitte): vier Rasenflächen zwischen den Wegen zu den Portalen. */
 export const UNI_LAWNS = [[-88, -88, -26, -26], [26, -88, 88, -26], [-88, 26, -26, 88], [26, 26, 88, 88]];
+
+/** Maße und Farben für die 3D-Ansicht (render3d/bigbuild3d.js): Stufen, Turm, Farben des gemalten Baus. */
+export const UNI_DIM = { LV, TOWER, WALL, STONE, FLAT, ROOF, SLATE, GLASS, GOLD, DOME, LEAF };

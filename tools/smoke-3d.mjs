@@ -27,10 +27,12 @@
 //    mehr als einem Draw-Call je Haus bzw. Werk oder abweichendem Umriss.
 // 9. Stadt (Paket „Stadthäuser 3D“): Seed 3, KI gegen KI bis --citymin Spielminuten (Standard 10), Stadt an der Hauptstadt Iso | 3D
 //    in 4 Drehungen, Sommer und Winter (<out>/stadt/); Draw-Calls, Dreiecke und Zeit „Objekte“ mit gemalten und mit 3D-Stadthäusern.
+//    Dazu (Paket „Großbauten 3D“) ein Ausschnitt mit den meisten Großbauten samt Hauptstadt (Fotos grossbau-*), Messung gemalt / ohne
+//    Großbauten 3D / alles 3D. Der Baukasten-Teil fotografiert auch alle Großbauten (--what grossbau).
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
 //                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|mvp] [--citymin 10]
-//                                 [--what werke|haeuser] (nur mit baukasten: nur Werke oder nur Stadthäuser fotografieren)
+//                                 [--what werke|haeuser|grossbau] (nur mit baukasten: nur Werke, nur Stadthäuser oder nur Großbauten fotografieren)
 // Ohne --only laufen die Teile 1 bis 6, 8 und 9; „mvp“ nur ausdrücklich.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -136,7 +138,13 @@ async function compare() {
       const wx = season === 'winter' ? 'snow' : 'clear';
       const g = await openGame({ seed, query: `iso=1&three=1&weather=${season}&wx=${wx}`, scale: 1, out });
       try {
-        await g.run(() => (window.__frontline.session().loop.paused = true));
+        // Großbauten, Rathaus und Viertel (Paket „Großbauten 3D“) sind echte 3D-Körper und weichen vom gemalten Bild ab (Prüfteile baukasten, stadt):
+        // hier gemalt, damit der Vergleich die Billboard-Brücke prüft
+        await g.run(() => {
+          const s = window.__frontline.session();
+          s.loop.paused = true;
+          s.renderer.big3dOn = false;
+        });
         for (const [rot, zoom] of [[0, 1], [1, 0.6], [2, 1.6], [3, 0.35]]) {
           await view(g, rot, zoom, 150, 100);
           const d = await pair(g, `s${seed}-${season}-rot${rot}-zoom${zoom}`);
@@ -619,6 +627,7 @@ async function baukasten() {
       };
       // Werk gemalt und in 3D (Paket „Werke 3D“): Bildmaß wie works.js (168 × 200 bei Maßstab 1), Dampf der Kühltürme gemalt über dem Mesh
       const { drawWorksIso, drawWorksSteam, worksTall } = await import('/js/render/works.js');
+      const { drawUniversityIso } = await import('/js/render/university.js');
       const { worksGeometry } = await import('/js/render3d/works3d.js');
       const { spriteFrame, spriteMissed } = await import('/js/render/spritecache.js');
       window.__kitWork = ({ kind, lv, color, season, night, rots }) => {
@@ -711,20 +720,148 @@ async function baukasten() {
         }
         return { painted, panels, W, H, DPR, tris: geo.getAttribute('position').count / 3, calls, boxes, tex: kit.kitTexturesReady() };
       };
+      // Großbau gemalt und in 3D (Paket „Großbauten 3D“): Art 'barracks' | 'factory' | 'warehouse' | 'station' | 'uni' | 'hall' | 'quarter'.
+      // Gemalt wie im Spiel (Körper einzeln nach Tiefe, Universität, Rathaus, Gruppen des Viertels), ohne Boden; bei lv < 4 Stufe,
+      // beim Viertel lv = Team (Drehung der Anlage). Im 3D-Bild liegen die gemalten Bäume und Ausstellungsstücke obenauf (Billboards).
+      const { ROT } = await import('/js/render/camera.js');
+      const { bigPlan, partFoot } = await import('/js/render/bigbuild.js');
+      const { drawTownBuilding } = await import('/js/render/isobuild.js');
+      const { drawCityHallIso } = await import('/js/render/cityhall.js');
+      const { quarterItems, drawQuarterIso } = await import('/js/render/govquarter.js');
+      const big3 = await import('/js/render3d/bigbuild3d.js');
+      const gov3 = await import('/js/render3d/gov3d.js');
+      window.__kitBig = ({ kind, lv, color, season, night, rots, W: BW = 320, H: BH = 270 }) => {
+        const bk = ['barracks', 'factory', 'warehouse', 'station'].includes(kind);
+        const geo = bk ? big3.bigGeometry(kind, lv) : kind === 'uni' ? big3.uniGeometry(lv) : kind === 'hall' ? gov3.hallGeometry() : gov3.quarterGeometry(lv, 0b111101111);
+        // Zoom und Anker aus den Ecken der Geometrie in allen Drehungen (Bild: x = (u' − v')·K, y = (u' + v')·K/2 − h)
+        const pos = geo.getAttribute('position');
+        const ext = (rot) => {
+          const m = ROT[rot];
+          let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+          for (let i = 0; i < pos.count; i++) {
+            const u = m[0] * pos.getX(i) + m[1] * pos.getY(i);
+            const v = m[2] * pos.getX(i) + m[3] * pos.getY(i);
+            const x = (u - v) * Math.SQRT1_2;
+            const y = (u + v) * Math.SQRT1_2 * 0.5 - pos.getZ(i);
+            x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+          }
+          return [x0, x1, y0, y1];
+        };
+        const all = [0, 1, 2, 3].map(ext);
+        const ZOOM = Math.min(2.2, (BW - 16) / Math.max(...all.map((e) => e[1] - e[0])), (BH - 16) / Math.max(...all.map((e) => e[3] - e[2])));
+        const cam = new Camera(2000, 2000);
+        cam.iso = true;
+        cam.resize(BW, BH);
+        const aim = (rot) => {
+          const [x0, x1, y0, y1] = all[rot];
+          cam.rot = rot;
+          cam.zoom = ZOOM;
+          cam.x = X;
+          cam.y = Y;
+          const p = cam.screenToWorldFlat(BW / 2 + ((x0 + x1) / 2) * ZOOM, BH / 2 + ((y0 + y1) / 2) * ZOOM); // Anker so, dass die Mitte der Ecken im Feld liegt
+          cam.x = p.x;
+          cam.y = p.y;
+        };
+        const mood = night ? 'night' : null;
+        const capital = { x: X, y: Y, team: Math.max(0, Math.min(3, lv)), cx: X / 32 - 1.5, cy: Y / 32 - 1.5, w: 3, h: 3 };
+        // gemalt: shape = nur Körper, die auch 3D werden (Umriss), full = mit Bäumen und Ausstellungsstücken
+        const paint = (pc, shapeOnly) => {
+          if (bk) {
+            const plan = bigPlan(kind, lv, X, Y, 400, 0);
+            const items = plan.bodies.filter((p) => !shapeOnly || big3.isBig3dPart(p)).map((p) => ({ ...partFoot(p), kind: 'bigpart', part: p, color, damage: 0 }));
+            items.sort((a, b) => cam.depth(a.x, a.y) - cam.depth(b.x, b.y));
+            for (const it of items) drawTownBuilding(pc, cam, it, season);
+          } else if (kind === 'uni') drawUniversityIso(pc, cam, { x: X, y: Y, kind: 'uni', level: lv, color, damage: 0 });
+          else if (kind === 'hall') drawCityHallIso(pc, cam, { x: X, y: Y, hp: 1, maxHp: 1 }, color);
+          else {
+            const items = quarterItems(null, capital).sort((a, b) => cam.depth(a.x, a.y) - cam.depth(b.x, b.y));
+            for (const it of items) drawQuarterIso(pc, cam, it, color, season);
+          }
+        };
+        const paintFrame = (c, shapeOnly) => {
+          const pc = c.getContext('2d');
+          for (let i = 0; i < 16; i++) {
+            spriteFrame(DPR);
+            pc.setTransform(DPR, 0, 0, DPR, 0, 0);
+            pc.fillStyle = BG;
+            pc.fillRect(0, 0, BW, BH);
+            setRoofSnow(season === 'winter');
+            paint(pc, shapeOnly);
+            setRoofSnow(false);
+            if (!spriteMissed()) break;
+          }
+        };
+        const painted = canvas(BW, BH);
+        const shape = canvas(BW, BH);
+        aim(0);
+        paintFrame(painted, false);
+        paintFrame(shape, true);
+        gl.setSize(BW, BH, false);
+        sun.setLevel('high');
+        sun.setMood(mood);
+        const mesh = kit.kitTeamMesh(geo, mat, color);
+        mesh.position.set(X, Y, 0);
+        root.add(mesh);
+        const light0 = (rot) => {
+          const [, , rc, rd] = [[1, 0, 0, 1], [0, -1, 1, 0], [-1, 0, 0, -1], [0, 1, -1, 0]][rot];
+          const a = Math.atan2(-rd, -rc) + 0.35;
+          const k = Math.sqrt(1 - LIGHT_ELEV * LIGHT_ELEV);
+          return [Math.cos(a) * k, Math.sin(a) * k, LIGHT_ELEV];
+        };
+        const panels = [];
+        let calls = 0;
+        for (const rot of rots) {
+          aim(rot);
+          syncIsoCamera(cam3, cam);
+          const light = light0(rot);
+          kit.setKitFrame(mat, { light, snow: season === 'winter' ? 1 : 0, night: night ? 1 : 0, shade: BALANCE.shadows3d.opacity[mood ?? 'none'] });
+          gl.setClearColor(BG, 1);
+          sun.update(cam3, light, null);
+          gl.shadowMap.needsUpdate = true;
+          cam3.layers.set(CATCH);
+          gl.render(scene, cam3);
+          cam3.layers.set(0);
+          gl.autoClear = false;
+          gl.clearDepth();
+          gl.render(scene, cam3);
+          gl.autoClear = true;
+          calls = gl.info.render.calls;
+          const c = canvas(BW, BH);
+          c.getContext('2d').drawImage(cv, 0, 0);
+          panels.push(c);
+        }
+        sun.setLevel('off');
+        aim(0);
+        syncIsoCamera(cam3, cam);
+        kit.setKitFrame(mat, { light: light0(0), snow: season === 'winter' ? 1 : 0, night: 0, shade: 0.4 });
+        gl.render(scene, cam3);
+        const flat0 = canvas(BW, BH);
+        flat0.getContext('2d').drawImage(cv, 0, 0);
+        root.remove(mesh);
+        const boxes = { painted: bbox(shape), three: bbox(flat0) };
+        if (mood) {
+          for (const c of [painted, ...panels]) {
+            const x = c.getContext('2d');
+            x.setTransform(DPR, 0, 0, DPR, 0, 0);
+            drawMood(x, mood, BW, BH);
+          }
+        }
+        return { painted, panels, W: BW, H: BH, DPR, tris: geo.getAttribute('position').count / 3, calls, boxes, tex: kit.kitTexturesReady() };
+      };
       /** Bogen aus Zeilen von Feldern (Leinwände) mit Beschriftung je Feld, als PNG-Daten-URL. */
-      window.__kitSheet = (rows, RH = 290) => {
+      window.__kitSheet = (rows, RH = 290, FW = W) => {
         const gap = 6;
         const cols = Math.max(...rows.map((r) => r.length));
         const sheet = document.createElement('canvas');
-        sheet.width = (cols * W + (cols - 1) * gap) * DPR;
+        sheet.width = (cols * FW + (cols - 1) * gap) * DPR;
         sheet.height = (rows.length * RH + (rows.length - 1) * gap) * DPR;
         const sc = sheet.getContext('2d');
         sc.fillStyle = '#111';
         sc.fillRect(0, 0, sheet.width, sheet.height);
         rows.forEach((row, j) => {
           row.forEach(([c, t], i) => {
-            sc.setTransform(DPR, 0, 0, DPR, i * (W + gap) * DPR, j * (RH + gap) * DPR);
-            sc.drawImage(c, 0, 0, W, RH);
+            sc.setTransform(DPR, 0, 0, DPR, i * (FW + gap) * DPR, j * (RH + gap) * DPR);
+            sc.drawImage(c, 0, 0, FW, RH);
             sc.font = 'bold 13px sans-serif';
             sc.fillStyle = 'rgba(0,0,0,.6)';
             sc.fillRect(4, RH - 22, sc.measureText(t).width + 8, 18);
@@ -739,7 +876,7 @@ async function baukasten() {
     const save = (name, url) => writeFile(join(dir, `${name}.png`), Buffer.from(url.split(',')[1], 'base64'));
     const tris = {};
     const what = arg('what', null); // --what werke | haeuser: nur eines von beidem fotografieren
-    for (const ck of what === 'werke' ? [] : KINDS) {
+    for (const ck of what && what !== 'haeuser' ? [] : KINDS) {
       for (const season of ['summer', 'winter']) {
         for (const night of [false, true]) {
           const name = `${ck}-${season}-${night ? 'nacht' : 'tag'}`;
@@ -795,7 +932,7 @@ async function baukasten() {
     const WK = ['power', 'bm', 'mun', 'fuel', 'steel', 'kero'];
     const TEAMS = ['#3d8bfd', '#e5484d', '#3fb950', '#e3b341'];
     const wtris = {};
-    for (const kind of what === 'haeuser' ? [] : WK) {
+    for (const kind of what && what !== 'werke' ? [] : WK) {
       for (const season of ['summer', 'winter']) {
         for (const night of [false, true]) {
           const name = `werk-${kind}-${season}-${night ? 'nacht' : 'tag'}`;
@@ -837,7 +974,55 @@ async function baukasten() {
       }, { kind, teams: TEAMS });
       await save(`werk-${kind}-teams`, res);
     }
+    // Großbauten (Paket „Großbauten 3D“): je Art und Stimmung ein Bogen mit Stufe 1 bis 3 (gemalt + 4 Drehungen); Rathaus eine Zeile, das
+    // Viertel eine Zeile je Team (Drehung der Anlage); je Art ein Bogen mit den Teamfarben (gemalt | 3D, Drehung 0)
+    const BK = [['barracks', [1, 2, 3]], ['factory', [1, 2, 3]], ['warehouse', [1, 2, 3]], ['station', [1, 2, 3]], ['uni', [1, 2, 3]], ['hall', [1]], ['quarter', [0, 1, 2, 3]]];
+    const btris = {};
+    for (const [kind, levels] of what && what !== 'grossbau' ? [] : BK) {
+      const lab = (lv) => (kind === 'quarter' ? `Team ${lv}` : kind === 'hall' ? '' : `${lv}`);
+      for (const season of ['summer', 'winter']) {
+        for (const night of [false, true]) {
+          const name = `grossbau-${kind}-${season}-${night ? 'nacht' : 'tag'}`;
+          const res = await g.run(({ kind, levels, season, night, color }) => {
+            const rows = [];
+            const stats = [];
+            for (const lv of levels) {
+              const r = window.__kitBig({ kind, lv, color, season, night, rots: [0, 1, 2, 3] });
+              rows.push([[r.painted, `${kind}${lv || ''} gemalt`], ...r.panels.map((c, i) => [c, `3D Drehung ${i}`])]);
+              stats.push({ lv, tris: r.tris, calls: r.calls, boxes: r.boxes, tex: r.tex });
+            }
+            return { url: window.__kitSheet(rows, 270, 320), stats };
+          }, { kind, levels, season, night, color: TEAMS[0] });
+          await save(name, res.url);
+          for (const s of res.stats) {
+            const [p, t] = [s.boxes.painted, s.boxes.three];
+            const dev = Math.max(...p.map((v, i) => Math.abs(v - t[i])));
+            btris[`${kind}${lab(s.lv)}`] = s.tris;
+            const bad = !s.tex || t[2] < 0 || (!night && dev > BOX_TOL) || s.calls !== 1;
+            if (bad) fail++;
+            if (bad || (season === 'summer' && !night)) {
+              console.log(`Großbau ${kind}${lab(s.lv)} ${season} ${night ? 'Nacht' : 'Tag'}: ${s.tris} Dreiecke, ${s.calls} Draw-Call(s), Umriss gemalt ${p.join(',')} / 3D ${t.join(',')} (±${dev} px)${s.tex ? '' : ', Fotos fehlen'}${bad ? '  FEHLER' : ''}`);
+            }
+          }
+        }
+      }
+      if (kind === 'quarter') continue; // Teamfarbe zeigt der Bogen je Team schon
+      const res = await g.run(({ kind, levels, teams }) => {
+        const rows = [];
+        for (const lv of levels) {
+          const row = [];
+          for (const color of teams) {
+            const r = window.__kitBig({ kind, lv, color, season: 'summer', night: false, rots: [0], W: 240, H: 230 });
+            row.push([r.painted, `${kind}${lv} gemalt`], [r.panels[0], `3D`]);
+          }
+          rows.push(row);
+        }
+        return window.__kitSheet(rows, 230, 240);
+      }, { kind, levels, teams: TEAMS });
+      await save(`grossbau-${kind}-teams`, res);
+    }
     console.log(`Baukasten: Dreiecke je Werk ${Object.entries(wtris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
+    if (Object.keys(btris).length) console.log(`Baukasten: Dreiecke je Großbau ${Object.entries(btris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
     console.log(`Baukasten: Dreiecke je Variante ${Object.entries(tris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
   } finally {
     errors.push(...g.errors);
@@ -920,6 +1105,36 @@ async function city() {
         await look(g, wspot.x, wspot.y, rot, 1);
         await mvpPair(g, dir, 'seed3', `werke-${season}-drehung${rot}`);
       }
+      // Ort mit den meisten Großbauten und der Hauptstadt (Rathaus, Regierungsviertel) im Bild (Paket „Großbauten 3D“)
+      const bspot = await g.run(async () => {
+        const { cityBuildings } = await import('/js/render/citylayer.js');
+        const s = window.__frontline.session();
+        const all = cityBuildings(s.game, 0, () => true, () => true);
+        const plans = new Map();
+        for (const b of all) if (b.kind === 'bigpart' && ['barracks', 'factory', 'warehouse', 'station'].includes(b.plan.k)) plans.set(b.plan, b.plan);
+        const bigs = [...plans.keys()].map((p) => ({ x: p.x, y: p.y, n: `${p.k}${p.lv}` }));
+        for (const b of all) if (b.kind === 'uni') bigs.push({ x: b.x, y: b.y, n: `uni${b.level}` });
+        const hq = s.game.buildings.find((b) => b.main && b.team === 0);
+        if (hq) bigs.push({ x: hq.x, y: hq.y, n: 'hall', hq: true });
+        const R = 480;
+        let best = null;
+        for (const c of bigs) {
+          const near = bigs.filter((o) => Math.hypot(o.x - c.x, o.y - c.y) < R);
+          const score = near.length * 4 + near.filter((o) => o.hq).length * 6;
+          if (!best || score > best.score) {
+            const kinds = {};
+            for (const o of near) kinds[o.n] = (kinds[o.n] ?? 0) + 1;
+            best = { score, x: near.reduce((a, o) => a + o.x, 0) / near.length, y: near.reduce((a, o) => a + o.y, 0) / near.length, n: near.length, hq: near.some((o) => o.hq), kinds };
+          }
+        }
+        return best ?? { x: s.camera.mapW / 2, y: s.camera.mapH / 2, n: 0, hq: false, kinds: {} };
+      });
+      console.log(`Stadt ${season}: Großbauten-Ausschnitt ${bspot.n} Großbauten${bspot.hq ? ' mit Hauptstadt und Regierungsviertel' : ''} ${JSON.stringify(bspot.kinds)}`);
+      if (!bspot.n) fail++;
+      for (let rot = 0; rot < 4; rot++) {
+        await look(g, bspot.x, bspot.y, rot, 1);
+        await mvpPair(g, dir, 'seed3', `grossbau-${season}-drehung${rot}`);
+      }
       if (season !== 'summer') continue;
       await look(g, wspot.x, wspot.y, 0, 1);
       const rows = [];
@@ -962,6 +1177,50 @@ async function city() {
         r.towns3dOn = true;
         r.works3dOn = true;
       });
+      // Großbauten (Paket „Großbauten 3D“): gemalt, ohne Großbauten 3D (Häuser und Werke 3D), alles 3D; Ausschnitt mit den meisten Großbauten
+      await look(g, bspot.x, bspot.y, 0, 1);
+      const rows2 = [];
+      for (const level of ['off', 'high']) {
+        for (const [towns, works, bigs] of [[false, false, false], [true, true, false], [true, true, true]]) {
+          const st = await g.run(({ level, towns, works, bigs }) => {
+            const s = window.__frontline.session();
+            const r = s.renderer;
+            s.camera.three = true;
+            r.setShadows(level);
+            r.towns3dOn = towns;
+            r.works3dOn = works;
+            r.big3dOn = bigs;
+            for (let i = 0; i < 3; i++) r.render(s.controller.view);
+            const info = r.gl.info;
+            const orig = r.objects3d;
+            let obj = null;
+            info.autoReset = false;
+            r.objects3d = function (f) {
+              info.reset();
+              orig.call(this, f);
+              obj = { calls: info.render.calls, tris: info.render.triangles };
+            };
+            try {
+              r.render(s.controller.view);
+            } finally {
+              r.objects3d = orig;
+              info.autoReset = true;
+            }
+            return { ...obj, big: r.towns3d.stats('big') };
+          }, { level, towns, works, bigs });
+          const t = await timePasses(g, frames);
+          if (bigs && !st.big.houses) fail++;
+          const what = bigs ? 'alles 3D          ' : towns ? 'ohne Großbauten 3D' : 'gemalt            ';
+          rows2.push(`${level === 'off' ? 'Aus ' : 'Hoch'} ${what}: Objekte ${t.Objekte.toFixed(0)} ms, ${st.calls} Draw-Calls, ${st.tris} Dreiecke${bigs ? ` (Großbauten: ${st.big.houses}/${st.big.calls} Varianten/${st.big.tris} Dreiecke)` : ''}`);
+        }
+      }
+      await g.run(() => {
+        const r = window.__frontline.session().renderer;
+        r.big3dOn = true;
+      });
+      console.log(`Stadt Messung Großbauten (Seed 3, Ausschnitt mit ${bspot.n} Großbauten ${JSON.stringify(bspot.kinds)}, Zoom 1, ${frames} Bilder, Software-WebGL; Draw-Calls und Dreiecke in „Objekte“ samt Schattenkarte):`);
+      for (const r of rows2) console.log(`  ${r}`);
+
       console.log(`Stadt Messung (Seed 3, Ausschnitt mit ${wspot.works} Werken und ${wspot.houses} Stadthäusern in der Nähe, Zoom 1, ${frames} Bilder, Software-WebGL; Draw-Calls und Dreiecke in „Objekte“ samt Schattenkarte):`);
       for (const r of rows) console.log(`  ${r}`);
     } finally {

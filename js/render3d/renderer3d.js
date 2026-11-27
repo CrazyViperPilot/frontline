@@ -18,6 +18,7 @@ import { Fog3D } from './fog3d.js';
 import { Sun3D, CATCH } from './sun3d.js';
 import { Trees3D } from './trees3d.js';
 import { Town3D } from './town3d.js';
+import { quarterMask, INNER, _quarter } from '../render/govquarter.js';
 import { Nature3D } from './nature3d.js';
 import { bushLook3d, rockLook3d, animalLook3d } from '../render/nature.js';
 import { BALANCE } from '../data/balance.js';
@@ -66,6 +67,9 @@ export class Renderer3D extends Renderer {
     this.house3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
     this.towns3dOn = true; // false: Stadthäuser wie in Iso als gemalte Billboards (Prüfskript: Messung vorher/nachher)
     this.works3dOn = true; // false: Werke und Kraftwerk gemalt
+    this.big3dOn = true; // false: Großbauten (Kaserne, Fabrikhalle, Lagerhalle, Güterbahnhof, Universität), Regierungsgebäude und -viertel gemalt
+    this.hall3d = null; // nur während des Durchlaufs „Objekte“ gesetzt (Regierungsgebäude, gov3d.js)
+    this.quarter3d = null; // ebenso (Regierungsviertel)
     this.nature3d = new Nature3D(); // Büsche, Felsen, Tiere als InstancedMesh je Form (nature3d.js), gezeigt über bush3d, rock3d, animal3d
     this.objRoot.add(this.nature3d.group);
     this.bush3d = this.rock3d = this.animal3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
@@ -184,7 +188,19 @@ export class Renderer3D extends Renderer {
     this.unit3d = (f, u, aim, lift) => this.units3d.show(u, cam.pinned ?? (relief ? relief.displayAt(u.x, u.y) : 0), lift, aim, f.now);
     // Stadthäuser: Sonne, Schnee, Nacht und Schattenstärke wie Boden und Schattenfänger; Höhe wie das Billboard (cam.pin)
     this.towns3d.begin({ light, snow: season === 'winter' ? 1 : 0, night: this.mood === 'night' ? 1 : 0, shade: BALANCE.shadows3d.opacity[this.mood ?? 'none'] ?? BALANCE.shadows3d.opacity.none });
-    this.house3d = (o) => (o.kind === 'town' ? this.towns3dOn : this.works3dOn) && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
+    const lowest = (x, y, r) => (relief ? Math.min(relief.displayAt(x - r, y - r), relief.displayAt(x + r, y - r), relief.displayAt(x - r, y + r), relief.displayAt(x + r, y + r)) : 0); // tiefste Ecke wie baseHeight
+    // Großbauten (bigbuild3d.js, gov3d.js): eine Anlage aus vielen Objekten der Tiefenliste steht einmal, auf der tiefsten Ecke ihres Quadrats
+    this.house3d = (o) => {
+      if (o.kind === 'bigpart') return this.big3dOn && this.towns3d.add(o, (p) => lowest(p.x, p.y, p.size / 2));
+      const on = o.kind === 'town' ? this.towns3dOn : o.kind === 'uni' ? this.big3dOn : this.works3dOn;
+      return on && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
+    };
+    this.hall3d = !this.big3dOn ? null : (b, color) => this.towns3d.add({ kind: 'hall', x: b.x, y: b.y, color }, cam.pinned ?? (relief ? relief.displayAt(b.x, b.y) : 0));
+    this.quarter3d = !this.big3dOn ? null : (o) => {
+      const b = o.b;
+      if (this.towns3d.seen.has(b)) return true; // alle Gruppen der Hauptstadt als ein Mesh (Bitmaske der freien Gruppen)
+      return this.towns3d.add({ kind: 'quarter', x: b.x, y: b.y, turn: _quarter.turnOf(b), mask: quarterMask(this.game.grid, b), color: this.game.teams[b.team].color, src: b }, () => lowest(b.x, b.y, INNER));
+    };
     // Büsche, Felsen, Tiere (nature3d.js): Höhe wie das Billboard
     this.nature3d.begin(light, season);
     if (this.nature3dOn) {
@@ -210,7 +226,7 @@ export class Renderer3D extends Renderer {
       setBlitSink(null);
       this.unit3d = null;
       this.tree3d = null;
-      this.house3d = null;
+      this.house3d = this.hall3d = this.quarter3d = null;
       this.bush3d = this.rock3d = this.animal3d = null;
       this.shadow3d = false;
       f.ctx = ctx;

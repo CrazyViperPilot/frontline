@@ -81,10 +81,13 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
   2 Draw-Calls je Art bei ≥ 400 Bäumen, Zeit gemalte gegen 3D-Bäume).
   `--only baukasten`: alle Stadthäuser und alle Werke je Art und Stimmung (Sommer/Winter × Tag/Nacht) gemalt neben 3D in 4 Drehungen,
   dazu alle Farbvarianten bzw. Teamfarben der Werke (`.smoke/3d/baukasten/`; Fehler bei abweichendem Umriss, mehr als einem Draw-Call
-  je Haus bzw. Werk, fehlenden Fotos); `--what werke|haeuser` fotografiert nur eines davon (Werke etwa 30 s).
+  je Haus bzw. Werk, fehlenden Fotos); `--what werke|haeuser|grossbau` fotografiert nur eines davon (Werke etwa 30 s). `--what grossbau`: Kaserne, Fabrikhalle, Lagerhalle,
+  Güterbahnhof, Universität (je Stufe 1 bis 3), Regierungsgebäude und Regierungsviertel (je Team, Drehung der Anlage) je Stimmung gemalt + 4 Drehungen,
+  dazu `grossbau-<art>-teams` mit allen Teamfarben (Fehler: abweichender Umriss, mehr als ein Draw-Call; etwa 1 min).
   `--only stadt`: Seed 3, KI gegen KI bis `--citymin` Spielminuten, Stadt an der Hauptstadt und ein Ausschnitt mit den meisten Werken
   Iso | 3D in 4 Drehungen, Sommer und Winter (`.smoke/3d/stadt/`), Draw-Calls, Dreiecke und Zeit „Objekte“ mit gemalten gegen
-  3D-Stadthäuser und 3D-Werke (`renderer.towns3dOn`, `works3dOn`).
+  3D-Stadthäuser und 3D-Werke (`renderer.towns3dOn`, `works3dOn`). Dazu ein Ausschnitt mit den meisten Großbauten samt Hauptstadt und Regierungsviertel
+  (Fotos `seed3-grossbau-*`), Messung gemalt / ohne Großbauten 3D / alles 3D (`renderer.big3dOn`); der Lauf dauert gut 10 min.
   `--only wasser`: See (Seed 3, `river=0`) und Fluss an der Brücke (Seed 4, `river=1`), Hubschrauber und Panzer am Wasser; Iso | 3D in
   4 Drehungen Tag und Nacht, Zoom 0,5/1,6, Sommer und Winter (`.smoke/3d/wasser/`); Zeit „Gelände“, Draw-Calls ohne und mit 3D-Wasser.
 - `node tools/smoke-3d.mjs --only mvp` (Paket „MVP-Messung“, nur ausdrücklich, gut 10 min): Rundgang je Gerät desktop, tablet, phone

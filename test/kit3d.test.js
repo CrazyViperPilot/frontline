@@ -8,6 +8,11 @@ import { townGeometry, hasTown3d, townKey, FAMILIES } from '../js/render3d/town3
 import { worksGeometry, worksKey, hasWorks3d } from '../js/render3d/works3d.js';
 import { WORKS_KINDS, worksBox, worksTall } from '../js/render/works.js';
 import { TALL, TEAM_SHOWN } from '../js/render/townhouses.js';
+import { BIG3D_KINDS, bigGeometry, uniGeometry, bigKey, uniKey, hasBig3d, isBig3dPart } from '../js/render3d/bigbuild3d.js';
+import { hallGeometry, quarterGeometry, quarterKey } from '../js/render3d/gov3d.js';
+import { bigPlan, bigTop } from '../js/render/bigbuild.js';
+import { M as HALL_M } from '../js/render/cityhall.js';
+import { _quarter, INNER, QUARTER_PAL } from '../js/render/govquarter.js';
 import { MATS } from '../js/render/materials.js';
 import { ISO_K } from '../js/render/camera.js';
 
@@ -211,13 +216,147 @@ test('Werke 3D: alle Arten und Stufen, sparsam, gültig und im Iso-Umriss wie da
   }
 });
 
-test('Gebäudefamilien: Stadthäuser und Werke teilen sich Town3D, Werke tönt die Instanz', () => {
-  assert.deepEqual(FAMILIES.map((f) => f.name), ['town', 'works']);
-  const [town, works] = FAMILIES;
+test('Gebäudefamilien: Stadthäuser, Werke und Großbauten teilen sich Town3D, Werke und Großbauten tönt die Instanz', () => {
+  assert.deepEqual(FAMILIES.map((f) => f.name), ['town', 'works', 'big', 'big', 'big', 'big']);
+  const [town, works, big, uni, hall, quarter] = FAMILIES;
   assert.ok(town.has({ kind: 'town' }) && !town.has({ kind: 'power' }));
   assert.ok(works.has({ kind: 'power' }) && !works.has({ kind: 'town' }) && !works.has({ kind: 'uni' }));
   assert.ok(works.team && !town.team);
   // eine Geometrie für alle Teams
   assert.equal(works.geometry({ kind: 'steel', level: 2, color: '#c8423a' }), works.geometry({ kind: 'steel', level: 2, color: '#3a6fb3' }));
   assert.equal(works.key({ kind: 'steel', level: 2, color: '#c8423a' }), works.key({ kind: 'steel', level: 2, color: '#3a6fb3' }));
+  // Großbauten: nur Körper der 3D-Arten (Bäume, Ausstellungsstücke, Fliegerhorst bleiben gemalt), alle Körper einer Anlage teilen ein Gegenstück
+  const plan = { k: 'barracks', lv: 3, x: 500, y: 600, size: 256, color: '#c8423a' };
+  const body = { kind: 'bigpart', part: { t: 'box' }, plan };
+  assert.ok(big.has(body) && !big.has({ ...body, part: { t: 'tree' } }) && !big.has({ ...body, part: { t: 'unit' } }));
+  assert.ok(!big.has({ ...body, plan: { ...plan, k: 'stand' } }) && !big.has({ kind: 'bigpart', part: { t: 'box' } }));
+  assert.equal(big.at(body), plan);
+  assert.equal(big.key(body), bigKey('barracks', 3));
+  assert.equal(big.geometry(body), bigGeometry('barracks', 3));
+  assert.ok(uni.has({ kind: 'uni' }) && !uni.at && uni.key({ kind: 'uni', level: 2 }) === uniKey(2));
+  assert.ok(hall.has({ kind: 'hall' }) && quarter.has({ kind: 'quarter' }) && quarter.at({ src: plan }) === plan);
+  assert.equal(quarter.key({ turn: 1, mask: 5 }), quarterKey(1, 5));
+  assert.ok([big, uni, hall, quarter].every((f) => f.team));
+  for (const f of FAMILIES) assert.ok([town, works, big, uni, hall, quarter].includes(f));
+  assert.ok(!hasBig3d('stand') && !hasBig3d('atc') && !hasBig3d('ktank') && !hasBig3d('mdepot') && !hasBig3d('uni'));
+});
+
+// ---------- Großbauten ----------
+
+/** Iso-Rechteck (Maßstab 1, Drehung 0) aus Punkten [u, v, h] wie isokit.G. */
+function isoBox(points) {
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const [u, w, h] of points) {
+    const x = (u - w) * ISO_K;
+    const y = (u + w) * ISO_K * 0.5 - h;
+    x0 = Math.min(x0, x);
+    x1 = Math.max(x1, x);
+    y0 = Math.min(y0, y);
+    y1 = Math.max(y1, y);
+  }
+  return [x0, x1, y0, y1];
+}
+const isoOf = (g) => {
+  const pos = g.getAttribute('position');
+  return isoBox(Array.from({ length: pos.count }, (_, i) => [pos.getX(i), pos.getY(i), pos.getZ(i)]));
+};
+const teamVerts = (g) => {
+  const info = g.getAttribute('aInfo');
+  let n = 0;
+  for (let i = 0; i < info.count; i++) if (info.getY(i) === 97) n++;
+  return n;
+};
+const near = (name, got, want, tol) => got.forEach((v, i) => assert.ok(Math.abs(v - want[i]) <= tol, `${name}: Umriss ${got.map((n) => n.toFixed(1))} statt ${want.map((n) => n.toFixed(1))} (±${tol})`));
+
+test('Großbauten 3D: Kaserne, Fabrikhalle, Lagerhalle, Güterbahnhof in allen Stufen, sparsam, gültig und im Umriss wie die gemalten Körper', () => {
+  assert.deepEqual(BIG3D_KINDS, ['barracks', 'factory', 'warehouse', 'station']);
+  assert.equal(bigGeometry('stand', 1), null);
+  for (const kind of BIG3D_KINDS) {
+    for (const lv of [1, 2, 3]) {
+      const name = `${kind}${lv}`;
+      const g = bigGeometry(kind, lv);
+      check(name, g);
+      assert.equal(bigGeometry(kind, lv), g, `${name}: nicht zwischengespeichert`);
+      assert.equal(bigKey(kind, lv), `${kind}|${lv}`);
+      const tris = g.getAttribute('position').count / 3;
+      assert.ok(tris <= 3000, `${name}: ${tris} Dreiecke`);
+      if (kind !== 'warehouse') assert.ok(teamVerts(g) > 0, `${name}: keine Teamfarbe`); // gemalt zeigt die Lagerhalle keine
+      // die gemalten Körper (bigbuild.js bigPlan): Quader mit Dach, Zylinder, Fahnen; Bäume und Ausstellungsstücke bleiben Billboards
+      const pts = [];
+      for (const p of bigPlan(kind, lv, 0, 0, 1, 0).bodies) {
+        if (!isBig3dPart(p)) continue;
+        if (p.t === 'box') {
+          const [base, top] = [p.base ?? 0, (p.base ?? 0) + p.h];
+          const [xm, ym] = [(p.x0 + p.x1) / 2, (p.y0 + p.y1) / 2];
+          for (const [u, v] of [[p.x0, p.y0], [p.x1, p.y0], [p.x1, p.y1], [p.x0, p.y1]]) pts.push([u, v, base], [u, v, top + (p.saw && u === p.x1 ? p.saw.rh : 0)]); // Sheddach: Glasseite nach +x
+          if (p.gable) for (const [u, v] of p.x1 - p.x0 >= p.y1 - p.y0 ? [[p.x0, ym], [p.x1, ym]] : [[xm, p.y0], [xm, p.y1]]) pts.push([u, v, top + p.gable]); // First
+        } else if (p.t === 'cyl') {
+          for (const [du, dv] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) pts.push([p.x + du * p.r, p.y + dv * p.r, p.base ?? 0], [p.x + du * p.r1, p.y + dv * p.r1, (p.base ?? 0) + p.h]);
+        } else {
+          const d = 16 * Math.SQRT1_2;
+          pts.push([p.x, p.y, 0], [p.x, p.y, p.h], [p.x + d, p.y - d, p.h], [p.x + d, p.y - d, p.h - 10]);
+        }
+      }
+      near(name, isoOf(g), isoBox(pts), 3);
+      // höchster Punkt wie bigTop (Schild darüber): Körper ohne Bäume und Ausstellungsstücke
+      const top = g.boundingBox.max.z;
+      assert.ok(top <= Math.max(bigTop(kind, lv), 31) + 0.5 && top >= 25, `${name}: Höhe ${top}`);
+    }
+  }
+});
+
+test('Großbauten 3D: Universität in allen Stufen im Umriss wie das gemalte Bild', () => {
+  const TOP = [0, 80, 102, 110]; // Fahne über Kuppel (und Laterne ab Stufe 2): wie university.core
+  for (const lv of [1, 2, 3]) {
+    const g = uniGeometry(lv);
+    check(`uni${lv}`, g);
+    assert.equal(uniGeometry(lv), g);
+    assert.ok(g.getAttribute('position').count / 3 <= 4000, `uni${lv}: zu viele Dreiecke`);
+    assert.ok(teamVerts(g) > 0);
+    const bb = g.boundingBox;
+    assert.ok(Math.abs(bb.max.z - TOP[lv]) <= 1, `uni${lv}: Höhe ${bb.max.z}`);
+    for (const v of [bb.min.x, bb.min.y, bb.max.x, bb.max.y]) assert.ok(Math.abs(v) <= 96, `uni${lv}: außerhalb des 3 × 3-Quadrats`); // ±96
+    // Iso: vierfach symmetrisch (u ↔ v), also steht die Mitte im Bild mittig
+    const [x0, x1] = isoOf(g);
+    assert.ok(Math.abs(x0 + x1) <= 4, `uni${lv}: nicht mittig (${x0.toFixed(1)}, ${x1.toFixed(1)})`);
+  }
+});
+
+test('Großbauten 3D: Regierungsgebäude im Umriss wie das gemalte Bild (cityhall.js, Bildmaße [−72, −126, 76, 42])', () => {
+  const g = hallGeometry();
+  check('hall', g);
+  assert.equal(hallGeometry(), g);
+  assert.ok(g.getAttribute('position').count / 3 <= 4000);
+  assert.ok(teamVerts(g) > 0);
+  const [x0, x1, y0, y1] = isoOf(g);
+  const [r0, q0, r1, q1] = [-72, -(HALL_M.mastH + 4), 76, 42];
+  assert.ok(x0 >= r0 && x1 <= r1 && y0 >= q0 && y1 <= q1, `Umriss ${[x0, y0, x1, y1].map((n) => n.toFixed(1))} außerhalb des gemalten Bilds`);
+  assert.ok(Math.abs(g.boundingBox.max.z - HALL_M.mastH) <= 2, `Mast: ${g.boundingBox.max.z}`);
+  assert.ok(x1 - x0 >= 100 && Math.abs(x0 + x1) <= 4);
+});
+
+test('Großbauten 3D: Regierungsviertel je Teamdrehung und Gruppenmaske, innerhalb des inneren Quadrats und so hoch wie die gemalten Gruppen', () => {
+  const { GROUPS } = _quarter;
+  assert.equal(quarterGeometry(0, 0), null);
+  const full = [0, 1, 2, 3, 5, 6, 7, 8].reduce((m, gi) => m | (1 << gi), 0);
+  for (let t = 0; t < 4; t++) {
+    const g = quarterGeometry(t, full);
+    check(`viertel${t}`, g);
+    assert.equal(quarterGeometry(t, full), g);
+    assert.ok(g.getAttribute('position').count / 3 <= 7000, `Viertel ${t}: ${g.getAttribute('position').count / 3} Dreiecke`);
+    assert.ok(teamVerts(g) > 0);
+    const bb = g.boundingBox;
+    for (const v of [bb.min.x, bb.min.y, bb.max.x, bb.max.y]) assert.ok(Math.abs(v) <= INNER, `Viertel ${t}: ${v} außerhalb ±${INNER}`);
+    assert.ok(bb.max.z <= QUARTER_PAL.TALL && bb.max.z >= 38, `Viertel ${t}: Höhe ${bb.max.z}`);
+    // jede Gruppe allein: nur ihre Teile, weniger Dreiecke als das ganze Viertel; Summe der Gruppen = Ganzes
+    let sum = 0;
+    for (const gi of [0, 1, 2, 3, 5, 6, 7, 8]) {
+      const q = quarterGeometry(t, 1 << gi);
+      if (!GROUPS[t][gi].length) { assert.equal(q.getAttribute('position').count, 0); continue; }
+      const n = q.getAttribute('position').count / 3;
+      assert.ok(n > 0 && n < g.getAttribute('position').count / 3);
+      sum += n;
+    }
+    assert.equal(sum, g.getAttribute('position').count / 3);
+  }
 });

@@ -964,6 +964,64 @@ export class Kit3D {
     this.poly([P(A1, B0, 0), r2, P(A1, B1, 0)], col, { mat: null, n: P(top, 0, w) });
   }
 
+  // ---------- Bauteile der Großbauten (Paket „Großbauten 3D“, Namen wie university.js bzw. cityhall.js) ----------
+
+  /**
+   * Rippen einer Kuppel (wie university.dome, cityhall.domeShape): count Meridiane als schmale Bänder der Breite w knapp über der
+   * Ellipsoid-Kappe (Mitte u, v, Fuß h, Halbachsen r und rz), um phase gedreht; sehr dünn, damit sie wenige Dreiecke kosten.
+   */
+  domeRibs(u, v, h, r, rz, count, col, segs = 8, w = 0.8, phase = 0) {
+    for (let i = 0; i < count; i++) {
+      const a = phase + (i / count) * TAU;
+      const [ca, sa] = [Math.cos(a), Math.sin(a)];
+      const at = (f) => {
+        const b = (f * Math.PI) / 2;
+        return [u + ca * Math.cos(b) * (r + 0.3), v + sa * Math.cos(b) * (r + 0.3), h + Math.sin(b) * (rz + 0.3), Math.cos(b)];
+      };
+      for (let j = 0; j < segs; j++) {
+        const p0 = at(j / segs);
+        const p1 = at((j + 1) / segs);
+        const w0 = (w / 2) * Math.max(0.15, p0[3]);
+        const w1 = (w / 2) * Math.max(0.15, p1[3]);
+        const bm = (((j + 0.5) / segs) * Math.PI) / 2;
+        this.poly(
+          [[p0[0] + sa * w0, p0[1] - ca * w0, p0[2]], [p0[0] - sa * w0, p0[1] + ca * w0, p0[2]], [p1[0] - sa * w1, p1[1] + ca * w1, p1[2]], [p1[0] + sa * w1, p1[1] - ca * w1, p1[2]]],
+          col,
+          { mat: null, snow: false, n: [(ca * Math.cos(bm)) / r, (sa * Math.cos(bm)) / r, Math.sin(bm) / rz] },
+        );
+      }
+    }
+  }
+
+  /** Fenster rund um einen Zylinder (Tambour, Laterne): je Winkel in angles ein Viereck der Breite w von h0 bis h1 knapp vor der Wand. */
+  cylWins(u, v, r, h0, h1, angles, w, col, o = {}) {
+    for (const a of angles) {
+      const [ca, sa] = [Math.cos(a), Math.sin(a)];
+      const c = [u + ca * (r + 0.12), v + sa * (r + 0.12)];
+      const [tx, ty] = [-sa * (w / 2), ca * (w / 2)];
+      this.poly([[c[0] - tx, c[1] - ty, h0], [c[0] + tx, c[1] + ty, h0], [c[0] + tx, c[1] + ty, h1], [c[0] - tx, c[1] - ty, h1]], col, { mat: null, snow: false, ...o, n: [ca, sa, 0] });
+    }
+  }
+
+  /** Säulenkranz um einen Zylinder (Tambour des Rathauses): n Säulen mit Radius cr auf dem Kreis r, von h0 bis h1. */
+  colonnade(u, v, r, h0, h1, n, col, cr = 0.9) {
+    for (let i = 0; i < n; i++) {
+      const a = ((i + 0.5) / n) * TAU;
+      this.cyl(u + Math.cos(a) * r, v + Math.sin(a) * r, cr, h0, h1, col, { n: 6, mat: null });
+    }
+  }
+
+  /** Fahne (Rechteck der Länge w nach Bild-rechts in Drehung 0, Höhe hgt, Oberkante h) beidseitig; team: Farbe der Instanz (wie wave in cityhall.js). */
+  banner(u, v, h, w, hgt, color, team = false) {
+    const d = w * Math.SQRT1_2;
+    const pts = [[u, v, h], [u + d, v - d, h], [u + d, v - d, h - hgt], [u, v, h - hgt]];
+    const was = this.team;
+    this.team = team;
+    this.poly(pts, color, { mat: null, snow: false, n: [1, 1, 0] });
+    this.poly(pts, color, { mat: null, snow: false, n: [-1, -1, 0] });
+    this.team = was;
+  }
+
   /** Alle Teile als eine BufferGeometry (Spielachsen, örtlich); boundingBox gesetzt. */
   geometry() {
     const g = new THREE.BufferGeometry();

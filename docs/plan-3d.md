@@ -164,6 +164,47 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   Offen: Dreiecke sparen, falls echte Geräte es brauchen (Bäume der Werke je 204 Dreiecke, Zäune der Munitionsfabrik 1 100, Kugeln und
   Nähte; fern: grobe Varianten ohne Zäune, Bäume und Nähte); Werke bei Schaden dunkler wie in 2D (`damage`, gemalt nur in 2D);
   Förderbänder und Fackeln animieren und nachts leuchtende Anlagen („Tag und Nacht 3D“); Ruinen und Baustellen der Werke bleiben Billboards.
+- Großbauten 3D: gebaut (`js/render3d/bigbuild3d.js`: Kaserne, Fabrikhalle, Lagerhalle, Güterbahnhof je Stufe 1 bis 3 aus `bigPlan`
+  (`render/bigbuild.js`) und Universität; `js/render3d/gov3d.js`: Regierungsgebäude und Regierungsviertel; Test `test/kit3d.test.js`; Prüfteile
+  `smoke-3d.mjs --only baukasten --what grossbau` (Bogen je Art und Stimmung mit gemalt + 4 Drehungen, `grossbau-<art>-teams`, Fotos
+  `.smoke/3d/baukasten/grossbau-*.png`) und `--only stadt` (Ausschnitt mit Großbauten und Hauptstadt, `seed3-grossbau-*`, Messung)). Neue
+  Bauteile in `kit3d.js` (Namen wie `university.js`/`cityhall.js`): `domeRibs`, `cylWins`, `colonnade`, `banner`; `sawRoof` aus `works3d.js`
+  mitgenutzt. **Gemessen vor dem Plan** (Seed 3 und 7, KI gegen KI, beide Teams zusammen, jede Anlage einmal): nach 10 Spielminuten Seed 3
+  Kaserne 3 × 4, Fabrikhalle 3 × 4, Universität 3 × 2, Güterbahnhof 3 × 1 (dazu 6 Fliegerhorst-Bausteine Stufe 1), Seed 7 Kaserne 3 × 4,
+  Fabrikhalle 3 × 3 + 2 × 1, Universität 3 × 2, Güterbahnhof 3 × 1; nach 20 min Seed 3 Lagerhalle 3 × 2, Kaserne 3 × 5, Güterbahnhof 3 × 2,
+  Fabrikhalle 3 × 4, Universität 3 × 2 (Fliegerhorst 12 Bausteine Stufe 3), Seed 7 Lagerhalle 3 × 4, Güterbahnhof 3 × 3, Kaserne 3 × 6,
+  Fabrikhalle 3 × 4, Universität 3 × 2; dazu je Team eine Hauptstadt mit Rathaus und Viertel (2). Stufe 3 ist also die häufige Stufe, wenige
+  (3 bis 8) Großbauten im Bild, dafür die teuersten Modelle. Dreiecke je Variante (Stufe 1/2/3): Kaserne 708/976/1 224, Fabrikhalle
+  960/1 390/1 774, Lagerhalle 232/282/358, Güterbahnhof 172/452/558, Universität 2 070/2 662/3 358, Regierungsgebäude 2 864, Regierungsviertel
+  4 914 (alle Gruppen; je Gruppe 192 bis 996). Umriss: Node-Test Iso-Umriss der Geometrie ±3 px gegen die Körper aus `bigPlan` bzw. gegen das
+  Bildmaß von `cityhall.js` (`[−72, −126, 76, 42]`), Prüfteil Drehung 0 ±1 bis ±13 px (Fabrikhalle Stufe 1 ±13: Dach und gemalte Kontur).
+  **Entscheidungen:** (1) *Eine Instanz je Anlage:* ein Großbau besteht in `cityBuildings` aus vielen Objekten (`bigpart`, je Körper, wegen
+  der Tiefenordnung gemalter Billboards); im Modus 3D teilen alle Körper einen `plan` (Art, Stufe, Mitte), `Town3D` stellt die Anlage beim
+  ersten Körper als eine Instanz auf (Familie mit `at`, weitere Körper: nur „gezeigt“), ein Draw-Call je Art und Stufe; die Tiefenordnung
+  übernimmt der Tiefenpuffer (Billboards von Einheiten davor und dahinter stimmen über `clipDepth`). Höhe: tiefste Ecke des Quadrats wie
+  `baseHeight`. Teamfarbe je Instanz (Streifen, Fahnen, Banner, Giebelschild), eine Geometrie je Art und Stufe für alle Teams. (2) *Gemalt
+  bleiben:* Bäume und Ausstellungsstücke (Einheitenmodelle) der Höfe (Billboards wie bisher, die Ausstellungsstücke folgen mit den Einheiten),
+  der Fliegerhorst (`airbase.js`, eigenes Paket „Fliegerhorst 3D“) und **der Boden** (Höfe, Gleise, Pflaster, Rasen der Universität, Prachtstraßen,
+  Platz und Parkplätze des Viertels): er liegt im Durchlauf „Boden“ auf dem Gelände unter den Objekten und ist Fläche, kein Körper; ein
+  3D-Boden gehört zu „Bodenmarken“/„Freie Kamera“ (Marken an den Hang schmiegen). (3) *Lagerhalle und Güterbahnhof:* gemalt nur glatte
+  Quader (nicht `fine`), die Plandaten tragen aber Satteldach, Sheddach, Tore und Fenster (`bigTop` zählt den Giebel schon); 3D zeigt sie
+  mit Schmuck wie Kaserne und Fabrikhalle, die Höhe weicht um den Giebel (9 bis 10) vom gemalten Quader ab. (4) *Kuppeln:* Ellipsoid-Kappe in
+  einer Farbe (das Licht schattiert, statt Verlauf) mit Rippen als dünnen Bändern über der Fläche (`domeRibs`, wenige Dreiecke, keine Rohre),
+  Tambour und Laterne mit Fenstern rundum. (5) *Fahnen:* flache, beidseitige Rechtecke in Teamfarbe (Bild-rechts in Drehung 0, kein Wehen);
+  in Drehung 1 und 3 stehen sie fast kantig zum Bild und sind dünn, der Mast bleibt. Offen: wehende Fahne (zwei Knicke). (6) *Glas, Uhren,
+  Rauch:* keine Uhren und kein Rauch in diesen Bauten; Fenster nachts wie die Stadthäuser (`uNight`), Schadensrauch bei Stadtbauten bleibt gemalt
+  (`drawTownItemIso`), Rathaus und Viertel nur Mesh. (7) *Regierungsviertel:* ein Mesh je Hauptstadt, Geometrie je Teamdrehung (`TURN`) und
+  Bitmaske der freien Gruppen (`quarterMask`; belegt ein Bunker oder Turm eine Gruppe, fehlt sie im Mesh wie gemalt), dazu ein Draw-Call
+  statt bis zu acht; Bäume des Viertels sind Kugelbäume des Baukastens (wie die Gartenbäume der Stadthäuser, gemalt dasselbe), die der
+  Höfe der Großbauten bleiben gemalt. (8) *Universität* gemalt für jede Drehung dasselbe Bild; in 3D steht sie wirklich vierfach symmetrisch
+  und dreht mit der Kamera, Bäume und Ecktürme (Banner in Teamfarbe) sind echte Körper. Schalter `renderer.big3dOn` (false = alles gemalt).
+  **Messung** (Seed 3, 10 Spielminuten, Ausschnitt mit Kaserne 3, Fabrikhalle 3, Hauptstadt mit Regierungsviertel und Stadthäusern und
+  Werken, 1 280 × 800, Zoom 1, „Objekte“ samt Schattenkarte, Software-WebGL, 8 Bilder): Schatten Aus gemalt 16 Draw-Calls, 7 812 Dreiecke,
+  71 ms → Häuser und Werke 3D (Stand vor dem Paket) 42 Draw-Calls, 212 900 Dreiecke, 165 ms → alles 3D 47 Draw-Calls, 230 014 Dreiecke
+  (Großbauten 7 Instanzen in 5 Varianten, 17 132 Dreiecke), 172 ms; Schatten Hoch gemalt 30, 251 634, 160 ms → vorher 82, 661 964, 491 ms →
+  nachher 92 Draw-Calls, 696 210 Dreiecke, 525 ms. Die +5 (Aus) bzw. +10 (Hoch) Draw-Calls sind auf echter GPU die Größe, die zählt;
+  Software-WebGL rechnet Dreiecke auf der CPU. Offen: Rathaus bei Schaden dunkler (gemalt nur in 2D und Iso); wehende Fahnen; fern grobe
+  Varianten ohne Fenster und Rippen, falls echte Geräte es brauchen; Fenster nachts leuchten erst mit „Tag und Nacht 3D“ wirklich.
 - Wasser 3D: gebaut (`js/render3d/ground3d.js`, Shader `FS_WATER`, Prüfteil `smoke-3d.mjs --only wasser`, Fotos `.smoke/3d/wasser/`).
   **Eigenes Netz statt Boden-Shader:** Das Wasser teilt Lage und Höhen (`position`, `aH`) mit dem Bodennetz, hat aber eine eigene
   Dreiecksliste (nur Dreiecke mit einer Ecke unter `RELIEF.water`: 3 540 bei Seed 3 ohne Fluss, 7 632 bei Seed 4 mit Fluss, gegen

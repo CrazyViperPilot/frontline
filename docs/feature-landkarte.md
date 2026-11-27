@@ -76,3 +76,4 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Signierter Match-Start, Spielstatistik | `konto` | `api/match.php` | `api/lib/match.php`; UI `ui/match.js`, `ui/stats.js` | `match`, `spielstatistik` |
 | Admin-Panel | `konto` | `api/admin.php` | `admin/` | – |
 | 3D, Schatten | – | `render3d/renderer3d.js` | `sun3d.js` | `trees3d` |
+| Großbauten 3D | – | `render3d/bigbuild3d.js`, `gov3d.js` | `town3d.js` | `kit3d` |

@@ -479,3 +479,6 @@ export function drawCityHallTop(ctx, b, color, zoom = 1, season = 'summer') {
   paint(ctx, 1);
   ctx.restore();
 }
+
+/** Farben für die 3D-Ansicht (render3d/gov3d.js); Maße: M und DOME_TOP. */
+export const HALL_PAL = { MARBLE, TRIM, TERRACE, LEAD, ROOF, WINDOW, GOLD, DOME, LANTERN_H, DOME_C };

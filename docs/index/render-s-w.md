@@ -53,7 +53,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - teamKey (= keyOf)
 - SHOWROOM
 
-## university.js (20 KB)
+## university.js (21 KB)
 - OUTLINE
 - DETAIL – darunter keine Fenster, Säulen und Rippen (Leistung, zu klein zum Sehen)
 - lit(color, nu, nv, nh)
@@ -66,6 +66,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawUniversityIso(ctx, cam, b) – Isometrisch: ganze Anlage in einem Zug (hinten nach vorne)
 - drawUniversityTop(ctx, b) – 2D von oben (Weltkoordinaten, Kontext skaliert): Kreuzbau mit Kuppel, Portalen,…
 - UNI_LAWNS – Rasen und Wege des Hofs (Weltkoordinaten relativ zur Mitte): vier Rasenflächen…
+- UNI_DIM – Maße und Farben für die 3D-Ansicht (render3d/bigbuild3d.js): Stufen, Turm, Farb…
 
 ## ways.js (29 KB)
 - groundPattern(ctx, kind, season) – Muster für Boden-Flächen: 'asphalt', 'pavers' (Gehweg), 'dirt', 'rut', 'gravel'…

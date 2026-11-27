@@ -23,6 +23,8 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `gov3d.js` – Regierungsgebäude und Teile des Regierungsviertels (je Teamdrehung und Gruppenmaske). `hallGeometry`, `quarterGeometry`
 - `mil3d.js` – Militärgebäude (FOB, Mauer, Tor, Mörser, Flak, Phalanx, Turm, Bohrer, Baustellen), Ausbauten besetzter Häuser. `milGeometry`, `fortGeometry`
 - `airbase3d.js` – Fliegerhorst (Stellplatz mit Überdachung oder Shelter, Tower, Kerosintank, Munitionslager), Dach und Röhre halb durchsichtig. `airbaseGeometry`, `airbaseGlass`
+- `site3d.js` – Baustellen der Stadt (5 Abschnitte, n = 1 bis 3, Gerüst, Kran, Planen in Zonenfarbe). `siteGeometry`, `siteKey`
+- `rubble3d.js` – Schutt (Kartenstadt, Stadtzellen, Wracks) aus `rubblePlan`, 16 Varianten. `rubbleGeometry`, `rubbleKey`
 - `maptown3d.js` – Kartenstadt (Häuser, Hallen, Fabriken, Mauern, Zug, Turm, Mast), Leitung als Linien. `mapTownGeometry`, `Wires3D`
 
 ## Besonderheiten

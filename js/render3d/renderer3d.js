@@ -84,6 +84,9 @@ export class Renderer3D extends Renderer {
     this.mil3dOn = true; // false: Militärgebäude (FOB, Mauer, Tor, Mörser, Flugabwehr, Phalanx, Turm, Bohrer, Baustellen) gemalt
     this.mil3d = null; // nur während des Durchlaufs „Objekte“ gesetzt (mil3d.js)
     this.fort3d = null; // ebenso: Ausbauten besetzter Häuser (Sandsäcke, MG-Nest, Draht; stronghold.js), schaltet auch mil3dOn
+    this.site3dOn = true; // false: Baustellen der Stadt (site3d.js, alle Größen und Bauabschnitte) gemalt
+    this.ruin3dOn = true; // false: Schutt (zerstörte Stadtzellen, eingestürzte Häuser der Kartenstadt, Wracks zerstörter Militärgebäude; rubble3d.js) gemalt
+    this.ruin3d = null; // nur während des Durchlaufs „Objekte“ gesetzt: Schutt der Kartenstadt und der Wracks (isoitems.js)
     this.maptown3dOn = true; // false: Kartenstadt (Häuser, Hallen, Fabriken, Mauern, Zug, Bahnhof, Turm, Mast) und Leitungen gemalt
     this.wires3d = new Wires3D(); // Hochspannungsleitung als Linien (maptown3d.js), statt des gemalten Durchlaufs „Leitungen“
     this.objRoot.add(this.wires3d.group);
@@ -232,9 +235,11 @@ export class Renderer3D extends Renderer {
     // Großbauten (bigbuild3d.js, gov3d.js): eine Anlage aus vielen Objekten der Tiefenliste steht einmal, auf der tiefsten Ecke ihres Quadrats
     this.house3d = (o) => {
       if (o.kind === 'bigpart') return (o.part?.t === 'ab' ? this.airbase3dOn : this.big3dOn) && this.towns3d.add(o, (p) => lowest(p.x, p.y, p.size / 2));
-      const on = o.kind === 'town' ? this.towns3dOn : o.kind === 'uni' ? this.big3dOn : hasMapTown3d(o) ? this.maptown3dOn : this.works3dOn;
+      const on = o.kind === 'town' ? this.towns3dOn : o.kind === 'site' ? this.site3dOn : o.kind === 'cityruin' ? this.ruin3dOn : o.kind === 'uni' ? this.big3dOn : hasMapTown3d(o) ? this.maptown3dOn : this.works3dOn;
       return on && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
     };
+    // Schutt (rubble3d.js): eingestürzte Häuser der Kartenstadt und Wracks zerstörter Militärgebäude; sink 0 … 1 = Streckung der Höhe (Wrack sinkt am Ende ein)
+    this.ruin3d = !this.ruin3dOn ? null : (r, burnt, sink = 1) => this.towns3d.add({ kind: 'ruin3d', x: r.x, y: r.y, w: r.w, h: r.h, as: r.kind, hgt: r.hgt, burnt, sink: Math.max(0.05, sink) }, cam.pinned ?? (relief ? relief.displayAt(r.x, r.y) : 0));
     this.hall3d = !this.big3dOn ? null : (b, color) => this.towns3d.add({ kind: 'cityhall', x: b.x, y: b.y, color }, cam.pinned ?? (relief ? relief.displayAt(b.x, b.y) : 0));
     this.mil3d = !this.mil3dOn ? null : (b, color) => isMilBuilding(b) && this.towns3d.add({ kind: 'mil', x: b.x, y: b.y, b, color }, cam.pinned ?? (relief ? relief.displayAt(b.x, b.y) : 0));
     this.fort3d = !this.mil3dOn ? null : (h) => {
@@ -297,7 +302,7 @@ export class Renderer3D extends Renderer {
       setBlitSink(null);
       this.unit3d = null;
       this.tree3d = null;
-      this.house3d = this.hall3d = this.quarter3d = this.mil3d = this.fort3d = null;
+      this.house3d = this.hall3d = this.quarter3d = this.mil3d = this.fort3d = this.ruin3d = null;
       this.bush3d = this.rock3d = this.animal3d = null;
       this.prop3d = this.crate3d = null;
       this.shadow3d = false;

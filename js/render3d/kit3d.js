@@ -1022,6 +1022,25 @@ export class Kit3D {
     this.team = was;
   }
 
+  /**
+   * Quader um die Mitte (x, y), Länge len entlang der Richtung a (Bogenmaß, Welt-x = 0), Breite wid quer dazu, von h0 bis h1
+   * (Schuttplatten und -balken, wie iso.drawRotBox); Seiten col, Deckel top, o wie box (o.mat, o.snow).
+   */
+  rbox(x, y, len, wid, a, h0, h1, col, top = col, o = {}) {
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    const L = len / 2;
+    const W = wid / 2;
+    const pt = [[-L, -W], [L, -W], [L, W], [-L, W]].map(([i, j]) => [x + i * c - j * s, y + i * s + j * c]);
+    const mat = o.mat !== undefined ? o.mat : null;
+    for (let k = 0; k < 4; k++) {
+      const p = pt[k];
+      const q = pt[(k + 1) % 4];
+      this.poly([[p[0], p[1], h0], [q[0], q[1], h0], [q[0], q[1], h1], [p[0], p[1], h1]], col, { mat, snow: o.snow, n: [q[1] - p[1], p[0] - q[0], 0] });
+    }
+    this.poly(pt.map((p) => [p[0], p[1], h1]), top, { mat, snow: o.snow, n: [0, 0, 1] });
+  }
+
   /** Alle Teile als eine BufferGeometry (Spielachsen, örtlich); boundingBox gesetzt. */
   geometry() {
     const g = new THREE.BufferGeometry();

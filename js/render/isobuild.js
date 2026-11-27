@@ -762,25 +762,41 @@ function roofCross(ctx, cam, x, y, H, a, t, color) {
   quad(x - t, y - a, x + t, y + a);
 }
 
+/** Zahl der Zufallsvarianten des Schutts: Iso und 3D zeigen dieselbe (die 3D-Ansicht baut je Art, Maß, ausgebrannt und Variante eine Geometrie). */
+export const RUBBLE_VARIANTS = 16;
+
 /**
- * Trümmer isometrisch (seit v5.34): unregelmäßiger Schuttboden, Schutthügel mit Licht von links und Brocken darauf, eine stehende,
- * stufig abgebrochene Mauerecke, verstreute Platten und Balken. b: { x, y, w, h, kind, hgt }; burnt = ausgebranntes Teamgebäude
- * (verkohlt, mit Stahlträger), sonst eingestürztes Stadthaus bzw. Mauer in seinen Wandfarben.
+ * Zufallsvariante 0 … 15 des Schutts bei b.x, b.y. Auf 16 begrenzt (statt des ganzen Hashes), damit das gemalte Bild und die Ansicht 3D
+ * dasselbe zeigen und 3D je Art, Maß, ausgebrannt und Variante nur 16 Geometrien einmal bauen und instanzieren muss; 16 Würfe der
+ * Schuttform (Mauerecke, Hügel, Platten, Wandfarbe) sehen nebeneinander noch verschieden genug aus.
  */
-export function drawRubble(ctx, cam, b, burnt = false) {
-  const x0 = b.x - b.w / 2;
-  const y0 = b.y - b.h / 2;
-  const seed0 = hashXY(b.x, b.y);
-  let seed = seed0 || 1;
-  const rnd = () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 4294967296;
+export const rubbleVariant = (b) => hashXY(b.x, b.y) % RUBBLE_VARIANTS;
+
+/** Zufallsfolge (LCG) aus einem 32-Bit-Wert: Schutt und seine Hügel (Iso und 3D gleich). */
+export function rubbleRng(seed) {
+  let s = (seed >>> 0) || 1;
+  return () => (s = (Math.imul(s, 1103515245) + 12345) >>> 0) / 4294967296;
+}
+
+/**
+ * Plan des Schutts, rein und ohne Kamera: alle Teile örtlich ab der Mitte (b.x, b.y), Zufall nur aus der Variante v (rubbleVariant).
+ * b: { w, h, kind, hgt } (kind: house, hall, factory, station, wreck, wall); burnt = ausgebranntes Teamgebäude (verkohlt, mit Stahlträger).
+ * Ergebnis: { v, w, h, H, wall, small, floor (Farbe des Schuttbodens), rim (Umriss des Bodens), pieces } mit pieces aus
+ * { t: 'box', x0, y0, x1, y1, h, c } (Mauerstück; post: Stahlträger, x0/y0 = Mitte), { t: 'mound', x, y, r, h, c, seed } (Hügel, seed für
+ * rubbleRng) und { t: 'slab', x, y, len, wid, a, h, c } (Platte oder Balken, gedreht um a).
+ */
+export function rubblePlan(b, burnt = false, v = rubbleVariant(b)) {
+  const rnd = rubbleRng(Math.imul(v + 1, 2654435761));
   let wall;
-  if (b.kind === 'house') wall = HOUSE_WALLS[seed0 % HOUSE_WALLS.length];
-  else if (b.kind === 'hall') wall = HALL_WALLS[seed0 % HALL_WALLS.length];
+  if (b.kind === 'house') wall = HOUSE_WALLS[v % HOUSE_WALLS.length];
+  else if (b.kind === 'hall') wall = HALL_WALLS[v % HALL_WALLS.length];
   else if (b.kind === 'station') wall = '#cdbb98';
-  else wall = FACT_WALLS[seed0 % FACT_WALLS.length];
+  else wall = FACT_WALLS[v % FACT_WALLS.length];
   if (burnt) wall = '#69635a'; // ausgebranntes Teamgebäude: verrußter Beton
   const H = b.hgt ?? (TOWN_H[b.kind] || 40);
   const small = b.kind === 'wall';
+  const x0 = -b.w / 2;
+  const y0 = -b.h / 2;
   // Schuttboden mit unregelmäßigem Rand
   const edge = () => 1 + rnd() * 4;
   const rim = [];
@@ -788,15 +804,7 @@ export function drawRubble(ctx, cam, b, burnt = false) {
   for (let i = 0; i < 8; i++) rim.push([x0 + b.w - edge(), y0 + (b.h * i) / 8]);
   for (let i = 8; i > 0; i--) rim.push([x0 + (b.w * i) / 8, y0 + b.h - edge()]);
   for (let i = 8; i > 0; i--) rim.push([x0 + edge(), y0 + (b.h * i) / 8]);
-  ctx.fillStyle = burnt ? '#2f2b27' : small ? '#77736b' : '#857e72';
-  ctx.beginPath();
-  rim.forEach(([x, y], i) => {
-    const p = cam.worldToScreen(x, y);
-    if (i) ctx.lineTo(p.x, p.y);
-    else ctx.moveTo(p.x, p.y);
-  });
-  ctx.closePath();
-  ctx.fill();
+  const floor = burnt ? '#2f2b27' : small ? '#77736b' : '#857e72';
   const pieces = [];
   const grays = burnt ? ['#57524b', '#45403a', '#6a645b', '#3a3632'] : ['#a39c90', '#8f887c', '#b3aa9b', wall];
   if (!small) {
@@ -818,13 +826,13 @@ export function drawRubble(ctx, cam, b, burnt = false) {
       const by = ey + (sy > 0 ? 6 : 0) + sy * (6 + (ly - 6) * cut[j + 1]) - sy * 6;
       pieces.push({ t: 'box', x0: ex, y0: Math.min(ay, by), x1: ex + 6, y1: Math.max(ay, by), h: hgt * (j ? 0.7 : 0.85), c: shade(wall, 0.12) });
     }
-    if (burnt) pieces.push({ t: 'box', x0: b.x + b.w * (rnd() - 0.5) * 0.4, y0: b.y + b.h * (rnd() - 0.5) * 0.4, x1: 0, y1: 0, h: H * (0.45 + rnd() * 0.25), c: '#34302c', post: true }); // Stahlträger
+    if (burnt) pieces.push({ t: 'box', x0: b.w * (rnd() - 0.5) * 0.4, y0: b.h * (rnd() - 0.5) * 0.4, x1: 0, y1: 0, h: H * (0.45 + rnd() * 0.25), c: '#34302c', post: true }); // Stahlträger
   }
   // Schutthügel
   const nm = small ? 1 : Math.max(2, Math.min(6, Math.round((b.w * b.h) / 1800)));
   for (let i = 0; i < nm; i++) {
     const r = Math.min(b.w, b.h) * (small ? 0.42 : 0.16 + rnd() * 0.14);
-    pieces.push({ t: 'mound', x: x0 + r + rnd() * Math.max(1, b.w - 2 * r), y: y0 + r + rnd() * Math.max(1, b.h - 2 * r), r, h: Math.min(H * 0.4, r * (0.45 + rnd() * 0.35)), c: grays[i % grays.length] });
+    pieces.push({ t: 'mound', x: x0 + r + rnd() * Math.max(1, b.w - 2 * r), y: y0 + r + rnd() * Math.max(1, b.h - 2 * r), r, h: Math.min(H * 0.4, r * (0.45 + rnd() * 0.35)), c: grays[i % grays.length], seed: (rnd() * 4294967296) >>> 0 });
   }
   // Platten und Balken
   const ns = Math.max(3, Math.min(10, Math.round((b.w * b.h) / 900)));
@@ -841,13 +849,34 @@ export function drawRubble(ctx, cam, b, burnt = false) {
       c: beam ? (burnt ? '#231f1b' : '#6b5238') : grays[(i + 1) % grays.length],
     });
   }
-  const depth = (p) => (p.t === 'box' ? cam.depth((p.x0 + (p.post ? 0 : p.x1)) / (p.post ? 1 : 2), (p.y0 + (p.post ? 0 : p.y1)) / (p.post ? 1 : 2)) : cam.depth(p.x, p.y));
+  return { v, w: b.w, h: b.h, H, wall, small, floor, rim, pieces };
+}
+
+/**
+ * Trümmer isometrisch (seit v5.34): unregelmäßiger Schuttboden, Schutthügel mit Licht von links und Brocken darauf, eine stehende,
+ * stufig abgebrochene Mauerecke, verstreute Platten und Balken. b: { x, y, w, h, kind, hgt }; burnt = ausgebranntes Teamgebäude
+ * (verkohlt, mit Stahlträger), sonst eingestürztes Stadthaus bzw. Mauer in seinen Wandfarben. Malt aus rubblePlan (16 Varianten;
+ * v erzwingt eine Variante, Prüfskript).
+ */
+export function drawRubble(ctx, cam, b, burnt = false, v = rubbleVariant(b)) {
+  const plan = rubblePlan(b, burnt, v);
+  ctx.fillStyle = plan.floor;
+  ctx.beginPath();
+  plan.rim.forEach(([x, y], i) => {
+    const p = cam.worldToScreen(b.x + x, b.y + y);
+    if (i) ctx.lineTo(p.x, p.y);
+    else ctx.moveTo(p.x, p.y);
+  });
+  ctx.closePath();
+  ctx.fill();
+  const { pieces } = plan;
+  const depth = (p) => (p.t === 'box' ? (p.post ? cam.depth(b.x + p.x0, b.y + p.y0) : cam.depth(b.x + (p.x0 + p.x1) / 2, b.y + (p.y0 + p.y1) / 2)) : cam.depth(b.x + p.x, b.y + p.y));
   pieces.sort((p, q) => depth(p) - depth(q));
   for (const p of pieces) {
-    if (p.t === 'mound') mound(ctx, cam, p.x, p.y, p.r, p.h, p.c, rnd);
-    else if (p.t === 'slab') drawRotBox(ctx, cam, p.x, p.y, p.len, p.wid, p.a, p.h, p.c, { noShadow: true });
-    else if (p.post) drawBox(ctx, cam, p.x0 - 1.5, p.y0 - 1.5, p.x0 + 1.5, p.y0 + 1.5, p.h, p.c, { noShadow: true });
-    else drawBox(ctx, cam, p.x0, p.y0, p.x1, p.y1, p.h, p.c, { noShadow: p.h < 10 });
+    if (p.t === 'mound') mound(ctx, cam, b.x + p.x, b.y + p.y, p.r, p.h, p.c, rubbleRng(p.seed));
+    else if (p.t === 'slab') drawRotBox(ctx, cam, b.x + p.x, b.y + p.y, p.len, p.wid, p.a, p.h, p.c, { noShadow: true });
+    else if (p.post) drawBox(ctx, cam, b.x + p.x0 - 1.5, b.y + p.y0 - 1.5, b.x + p.x0 + 1.5, b.y + p.y0 + 1.5, p.h, p.c, { noShadow: true });
+    else drawBox(ctx, cam, b.x + p.x0, b.y + p.y0, b.x + p.x1, b.y + p.y1, p.h, p.c, { noShadow: p.h < 10 });
   }
 }
 

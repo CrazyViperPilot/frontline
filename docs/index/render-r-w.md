@@ -1,8 +1,14 @@
-# Symbol-Index render (Teil 4 von 4, reliefimg.js bis works.js)
+# Symbol-Index render (Teil 4 von 4, refprops.js bis works.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
-## reliefimg.js (Fortsetzung)
+## refprops.js (30 KB)
+- isRefSingle(kind) – Gibt es ein Modell dieser Art hier?
+- refModel(kind, v, d, w, rubble) – Körper eines Einzelstücks der Raffinerie (Modellrichtung)
+
+## reliefimg.js (7.5 KB)
+- reliefLayers(relief, width, height) – Ebenen für das Geländebild der Karte (Größe = Karte × RELIEF_SCALE): mat = Mate…
+- reliefTiles(relief, width, height) – Geländebild für den Karteneditor in Kacheln (mat und shade wie reliefLayers), d…
 - updateReliefTiles(t, relief, x0, y0, x1, y1) – Weltrechteck [x0, x1] × [y0, y1] des Editor-Geländebilds neu zeichnen (nach Heb…
 - drawReliefTiles(ctx, t, layer, ox, oy, s, vw, vh) – Sichtbare Kacheln einer Ebene ('mat' oder 'shade') zeichnen
 

@@ -21,6 +21,8 @@ import { hasBig3d, bigGeometry, bigKey, uniGeometry, uniKey, isBig3dPart } from 
 import { hallGeometry, quarterGeometry, quarterKey } from './gov3d.js';
 import { milGeometryOf, milKey, fortGeometry } from './mil3d.js';
 import { airbaseKey, airbaseGeometry, airbaseGlass, airbaseAlpha } from './airbase3d.js';
+import { siteKey, siteGeometry } from './site3d.js';
+import { rubbleKey, rubbleGeometry, ruinSrc } from './rubble3d.js';
 import { hasMapTown3d, mapTownKey, mapTownGeometry, mapTownYaw, mapTownScale } from './maptown3d.js';
 import { pylonYaw } from '../render/maptown.js';
 
@@ -790,7 +792,8 @@ const CAP0 = 16; // erste Größe eines Satzes (wächst bei Bedarf auf das Doppe
 /**
  * Gebäudefamilien: name (für stats), has(b): gehört das Objekt (cityBuildings) dazu, key(b), geometry(b) (null: gemalt lassen),
  * team: true = Teamfarbe je Instanz (instanceColor) statt je Geometrie, yaw(b) (wahlfrei) = Drehung der Instanz um z (Bogenmaß), scale(b) (wahlfrei) = Streckung [x, y] vor der Drehung,
- * glass(b) (wahlfrei) = Geometrie der halb durchsichtigen Teile (eigener Satz „…|glass“, Deckkraft alpha: Zahl oder Funktion von b, ohne Schatten). Neue Familie (Großbauten, Militär …): eine Zeile hier.
+ * glass(b) (wahlfrei) = Geometrie der halb durchsichtigen Teile (eigener Satz „…|glass“, Deckkraft alpha: Zahl oder Funktion von b, ohne Schatten),
+ * scaleZ(b) (wahlfrei) = Streckung der Höhe 0 … 1 (Standard 1; Schutt sinkt am Ende seiner Lebensdauer ein). Neue Familie (Großbauten, Militär …): eine Zeile hier.
  */
 export const FAMILIES = [
   {
@@ -865,6 +868,24 @@ export const FAMILIES = [
     has: (b) => b.kind === 'fort',
     key: (b) => `fort|${b.W}|${b.D}|${b.mask}`,
     geometry: (b) => fortGeometry(b.W, b.D, b.mask),
+    team: false,
+  },
+  // Baustellen der Stadt (Paket „Baustellen und Ruinen 3D“, site3d.js): { kind: 'site', ck, n, step, variant, zone, wall } aus cityBuildings, Zonenfarbe in der Geometrie
+  {
+    name: 'site',
+    has: (b) => b.kind === 'site',
+    key: (b) => siteKey(b),
+    geometry: (b) => siteGeometry(b),
+    team: false,
+  },
+  // Schutt (rubble3d.js): zerstörte Stadtzellen { kind: 'cityruin', as, … } und { kind: 'ruin3d', x, y, w, h, as, burnt, hgt, sink } für eingestürzte
+  // Häuser der Kartenstadt und Wracks zerstörter Militärgebäude; sink 0 … 1 = Streckung der Höhe (Wrack sinkt in den letzten Sekunden ein)
+  {
+    name: 'ruin',
+    has: (b) => b.kind === 'cityruin' || b.kind === 'ruin3d',
+    key: (b) => rubbleKey(ruinSrc(b), !!b.burnt),
+    geometry: (b) => rubbleGeometry(ruinSrc(b), !!b.burnt),
+    scaleZ: (b) => b.sink ?? 1,
     team: false,
   },
   {
@@ -990,6 +1011,8 @@ export class Town3D {
       m[o + 4] = -sn * (sc?.[1] ?? 1);
       m[o + 5] = c * (sc?.[1] ?? 1);
     }
+    const sz = fam.scaleZ?.(b);
+    if (sz !== undefined) m[o + 10] = sz;
     m[o + 12] = at.x;
     m[o + 13] = at.y;
     m[o + 14] = h;

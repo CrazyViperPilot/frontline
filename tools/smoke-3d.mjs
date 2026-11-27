@@ -38,11 +38,14 @@
 // 11. Militärgebäude (Paket „Militärgebäude 3D“): im Baukasten-Teil (--what mil) alle Arten, Mauermasken, Tore, Baustellen in Stufen, beschädigt und
 //    Teamfarben gemalt neben 3D (<out>/baukasten/mil-*); im Stadt-Teil ein Ausschnitt mit den meisten Militärgebäuden, ein ausgebautes Haus und
 //    die Messung gemalt / 3D (Draw-Calls, Dreiecke, Zeit „Objekte“, renderer.mil3dOn).
+// 13. Baustellen und Ruinen (Paket „Baustellen und Ruinen 3D“): im Baukasten-Teil (--what baustelle) je Größe n = 1 bis 3 ein Bogen mit allen 5 Bauabschnitten (gemalt + 4 Drehungen,
+//    Sommer, Winter, Nacht: <out>/baukasten/baustelle-*), (--what schutt) Schutt je Art, ausgebrannt, Wand (schutt-*); Teil ruinen (--only ruinen [--sitemin 7] [--wreckmin 18]):
+//    Spielszenen mit vielen Baustellen bzw. Gebäude-Wracks Iso | 3D, Messung gemalt / 3D (renderer.site3dOn, ruin3dOn) und einsinkendes Wrack (<out>/ruinen/).
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
-//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|mvp] [--citymin 10]
+//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|ruinen|mvp] [--citymin 10]
 //                                 [--what schau|karte] (nur mit props: nur Schauraum oder nur echte Karten)
-//                                 [--what werke|haeuser|grossbau|mil|fliegerhorst|kartenstadt] (nur mit baukasten: nur Werke, Stadthäuser, Großbauten, Militärgebäude, Fliegerhorst oder Kartenstadt)
+//                                 [--what werke|haeuser|grossbau|mil|fliegerhorst|baustelle|schutt|kartenstadt] (nur mit baukasten: nur Werke, Stadthäuser, Großbauten, Militärgebäude, Fliegerhorst, Baustellen, Schutt oder Kartenstadt)
 // 11. Kartenstadt (Paket „Kartenstadt 3D“): im Teil baukasten (--what kartenstadt) jede Art der Kartenstadt gemalt | 3D (4 Drehungen, Stimmungen);
 //    Teil karte (--only karte [--karte seed3,seed7,fest]): Ausschnitte echter Karten (Seed 3, 7, East Europe Railway) Iso | 3D (Iso erst, wenn alle gemalten
 //    Bilder fertig sind), gleiche Menge Gebäude Iso und 3D, Messung gemalt gegen 3D (<out>/karte/).
@@ -745,6 +748,11 @@ async function baukasten() {
       const big3 = await import('/js/render3d/bigbuild3d.js');
       const gov3 = await import('/js/render3d/gov3d.js');
       const ab3 = await import('/js/render3d/airbase3d.js'); // Fliegerhorst (Paket „Fliegerhorst 3D“)
+      const site3 = await import('/js/render3d/site3d.js'); // Baustellen und Schutt (Paket „Baustellen und Ruinen 3D“)
+      const rub3 = await import('/js/render3d/rubble3d.js');
+      const { drawSiteIso, siteWall } = await import('/js/render/citysite.js');
+      const { drawRubble } = await import('/js/render/isobuild.js');
+      const { KIND_COLOR: CITY_COLORS } = await import('/js/data/citykinds.js');
       // Militärgebäude (Paket „Militärgebäude 3D“): kind 'mil' mit mil = { type, v, dmg } (v wie milVariant: Mauermaske, 'u'/'v'/'Lu+' …, Dachaufbau, 's0' … 's8');
       // gemalt über drawMilIso (Drehung 0), die Nachbarn der Mauer oder des Tors stellt setMilWalls aus der Variante nach.
       const mil3 = await import('/js/render3d/mil3d.js');
@@ -768,11 +776,14 @@ async function baukasten() {
         }
         return { b, all: [b, ...others] };
       };
-      window.__kitBig = ({ kind, lv, color, season, night, rots, mil, ab, W: BW = 320, H: BH = 270 }) => {
+      window.__kitBig = ({ kind, lv, color, season, night, rots, mil, ab, site, rub, W: BW = 320, H: BH = 270 }) => {
         const bk = ['barracks', 'factory', 'warehouse', 'station'].includes(kind);
         const isAb = kind === 'ab'; // Fliegerhorst (Paket „Fliegerhorst 3D“): ab = { k: 'stand' | 'atc' | 'ktank' | 'mdepot' }, undurchsichtiger Satz und Glas
         const glassGeo = isAb ? ab3.airbaseGlass(ab.k, lv) : null;
-        const geo = isAb ? ab3.airbaseGeometry(ab.k, lv) : kind === 'mil' ? mil3.milGeometry(mil.type, mil.v, mil.dmg ? 1 : 0) : bk ? big3.bigGeometry(kind, lv) : kind === 'uni' ? big3.uniGeometry(lv) : kind === 'hall' ? gov3.hallGeometry() : gov3.quarterGeometry(lv, 0b111101111);
+        // Baustelle (Paket „Baustellen und Ruinen 3D“): site = { ck, n, step, variant } (Zonen- und Wandfarbe wie cityBuildings); Schutt: rub = { kind, w, h, burnt, v, hgt } (v = Variante 0 … 15)
+        const siteB = kind === 'site' ? { kind: 'site', x: X, y: Y, ck: site.ck, n: site.n, step: site.step, variant: site.variant, zone: CITY_COLORS[site.ck] ?? '#8a8f86', wall: siteWall(site.ck, site.variant) } : null;
+        const rubB = kind === 'rubble' ? { x: X, y: Y, w: rub.w, h: rub.h, kind: rub.kind, hgt: rub.hgt } : null;
+        const geo = kind === 'site' ? site3.siteGeometry(siteB) : kind === 'rubble' ? rub3.rubbleGeometry(rubB, !!rub.burnt, rub.v) : isAb ? ab3.airbaseGeometry(ab.k, lv) : kind === 'mil' ? mil3.milGeometry(mil.type, mil.v, mil.dmg ? 1 : 0) : bk ? big3.bigGeometry(kind, lv) : kind === 'uni' ? big3.uniGeometry(lv) : kind === 'hall' ? gov3.hallGeometry() : gov3.quarterGeometry(lv, 0b111101111);
         // Zoom und Anker aus den Ecken der Geometrie in allen Drehungen (Bild: x = (u' − v')·K, y = (u' + v')·K/2 − h)
         const poss = [geo, glassGeo].filter(Boolean).map((q) => q.getAttribute('position'));
         const ext = (rot) => {
@@ -808,7 +819,9 @@ async function baukasten() {
         const capital = { x: X, y: Y, team: Math.max(0, Math.min(3, lv)), cx: X / 32 - 1.5, cy: Y / 32 - 1.5, w: 3, h: 3 };
         // gemalt: shape = nur Körper, die auch 3D werden (Umriss), full = mit Bäumen und Ausstellungsstücken
         const paint = (pc, shapeOnly) => {
-          if (isAb) {
+          if (siteB) drawSiteIso(pc, cam, siteB, season);
+          else if (rubB) drawRubble(pc, cam, rubB, !!rub.burnt, rub.v);
+          else if (isAb) {
             // alle Körper der Anlage (airbaseBodies über bigPlan, 2 × 2 Zellen) nach Tiefe wie im Spiel; der Boden bleibt weg (gemalt im Durchlauf „Boden“)
             const items = bigPlan(ab.k, lv, X, Y, 128, 0).bodies.map((p) => ({ ...partFoot(p), kind: 'bigpart', part: p, color, damage: 0 }));
             items.sort((a, b) => cam.depth(a.x, a.y) - cam.depth(b.x, b.y));
@@ -1207,6 +1220,78 @@ async function baukasten() {
       }, { kind, levels, teams: TEAMS });
       await save(`fliegerhorst-${kind}-teams`, res);
     }
+    // Baustellen (Paket „Baustellen und Ruinen 3D“, --what baustelle): je Größe n ein Bogen mit allen 5 Bauabschnitten (gemalt + 4 Drehungen), Sommer Tag, Winter Tag, Sommer Nacht;
+    // dazu je Größe eine zweite Zellenart bzw. Variante 2 (gespiegelte Lage der Geräte). Gemalt schneidet das Bild Zaun und Kran oben ab: 3D darf dort höher sein.
+    const SITES = [[1, 'res', 0], [1, 'com', 2], [2, 'steel', 0], [2, 'kero', 2], [3, 'uni', 0]];
+    const strisS = {};
+    for (const [n, ck, variant] of what && what !== 'baustelle' ? [] : SITES) {
+      for (const [season, night] of variant === 0 ? [['summer', false], ['winter', false], ['summer', true]] : [['summer', false]]) {
+        const res = await g.run(({ n, ck, variant, season, night, color }) => {
+          const rows = [];
+          const stats = [];
+          for (const step of [0, 1, 2, 3, 4]) {
+            const r = window.__kitBig({ kind: 'site', site: { ck, n, step, variant }, lv: 1, color, season, night, rots: [0, 1, 2, 3], W: 260, H: 300 });
+            rows.push([[r.painted, `${ck} n=${n} Abschnitt ${step} gemalt`], ...r.panels.map((c, i) => [c, `3D Drehung ${i}`])]);
+            stats.push({ step, tris: r.tris, calls: r.calls, boxes: r.boxes, tex: r.tex });
+          }
+          return { url: window.__kitSheet(rows, 300, 260), stats };
+        }, { n, ck, variant, season, night, color: TEAMS[0] });
+        await save(`baustelle-n${n}-${ck}-${season}-${night ? 'nacht' : 'tag'}`, res.url);
+        for (const s2 of res.stats) {
+          const [p, t] = [s2.boxes.painted, s2.boxes.three];
+          const dev = Math.max(...p.map((v, i) => (i === 1 && t[1] <= p[1] ? 0 : Math.abs(v - t[i]))));
+          strisS[`n${n}-${ck}-${s2.step}`] = s2.tris;
+          const bad = !s2.tex || t[2] < 0 || (!night && dev > BOX_TOL + 12) || s2.calls !== 1;
+          if (bad) fail++;
+          if (bad || (season === 'summer' && !night)) console.log(`Baustelle ${ck} n=${n} Abschnitt ${s2.step} ${season} ${night ? 'Nacht' : 'Tag'}: ${s2.tris} Dreiecke, ${s2.calls} Draw-Call(s), Umriss gemalt ${p.join(',')} / 3D ${t.join(',')} (±${dev} px)${s2.tex ? '' : ', Fotos fehlen'}${bad ? '  FEHLER' : ''}`);
+        }
+      }
+    }
+    if (Object.keys(strisS).length) console.log(`Baukasten: Dreiecke je Baustelle ${Object.entries(strisS).map(([k, v]) => `${k} ${v}`).join(', ')}`);
+    // Schutt (--what schutt): je Art (Haus, Halle, Fabrik, Bahnhof, Wrack 64 und 96 ausgebrannt, Mauer) ein Bogen mit 4 Varianten (0, 5, 10, 15; gemalt + 4 Drehungen), Tag und Nacht,
+    // dazu alle 16 Varianten des Wracks 96 (gemalt | 3D). Gemalt und 3D zeigen dieselbe Variante (rubblePlan).
+    const RUBBLE = [['haus', 'house', 64, 64, false, undefined], ['halle', 'hall', 64, 64, false, undefined], ['fabrik', 'factory', 96, 96, false, undefined], ['bahnhof', 'station', 64, 64, false, undefined],
+      ['wrack64', 'wreck', 64, 64, true, 36], ['wrack96', 'wreck', 96, 96, true, 36], ['mauer', 'wall', 32, 32, false, 18]];
+    const rtris = {};
+    for (const [name, kind, w, h, burnt, hgt] of what && what !== 'schutt' ? [] : RUBBLE) {
+      for (const night of [false, true]) {
+        const res = await g.run(({ kind, w, h, burnt, hgt, night, color, name }) => {
+          const rows = [];
+          const stats = [];
+          for (const v of [0, 5, 10, 15]) {
+            const r = window.__kitBig({ kind: 'rubble', rub: { kind, w, h, burnt, hgt, v }, lv: 1, color, season: 'summer', night, rots: [0, 1, 2, 3], W: 260, H: 260 });
+            rows.push([[r.painted, `${name} Variante ${v} gemalt`], ...r.panels.map((c, i) => [c, `3D Drehung ${i}`])]);
+            stats.push({ v, tris: r.tris, calls: r.calls, boxes: r.boxes, tex: r.tex });
+          }
+          return { url: window.__kitSheet(rows, 260, 260), stats };
+        }, { kind, w, h, burnt, hgt, night, color: TEAMS[0], name });
+        await save(`schutt-${name}-${night ? 'nacht' : 'tag'}`, res.url);
+        for (const s2 of res.stats) {
+          const [p, t] = [s2.boxes.painted, s2.boxes.three];
+          const dev = Math.max(...p.map((v, i) => Math.abs(v - t[i])));
+          rtris[`${name}-${s2.v}`] = s2.tris;
+          const bad = !s2.tex || t[2] < 0 || (!night && dev > BOX_TOL + 12) || s2.calls !== 1;
+          if (bad) fail++;
+          if (bad || (!night && s2.v === 0)) console.log(`Schutt ${name} Variante ${s2.v} ${night ? 'Nacht' : 'Tag'}: ${s2.tris} Dreiecke, ${s2.calls} Draw-Call(s), Umriss gemalt ${p.join(',')} / 3D ${t.join(',')} (±${dev} px)${s2.tex ? '' : ', Fotos fehlen'}${bad ? '  FEHLER' : ''}`);
+        }
+      }
+    }
+    if (!what || what === 'schutt') {
+      const all = await g.run(({ color }) => {
+        const rows = [];
+        for (let r0 = 0; r0 < 4; r0++) {
+          const row = [];
+          for (let v = r0 * 4; v < r0 * 4 + 4; v++) {
+            const r = window.__kitBig({ kind: 'rubble', rub: { kind: 'wreck', w: 96, h: 96, burnt: true, hgt: 36, v }, lv: 1, color, season: 'summer', night: false, rots: [0], W: 200, H: 200 });
+            row.push([r.painted, `V${v} gemalt`], [r.panels[0], '3D']);
+          }
+          rows.push(row);
+        }
+        return window.__kitSheet(rows, 200, 200);
+      }, { color: TEAMS[0] });
+      await save('schutt-wrack96-varianten', all);
+    }
+    if (Object.keys(rtris).length) console.log(`Baukasten: Dreiecke je Schuttvariante ${Object.entries(rtris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
     if (Object.keys(atris).length) console.log(`Baukasten: Dreiecke je Fliegerhorst-Variante ${Object.entries(atris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
     if (Object.keys(mtris).length) console.log(`Baukasten: Dreiecke je Militärvariante ${Object.entries(mtris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
     console.log(`Baukasten: Dreiecke je Werk ${Object.entries(wtris).map(([k, v]) => `${k} ${v}`).join(', ')}`);
@@ -1571,6 +1656,174 @@ async function city() {
       errors.push(...g.errors);
       await g.close();
     }
+  }
+}
+
+/**
+ * Teil „ruinen“ (--only ruinen, Paket „Baustellen und Ruinen 3D“, nicht in der Standardfolge): Seed 3 mit Eroberung, alle Teams mit KI, Simulation direkt.
+ * 1. nach --sitemin Spielminuten (Standard 7) der Ausschnitt mit den meisten Baustellen der Stadt (Radius 500): 4 Drehungen Iso | 3D, Zählung je Größe und Abschnitt,
+ *    Messung gemalt gegen 3D (site3dOn: Draw-Calls, Dreiecke, Zeit „Objekte“, Schatten Aus und Hoch);
+ * 2. ab --wreckmin Spielminuten (Standard 18, bis mindestens 5 Wracks zugleich liegen) der Ausschnitt mit den meisten Gebäude-Wracks (g.wrecks, kind 'building'): ebenso (ruin3dOn), dazu ein Foto des ältesten Wracks,
+ *    das in den letzten wreckFade Sekunden einsinkt statt zu verblassen (Zeit des Spiels nur für das Foto verschoben).
+ * Fotos nach <out>/ruinen/.
+ */
+async function ruinen() {
+  const dir = join(out, 'ruinen');
+  await mkdir(dir, { recursive: true });
+  const siteMin = Number(arg('sitemin', 7));
+  const wreckMin = Number(arg('wreckmin', 18));
+  const what = arg('what', null); // --what baustelle | schutt: nur eine der beiden Szenen
+  const g = await openGame({ seed: 3, query: 'iso=1&three=1&shadows=high&weather=summer&wx=clear', scale: 1, out });
+  try {
+    const has3D = await g.run(() => !!window.__frontline.session().renderer.towns3d);
+    if (!has3D) throw new Error('Ansicht 3D nicht aktiv (WebGL oder three.js fehlt)');
+    const conquest = await g.run(async () => {
+      const { AI } = await import('/js/ai/ai.js');
+      const s = window.__frontline.session();
+      s.loop.paused = true;
+      s.renderer.revealAll = true;
+      window.__ais = s.game.teams.map((_, t) => new AI(s.game, t, 'normal'));
+      return { conquest: !!s.game.conquest, teams: s.game.teams.length };
+    });
+    console.log(`Ruinen: Seed 3, Eroberung ${conquest.conquest ? 'an' : 'AUS'}, ${conquest.teams} Teams`);
+    if (!conquest.conquest) fail++;
+    const advance = (to) =>
+      g.run((to) => {
+        const s = window.__frontline.session();
+        while (s.game.time < to * 60) {
+          for (const a of window.__ais) a.update(0.05);
+          s.game.update(0.05);
+        }
+      }, to);
+    const measure = async (label, flag, fam, spot) => {
+      await look(g, spot.x, spot.y, 0, 1);
+      const rows = [];
+      for (const level of ['off', 'high']) {
+        for (const on of [false, true]) {
+          const st = await g.run(({ level, on, flag, fam }) => {
+            const s = window.__frontline.session();
+            const r = s.renderer;
+            s.camera.three = true;
+            r.setShadows(level);
+            r[flag] = on;
+            for (let i = 0; i < 3; i++) r.render(s.controller.view);
+            const info = r.gl.info;
+            const orig = r.objects3d;
+            let obj = null;
+            info.autoReset = false;
+            r.objects3d = function (f) {
+              info.reset();
+              orig.call(this, f);
+              obj = { calls: info.render.calls, tris: info.render.triangles };
+            };
+            try {
+              r.render(s.controller.view);
+            } finally {
+              r.objects3d = orig;
+              info.autoReset = true;
+            }
+            return { ...obj, fam: r.towns3d.stats(fam) };
+          }, { level, on, flag, fam });
+          const t = await timePasses(g, frames);
+          if (on && !st.fam.houses) fail++;
+          rows.push(`${level === 'off' ? 'Aus ' : 'Hoch'} ${on ? `${label} 3D` : 'gemalt'.padEnd(label.length + 3)}: Objekte ${t.Objekte.toFixed(0)} ms, ${st.calls} Draw-Calls, ${st.tris} Dreiecke${on ? ` (${label}: ${st.fam.houses}/${st.fam.calls} Varianten/${st.fam.tris} Dreiecke)` : ''}`);
+        }
+      }
+      await g.run((flag) => { window.__frontline.session().renderer[flag] = true; }, flag);
+      return rows;
+    };
+    // 1. Baustellen (--what schutt überspringt sie)
+    if (!what || what === 'baustelle') {
+    await advance(siteMin);
+    const sspot = await g.run(async () => {
+      const { cityBuildings } = await import('/js/render/citylayer.js');
+      const s = window.__frontline.session();
+      const sites = [];
+      for (const b of cityBuildings(s.game, 0, () => true, () => true)) if (b.kind === 'site') sites.push(b); // cityBuildings liefert die Stadt aller Seiten, die Seite ändert nichts
+      const R = 500;
+      let best = null;
+      for (const c of sites) {
+        const near = sites.filter((o) => Math.hypot(o.x - c.x, o.y - c.y) < R);
+        if (!best || near.length > best.n) {
+          const kinds = {};
+          for (const o of near) kinds[`n${o.n}s${o.step}`] = (kinds[`n${o.n}s${o.step}`] ?? 0) + 1;
+          best = { n: near.length, x: near.reduce((a, o) => a + o.x, 0) / near.length, y: near.reduce((a, o) => a + o.y, 0) / near.length, kinds };
+        }
+      }
+      return { all: sites.length, ...(best ?? { n: 0, x: s.camera.mapW / 2, y: s.camera.mapH / 2, kinds: {} }) };
+    });
+    console.log(`Ruinen: nach ${siteMin} Spielminuten ${sspot.all} Baustellen auf der Karte, im Ausschnitt ${sspot.n} ${JSON.stringify(sspot.kinds)}`);
+    if (!sspot.n) fail++;
+    for (let rot = 0; rot < 4; rot++) {
+      await look(g, sspot.x, sspot.y, rot, 1);
+      await mvpPair(g, dir, 'seed3', `baustellen-drehung${rot}`);
+    }
+    const srows = await measure('Baustellen', 'site3dOn', 'site', sspot);
+    console.log(`Ruinen Messung Baustellen (Seed 3, ${siteMin} min, Ausschnitt mit ${sspot.n} Baustellen, Zoom 1, ${frames} Bilder, Software-WebGL; Draw-Calls und Dreiecke in „Objekte“ samt Schattenkarte):`);
+    for (const r of srows) console.log(`  ${r}`);
+    }
+    // 2. Gebäude-Wracks (--what baustelle überspringt sie)
+    if (!what || what === 'schutt') {
+    // Wracks leben nur wreckLife s: Minute für Minute weiter, bis mindestens 5 Gebäude-Wracks zugleich liegen (höchstens bis Minute 40)
+    for (let m = wreckMin; m <= 40; m++) {
+      await advance(m);
+      const n = await g.run(() => (window.__frontline.session().game.wrecks ?? []).filter((w) => w.kind === 'building').length);
+      console.log(`Ruinen: Minute ${m}: ${n} Gebäude-Wracks`);
+      if (n >= 5) break;
+    }
+    const wspot = await g.run(() => {
+      const s = window.__frontline.session();
+      const ws = (s.game.wrecks ?? []).filter((w) => w.kind === 'building');
+      const R = 420;
+      let best = null;
+      for (const c of ws) {
+        const near = ws.filter((o) => Math.hypot(o.x - c.x, o.y - c.y) < R);
+        if (!best || near.length > best.n) {
+          const kinds = {};
+          for (const o of near) kinds[`${o.small ? 'wall' : 'wreck'}${o.w}`] = (kinds[`${o.small ? 'wall' : 'wreck'}${o.w}`] ?? 0) + 1;
+          best = { n: near.length, x: near.reduce((a, o) => a + o.x, 0) / near.length, y: near.reduce((a, o) => a + o.y, 0) / near.length, kinds };
+        }
+      }
+      const oldest = ws.reduce((a, w) => (!a || w.t0 < a.t0 ? w : a), null);
+      return { all: ws.length, old: oldest ? { x: oldest.x, y: oldest.y, t0: oldest.t0 } : null, ...(best ?? { n: 0, x: s.camera.mapW / 2, y: s.camera.mapH / 2, kinds: {} }) };
+    });
+    console.log(`Ruinen: ${wspot.all} Gebäude-Wracks, im Ausschnitt ${wspot.n} ${JSON.stringify(wspot.kinds)}`);
+    if (!wspot.n) fail++;
+    for (let rot = 0; rot < 4; rot++) {
+      await look(g, wspot.x, wspot.y, rot, 1);
+      await mvpPair(g, dir, 'seed3', `wracks-drehung${rot}`);
+    }
+    const wrows = await measure('Schutt', 'ruin3dOn', 'ruin', wspot);
+    console.log(`Ruinen Messung Schutt (Seed 3, Ausschnitt mit ${wspot.n} Wracks, Zoom 1, ${frames} Bilder, Software-WebGL; Draw-Calls und Dreiecke in „Objekte“ samt Schattenkarte):`);
+    for (const r of wrows) console.log(`  ${r}`);
+    // Einsinken: ältestes Wrack in den letzten wreckFade Sekunden (Alpha 0,5); gemalt blasst es aus, 3D sinkt es ein
+    if (wspot.old) {
+      const sunk = await g.run(({ x, y, t0 }) => {
+        const s = window.__frontline.session();
+        const SC = { life: 240, fade: 30 };
+        const saved = s.game.time;
+        s.game.time = t0 + SC.life - SC.fade / 2;
+        s.camera.centerOn(x, y);
+        s.camera.zoom = 2;
+        for (const rot of [0]) s.camera.rot = rot;
+        return { saved };
+      }, wspot.old);
+      await mvpPair(g, dir, 'seed3', 'wrack-einsinken');
+      const n = await g.run(() => {
+        const s = window.__frontline.session();
+        s.camera.three = true;
+        s.renderer.render(s.controller.view);
+        const m = [...s.renderer.towns3d.sets.values()].filter((v) => v.fam.name === 'ruin' && v.n > 0).flatMap((v) => Array.from({ length: v.n }, (_, i) => v.mesh.instanceMatrix.array[i * 16 + 10]));
+        return { low: m.filter((z) => z < 0.99).length, all: m.length, min: Math.min(...m) };
+      });
+      console.log(`Ruinen: einsinkende Wracks im Bild ${n.low} von ${n.all} (kleinste Streckung ${n.min.toFixed(2)})`);
+      if (!n.low) fail++;
+      await g.run((t) => { window.__frontline.session().game.time = t; }, sunk.saved);
+    }
+    }
+  } finally {
+    errors.push(...g.errors);
+    await g.close();
   }
 }
 
@@ -2796,6 +3049,7 @@ try {
   if (!only || only === 'stadt') await city();
   if (!only || only === 'wasser') await water();
   if (only === 'mvp') await mvp();
+  if (only === 'ruinen') await ruinen();
   if (!only || only === 'natur') await nature();
   if (!only || only === 'karte') await karte();
   if (!only || only === 'props') await propsPart();

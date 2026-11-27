@@ -561,3 +561,12 @@ export function drawSiteTop(ctx, b, zoom) {
 
 /** Farbe des Rohbaus je Zellenart und Variante (Wohnen meist Kalksandstein, manchmal Ziegel; sonst Beton). */
 export const siteWall = wallOf;
+
+/**
+ * Maße und Farben der Baustelle für die Ansicht 3D (render3d/site3d.js, Paket „Baustellen und Ruinen 3D“): dieselben Werte wie das
+ * gemalte Bild, Maße je Größe n (dims), Lage der Geräte (layout, flip = Variante 2), Stützenraster (insideLayout) und Bildmaß (boundsIso).
+ */
+export const SITE_DIM = {
+  STEPS, SLAB, PIT, PIT_WALL, SOIL, SAND, BRICK, BLOCK, PALLET, TIMBER, SCAF, PLANK, REBAR, DIXI, CRANE, BOX_OFFICE, INSIDE,
+  dims, layout, insideLayout, boundsIso,
+};

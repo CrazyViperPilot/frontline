@@ -173,8 +173,12 @@ export const isoItemMethods = {
         if (!this.animal3d?.(a, now) && !drawAnimalIso(ctx, cam, a, p, now)) drawAnimalSide(ctx, a, p.x, p.y, z * 1.1, ia * Math.cos(a.angle) + ic * Math.sin(a.angle) >= 0);
       } else if (it.t === 9 || it.t === 10) {
         const w = it.o;
-        ctx.globalAlpha = scarAlpha(w, g.time, SC.wreckLife, SC.wreckFade);
-        if (it.t === 10) drawRubble(ctx, cam, { x: w.x, y: w.y, w: w.w, h: w.h, kind: w.small ? 'wall' : 'wreck', hgt: w.small ? 18 : 36 }, !w.small);
+        const fade = scarAlpha(w, g.time, SC.wreckLife, SC.wreckFade);
+        ctx.globalAlpha = fade;
+        if (it.t === 10) {
+          const rb = { x: w.x, y: w.y, w: w.w, h: w.h, kind: w.small ? 'wall' : 'wreck', hgt: w.small ? 18 : 36 };
+          if (!this.ruin3d?.(rb, !w.small, fade)) drawRubble(ctx, cam, rb, !w.small); // 3D: render3d/rubble3d.js (sinkt statt zu verblassen)
+        }
         else if (!drawWreckSprite(ctx, cam, w, cam.worldToScreen(w.x, w.y))) drawWreckBox(ctx, cam, w);
         ctx.globalAlpha = 1;
       }
@@ -205,7 +209,7 @@ export const isoItemMethods = {
     const { ctx, g, cam, known } = f;
     const hs = g.houseBySrc?.get(o);
     if (hs && hs.ruined && known(hs.x, hs.y)) {
-      drawRubble(ctx, cam, o);
+      if (!this.ruin3d?.(o, false)) drawRubble(ctx, cam, o); // 3D: render3d/rubble3d.js
       return;
     }
     setRoofSnow(this.season === 'winter'); // Winter: Schnee auf den Dächern der Stadt

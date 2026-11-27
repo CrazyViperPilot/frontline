@@ -12,7 +12,7 @@ import { propIndex, forgetPropIndex, PROP_STATE, GATE, GATE_OPEN, stateOf } from
 import { fenceModel, isFenceKind, LINE_DIRS } from './fences.js';
 import { milModel, isMilSingle } from './milprops.js';
 import { indModel, isIndSingle } from './indprops.js';
-import { civModel, isCivSingle, DELEGATE } from './civprops.js';
+import { civModel, isCivSingle, DELEGATE, DELEGATE_AS } from './civprops.js';
 import { refModel, isRefSingle } from './refprops.js';
 
 const { paintSolids, boundsOf, viewAngle, sectorOf } = PAINT;
@@ -185,6 +185,22 @@ function modelOf(o, season, flag = null) {
     models.set(key, m);
   }
   return m;
+}
+
+/** Farbe des Fahnentuchs in den Körpern für die Ansicht 3D: render3d/props3d.js ersetzt sie je Instanz durch die Teamfarbe. */
+export const FLAG_MARK = '#ff00ff';
+
+/**
+ * Körper eines Props für die Ansicht 3D (render3d/props3d.js): { S, key, yaw } in Modellrichtung, yaw = Drehung um die Hochachse in der
+ * Welt (Einzelstücke o.a, Kacheln 0: ihre Arme liegen schon an den Achsen). Das Fahnentuch trägt FLAG_MARK. Art mit vorhandenem Maler
+ * (Auto, Bank, Ballen, Busch, Fels, DELEGATE): { t, o } statt Körper, t = Typ in der Tiefenliste (6, 7, 14, 13, 2), o im Format
+ * des Malers.
+ */
+export function propSolids3d(o, season = 'summer') {
+  const f = DELEGATE_AS[o.kind];
+  if (f) return f(o);
+  const m = modelOf(o, season, o.flag ? FLAG_MARK : null);
+  return { S: m.S, key: `mp|${m.key}`, yaw: o.single ? o.a : 0 };
 }
 
 /**

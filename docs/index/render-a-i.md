@@ -78,10 +78,17 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - drawSiteTop(ctx, b, zoom) – Baustelle von oben (2D, Weltkoordinaten, Kamera-Transformation gesetzt)
 - siteWall – Farbe des Rohbaus je Zellenart und Variante (Wohnen meist Kalksandstein, manchm…
 
-## civprops.js (14 KB)
+## civprops.js (15 KB)
 - isCivSingle(kind) – Gibt es ein eigenes Modell dieser Art hier?
 - civModel(kind, v, d, season, rubble) – Körper eines Einzelstücks (Modellrichtung)
 - DELEGATE
+- DELEGATE_AS – Ansicht 3D (render3d/props3d.js): Prop mit vorhandenem Maler → { t: Typ in der…
+  - civ_car(o)
+  - burnt_car(o)
+  - bench(o)
+  - hay_bale(o)
+  - bush(o)
+  - rock(o)
 
 ## color.js (1.4 KB)
 - rgbOf(c) – Farbe als [r, g, b] (0 … 255): '#rrggbb' oder 'rgb(r,g,b)' (Ergebnis von shade/…
@@ -157,4 +164,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 - unitLift(u)
 - CAPITAL_H – Hauptstadt (Regierungsgebäude, cityhall.js): Höhe der Ebene für Lebensbalken un…
 - buildingHeight(b)
-- setIsoAt(ctx, cam, dpr, sx, sy, wx, wy, scale) – Transform: Weltpunkt (wx, wy) landet im Bildschirmpunkt (sx, sy), Boden isometr…

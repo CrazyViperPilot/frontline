@@ -27,9 +27,13 @@
 //    mehr als einem Draw-Call je Haus bzw. Werk oder abweichendem Umriss.
 // 9. Stadt (Paket „Stadthäuser 3D“): Seed 3, KI gegen KI bis --citymin Spielminuten (Standard 10), Stadt an der Hauptstadt Iso | 3D
 //    in 4 Drehungen, Sommer und Winter (<out>/stadt/); Draw-Calls, Dreiecke und Zeit „Objekte“ mit gemalten und mit 3D-Stadthäusern.
+// 10. Props (Paket „Props 3D“, --only props): Zäune, Mauern, Militär, Industrie, Zivil, Autos, Bänke, Ballen, Kisten gemalt neben 3D: echte
+//    Karten (Seed 3, 7; Land und Stadt, 0 und 10 Spielminuten) und Schauraum mit jeder Art (4 Drehungen, Winter, Nacht); Zählung
+//    „x/x Props in 3D“ (Fehler bei übrigen Billboards), Draw-Calls, Dreiecke und Zeit „Objekte“ gemalt gegen 3D. Fotos <out>/props/.
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
-//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|mvp] [--citymin 10]
+//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|props|mvp] [--citymin 10]
+//                                 [--what schau|karte] (nur mit props: nur Schauraum oder nur echte Karten)
 //                                 [--what werke|haeuser] (nur mit baukasten: nur Werke oder nur Stadthäuser fotografieren)
 // Ohne --only laufen die Teile 1 bis 6, 8 und 9; „mvp“ nur ausdrücklich.
 import { writeFile, mkdir } from 'node:fs/promises';
@@ -1473,6 +1477,310 @@ async function water() {
   for (const r of rows) console.log(`  ${r}`);
 }
 
+/**
+ * Teil „props“ (--only props, läuft auch ohne --only), Paket „Props 3D“: alle Props (mapprops.js, props.js) gemalt neben 3D.
+ * 1. Echte Karten (Seed 3 und 7, Schatten Hoch): Ausschnitt „Land“ (die meisten Props der Karte im Bild) und „Stadt“ (die meisten Autos,
+ *    Bänke und Ballen), 0 und 10 Spielminuten (KI gegen KI; die KI baut Feldstellungen), je 4 Drehungen und Winter (<out>/props/).
+ * 2. Schauraum: jede Art in Reihen zu sechs (Kachelarten als Linie mit Ecke, Tor zu und offen, Trümmer; Einzelstücke in vier Stellungen,
+ *    mit Fahnen in Teamfarbe, gestapelt, zerstört), auf einer flachen Stelle der Karte; je Reihe 4 Drehungen im Sommer, dazu Winter und Nacht (Drehung 0).
+ * Prüft: jedes Prop, Auto, jede Bank, jeder Ballen und jede Kiste im Bild wird ein 3D-Körper (Zählung „x/x Props in 3D“, sonst
+ * Prop-Billboard übrig); Draw-Calls je Bild. Misst Draw-Calls, Dreiecke und Zeit „Objekte“ mit gemalten und mit 3D-Props, Schatten Aus
+ * und Hoch (props3dOn).
+ */
+async function propsPart() {
+  const dir = join(out, 'props');
+  await mkdir(dir, { recursive: true });
+  // Zählung im Bild: Soll aus der Objektliste (isoItems), Ist aus Props3D bzw. (Busch, Fels der Karte) Nature3D
+  const count = (g) =>
+    g.run(async () => {
+      const s = window.__frontline.session();
+      const r = s.renderer;
+      s.camera.three = true;
+      let items = [];
+      const orig = r.isoItems;
+      r.isoItems = function (f) {
+        const res = orig.call(this, f);
+        items = res.items;
+        return res;
+      };
+      try {
+        r.render(s.controller.view);
+      } finally {
+        r.isoItems = orig;
+      }
+      const as = { civ_car: 'car', burnt_car: 'car', bench: 'bench', hay_bale: 'bale', bush: 'nat', rock: 'nat' }; // Props mit vorhandenem Maler
+      const want = { prop: 0, car: 0, bench: 0, bale: 0, crate: 0, nat: 0 };
+      for (const it of items) {
+        if (it.t === 16) want[as[it.o.kind] ?? 'prop']++;
+        else if (it.t === 13 || it.t === 2) want.nat++; // Busch, Fels (Natur 3D, zusammen mit denen der Karte)
+        else if (it.t === 6) want.car++;
+        else if (it.t === 7) want.bench++;
+        else if (it.t === 14) want.bale++;
+        else if (it.t === 8) want.crate++;
+      }
+      const p = r.props3d.stats();
+      const n = r.nature3d.counts;
+      return { want, got: { prop: p.prop ?? 0, car: p.car ?? 0, bench: p.bench ?? 0, bale: p.bale ?? 0, crate: p.crate ?? 0 }, calls: p.calls, tris: Math.round(p.tris), total: p.total, wantTotal: want.prop + want.car + want.bench + want.bale + want.crate, natGot: n.bush + n.rock };
+    });
+  const report = (label, c) => {
+    const bad = c.total !== c.wantTotal || c.natGot !== c.want.nat;
+    if (bad) fail++;
+    const w = c.want;
+    console.log(`Props ${label.padEnd(26)}: ${c.total}/${c.wantTotal} Props in 3D (Karte ${c.got.prop}/${w.prop}, Autos ${c.got.car}/${w.car}, Bänke ${c.got.bench}/${w.bench}, Ballen ${c.got.bale}/${w.bale}, Kisten ${c.got.crate}/${w.crate}; Büsche und Felsen ${c.natGot}/${w.nat}); ${c.calls} Draw-Calls, ${c.tris} Dreiecke${bad ? '  BILLBOARDS ÜBRIG' : ''}`);
+  };
+  // Messung: Draw-Calls, Dreiecke und Zeit „Objekte“, gemalt gegen 3D, Schatten Aus und Hoch
+  const measureProps = async (g, label) => {
+    const rows = [];
+    for (const level of ['off', 'high']) {
+      for (const on of [false, true]) {
+        const st = await g.run(({ level, on }) => {
+          const s = window.__frontline.session();
+          const r = s.renderer;
+          s.camera.three = true;
+          r.setShadows(level);
+          r.props3dOn = on;
+          for (let i = 0; i < 3; i++) r.render(s.controller.view);
+          const info = r.gl.info;
+          const orig = r.objects3d;
+          let obj = null;
+          info.autoReset = false;
+          r.objects3d = function (f) {
+            info.reset();
+            orig.call(this, f);
+            obj = { calls: info.render.calls, tris: info.render.triangles };
+          };
+          try {
+            r.render(s.controller.view);
+          } finally {
+            r.objects3d = orig;
+            info.autoReset = true;
+          }
+          return { ...obj, props: r.props3d.stats() };
+        }, { level, on });
+        const t = await timePasses(g, frames);
+        rows.push(`${level === 'off' ? 'Aus ' : 'Hoch'} ${on ? '3D    ' : 'gemalt'}: Objekte ${t.Objekte.toFixed(0)} ms, ${st.calls} Draw-Calls, ${st.tris} Dreiecke` + (on ? ` (Props: ${st.props.total} in ${st.props.calls} Formen, ${Math.round(st.props.tris)} Dreiecke)` : ''));
+      }
+    }
+    await g.run(() => {
+      const r = window.__frontline.session().renderer;
+      r.props3dOn = true;
+      r.setShadows('high');
+    });
+    console.log(`Props Messung ${label} (Zoom 1, ${frames} Bilder, Software-WebGL; „Objekte“ samt Schattenkarte):`);
+    for (const r of rows) console.log(`  ${r}`);
+  };
+  // Stellen suchen: Land = die meisten Props der Karte, Stadt = die meisten Autos, Bänke und Ballen (Fenster 1400 × 1400 Welt-px)
+  const findSpots = (g) =>
+    g.run(async () => {
+      const { propLooks } = await import('/js/render/mapprops.js');
+      const { parkDeco } = await import('/js/render/terrain.js');
+      const { fieldBales } = await import('/js/render/fields.js');
+      const s = window.__frontline.session();
+      const game = s.game;
+      const town = game.map.town;
+      const CELL = 175;
+      const cells = new Map();
+      const put = (x, y, k) => {
+        const key = `${Math.floor(x / CELL)},${Math.floor(y / CELL)}`;
+        let c = cells.get(key);
+        if (!c) cells.set(key, (c = { prop: 0, small: 0 }));
+        c[k]++;
+      };
+      for (const c of town?.cars ?? []) put(c.x, c.y, 'small');
+      for (const p of town?.parks ?? []) for (const b of parkDeco(p).benches) put(b.x, b.y, 'small');
+      for (const f of town?.fields ?? []) for (const b of fieldBales(f)) put(b.x, b.y, 'small');
+      for (const o of propLooks(game, -1, true)) put(o.x, o.y, 'prop');
+      let land = null;
+      let stadt = null;
+      for (const key of cells.keys()) {
+        const [i, j] = key.split(',').map(Number);
+        let prop = 0;
+        let small = 0;
+        for (let a = -4; a <= 3; a++) for (let b = -4; b <= 3; b++) {
+          const c = cells.get(`${i + a},${j + b}`);
+          if (c) {
+            prop += c.prop;
+            small += c.small;
+          }
+        }
+        const x = (i + 0.5) * CELL;
+        const y = (j + 0.5) * CELL;
+        if (!land || prop * 100 + small > land.score) land = { x, y, prop, small, score: prop * 100 + small };
+        if (!stadt || small > stadt.score) stadt = { x, y, prop, small, score: small };
+      }
+      return { land, stadt };
+    });
+  // Schauraum: flache Stelle suchen, jede Art aufbauen (Reihen zu sechs Arten)
+  const stageShow = (g) =>
+    g.run(async () => {
+      const { PROPS } = await import('/js/data/props.js');
+      const { BALANCE } = await import('/js/data/balance.js');
+      const { addProp, setPropState, setGateOpen, PROP_STATE, GATE } = await import('/js/game/props.js');
+      const s = window.__frontline.session();
+      const game = s.game;
+      const T = BALANCE.map.tile;
+      const rel = s.camera.relief;
+      const COLS = 6;
+      const COLW = 7;
+      const ROWH = 7;
+      const rows = [];
+      for (const group of Object.keys(PROPS.groups)) {
+        const kinds = Object.keys(PROPS.kinds).filter((k) => PROPS.kinds[k].group === group);
+        for (let i = 0; i < kinds.length; i += COLS) rows.push({ group, kinds: kinds.slice(i, i + COLS) });
+      }
+      // Abschnitte zu je 6 Reihen (1344 × 1344 Welt-px), je auf einer freien Stelle: flach, trocken, ohne Häuser, Straßen, Parks, Felder, Bäume
+      const PER = 6;
+      const W = COLS * COLW * T;
+      const H = PER * ROWH * T;
+      const town = game.map.town;
+      const deco = s.renderer.deco;
+      const clutter = (ox, oy) => {
+        const inR = (x, y, m = 120) => x > ox - m && x < ox + W + m && y > oy - m && y < oy + H + m;
+        let c = 0;
+        for (const b of town.buildings) if (inR(b.x, b.y)) c += 20;
+        for (const p of town.parks) if (inR(p.x, p.y, p.r)) c += 50;
+        for (const f of town.fields) if (inR(f.x, f.y, Math.max(f.w, f.h) / 2)) c += 50;
+        for (const r of [...town.roads, ...town.rails]) {
+          const n = Math.ceil(Math.hypot(r.x2 - r.x1, r.y2 - r.y1) / 64);
+          for (let i = 0; i <= n; i++) {
+            if (inR(r.x1 + ((r.x2 - r.x1) * i) / n, r.y1 + ((r.y2 - r.y1) * i) / n, (r.w ?? 40) + 40)) {
+              c += 30;
+              break;
+            }
+          }
+        }
+        for (const b of game.buildings) if (inR(b.x, b.y, 300)) c += 200;
+        for (const o of [...town.trees, ...deco.trees, ...deco.rocks, ...deco.bushes]) if (inR(o.x, o.y, 20)) c += 1;
+        return c;
+      };
+      const spots = [];
+      for (let k = 0; k * PER < rows.length; k++) {
+        let best = null;
+        for (let ox = 600; ox < game.map.width - W - 600; ox += 160) {
+          for (let oy = 600; oy < game.map.height - H - 600; oy += 160) {
+            if (spots.some((q) => Math.abs(q.ox - ox) < W + 200 && Math.abs(q.oy - oy) < H + 200)) continue;
+            let lo = Infinity;
+            let hi = -Infinity;
+            for (let x = ox; x <= ox + W; x += 128) {
+              for (let y = oy; y <= oy + H; y += 128) {
+                const h = rel.heightAt(x, y);
+                lo = Math.min(lo, h);
+                hi = Math.max(hi, h);
+              }
+            }
+            if (lo < -10) continue;
+            const score = hi - lo + clutter(ox, oy);
+            if (!best || score < best.score) best = { ox, oy, score, range: hi - lo, n: clutter(ox, oy) };
+          }
+        }
+        spots.push(best);
+        // Bäume, Felsen, Büsche des Abschnitts entfernen (nur Darstellung)
+        for (const list of [town.trees, deco.trees, deco.rocks, deco.bushes]) {
+          for (let i = list.length - 1; i >= 0; i--) {
+            const o = list[i];
+            if (o.x > best.ox - 80 && o.x < best.ox + W + 80 && o.y > best.oy - 80 && o.y < best.oy + H + 80) list.splice(i, 1);
+          }
+        }
+      }
+      const at = (ri, ci, cx, cy) => {
+        const sp = spots[Math.floor(ri / PER)];
+        return { x: sp.ox + (ci * COLW + cx + 0.5) * T, y: sp.oy + ((ri % PER) * ROWH + cy + 0.5) * T };
+      };
+      const add = (p, state, gate) => {
+        const i = addProp(game, p);
+        if (gate === 'open') setGateOpen(game, i, true);
+        if (state) setPropState(game, i, state);
+        return i;
+      };
+      rows.forEach((row, ri) => {
+        row.kinds.forEach((kind, ci) => {
+          const K = PROPS.kinds[kind];
+          if (K.line) {
+            const L = [[1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [5, 2], [5, 3]];
+            L.forEach(([cx, cy], i) => add({ kind, ...at(ri, ci, cx, cy), ...(K.gate && i === 2 ? { gate: GATE.closed } : {}) }, 0));
+            [[1, 5], [2, 5], [3, 5], [4, 5]].forEach(([cx, cy], i) => add({ kind, ...at(ri, ci, cx, cy), ...(K.gate && i === 2 ? { gate: GATE.open } : {}) }, i === 3 ? PROP_STATE.rubble : 0, K.gate && i === 2 ? 'open' : null));
+          } else {
+            const set = [[2, 2, 0, 0, 1], [5, 2, 1, 1, 1], [2, 5, 2, 2, Math.min(2, K.stack ?? 1)], [5, 5, 0, 3, 1]];
+            set.forEach(([cx, cy, rot, team, stack], i) => add({ kind, ...at(ri, ci, cx, cy), rot, team, ...(K.stack ? { stack } : {}), ...(K.gate && i === 1 ? { gate: GATE.open } : {}) }, i === 3 && (K.rubble || K.gate) ? PROP_STATE.rubble : 0, K.gate && i === 1 ? 'open' : null));
+          }
+        });
+      });
+      const mid = (ri) => at(ri, COLS / 2 - 0.5, 0, 3);
+      const worst = spots.reduce((a, q) => Math.max(a, q.range), 0);
+      return { rows: rows.map((r, ri) => ({ group: r.group, kinds: r.kinds, x: mid(ri).x, y: mid(ri).y })), range: worst, n: spots.reduce((a, q) => a + q.n, 0), props: game.map.props.length };
+    });
+  const what = arg('what', null); // schau: nur der Schauraum, karte: nur die echten Karten
+  for (const [seed, season] of what === 'schau' ? [[3, 'summer'], [3, 'winter']] : [[3, 'summer'], [7, 'summer'], [3, 'winter']]) {
+    const wx = season === 'winter' ? 'snow' : 'clear';
+    const g = await openGame({ seed, query: `iso=1&three=1&shadows=high&weather=${season}&wx=${wx}`, scale: 1, out });
+    try {
+      const has3D = await g.run(() => !!window.__frontline.session().renderer.props3d);
+      if (!has3D) throw new Error('Ansicht 3D nicht aktiv (WebGL oder three.js fehlt)');
+      await g.run(async () => {
+        const { AI } = await import('/js/ai/ai.js');
+        const s = window.__frontline.session();
+        s.loop.paused = true;
+        s.renderer.revealAll = true;
+        s.camera.three = true;
+        window.__ais = s.game.teams.map((_, t) => new AI(s.game, t, 'normal'));
+      });
+      const minutes = what === 'schau' ? [] : season === 'summer' ? [0, 10] : [0];
+      for (const min of minutes) {
+        if (min) {
+          await g.run((min) => {
+            const s = window.__frontline.session();
+            while (s.game.time < min * 60) {
+              for (const a of window.__ais) a.update(0.05);
+              s.game.update(0.05);
+            }
+          }, min);
+        }
+        const spots = await findSpots(g);
+        const tag = `seed${seed}-${season === 'winter' ? 'winter' : 'sommer'}-min${min}`;
+        console.log(`Props ${tag}: Land ${spots.land.prop} Props der Karte + ${spots.land.small} Autos/Bänke/Ballen, Stadt ${spots.stadt.prop} + ${spots.stadt.small} im Fenster 1400²`);
+        for (const [name, sp] of [['land', spots.land], ['stadt', spots.stadt]]) {
+          for (let rot = 0; rot < 4; rot++) {
+            if (min && rot) continue;
+            await look(g, sp.x, sp.y, rot, 1);
+            await mvpPair(g, dir, tag, `${name}-drehung${rot}`);
+            report(`${tag} ${name} d${rot}`, await count(g));
+          }
+          if (season === 'summer' && seed === 3) {
+            await look(g, sp.x, sp.y, 0, 1);
+            await measureProps(g, `${name} (Seed ${seed}, ${min} min)`);
+          }
+        }
+      }
+      if (seed !== 3 || what === 'karte') continue;
+      const show = await stageShow(g);
+      const sTag = season === 'winter' ? 'schau-winter' : 'schau';
+      console.log(`Props Schauraum ${season}: ${show.rows.length} Reihen, ${show.props} Props, Gelände ${show.range.toFixed(0)} px Höhenunterschied, Störpunkte im Abschnitt: ${show.n}`);
+      for (let ri = 0; ri < show.rows.length; ri++) {
+        const row = show.rows[ri];
+        for (let rot = 0; rot < (season === 'winter' ? 1 : 4); rot++) {
+          await look(g, row.x, row.y, rot, 1.1);
+          await mvpPair(g, dir, sTag, `${String(ri).padStart(2, '0')}-${row.group}-drehung${rot}`);
+          report(`${sTag} ${ri} ${row.group} d${rot}`, await count(g));
+        }
+      }
+      if (season !== 'summer') continue;
+      // Nacht an jeder Reihe (Drehung 0)
+      await g.run(() => (window.__frontline.session().renderer.mood = 'night'));
+      for (let ri = 0; ri < show.rows.length; ri++) {
+        await look(g, show.rows[ri].x, show.rows[ri].y, 0, 1.1);
+        await mvpPair(g, dir, 'schau-nacht', `${String(ri).padStart(2, '0')}-${show.rows[ri].group}`);
+      }
+      await g.run(() => (window.__frontline.session().renderer.mood = null));
+      // Messung im Schauraum (Zoom 1, mittlere Reihe)
+      await look(g, show.rows[2].x, show.rows[2].y, 0, 1);
+      await measureProps(g, 'Schauraum');
+    } finally {
+      errors.push(...g.errors);
+      await g.close();
+    }
+  }
+}
+
 try {
   if (!only || only === 'kamera') await camera();
   if (!only || only === 'vergleich') await compare();
@@ -1485,6 +1793,7 @@ try {
   if (!only || only === 'wasser') await water();
   if (only === 'mvp') await mvp();
   if (!only || only === 'natur') await nature();
+  if (!only || only === 'props') await propsPart();
 } catch (e) {
   console.error(`Abbruch: ${e.message}`);
   fail++;

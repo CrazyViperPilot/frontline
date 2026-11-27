@@ -599,3 +599,76 @@ export function drawCrateTop(ctx, x, y, s = 16, zoom = 1, glow = 0) {
   ctx.restore();
   return true;
 }
+
+// ---------- Ansicht 3D (render3d/props3d.js) ----------
+// Dieselben Modelle als ganze Körperlisten (nicht je Blickrichtung), Stellung wie gemalt: Maßstab CAR_ISO beim Auto, sonst 1.
+
+/** Auto: { key, S, yaw, k, charred } aus dem Modell „top“ (beide Seiten, beide Enden); Farbe und Form aus der Lage wie drawMapCarIso. */
+export function carLook3d(c, season = 'summer') {
+  const L = carLook(c);
+  const col = colorOf(c);
+  const sn = seasonKey(season);
+  return { key: `car|${L.kind}|${col}|${sn}`, S: carModel(L.kind, col, 'top', sn).S, yaw: L.angle, k: CAR_ISO, charred: !!c.charred };
+}
+
+/** Parkbank: { key, S, yaw, k }. */
+export function benchLook3d(b, season = 'summer') {
+  const sn = seasonKey(season);
+  return { key: `bench|${sn}`, S: benchModel('top', sn).S, yaw: benchYaw(b), k: 1 };
+}
+
+/** Ballen: beide Stirnseiten mit Ringen (gemalt nur die vordere). */
+export function baleLook3d(b, season = 'summer') {
+  const sn = seasonKey(season);
+  const S = [...baleModel(b.kind, '+', sn).S, ...baleModel(b.kind, '-', sn).S.slice(1)];
+  return { key: `bale|${b.kind}|${sn}`, S, yaw: b.a, k: 1 };
+}
+
+let crate3dSolids = null;
+
+/**
+ * Versorgungskiste als Körper in Einheiten einer Kiste mit 16 Welt-Pixeln Kantenlänge (Maßstab s / 16): Rahmenleisten an den Ecken,
+ * Deckel mit Rand und Füllung, zwei Spanngurte (über den Deckel und die Seiten entlang y), Schablonenstreifen an den Seiten entlang x,
+ * gelbe Plombe.
+ */
+export function crateSolids3d() {
+  if (crate3dSolids) return crate3dSolids;
+  const A = CA;
+  const H = CH;
+  const fr = 1.35;
+  const i = A - fr;
+  const S = [box(-A, A, -A, A, 0, H, CRATE)];
+  for (const sx of [-1, 1]) {
+    for (const sy of [-1, 1]) {
+      const x0 = sx * (A - fr / 2) - fr / 2 - 0.06;
+      const y0 = sy * (A - fr / 2) - fr / 2 - 0.06;
+      S.push(box(x0, x0 + fr + 0.12, y0, y0 + fr + 0.12, 0, H, BATTEN));
+    }
+  }
+  S.push(box(-A, A, -A, A, H, H + 0.3, BATTEN), box(-i, i, -i, i, H + 0.3, H + 0.45, CRATE_LID));
+  for (const [a0, a1] of [[-3.7, -2.35], [2.35, 3.7]]) {
+    S.push(box(a0, a1, -A, A, H + 0.45, H + 0.62, STRAP));
+    for (const sy of [-1, 1]) {
+      S.push(box(a0, a1, Math.min(sy * A, sy * (A + 0.12)), Math.max(sy * A, sy * (A + 0.12)), 0, H, STRAP, { noLine: true }));
+      S.push(fine(box(a0, a1, Math.min(sy * (A + 0.12), sy * (A + 0.2)), Math.max(sy * (A + 0.12), sy * (A + 0.2)), 4.6, 5.6, '#8c8f86', { noLine: true })));
+    }
+  }
+  for (const sx of [-1, 1]) {
+    for (const [w, h0] of [[3.4, 7.0], [2.4, 5.5], [3.0, 4.0]]) {
+      S.push(fine(box(Math.min(sx * A, sx * (A + 0.1)), Math.max(sx * A, sx * (A + 0.1)), -w, w, h0, h0 + 0.75, STENCIL, { noLine: true })));
+    }
+  }
+  S.push(box(-1.1, 1.1, -1.1, 1.1, H + 0.62, H + 1.15, SEAL));
+  crate3dSolids = S;
+  return S;
+}
+
+/** Schimmer unter einer Kiste am Boden (glow 0 … 1): bleibt gemalt, auch wenn die Kiste ein Mesh ist. */
+export function drawCrateGlow(ctx, cam, x, y, s, glow) {
+  if (!(glow > 0)) return;
+  const p = cam.worldToScreen(x, y);
+  ctx.fillStyle = `rgba(232,184,48,${(0.22 * glow).toFixed(3)})`;
+  ctx.beginPath();
+  ctx.ellipse(p.x, p.y, s * 1.4 * cam.zoom, s * 0.7 * cam.zoom, 0, 0, TAU);
+  ctx.fill();
+}

@@ -289,3 +289,13 @@ export const DELEGATE = {
     top: (ctx, o, zoom, season) => drawRockTop(ctx, asRock(o), season, zoom),
   },
 };
+
+/** Ansicht 3D (render3d/props3d.js): Prop mit vorhandenem Maler → { t: Typ in der Tiefenliste, o: Objekt im Format des Malers }. */
+export const DELEGATE_AS = {
+  civ_car: (o) => ({ t: 6, o: asCar(o, o.rubble) }),
+  burnt_car: (o) => ({ t: 6, o: asCar(o, true) }),
+  bench: (o) => ({ t: 7, o: asBench(o) }),
+  hay_bale: (o) => ({ t: 14, o: asBale(o) }),
+  bush: (o) => ({ t: 13, o: asBush(o) }),
+  rock: (o) => ({ t: 2, o: asRock(o) }),
+};

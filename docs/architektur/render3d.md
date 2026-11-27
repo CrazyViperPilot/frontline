@@ -12,6 +12,8 @@ Licht und Schatten oder Achsen und Kamera der Ansicht 3D geht. Plan und Stand de
   malt (Rotoren, Flammen), kommt über eine 2D-Zwischenleinwand obenauf.
 - Einheiten (`unit3d`), Bäume (`tree3d`), Häuser und Werke (`house3d`) fragt `isoObjects` nur in „Objekte“; `trees3dOn`, `towns3dOn`,
   `works3dOn` schalten auf gemalt (Dampf der Werke: `drawWorksSteam`). Einheit mit Mesh: gemalt nur Rotoren, Nachbrenner; Schatten wirft das Mesh.
+- Props (t 6, 7, 8, 14, 16: Autos, Bänke, Kisten, Ballen, Props der Karte) über `prop3d(t, o)` und `crate3d` (`props3d.js`, Schalter `props3dOn`); Busch und Fels
+  der Karte gehen über `nature3d`. Zäune, Mauern: je Kachel eine Instanz (Arme schon in der Kachel verbunden); Fahnentuch: Teamfarbe der Instanz.
 - WebGL-Leinwand nicht im DOM, ohne Kantenglättung.
 
 ## Licht und Schatten (`sun3d.js`)

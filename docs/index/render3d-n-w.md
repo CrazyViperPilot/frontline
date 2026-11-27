@@ -19,7 +19,21 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - stats() – Sichtbare Sätze (= Draw-Calls ohne Schattenkarte) je Art und Zahl der Büsche, F…
   - dispose()
 
-## renderer3d.js (15 KB)
+## props3d.js (11 KB)
+- formsOf(key, S, charred) – Teilformen eines Körpersatzes: undurchsichtige Körper (mit Fahnentuch als Team-…
+- class Props3D
+  - constructor()
+  - begin(light) – Bildanfang: Sonne (Welt, z oben)
+  - matOf(alpha, team)
+  - setOf(f, cap)
+  - rgbOfFlag(hex)
+  - add(m, x, y, h, flag, art) – Modell m ({ key, S, yaw, k = 1, charred }) am Weltpunkt (x, y) auf Höhe h, um y…
+  - crate(x, y, s, base, h) – Versorgungskiste (Kantenlänge s Welt-px) am Weltpunkt, base über der Geländehöh…
+  - end() – Bildende: Zahl der Instanzen je Satz setzen, leere verstecken
+  - stats() – Props im Bild je Art und sichtbare Sätze (= Draw-Calls ohne Schattenkarte), Dre…
+  - dispose()
+
+## renderer3d.js (17 KB)
 - class Renderer3D
   - constructor(canvas, game, camera, team, gl, opts) – gl: fertiger THREE.WebGLRenderer (make3D)
   - setShadows(level) – Schattenstufe 'off' | 'mid' | 'high' (BALANCE.shadows3d), sofort wirksam; Aus:…

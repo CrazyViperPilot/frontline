@@ -9,6 +9,7 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `units3d.js` – Einheiten als Meshes (Wanne, Turm, stufenlose Drehung). `Units3D`
 - `trees3d.js` – Bäume als InstancedMesh je Form, grob fern. `Trees3D`, `treeGeometry`
 - `nature3d.js` – Büsche, Felsen, Tiere je Form instanziert (`bush3d` …, `nature3dOn`). `Nature3D`
+- `props3d.js` – Props der Karte, Autos, Bänke, Ballen, Kisten je Form instanziert (`prop3d`, `props3dOn`). `Props3D`, `formsOf`
 - `sun3d.js` – Sonne, Schattenkarte über dem Ausschnitt, Schattenfänger, Stufen. `Sun3D`, `CATCH`, `CAST`
 - `billboards.js` – gemalte Bilder (`blit`) als Vierecke aus einem Atlas (≤ 4 Seiten). `Billboards`
 - `camera3d.js` – three-Kamera aus `Camera`: `makeWorldRoot`, `syncIsoCamera`, `projectWorld`, `clipDepth`

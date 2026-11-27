@@ -824,7 +824,7 @@ export const FAMILIES = [
   },
   {
     name: 'big',
-    has: (b) => b.kind === 'hall',
+    has: (b) => b.kind === 'cityhall',
     key: () => 'hall',
     geometry: () => hallGeometry(),
     team: true,

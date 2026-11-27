@@ -234,7 +234,7 @@ export class Renderer3D extends Renderer {
       const on = o.kind === 'town' ? this.towns3dOn : o.kind === 'uni' ? this.big3dOn : hasMapTown3d(o) ? this.maptown3dOn : this.works3dOn;
       return on && this.towns3d.add(o, cam.pinned ?? (relief ? relief.displayAt(o.x, o.y) : 0));
     };
-    this.hall3d = !this.big3dOn ? null : (b, color) => this.towns3d.add({ kind: 'hall', x: b.x, y: b.y, color }, cam.pinned ?? (relief ? relief.displayAt(b.x, b.y) : 0));
+    this.hall3d = !this.big3dOn ? null : (b, color) => this.towns3d.add({ kind: 'cityhall', x: b.x, y: b.y, color }, cam.pinned ?? (relief ? relief.displayAt(b.x, b.y) : 0));
     this.mil3d = !this.mil3dOn ? null : (b, color) => isMilBuilding(b) && this.towns3d.add({ kind: 'mil', x: b.x, y: b.y, b, color }, cam.pinned ?? (relief ? relief.displayAt(b.x, b.y) : 0));
     this.fort3d = !this.mil3dOn ? null : (h) => {
       const mask = worksMask(h);

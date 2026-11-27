@@ -234,7 +234,7 @@ test('Gebäudefamilien: Stadthäuser, Werke und Großbauten (und Kartenstadt) te
   assert.equal(big.key(body), bigKey('barracks', 3));
   assert.equal(big.geometry(body), bigGeometry('barracks', 3));
   assert.ok(uni.has({ kind: 'uni' }) && !uni.at && uni.key({ kind: 'uni', level: 2 }) === uniKey(2));
-  assert.ok(hall.has({ kind: 'hall' }) && quarter.has({ kind: 'quarter' }) && quarter.at({ src: plan }) === plan);
+  assert.ok(hall.has({ kind: 'cityhall' }) && !hall.has({ kind: 'hall' }) && quarter.has({ kind: 'quarter' }) && quarter.at({ src: plan }) === plan);
   assert.equal(quarter.key({ turn: 1, mask: 5 }), quarterKey(1, 5));
   assert.ok([big, uni, hall, quarter].every((f) => f.team));
   for (const f of FAMILIES.slice(0, 6)) assert.ok([town, works, big, uni, hall, quarter].includes(f)); // „mil“: test/mil3d.test.js

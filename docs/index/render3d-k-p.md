@@ -122,4 +122,6 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - dispose()
 
 ## props3d.js (11 KB)
+- VS
+- FS
 - formsOf(key, S, charred) – Teilformen eines Körpersatzes: undurchsichtige Körper (mit Fahnentuch als Team-…

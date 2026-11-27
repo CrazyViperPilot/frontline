@@ -1,8 +1,11 @@
-# Symbol-Index render (Teil 2 von 4, ground.js bis mapprops.js)
+# Symbol-Index render (Teil 2 von 4, ground.js bis mappreview.js)
 
 Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `js/render/`. Pfade relativ zu `js/render/`.
 
 ## ground.js (Fortsetzung)
+- FS_FOG – Kriegsnebel (seit v5.49 gemalt): Unerforschtes unter einer dunklen Wolkendecke…
+- NOISE_N
+- noiseTexture() – Kachelbare Rauschtextur (NOISE_N², RGBA), fester Startwert
 - getGround() – Gemeinsamer WebGL-Boden (ein Kontext für Spiel und Editor) oder null, wenn WebG…
 
 ## groundtex.js (4.3 KB)
@@ -176,7 +179,3 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
 ## mappreview.js (3.3 KB)
 - drawMapPreview(canvas, map) – Zeichnet die Karte `map` in das Canvas `canvas` (ganze Fläche)
 - drawPowerLines(ctx, buildings, lw) – Leitungen zwischen Strommasten derselben Linie (Kartenreihenfolge) als dünne Li…
-
-## mapprops.js (16 KB)
-- propLooksOf(props, st, version) – Aussehen aller sichtbaren Props: [{ i, x, y, kind, mask, along, gate, rubble, v…
-- forgetPropLooks(props) – Zwischengespeichertes Aussehen und Zellindex einer Prop-Liste verwerfen (Editor…

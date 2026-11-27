@@ -104,6 +104,10 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
   meisten Militärgebäuden der eigenen Seite (`seed3-militaer-*`), ein ausgebautes Haus der Karte (`seed3-ausbau-*`) und Messung gemalt / 3D (`renderer.mil3dOn`). Node-Test: `test/mil3d.test.js`.
   `--only baukasten --what fliegerhorst`: Stellplatz (Stufe 1 offen, 2 Überdachung, 3 Shelter), Tower, Kerosintank und Munitionslager je Stufe gemalt + 4 Drehungen, Jahreszeit und Tageszeit,
   Teamfarben (`fliegerhorst-*`); `--only stadt --citymin 20` zusätzlich Ausschnitt mit den meisten Bausteinen (`seed3-fliegerhorst-*`) und Messung gemalt / 3D (`renderer.airbase3dOn`). Node-Test: `test/airbase3d.test.js`.
+  `--only bruecke`: Brücken und Furtstangen gemalt neben 3D (Seed 3 Sommer und Winter, Seed 7, feste Karte East Europe Railway mit Eisenbahnbrücke; `--karte seed3,seed7,fest`):
+  drei Panzer auf der Fahrbahn, 4 Drehungen, Nacht, Zoom 0,5/1,6, beschädigt, zerstört, Wiederaufbau, Furt (`.smoke/3d/bruecke/`); Prüfschritte „gleiche Menge“ (Iso malt so viele
+  Brücken und Furtstangen wie 3D Einträge und Instanzen hat), „Einheiten auf der Fahrbahn“ (Mesh auf `b.deckH`), Messung gemalt gegen 3D (`renderer.bridge3dOn`, Schatten Aus/Hoch).
+  Node-Test: `test/bridge3d.test.js`.
 - `node tools/smoke-3d.mjs --only mvp` (Paket „MVP-Messung“, nur ausdrücklich, gut 10 min): Rundgang je Gerät desktop, tablet, phone
   (Ansicht umschalten, Drehungen, Zoom, Wald, Hang, Winter; Fotos alt/neu nebeneinander nach `.smoke/3d/mvp/`), Auswahl per Klick/Tippen
   und Befehl in 3D (Fehler, wenn nicht), Bildrate Iso und 3D Aus/Mittel/Hoch nach `--gametime` Spielminuten Zeitraffer; Zahlen auch in

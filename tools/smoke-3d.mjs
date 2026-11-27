@@ -40,13 +40,15 @@
 //    die Messung gemalt / 3D (Draw-Calls, Dreiecke, Zeit „Objekte“, renderer.mil3dOn).
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
-//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|mvp] [--citymin 10]
+//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|bruecke|mvp] [--citymin 10]
 //                                 [--what schau|karte] (nur mit props: nur Schauraum oder nur echte Karten)
 //                                 [--what werke|haeuser|grossbau|mil|fliegerhorst|kartenstadt] (nur mit baukasten: nur Werke, Stadthäuser, Großbauten, Militärgebäude, Fliegerhorst oder Kartenstadt)
 // 11. Kartenstadt (Paket „Kartenstadt 3D“): im Teil baukasten (--what kartenstadt) jede Art der Kartenstadt gemalt | 3D (4 Drehungen, Stimmungen);
 //    Teil karte (--only karte [--karte seed3,seed7,fest]): Ausschnitte echter Karten (Seed 3, 7, East Europe Railway) Iso | 3D (Iso erst, wenn alle gemalten
 //    Bilder fertig sind), gleiche Menge Gebäude Iso und 3D, Messung gemalt gegen 3D (<out>/karte/).
-// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte und props; „mvp“ nur ausdrücklich.
+// 12. Brücken (Paket „Brücken 3D“, --only bruecke [--karte seed3,seed7,fest]): Brücken und Furtstangen gemalt | 3D (4 Drehungen, Nacht, Zoom, beschädigt,
+//    zerstört, Wiederaufbau, Furt, Eisenbahnbrücke der festen Karte), Einheiten auf der Fahrbahn, gleiche Menge, Messung gemalt gegen 3D (<out>/bruecke/).
+// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte, props und bruecke; „mvp“ nur ausdrücklich.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { openGame, measureFps, DEVICES } from './smoke.mjs';
@@ -2785,6 +2787,233 @@ async function karte() {
   }
 }
 
+/**
+ * Teil „bruecke“ (--only bruecke, läuft auch ohne --only), Paket „Brücken 3D“: Brücken und Furtstangen (render/bridge.js) gemalt neben 3D.
+ * Karten mit Fluss: Seed 3 (Sommer, Winter), Seed 7, feste Karte East Europe Railway (Eisenbahnbrücke, Sommer, Winter); Spiel angehalten,
+ * Schatten Hoch. Je Karte die Brücke nächst der Hauptstadt (feste Karte: die Eisenbahnbrücke) mit drei Panzern auf der Fahrbahn, Iso | 3D (<out>/bruecke/): 4 Drehungen, Seed 3
+ * Sommer zusätzlich Nacht, Zoom 0,5 und 1,6, beschädigt, zerstört, im Wiederaufbau, die Furt mit den Furtstangen (4 Drehungen).
+ * Prüft: (1) gleiche Menge: Brücken und Furtstangen, die Iso malt (alle gemalten Bilder fertig) = Zahl der Einträge der Objektliste in 3D
+ * = Zahl der Instanzen von Bridge3D (sonst Fehler); (2) Einheiten auf der Brücke stehen auf der Fahrbahn: Mesh der Einheit auf b.deckH
+ * (game.groundHeight), Unterkante nicht unter der Fahrbahn, Brücke selbst auf derselben Höhe; (3) Messung Draw-Calls, Dreiecke und Zeit
+ * „Objekte“ gemalt gegen 3D, Schatten Aus und Hoch (bridge3dOn).
+ */
+async function bridgePart() {
+  const dir = join(out, 'bruecke');
+  await mkdir(dir, { recursive: true });
+  const runs = [
+    ['seed3', 3, false, 'summer'],
+    ['seed3', 3, false, 'winter'],
+    ['seed7', 7, false, 'summer'],
+    ['fest', 3, true, 'summer'],
+    ['fest', 3, true, 'winter'],
+  ];
+  const want = arg('karte', null)?.split(','); // --karte seed3,fest: nur diese Karten (Standard alle)
+  for (const [name, seed, fixed, season] of runs) {
+    if (want && !want.includes(name)) continue;
+    const tag = `${name}-${season}`;
+    const wx = season === 'winter' ? 'snow' : 'clear';
+    const g = await openGame({ seed, query: `iso=1&three=1&shadows=high&river=1&weather=${season}&wx=${wx}`, scale: 1, out, start: !fixed });
+    try {
+      if (fixed) {
+        await g.page.evaluate(() => localStorage.setItem('frontline-kartenwahl', 'fest:east-europe-railway'));
+        await g.page.reload();
+        await g.page.waitForTimeout(1000);
+        await g.press('button.primary');
+        await g.page.waitForFunction(() => window.__frontline?.session()?.game);
+        await g.page.waitForTimeout(1500);
+      }
+      const spot = await g.run(async () => {
+        const { fordPosts } = await import('/js/render/bridge.js');
+        const { bridgeUnder } = await import('/js/game/river.js');
+        const s = window.__frontline.session();
+        s.loop.paused = true;
+        s.renderer.revealAll = true;
+        s.camera.three = true;
+        const game = s.game;
+        const hq = game.buildings.find((b) => b.main && b.team === 0) ?? { x: game.map.width / 2, y: game.map.height / 2 };
+        const bs = [...(game.bridges ?? [])].sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y));
+        const b = bs.find((v) => v.src?.rail) ?? bs[0]; // feste Karte: die Eisenbahnbrücke
+        if (!b) return null;
+        // drei Panzer auf der Fahrbahn (30, 50 und 70 % der Wasserstrecke)
+        const ids = [];
+        for (const f of [0.3, 0.5, 0.7]) {
+          const u = b.span[0] + (b.span[1] - b.span[0]) * f;
+          const t = game.spawnUnit('tank', 0, b.x1 + Math.cos(b.angle) * u, b.y1 + Math.sin(b.angle) * u);
+          if (t) ids.push(t.id);
+        }
+        // Furt mit den meisten Furtstangen
+        const posts = fordPosts(game.map, game.relief);
+        let ford = null;
+        for (const f of game.map.fords ?? []) {
+          const n = posts.filter((p) => Math.hypot(p.x - f.x, p.y - f.y) < f.r * 1.2).length;
+          if (!ford || n > ford.n) ford = { x: f.x, y: f.y, n };
+        }
+        const on = ids.filter((id) => {
+          const u = game.entities.get(id);
+          return bridgeUnder(game, u.x, u.y);
+        }).length;
+        return { x: b.x, y: b.y, id: b.id, len: Math.round(b.len), rail: !!b.src?.rail, ids, onBridge: on, bridges: game.bridges.length, posts: posts.length, ford };
+      });
+      if (!spot) throw new Error(`${tag}: keine Brücke`);
+      console.log(`Brücke ${tag}: ${spot.bridges} Brücken, nächste ${spot.len} px${spot.rail ? ' (Eisenbahn)' : ''}, ${spot.posts} Furtstangen, ${spot.onBridge}/${spot.ids.length} Panzer auf der Fahrbahn`);
+      if (!spot.ids.length || spot.onBridge < spot.ids.length) fail++;
+      // Einheiten aus- und einblenden (eine zerstörte Brücke trägt keine), Zustand der Brücke setzen
+      const units = (alive) =>
+        g.run(({ ids, alive }) => {
+          const game = window.__frontline.session().game;
+          for (const id of ids) {
+            const u = game.entities.get(id);
+            if (u) u.alive = alive;
+          }
+        }, { ids: spot.ids, alive });
+      const setBridge = (o) =>
+        g.run(({ id, o }) => {
+          const b = window.__frontline.session().game.bridges.find((v) => v.id === id);
+          if ('hpFrac' in o) b.hp = b.maxHp * o.hpFrac;
+          Object.assign(b, { ...o, hpFrac: undefined });
+          delete b.hpFrac;
+        }, { id: spot.id, o });
+      for (let rot = 0; rot < 4; rot++) {
+        await look(g, spot.x, spot.y, rot, 1);
+        await mvpPair(g, dir, tag, `intakt-drehung${rot}`);
+      }
+      if (name === 'seed3' && season === 'summer') {
+        await g.run(() => (window.__frontline.session().renderer.mood = 'night'));
+        await look(g, spot.x, spot.y, 0, 1);
+        await mvpPair(g, dir, tag, 'intakt-nacht');
+        await g.run(() => (window.__frontline.session().renderer.mood = null));
+        for (const zoom of [0.5, 1.6]) {
+          await look(g, spot.x, spot.y, 0, zoom);
+          await mvpPair(g, dir, tag, `intakt-zoom${zoom}`);
+        }
+        await setBridge({ hpFrac: 0.4 });
+        await look(g, spot.x, spot.y, 0, 1);
+        await mvpPair(g, dir, tag, 'beschaedigt');
+        await setBridge({ hpFrac: 1 });
+        // zerstört und im Wiederaufbau (ohne Einheiten: sie stünden im Wasser)
+        await units(false);
+        await setBridge({ broken: true });
+        for (const rot of [0, 2]) {
+          await look(g, spot.x, spot.y, rot, 1);
+          await mvpPair(g, dir, tag, `zerstoert-drehung${rot}`);
+        }
+        await setBridge({ rebuild: { team: 0, progress: 0.5 } });
+        await look(g, spot.x, spot.y, 0, 1);
+        await mvpPair(g, dir, tag, 'wiederaufbau');
+        await setBridge({ broken: false, rebuild: null });
+        await units(true);
+      }
+      if (spot.ford?.n) {
+        await units(false);
+        for (const rot of name === 'seed3' && season === 'summer' ? [0, 1, 2, 3] : [0]) {
+          await look(g, spot.ford.x, spot.ford.y, rot, 1.6);
+          await mvpPair(g, dir, tag, `furt-drehung${rot}`);
+        }
+        await units(true);
+      }
+      await look(g, spot.x, spot.y, 0, 1);
+      // 1. gleiche Menge und 2. Einheiten auf der Fahrbahn
+      const same = await g.run(async ({ ids, id }) => {
+        const s = window.__frontline.session();
+        const r = s.renderer;
+        const { spriteMissed } = await import('/js/render/spritecache.js');
+        const origGround = r.isoGround;
+        const origItems = r.isoItems;
+        const frame = (three) => {
+          s.camera.three = three;
+          r.bridge3dOn = true;
+          let st = { bridges: 0, t17: 0, t12: 0 };
+          r.isoGround = function (f) {
+            st.bridges = (f.g.bridges ?? []).filter((b) => f.inRect(b.x, b.y, b.len / 2 + 260)).length;
+            return origGround.call(this, f);
+          };
+          r.isoItems = function (f) {
+            const res = origItems.call(this, f);
+            st.t17 = res.items.filter((it) => it.t === 17).length;
+            st.t12 = res.items.filter((it) => it.t === 12).length;
+            return res;
+          };
+          try {
+            for (let i = 0; i < 3 || (spriteMissed() && i < 150); i++) {
+              st = { bridges: 0, t17: 0, t12: 0 };
+              r.render(s.controller.view);
+            }
+          } finally {
+            r.isoGround = origGround;
+            r.isoItems = origItems;
+          }
+          return { ...st, missed: spriteMissed() };
+        };
+        const iso = frame(false);
+        const d3 = frame(true);
+        const stats = r.bridges3d.stats();
+        // Einheiten: Mesh auf der Fahrbahn
+        const game = s.game;
+        const b = game.bridges.find((v) => v.id === id);
+        const { unitLift } = await import('/js/render/iso.js');
+        const units = ids.map((uid) => {
+          const u = game.entities.get(uid);
+          const e = r.units3d.pool.get(uid);
+          const bb = e.hull.geometry.boundingBox;
+          // wie überall in 3D und Iso: Einheit um unitLift über dem Boden (hier: der Fahrbahn)
+          return { z: e.hull.position.z - unitLift(u), foot: e.hull.position.z + bb.min.z * e.hull.scale.z - unitLift(u), visible: e.hull.visible, ground: game.groundHeight(u) };
+        });
+        const water = (await import('/js/game/relief.js')).RELIEF.water;
+        return { iso, d3, stats, units, deck: b.deckH, meshTop: r.bridges3d.entries.get(b).mesh.instanceMatrix.array[14] + 0, water };
+      }, { ids: spot.ids, id: spot.id });
+      const sameOk = same.iso.bridges === same.d3.t17 && same.d3.t17 === same.stats.bridges && same.iso.t12 === same.d3.t12 && same.d3.t12 === same.stats.posts && !same.iso.missed && same.stats.bridges > 0;
+      if (!sameOk) fail++;
+      console.log(`Brücke ${tag}: gleiche Menge Iso ${same.iso.bridges} Brücken und ${same.iso.t12} Furtstangen gemalt (fehlende Bilder: ${same.iso.missed}), 3D Liste ${same.d3.t17} und ${same.d3.t12}, Instanzen ${same.stats.bridges} und ${same.stats.posts}${sameOk ? '' : '  FEHLER'}`);
+      const stands = same.units.every((u) => u.visible && Math.abs(u.z - same.deck) < 0.01 && Math.abs(u.ground - same.deck) < 0.01 && u.foot >= same.deck - 0.5) && Math.abs(same.meshTop - same.water) < 1e-6;
+      if (!stands) fail++;
+      console.log(`Brücke ${tag}: Einheiten auf der Fahrbahn: Mesh z (ohne unitLift) ${same.units.map((u) => u.z.toFixed(1)).join(', ')}, Unterkante ${same.units.map((u) => u.foot.toFixed(1)).join(', ')}, Fahrbahn b.deckH ${same.deck.toFixed(1)}${stands ? '' : '  FEHLER'}`);
+      if (name !== 'seed3' || season !== 'summer') continue;
+      // 3. Messung: Draw-Calls, Dreiecke, Zeit „Objekte“, gemalt gegen 3D, Schatten Aus und Hoch
+      const rows = [];
+      for (const level of ['off', 'high']) {
+        for (const on of [false, true]) {
+          const st = await g.run(({ level, on }) => {
+            const s = window.__frontline.session();
+            const r = s.renderer;
+            s.camera.three = true;
+            r.setShadows(level);
+            r.bridge3dOn = on;
+            for (let i = 0; i < 3; i++) r.render(s.controller.view);
+            const info = r.gl.info;
+            const orig = r.objects3d;
+            let obj = null;
+            info.autoReset = false;
+            r.objects3d = function (f) {
+              info.reset();
+              orig.call(this, f);
+              obj = { calls: info.render.calls, tris: info.render.triangles };
+            };
+            try {
+              r.render(s.controller.view);
+            } finally {
+              r.objects3d = orig;
+              info.autoReset = true;
+            }
+            return { ...obj, br: r.bridges3d.stats() };
+          }, { level, on });
+          const t = await timePasses(g, frames);
+          rows.push(`${level === 'off' ? 'Aus ' : 'Hoch'} ${on ? '3D    ' : 'gemalt'}: Objekte ${t.Objekte.toFixed(0)} ms, ${st.calls} Draw-Calls, ${st.tris} Dreiecke` + (on ? ` (Brücken: ${st.br.bridges} und ${st.br.posts} Furtstangen in ${st.br.calls} Netzen, ${st.br.tris} Dreiecke)` : ''));
+        }
+      }
+      await g.run(() => {
+        const r = window.__frontline.session().renderer;
+        r.bridge3dOn = true;
+        r.setShadows('high');
+      });
+      console.log(`Brücke Messung ${tag} (Zoom 1, ${frames} Bilder, Software-WebGL; „Objekte“ samt Schattenkarte):`);
+      for (const r of rows) console.log(`  ${r}`);
+    } finally {
+      errors.push(...g.errors);
+      await g.close();
+    }
+  }
+}
+
 try {
   if (!only || only === 'kamera') await camera();
   if (!only || only === 'vergleich') await compare();
@@ -2799,6 +3028,7 @@ try {
   if (!only || only === 'natur') await nature();
   if (!only || only === 'karte') await karte();
   if (!only || only === 'props') await propsPart();
+  if (!only || only === 'bruecke') await bridgePart();
 } catch (e) {
   console.error(`Abbruch: ${e.message}`);
   fail++;

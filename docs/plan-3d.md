@@ -448,6 +448,12 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   40 % der Höhe; Paket „Balken und Schilder“, dort `camera.heightPx`). (3) *Durchlauf „Boden“* (Straßen, Wege, Felder, Höfe, Bodenmarken, Kriegsnebel-Rand): liegt über
   `isoMatrix` richtig auf dem Boden, gemalte Höhen darin (Bordsteine, Zäune der Höfe, Schatten) nehmen weiter 30° (Paket „Straßen und Wege 3D“ der anderen Sitzung).
   (4) *Effekte* im Durchlauf „Effekte“ sind 3D, ihre gemalten Bodenteile (`isoFxGround`) liegen richtig. (5) Editor: unverändert (eigene Kamera ohne three; „Editor in 3D“).
+- Balken und Schilder: gebaut. Alle Höhen über Einheiten und Gebäuden laufen über `camera.heightPx(h)` statt `h · zoom` (bei 30° bitgleich wie vorher):
+  `isoview.js` (Lebensbalken, Pflegezeichen, Stern, Gebäudebalken, Versorgung, Besatzungsschild, Brückenbalken mit `heightK`, Rauch und Minen), `relief.js`
+  `uprightAtWorld` (Zonen-, Flaggen- und Hot-Zone-Schilder), `citylayer.js` (Stadtschilder, Baufortschritt), `iso.js` `setIsoGround` (feste Höhe von `pin`),
+  `isoitems.js` und `unitpaint.js` (Flieger, Rotoren, Nachbrenner, 2D-Symbole), `renderer3d.js` (Minen). `Vector3.project` braucht es nicht: `worldToScreen`
+  mit `heightPx` ist laut `test/freecam.test.js` schon auf 0,01 px gleich der three-Kamera. Wache im selben Test (keine Höhe mit fester Neigung in diesen
+  Dateien); Prüfteil `smoke-3d.mjs --only balken`, Fotos `.smoke/3d/balken/neigung<30|45|60>-dreh<000|045>.png`. Verdeckung durch Gebäude: nicht gebaut (wahlfrei).
 - Straßen und Wege 3D: gebaut (`js/render3d/ways3d.js`, Test `test/ways3d.test.js`, Prüfteil `smoke-3d.mjs --only wege [--karte seed3,seed7,fest] [--teile …]`, Fotos `.smoke/3d/wege/`).
   Stadtstraßen und Gleise der Stadt (`citylayer.js`), Feldwege, Gleise und Felder der Karte (`ways.js`, `fields.js`) und Pflaster (`paving.js`) liegen in der Ansicht 3D als Bodenschicht im Durchlauf „Gelände“;
   der Durchlauf „Boden“ malt sie dann nicht mehr (`ways3dShown`), alles Übrige dort (Zonen, Grundstücke, Flugplatz, Krater, Schutt, Parks, Höfe, Regierungsviertel) bleibt gemalt.

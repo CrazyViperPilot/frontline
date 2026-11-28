@@ -43,7 +43,7 @@
 //    Spielszenen mit vielen Baustellen bzw. Gebäude-Wracks Iso | 3D, Messung gemalt / 3D (renderer.site3dOn, ruin3dOn) und einsinkendes Wrack (<out>/ruinen/).
 //
 // Aufruf (im Repo-Wurzelordner):  node tools/smoke-3d.mjs [--out .smoke/3d] [--scale 2] [--minutes 5] [--frames 8]
-//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|ruinen|bruecke|freikamera|wege|wetter|mvp] [--citymin 10]
+//                                 [--only kamera|vergleich|speicher|messung|schatten|baeume|baukasten|stadt|natur|karte|props|ruinen|bruecke|freikamera|balken|wege|wetter|mvp] [--citymin 10]
 //                                 [--what schau|karte] (nur mit props: nur Schauraum oder nur echte Karten)
 //                                 [--what werke|haeuser|grossbau|mil|fliegerhorst|baustelle|schutt|kartenstadt] (nur mit baukasten: nur Werke, Stadthäuser, Großbauten, Militärgebäude, Fliegerhorst, Baustellen, Schutt oder Kartenstadt)
 // 11. Kartenstadt (Paket „Kartenstadt 3D“): im Teil baukasten (--what kartenstadt) jede Art der Kartenstadt gemalt | 3D (4 Drehungen, Stimmungen);
@@ -3298,6 +3298,53 @@ const freeView = (g, yaw, tilt, zoom = 1) =>
     { yaw, tilt, zoom },
   );
 
+// Balken und Schilder (Paket „Balken und Schilder“, --only balken): Lebensbalken, Stern, Versorgung, Stadtschilder und Besatzungsschild
+// bei Neigung 30°/45°/60° in zwei Drehungen; Fotos <out>/balken/neigung<30|45|60>-dreh<000|045>.png zum Ansehen (Balken sitzen über den Körpern).
+async function barsPart() {
+  const dir = 'balken';
+  await mkdir(join(out, dir), { recursive: true });
+  const g = await openGame({ seed: 3, query: 'three=1&iso=1', scale, out });
+  try {
+    const ok = await g.run(() => {
+      const s = window.__frontline.session();
+      s.loop.paused = true;
+      const hq = s.game.buildings.find((b) => b.main && b.team === 0);
+      const list = [
+        s.game.spawnUnit('tank', 0, hq.x + 260, hq.y + 200),
+        s.game.spawnUnit('truck', 0, hq.x + 330, hq.y + 150),
+        s.game.spawnUnit('rifleman', 0, hq.x + 200, hq.y + 260),
+      ].filter(Boolean);
+      for (const u of list) {
+        u.hp = u.maxHp * 0.5;
+        s.controller.view.selection.add(u.id);
+      }
+      const hero = s.game.units.find((u) => u.team === 0 && u.def.hero);
+      if (hero) {
+        hero.x = hq.x + 300;
+        hero.y = hq.y + 260;
+      }
+      window.__barsAt = { x: hq.x + 270, y: hq.y + 210 };
+      return list.length;
+    });
+    if (!ok) throw new Error('Einheiten für die Balken nicht gesetzt');
+    console.log('Balken und Schilder: Fotos je Neigung und Drehung');
+    for (const tilt of [30, 45, 60]) {
+      for (const yaw of [0, 45]) {
+        await freeView(g, yaw, tilt, 1.4);
+        await g.run(() => {
+          const s = window.__frontline.session();
+          s.camera.centerOn(window.__barsAt.x, window.__barsAt.y);
+          for (let i = 0; i < 3; i++) s.renderer.render(s.controller.view);
+        });
+        await g.shot(`${dir}/neigung${tilt}-dreh${String(yaw).padStart(3, '0')}`);
+      }
+    }
+  } finally {
+    errors.push(...g.errors);
+    await g.close();
+  }
+}
+
 async function freeCamera() {
   const dir = 'freikamera';
   await mkdir(join(out, dir), { recursive: true });
@@ -4241,6 +4288,7 @@ try {
   if (!only || only === 'bruecke') await bridgePart();
   if (!only || only === 'freikamera') await freeCamera();
   if (!only || only === 'tagnacht') await dayNightPart();
+  if (!only || only === 'balken') await barsPart();
 } catch (e) {
   console.error(`Abbruch: ${e.message}`);
   fail++;

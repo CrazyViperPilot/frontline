@@ -37,7 +37,7 @@ function fakeCtx() {
   return { ctx, calls };
 }
 
-const cam = (zoom = 1.4) => ({ rot: 0, zoom, depth: (x, y) => x + y, worldToScreen: (x, y) => ({ x: (x - y) * 0.7, y: (x + y) * 0.35 }) });
+const cam = (zoom = 1.4) => ({ rot: 0, zoom, depth: (x, y) => x + y, heightPx: (h) => h * zoom, worldToScreen: (x, y) => ({ x: (x - y) * 0.7, y: (x + y) * 0.35 }) });
 
 test('Bauabschnitt aus dem Fortschritt: fünf Stufen, Ränder und kaputte Werte', () => {
   assert.equal(siteStep(0), 0);

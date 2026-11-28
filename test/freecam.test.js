@@ -170,3 +170,25 @@ test('three-Kamera bildet camera.worldToScreen nach (8 Drehwinkel × 3 Neigungen
     }
   }
 });
+
+test('Balken, Sterne und Schilder heben über camera.heightPx, nicht über die Höhe bei 30° (Paket „Balken und Schilder“)', async () => {
+  const { readFileSync } = await import('node:fs');
+  // Diese Maler setzen Dinge über Einheiten und Gebäude; „lift * z“ hieße feste Neigung 30° (ab 45° zu hoch)
+  const files = [
+    'js/render/layers/isoview.js',
+    'js/render/layers/relief.js',
+    'js/render/layers/isoitems.js',
+    'js/render/citylayer.js',
+    'js/render/unitpaint.js',
+    'js/render/iso.js',
+    'js/render3d/renderer3d.js',
+  ];
+  for (const f of files) {
+    const src = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
+    assert.ok(!/lift \* (z|cam\.zoom)\b|pinned \* cam\.zoom|\) \+ 20\) \* z/.test(src), `${f} rechnet eine Höhe mit fester Neigung`);
+  }
+  // Höhe im Bild bei 60°: kleiner als bei 30° (cos 60° / cos 30°)
+  const c = cam({ zoom: 1 });
+  c.setTilt(60 * DEG);
+  assert.ok(Math.abs(c.heightPx(100) - (100 * 0.5) / Math.cos(TILT0)) < 1e-9);
+});

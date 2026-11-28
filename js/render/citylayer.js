@@ -1458,7 +1458,7 @@ export function drawCityBadges(ren, ctx, team, known, inRect, iso) {
       const p = cam.worldToScreen(r.x, r.y);
       const lift = whole ? (BIG_KINDS.has(k) ? Math.min(150, bigTop(k, lv) * 0.7) + 14 : WORKS_KINDS.includes(k) ? worksLift(k, lv) : BIG_LIFT[lv] ?? 110) : townLift(k, lv);
       bx = p.x - px / 2;
-      by = p.y - lift * z - px;
+      by = p.y - cam.heightPx(lift) - px;
       bw = px;
     } else {
       bw = px / z;
@@ -1495,7 +1495,7 @@ function siteBar(ren, ctx, c, i, r, n, iso) {
     w = Math.max(22, Math.min(46, 34 * z)) * (n > 1 ? 1.5 : 1);
     h = Math.max(3, Math.min(6, 4.2 * z));
     x = p.x - w / 2;
-    y = p.y - (siteTall(n, siteStep(grow)) + 5) * z - h;
+    y = p.y - cam.heightPx(siteTall(n, siteStep(grow)) + 5) - h;
     pad = 1;
   } else {
     const z = ren.camera.zoom;

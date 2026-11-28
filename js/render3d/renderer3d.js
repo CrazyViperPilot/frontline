@@ -542,7 +542,7 @@ export class Renderer3D extends Renderer {
     for (const q of smokes) {
       if (!q.mine) continue;
       const p = cam.worldToScreen(q.x, q.y);
-      drawMine(ctx, p.x, p.y - q.lift * z, z * 0.6);
+      drawMine(ctx, p.x, p.y - cam.heightPx(q.lift), z * 0.6);
     }
     this.isoMoveMark(f);
   }

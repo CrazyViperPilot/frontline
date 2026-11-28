@@ -146,7 +146,7 @@ export const reliefMethods = {
   uprightAtWorld(ctx, wx, wy, lift) {
     const cam = this.camera;
     const p = cam.worldToScreen(wx, wy);
-    setUprightAt(ctx, cam, this.dpr, p.x, p.y - lift * cam.zoom, wx, wy);
+    setUprightAt(ctx, cam, this.dpr, p.x, p.y - cam.heightPx(lift), wx, wy);
   },
 
   /** Bäume und Felsen für Wald- und Felshindernisse (deterministisch aus der Karte). */

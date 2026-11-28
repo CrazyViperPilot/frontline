@@ -259,9 +259,9 @@ export const isoItemMethods = {
       if (flying(u)) {
         const q = cam.worldToScreen(u.x + Math.cos(a) * 20, u.y + Math.sin(a) * 20);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        drawUnitSymbol(ctx, p.x, p.y - lift * z, Math.atan2(q.y - p.y, q.x - p.x), color, 1, true);
+        drawUnitSymbol(ctx, p.x, p.y - cam.heightPx(lift), Math.atan2(q.y - p.y, q.x - p.x), color, 1, true);
       } else {
-        setIsoAt(ctx, cam, dpr, p.x, p.y - lift * z, u.x, u.y, sc);
+        setIsoAt(ctx, cam, dpr, p.x, p.y - cam.heightPx(lift), u.x, u.y, sc);
         drawUnitSymbol(ctx, u.x, u.y, a, color, z * sc, false);
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -280,7 +280,7 @@ export const isoItemMethods = {
       ctx.fill();
     }
     if (drawUnitSprite(ctx, cam, u, { x: p.x, y: p.y }, aim, lift, now, !mesh) || mesh) return;
-    setIsoAt(ctx, cam, dpr, p.x, p.y - lift * z, u.x, u.y, sc);
+    setIsoAt(ctx, cam, dpr, p.x, p.y - cam.heightPx(lift), u.x, u.y, sc);
     drawUnit(ctx, u, g.teams[u.team].color, z * sc, aim, now, true);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   },

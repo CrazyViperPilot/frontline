@@ -1,0 +1,1 @@
+**Balken und Schilder** (nur Bild): In der Ansicht 3D sitzen Lebensbalken, Sterne, Versorgungsanzeigen, Stadtschilder, Baufortschritt, Besatzungsschilder und Brückenbalken auch bei steilerer Neigung (45° bis 60°) über Einheiten und Gebäuden statt darüber zu schweben; isometrisch und 2D unverändert (Test, `?three=1`).

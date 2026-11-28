@@ -1,1 +1,0 @@
-**Einheiten 3D: Wracks und Instancing** (nur Bild): Fahrzeugwracks erscheinen als verkohlte 3D-Modelle mit verdrehtem oder abgesprengtem Turm, Schatten und Einsinken am Lebensende; gleiche Einheiten (Wanne, Turm, Soldat je Pose) teilen über alle Teams ein `InstancedMesh` samt Lackfoto (Test, `?three=1`)

@@ -224,6 +224,7 @@ const ASSETS = [
   './js/render3d/fog3d.js',
   './js/render3d/fx3d.js',
   './js/render3d/units3d.js',
+  './js/render3d/wrecks3d.js',
   './js/render3d/sun3d.js',
   './js/render3d/trees3d.js',
   './js/render3d/kit3d.js',

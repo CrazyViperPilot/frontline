@@ -7,7 +7,8 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `ground3d.js` – 3D-Boden: Höhennetz, Erdschnitt (`FS_GROUND` aus `render/ground.js`), Wasser-Netz (`FS_WATER`). `Ground3D`
 - `fog3d.js` – 3D-Nebel: Kriegsnebel (`FS_FOG`) auf dem Bodennetz, Textur aus `fogData`. `Fog3D`
 - `fx3d.js` – Effekte als Teilchen (Feuerball, Leuchtspur, Granate, Rauch, Feuer), ein Draw-Call, Durchlauf „Effekte“. `Fx3D`, `effect3d`, `smoke3d`
-- `units3d.js` – Einheiten als Meshes (Wanne, Turm, stufenlose Drehung). `Units3D`
+- `units3d.js` – Einheiten als InstancedMesh (Wanne, Turm, Teamfarbe je Instanz, Lackfoto). `Units3D`
+- `wrecks3d.js` – Fahrzeugwracks (verkohlt, Turm verdreht/abgesprengt, sinkend, Instancing). `Wrecks3D`
 - `trees3d.js` – Bäume als InstancedMesh je Form, grob fern. `Trees3D`, `treeGeometry`
 - `nature3d.js` – Büsche, Felsen, Tiere je Form instanziert (`bush3d` …, `nature3dOn`). `Nature3D`
 - `props3d.js` – Props der Karte, Autos, Bänke, Ballen, Kisten je Form instanziert (`prop3d`, `props3dOn`). `Props3D`, `formsOf`
@@ -15,20 +16,20 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `billboards.js` – gemalte Bilder (`blit`) als Vierecke aus einem Atlas (≤ 4 Seiten). `Billboards`
 - `camera3d.js` – three-Kamera aus `Camera`: `makeWorldRoot`, `syncIsoCamera`, `projectWorld`, `clipDepth`
 - `testscene.js` – Prüfwürfel (`?cubes=1`). `probePoints`, `buildTestCubes`
-- `solids3d.js` – Körperliste (units/shapes.js) → Geometrie: `solidsToGeometry`, `buildModelMesh`, `modelGeometry`
+- `solids3d.js` – Körperliste → Geometrie: `solidsToGeometry`, `teamSolidsToGeometry`, `modelGeometry`, `modelTeamGeometry`
 - `kit3d.js` – Gebäude-Baukasten (Teile wie isokit.js). `Kit3D`, `makeKitMaterial`, `setKitFrame`, `kitMesh`
 - `town3d.js` – Gebäudefamilien (Stadthäuser 1 × 1, Werke, Großbauten, Militär), InstancedMesh je Variante. `townGeometry`, `FAMILIES`, `Town3D`
 - `works3d.js` – Werke aus dem Baukasten, Teamfarbe je Instanz. `worksGeometry`, `worksKey`
 - `bigbuild3d.js` – Kaserne, Fabrikhalle, Lagerhalle, Güterbahnhof, Universität aus dem Baukasten. `bigGeometry`, `uniGeometry`
-- `gov3d.js` – Regierungsgebäude und Teile des Regierungsviertels (je Teamdrehung und Gruppenmaske). `hallGeometry`, `quarterGeometry`
-- `mil3d.js` – Militärgebäude (FOB, Mauer, Tor, Mörser, Flak, Phalanx, Turm, Bohrer, Baustellen), Ausbauten besetzter Häuser. `milGeometry`, `fortGeometry`
-- `airbase3d.js` – Fliegerhorst (Stellplatz mit Überdachung oder Shelter, Tower, Kerosintank, Munitionslager), Dach und Röhre halb durchsichtig. `airbaseGeometry`, `airbaseGlass`
-- `site3d.js` – Baustellen der Stadt (5 Abschnitte, n = 1 bis 3, Gerüst, Kran, Planen in Zonenfarbe). `siteGeometry`, `siteKey`
-- `rubble3d.js` – Schutt (Kartenstadt, Stadtzellen, Wracks) aus `rubblePlan`, 16 Varianten. `rubbleGeometry`, `rubbleKey`
+- `gov3d.js` – Regierungsgebäude und Regierungsviertel (Teamdrehung, Gruppenmaske). `hallGeometry`, `quarterGeometry`
+- `mil3d.js` – Militärgebäude (FOB, Mauer, Tor, Mörser, Flak, Phalanx, Turm, Bohrer, Baustellen), Ausbauten. `milGeometry`, `fortGeometry`
+- `airbase3d.js` – Fliegerhorst (Stellplatz, Shelter, Tower, Tank, Depot), Dach/Röhre durchsichtig. `airbaseGeometry`, `airbaseGlass`
+- `site3d.js` – Baustellen der Stadt (5 Abschnitte, n = 1 bis 3, Gerüst, Kran, Planen). `siteGeometry`, `siteKey`
+- `rubble3d.js` – Schutt (Kartenstadt, Stadtzellen, Gebäude-Wracks) aus `rubblePlan`, 16 Varianten. `rubbleGeometry`, `rubbleKey`
 - `bridge3d.js` – Brücken (Pfeiler, Fahrbahn, Geländer, zerstört, Wiederaufbau) und Furtstangen (`bridge3dOn`). `Bridge3D`, `bridgeSolids`
-- `ways3d.js` – Bodenschicht: Straßen, Wege, Gleise, Felder, Pflaster als Kacheltexturen auf dem Höhennetz, Schienen als Körper (`ways3dOn`). `Ways3D`, `tileIndex`, `railGeometry`
+- `ways3d.js` – Bodenschicht: Straßen, Wege, Gleise, Felder, Pflaster als Kacheltexturen, Schienen als Körper (`ways3dOn`). `Ways3D`, `tileIndex`, `railGeometry`
 - `weather3d.js` – Wetter in 3D: Regen mit Ringen, Schnee, Nebelbänke (Teilchen, Tiefentest), nasser Boden (`weather3dOn`). `Weather3D`, `weatherShares`, `wetGround`
-- `lights3d.js` – Tag und Nacht: Durchlauf „Lichter“ (Fenster, Laternen, Lichtflecken additiv über der Stimmung, Maske aus dem Nebel). `Lights3D`, `lightSources`, `GLOW`
+- `lights3d.js` – Tag und Nacht: Durchlauf „Lichter“ (Fenster, Laternen, Lichtflecken additiv, Nebelmaske). `Lights3D`, `lightSources`, `GLOW`
 - `maptown3d.js` – Kartenstadt (Häuser, Hallen, Fabriken, Mauern, Zug, Turm, Mast), Leitung als Linien. `mapTownGeometry`, `Wires3D`
 
 ## Besonderheiten

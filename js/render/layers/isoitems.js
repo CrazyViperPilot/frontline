@@ -182,7 +182,7 @@ export const isoItemMethods = {
           const rb = { x: w.x, y: w.y, w: w.w, h: w.h, kind: w.small ? 'wall' : 'wreck', hgt: w.small ? 18 : 36 };
           if (!this.ruin3d?.(rb, !w.small, fade)) drawRubble(ctx, cam, rb, !w.small); // 3D: render3d/rubble3d.js (sinkt statt zu verblassen)
         }
-        else if (!drawWreckSprite(ctx, cam, w, cam.worldToScreen(w.x, w.y))) drawWreckBox(ctx, cam, w);
+        else if (!this.wreck3d?.(w, fade) && !drawWreckSprite(ctx, cam, w, cam.worldToScreen(w.x, w.y))) drawWreckBox(ctx, cam, w);
         ctx.globalAlpha = 1;
       }
       else if (it.t === 4) {

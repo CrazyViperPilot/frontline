@@ -60,7 +60,7 @@
 //    Nebellagen, Tiefentest, Wirkung gegen das Bild ohne Wetter, Messung gemalt gegen 3D (Zeit „Wetter“, Draw-Calls) (<out>/wetter/).
 // 16. Tag und Nacht (Paket „Tag und Nacht 3D“, --only tagnacht [--citymin 6]): Morgen, Mittag, Abend, Nacht Iso | 3D an Stadt, Kartenstadt, Laterne;
 //    Sonnenhöhe, Lichter an gegen aus, Kriegsnebel ohne Licht, Messung „Lichter“ (<out>/tagnacht/).
-// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte, props, bruecke, freikamera, wege, wetter und tagnacht; „mvp“ nur ausdrücklich.
+// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte, props, bruecke, freikamera, wege, wetter, tagnacht, balken und wracks; „mvp“ nur ausdrücklich.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { openGame, measureFps, DEVICES } from './smoke.mjs';
@@ -4268,6 +4268,160 @@ async function dayNightPart() {
   }
 }
 
+/**
+ * Paket „Einheiten 3D: Wracks und Instancing“ (--only wracks):
+ * 1) Fahrzeugwracks (Wanne + Turm verdreht/abgesprengt, sinkend) und Einheiten mehrerer Teams in Iso | 3D, 4 Drehungen, Tag und Nacht.
+ * 2) Schalter wrecks3dOn und Lackfotos (unitTexturesReady) prüfen.
+ * 3) Messung mit 200 Einheiten (Seed 3): Draw-Calls und Zeit „Objekte“ (Schatten Aus und Hoch) sowie units3d.stats().
+ */
+async function wracksPart() {
+  const dir = join(out, 'wracks');
+  await mkdir(dir, { recursive: true });
+  const g = await openGame({ seed: 3, query: 'iso=1&three=1&shadows=high&weather=summer&wx=clear', scale: 1, out });
+  try {
+    const spot = await g.run(async () => {
+      const s = window.__frontline.session();
+      const { BALANCE } = await import('/js/data/balance.js');
+      const { unitTexturesReady } = await import('/js/render3d/units3d.js');
+      s.loop.paused = true;
+      s.renderer.revealAll = true;
+      const hq = s.game.buildings.find((b) => b.main && b.team === 0);
+      const cx = hq.x + 260;
+      const cy = hq.y + 320;
+      const now = s.game.time;
+      const SC = BALANCE.scars;
+      const seen = (1 << s.game.teams.length) - 1;
+      // 10 Fahrzeugwracks (verschiedene Arten, Winkel, teils abgesprengter Turm, 2 beim Einsinken)
+      const list = [
+        { id: 101, type: 'tank', dx: -110, dy: -60, angle: 0.35, fade: 1 },
+        { id: 102, type: 'tank', dx: -30, dy: -70, angle: 2.1, fade: 1 },
+        { id: 103, type: 'ifv', dx: 55, dy: -60, angle: 1.15, fade: 1 },
+        { id: 104, type: 'pzh', dx: 130, dy: -45, angle: 3.8, fade: 1 },
+        { id: 105, type: 'flak', dx: -100, dy: 25, angle: 0.9, fade: 1 },
+        { id: 106, type: 'truck', dx: -15, dy: 30, angle: 2.6, fade: 1 },
+        { id: 107, type: 'scout', dx: 65, dy: 25, angle: 4.5, fade: 1 },
+        { id: 108, type: 'gunship', dx: 135, dy: 35, angle: 0.5, fade: 1 },
+        { id: 109, type: 'tank', dx: -60, dy: 105, angle: 1.6, fade: 0.35 },
+        { id: 110, type: 'ifv', dx: 40, dy: 105, angle: 5.1, fade: 0.2 },
+      ];
+      for (const item of list) {
+        const t0 = item.fade >= 1 ? now : now - (SC.wreckLife - SC.wreckFade * item.fade);
+        s.game.wrecks.push({
+          id: item.id, kind: 'unit', type: item.type, team: 0,
+          x: cx + item.dx, y: cy + item.dy, angle: item.angle, r: 16, air: item.type === 'gunship', t0, seen,
+        });
+      }
+      // Daneben lebende Einheiten mehrerer Teams (Teamfarbe je Instanz, Lackfoto, Schatten)
+      const live = [
+        ['tank', 0, -140, -125, 0.4], ['tank', 1, -70, -125, 2.7], ['ifv', 0, 10, -125, 0.9], ['ifv', 1, 80, -125, 3.3],
+        ['rifleman', 0, -30, -100, 0.5], ['rifleman', 1, 0, -100, 2.5], ['gunship', 0, 140, -110, 0.7],
+      ];
+      for (const [type, team, dx, dy, a] of live) {
+        const u = s.game.spawnUnit(type, team, cx + dx, cy + dy);
+        if (u) u.angle = a;
+      }
+      // kurz warten, bis die Lackfotos geladen sind
+      for (let i = 0; i < 40 && !unitTexturesReady(); i++) await new Promise((r) => setTimeout(r, 50));
+      return { cx, cy, texReady: unitTexturesReady() };
+    });
+    if (!spot.texReady) {
+      fail++;
+      console.log('Wracks 3D: Lackfotos (armor/paint) nicht geladen  FEHLER');
+    }
+    // 1. 4 Drehungen (Tag, Iso | 3D)
+    for (let rot = 0; rot < 4; rot++) {
+      await look(g, spot.cx, spot.cy, rot, 1.4);
+      await mvpPair(g, dir, 'wracks', `drehung${rot}`);
+    }
+    // 2. Tag und Nacht (Drehung 0, Iso | 3D)
+    await look(g, spot.cx, spot.cy, 0, 1.4);
+    for (const [label, mood] of [['tag', 'day'], ['nacht', 'night']]) {
+      await g.run((mood) => {
+        const s = window.__frontline.session();
+        s.renderer.mood = mood;
+      }, mood);
+      await mvpPair(g, dir, 'wracks', label);
+    }
+    // 3. Statistik & Schalter wrecks3dOn prüfen
+    const chk = await g.run(() => {
+      const s = window.__frontline.session();
+      const r = s.renderer;
+      s.camera.three = true;
+      r.mood = 'day';
+      r.wrecks3dOn = true;
+      r.render(s.controller.view);
+      const onStats = r.wrecks3d.stats();
+      const uStats = r.units3d.stats();
+      r.wrecks3dOn = false;
+      r.render(s.controller.view);
+      const offCount = r.wrecks3d.count;
+      r.wrecks3dOn = true;
+      return { onStats, uStats, offCount };
+    });
+    const okWreck = chk.onStats.total === 10 && chk.onStats.calls <= 18 && chk.offCount === 0;
+    if (!okWreck) fail++;
+    console.log(
+      `Wracks 3D: ${chk.onStats.total} Wracks, ${chk.onStats.calls} Draw-Calls (${chk.onStats.instances} Instanzen, ${chk.onStats.tris} Dreiecke), `
+        + `wrecks3dOn=false → ${chk.offCount}, Lackfotos ${spot.texReady ? 'geladen' : 'FEHLEN'}${okWreck ? '' : '  FEHLER'}`,
+    );
+    // 4. Messung mit 200 Einheiten (Seed 3): Draw-Calls und Zeit „Objekte“
+    await g.run(() => {
+      const s = window.__frontline.session();
+      s.game.wrecks.length = 0;
+      s.renderer.revealAll = false;
+      s.renderer.mood = null;
+    });
+    await spawnArmy(g);
+    await view(g, 0, 1, 0, 420);
+    for (const level of ['off', 'high']) {
+      const m = await g.run((level) => {
+        const s = window.__frontline.session();
+        const r = s.renderer;
+        const gl = r.gl;
+        s.camera.three = true;
+        r.setShadows(level);
+        for (let i = 0; i < 2; i++) r.render(s.controller.view);
+        const orig = r.objects3d.bind(r);
+        let tSum = 0;
+        let cSum = 0;
+        let triSum = 0;
+        r.objects3d = function (f) {
+          let c = 0;
+          let tr = 0;
+          const r2 = gl.render.bind(gl);
+          gl.render = (sc, cam) => {
+            r2(sc, cam);
+            c += gl.info.render.calls;
+            tr += gl.info.render.triangles;
+          };
+          const t0 = performance.now();
+          try {
+            return orig(f);
+          } finally {
+            tSum += performance.now() - t0;
+            cSum += c;
+            triSum += tr;
+            gl.render = r2;
+          }
+        };
+        const N = 6;
+        for (let i = 0; i < N; i++) r.render(s.controller.view);
+        r.objects3d = orig;
+        return { level, objMs: +(tSum / N).toFixed(1), calls: Math.round(cSum / N), tris: Math.round(triSum / N), u: r.units3d.stats() };
+      }, level);
+      const okInst = m.u.total >= 200 && m.u.calls <= 20;
+      if (!okInst) fail++;
+      console.log(
+        `Instancing 200 Einheiten (Schatten ${level}): Objekte ${m.objMs} ms, ${m.calls} Draw-Calls gesamt (${m.tris} Dreiecke); `
+          + `units3d: ${m.u.total} Einheiten, ${m.u.calls} Draw-Calls (${m.u.instances} Instanzen)${okInst ? '' : '  FEHLER'}`,
+      );
+    }
+  } finally {
+    errors.push(...g.errors);
+    await g.close();
+  }
+}
+
 try {
   if (!only || only === 'kamera') await camera();
   if (!only || only === 'vergleich') await compare();
@@ -4289,6 +4443,7 @@ try {
   if (!only || only === 'freikamera') await freeCamera();
   if (!only || only === 'tagnacht') await dayNightPart();
   if (!only || only === 'balken') await barsPart();
+  if (!only || only === 'wracks') await wracksPart();
 } catch (e) {
   console.error(`Abbruch: ${e.message}`);
   fail++;

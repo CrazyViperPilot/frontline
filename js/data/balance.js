@@ -10,7 +10,7 @@
 //   KI-Schwierigkeit difficulty (weitere KI-Werte: ai.js)
 //   Kampf, Gelände   height, slope, airFire, sightHeight, fogInterval, stealth, garrison, fortress, commander, formation, jets
 //   Wetter, Technik  weather, river (Forschung: js/data/research.js)
-//   Nur Optik        scars, animals, effects, shadows3d
+//   Nur Optik        scars, animals, effects, shadows3d, lights3d
 //   Bewegung, Sicht  move, path (Wegsuche), fog, formation, scanStagger, spawnRing, shellSpeed, combat, notify (Meldedauern)
 //   Startmenü        menuDefaults
 //   Texte, Farben    resNames, teamNames, teamColors
@@ -449,6 +449,23 @@ export const BALANCE = {
     snap: 128,
     opacity: { none: 0.4, day: 0.42, morning: 0.36, evening: 0.36, night: 0.2 },
     bias: -0.0005,
+  },
+  // Tag und Nacht der Ansicht 3D (rein optisch, render3d/lights3d.js, Durchlauf „Lichter“ nach der Lichtstimmung, additiv).
+  // elev: Sonnenhöhe je Lichtstimmung (z-Anteil des Lichtvektors; ohne Stimmung wie render/ground.js LIGHT_ELEV 0,62): morgens und
+  // abends flacher, also längere Schatten. night: Nachtanteil der Fenster (0 … 1, kit3d uNight; ab 0,4 brennen auch Laternen,
+  // Schaufenster, Glaskanzeln). glow: Stärke des Lichter-Durchlaufs je Stimmung (fehlt = aus). windows: Helligkeit der leuchtenden
+  // Fenster und Lampen im Durchlauf (kommt zur abgedunkelten Farbe dazu), windowColor ihre Farbe (warm, gelblich). max: höchstens so viele Lichtflecken
+  // je Bild (die der Bildmitte nächsten). lamp: Laterne der Karte (r Radius des Lichtflecks in Welt-px, k Stärke, color, head Radius
+  // und z Höhe des Leuchtkopfs); house: warmer Schein um ein Haus mit Fenstern (Stadt und Kartenstadt; r über die halbe Grundfläche hinaus).
+  lights3d: {
+    elev: { morning: 0.42, day: 0.62, evening: 0.38, night: 0.62 },
+    night: { evening: 0.45, night: 1 },
+    glow: { evening: 0.4, night: 1 },
+    windows: 0.42,
+    windowColor: [255, 190, 110],
+    max: 160,
+    lamp: { r: 72, k: 0.42, color: [255, 210, 140], head: 5, z: 33.2 },
+    house: { r: 40, k: 0.34, color: [255, 186, 105] },
   },
   // Meldungen mit Drosselung (game.notify): Mindestabstand in s zwischen zwei gleichen Meldungen je Team (ohne Eintrag shortageWarn)
   notify: {

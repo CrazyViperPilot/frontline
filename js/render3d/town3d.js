@@ -9,6 +9,7 @@
 // Draw-Call je Variante im Bild, gleich wie viele Gebäude sie zeigen (dazu einer je Variante in der Schattenkarte).
 import * as THREE from '../vendor/three/three.module.min.js';
 import { Kit3D, makeKitMaterial, setKitFrame, NIGHT_MORE } from './kit3d.js';
+import { GLOW } from './lights3d.js';
 import { CAST } from './sun3d.js';
 import {
   RES_WALL, RES_ROOF, RES_ACC, COM_FACADE, COM_AWN, COM_GLASS, STALL, MARKET_ROOF, MARKET_WALL, DC_WALL, DC_RIM, DC_LED, HOSP, RED,
@@ -950,6 +951,7 @@ export class Town3D {
       mesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
     }
     mesh.frustumCulled = false;
+    mesh.layers.enable(GLOW); // Lichter-Durchlauf: Fenster und Lampen noch einmal (lights3d.js)
     mesh.castShadow = !glass; // durchscheinende Teile werfen keinen Schatten (gemalt ein schwacher)
     mesh.receiveShadow = true;
     if (!glass) mesh.layers.enable(CAST);

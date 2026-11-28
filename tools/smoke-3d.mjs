@@ -58,7 +58,9 @@
 //    Neumalen nur bei Änderung, Messung gemalt gegen 3D (<out>/wege/).
 // 15. Wetter (Paket „Wetter 3D“, --only wetter): Regen, Schnee und Nebel gemalt | 3D (4 Drehungen, Nacht, Zoom, mit Kriegsnebel), Zähler der Teilchen und
 //    Nebellagen, Tiefentest, Wirkung gegen das Bild ohne Wetter, Messung gemalt gegen 3D (Zeit „Wetter“, Draw-Calls) (<out>/wetter/).
-// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte, props, bruecke, freikamera, wege und wetter; „mvp“ nur ausdrücklich.
+// 16. Tag und Nacht (Paket „Tag und Nacht 3D“, --only tagnacht [--citymin 6]): Morgen, Mittag, Abend, Nacht Iso | 3D an Stadt, Kartenstadt, Laterne;
+//    Sonnenhöhe, Lichter an gegen aus, Kriegsnebel ohne Licht, Messung „Lichter“ (<out>/tagnacht/).
+// Ohne --only laufen die Teile 1 bis 6, 8 und 9 (mit Kartenstadt), natur, karte, props, bruecke, freikamera, wege, wetter und tagnacht; „mvp“ nur ausdrücklich.
 import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { openGame, measureFps, DEVICES } from './smoke.mjs';
@@ -4074,6 +4076,151 @@ async function weatherPart() {
   for (const r of rows) console.log(`  ${r}`);
 }
 
+/**
+ * Teil „tagnacht“ (--only tagnacht, läuft auch ohne --only), Paket „Tag und Nacht 3D“: Lichtstimmungen in 3D (render3d/lights3d.js). Seed 3,
+ * 6 Spielminuten KI gegen KI (Stadt wächst), Schatten Hoch; Fotos Iso | 3D für Morgen, Mittag, Abend, Nacht an der Stadt der Hauptstadt
+ * (Nacht in 4 Drehungen), an der Kartenstadt und an einer Laterne der Karte (<out>/tagnacht/). Prüft: Sonnenhöhe je Stimmung, Lichter
+ * nur abends und nachts, nachts Lichtflecken im Bild und hellere Pixel (Lichter an gegen aus, keins dunkler), mit Kriegsnebel (fog=1)
+ * kein Licht im Unerkundeten. Misst den Durchlauf „Lichter“ und das Bild nachts.
+ */
+async function dayNightPart() {
+  const dir = join(out, 'tagnacht');
+  await mkdir(dir, { recursive: true });
+  const moods = ['morning', 'day', 'evening', 'night'];
+  const name = { morning: 'morgen', day: 'mittag', evening: 'abend', night: 'nacht' };
+  const minutes = Number(arg('citymin', 6));
+  const g = await openGame({ seed: 3, query: 'iso=1&three=1&shadows=high&weather=summer&wx=clear', scale: 1, out });
+  try {
+    await g.run(async (minutes) => {
+      const { AI } = await import('/js/ai/ai.js');
+      const s = window.__frontline.session();
+      s.loop.paused = true;
+      const ais = s.game.teams.map((_, t) => new AI(s.game, t, 'normal'));
+      while (s.game.time < minutes * 60) {
+        for (const a of ais) a.update(0.05);
+        s.game.update(0.05);
+      }
+    }, minutes);
+    const spots = await g.run(async () => {
+      const { cityBuildings } = await import('/js/render/citylayer.js');
+      const s = window.__frontline.session();
+      const g = s.game;
+      const hq = g.buildings.find((b) => b.main && b.team === 0);
+      const near = cityBuildings(g, 0, () => true, () => true).filter((b) => b.kind === 'town' && Math.hypot(b.x - hq.x, b.y - hq.y) < 700);
+      const city = near.length ? { x: near.reduce((a, b) => a + b.x, 0) / near.length, y: near.reduce((a, b) => a + b.y, 0) / near.length, n: near.length } : { x: hq.x, y: hq.y, n: 0 };
+      const houses = (g.map.town?.buildings ?? []).filter((b) => b.kind === 'house');
+      const town = houses.length ? { x: houses.reduce((a, b) => a + b.x, 0) / houses.length, y: houses.reduce((a, b) => a + b.y, 0) / houses.length, n: houses.length } : null;
+      let lamps = (g.map.props ?? []).filter((p) => p.kind === 'street_lamp');
+      if (!lamps.length && town) {
+        // Laternen gibt es nur an Hallenhöfen (mapgen.js lampAt): für das Foto drei an eine freie Stelle neben der Kartenstadt setzen
+        g.map.props ??= [];
+        for (let i = 0; i < 3; i++) g.map.props.push({ kind: 'street_lamp', x: Math.round(town.x + 260 + i * 90), y: Math.round(town.y + 300), rot: (i * 2) % 8 });
+        g.propVersion = (g.propVersion ?? 0) + 1;
+        lamps = g.map.props.filter((p) => p.kind === 'street_lamp');
+      }
+      const lamp = lamps[0] ? { x: lamps[0].x + 45, y: lamps[0].y, n: lamps.length } : null;
+      return { city, town, lamp };
+    });
+    console.log(`Tag und Nacht: ${minutes} Spielminuten, ${spots.city.n} Stadthäuser an der Hauptstadt, Kartenstadt ${spots.town?.n ?? 0} Häuser, ${spots.lamp?.n ?? 0} Laternen`);
+    // 1. Prüfungen je Stimmung an der Stadt: Sonnenhöhe, Lichter, Wirkung (Lichter an gegen aus)
+    await look(g, spots.city.x, spots.city.y, 0, 1);
+    for (const mood of moods) {
+      const chk = await g.run((mood) => {
+        const s = window.__frontline.session();
+        const r = s.renderer;
+        s.camera.three = true;
+        r.mood = mood;
+        const c = r.canvas;
+        const grab = (on) => {
+          r.lights3dOn = on;
+          for (let i = 0; i < 3; i++) r.render(s.controller.view);
+          return c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+        };
+        const b = grab(false);
+        const a = grab(true);
+        let up = 0;
+        let down = 0;
+        for (let i = 0; i < a.length; i += 4) {
+          const d = a[i] + a[i + 1] + a[i + 2] - b[i] - b[i + 1] - b[i + 2];
+          if (d > 12) up++;
+          else if (d < -12) down++;
+        }
+        return { elev: r.lightVec()[2], count: r.lights3d.count, up: (100 * up) / (a.length / 4), down: (100 * down) / (a.length / 4) };
+      }, mood);
+      const wantElev = { morning: 0.42, day: 0.62, evening: 0.38, night: 0.62 }[mood];
+      const lit = mood === 'evening' || mood === 'night';
+      const ok = Math.abs(chk.elev - wantElev) < 1e-6 && (lit ? chk.up > 0.2 && chk.down < 0.05 : chk.up === 0 && chk.down === 0) && (mood !== 'night' || chk.count > 0);
+      if (!ok) fail++;
+      console.log(`  ${name[mood].padEnd(6)}: Sonnenhöhe ${chk.elev.toFixed(2)}, Lichtflecken ${lit ? chk.count : '–'}, heller ${chk.up.toFixed(2)} %, dunkler ${chk.down.toFixed(2)} %${ok ? '' : '  FEHLER'}`);
+    }
+    // 2. Fotos: Stadt (Nacht in 4 Drehungen), Kartenstadt, Laterne
+    for (const [tag, sp, zoom] of [['stadt', spots.city, 1], ['kartenstadt', spots.town, 1], ['laterne', spots.lamp, 1.6]]) {
+      if (!sp) continue;
+      for (const mood of moods) {
+        await g.run((mood) => (window.__frontline.session().renderer.mood = mood), mood);
+        const rots = tag === 'stadt' && mood === 'night' ? 4 : 1;
+        for (let rot = 0; rot < rots; rot++) {
+          await look(g, sp.x, sp.y, rot, zoom);
+          await mvpPair(g, dir, tag, `${name[mood]}${rots > 1 ? `-drehung${rot}` : ''}`);
+        }
+      }
+    }
+    // 3. Messung nachts an der Stadt (Zoom 1, Drehung 0): Lichter an und aus
+    await look(g, spots.city.x, spots.city.y, 0, 1);
+    for (const on of [false, true]) {
+      await g.run((on) => {
+        const r = window.__frontline.session().renderer;
+        window.__frontline.session().camera.three = true;
+        r.mood = 'night';
+        r.lights3dOn = on;
+      }, on);
+      const t = await timePasses(g, frames);
+      console.log(`  Messung Nacht, Lichter ${on ? 'an ' : 'aus'}: Lichter ${(t.Lichter ?? 0).toFixed(1)} ms, Objekte ${t.Objekte.toFixed(0)} ms, Bild ${t.Bild.toFixed(0)} ms (${frames} Bilder, Software-WebGL)`);
+    }
+    await g.run(() => {
+      const r = window.__frontline.session().renderer;
+      r.lights3dOn = true;
+      r.mood = null;
+    });
+  } finally {
+    errors.push(...g.errors);
+    await g.close();
+  }
+  // 4. Kriegsnebel: an der unerkundeten Kartenstadt leuchtet nichts
+  const h = await openGame({ seed: 3, query: 'iso=1&three=1&weather=summer&wx=clear&fog=1', scale: 1, out });
+  try {
+    const chk = await h.run(() => {
+      const s = window.__frontline.session();
+      const r = s.renderer;
+      s.loop.paused = true;
+      s.camera.three = true;
+      r.mood = 'night';
+      const hs = (s.game.map.town?.buildings ?? []).filter((b) => b.kind === 'house');
+      if (!hs.length) return null;
+      s.camera.centerOn(hs.reduce((a, b) => a + b.x, 0) / hs.length, hs.reduce((a, b) => a + b.y, 0) / hs.length);
+      const c = r.canvas;
+      const grab = (on) => {
+        r.lights3dOn = on;
+        for (let i = 0; i < 3; i++) r.render(s.controller.view);
+        return c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+      };
+      const b = grab(false);
+      const a = grab(true);
+      let up = 0;
+      for (let i = 0; i < a.length; i += 4) if (a[i] + a[i + 1] + a[i + 2] - b[i] - b[i + 1] - b[i + 2] > 12) up++;
+      return { count: r.lights3d.count, up: (100 * up) / (a.length / 4) };
+    });
+    if (chk) {
+      const ok = chk.up < 0.05;
+      if (!ok) fail++;
+      console.log(`  Kriegsnebel: Kartenstadt unerkundet, ${chk.count} Lichtflecken gesetzt, heller ${chk.up.toFixed(3)} % der Pixel${ok ? '' : '  FEHLER'}`);
+    }
+  } finally {
+    errors.push(...h.errors);
+    await h.close();
+  }
+}
+
 try {
   if (!only || only === 'kamera') await camera();
   if (!only || only === 'vergleich') await compare();
@@ -4093,6 +4240,7 @@ try {
   if (!only || only === 'wege') await wegePart();
   if (!only || only === 'bruecke') await bridgePart();
   if (!only || only === 'freikamera') await freeCamera();
+  if (!only || only === 'tagnacht') await dayNightPart();
 } catch (e) {
   console.error(`Abbruch: ${e.message}`);
   fail++;

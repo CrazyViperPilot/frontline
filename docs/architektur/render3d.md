@@ -28,7 +28,9 @@ Licht und Schatten oder Achsen und Kamera der Ansicht 3D geht. Plan und Stand de
 - WebGL-Leinwand nicht im DOM, ohne Kantenglättung.
 
 ## Licht und Schatten (`sun3d.js`)
-- Sonne = `lightVec` (wie Bodenlicht, Gebäudeschatten; dreht mit der Kamera). Nacht: `drawMood`.
+- Sonne = `lightVec` (wie Bodenlicht, Gebäudeschatten; dreht mit der Kamera), in 3D mit der Höhe der Lichtstimmung (`BALANCE.lights3d.elev`). Farbe der Stimmung: `drawMood`.
+- Lichter (`lights3d.js`, Durchlauf „Lichter“ nach „Wetter“, `lights3dOn`): Gebäude (Ebene `GLOW`) noch einmal mit `setKitGlow` (nur leuchtende Fenster und Lampen),
+  Lichtflecken der Laternen und Häuser (Scheiben, Tiefentest gegen „Objekte“), Kriegsnebel als Maske (Bild × (1 − Deckkraft)); additiv in die 2D-Leinwand.
 - Schattenfänger statt Boden-Shader (käme ein Bild zu spät): in „Objekte“ Render 1 mit Ebene
   `CATCH` (Karte aus Werfern auf `CAST`, Fänger = Bodennetz mit `ShadowMaterial`), Tiefe löschen, Render 2 Ebene 0.
 - Karte: Bildecken × Geländehöhen im Lichtraum + `margin`, Größe auf `snap` gerundet, Mitte aufs Texel-Raster.

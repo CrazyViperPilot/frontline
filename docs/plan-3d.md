@@ -494,6 +494,25 @@ Schattenstufen); fremde Modelle bleiben nach dem MVP zu entscheiden.
   davon gut 15 bis 25 ms das Kopieren des three-Bildes in die 2D-Leinwand (leerer Durchlauf), der Rest Füllrate und Teilchen im Software-Rasterizer. „Objekte“ unverändert (Schatten Aus 43 → 46 ms, Hoch 190 → 177 ms im ersten Lauf; Rauschen ± 20 %). Zum Vergleich ist das Bild in Software-WebGL
   250 bis 500 ms; auf echter GPU kosten 1 400 Instanzen und vier flache Lagen nichts Messbares, aber auf Handys messen. Hebel, falls nötig: `AREA_RAIN`, `AREA_SNOW` (px² je Teilchen), Zahl der Lagen (`LAYERS`), später die Einstellung „Detail“ (Paket „Grafik-Einstellungen“).
   Offen: Gelände schreibt keine Tiefe (Regen hinter Hängen), Spritzer als Tröpfchen, Schneedecke wächst nicht, nasse Bäume und Einheiten, Gewitter und Wolkenschatten, Nebel über Wasser anders färben, Messung auf echter GPU.
+- Tag und Nacht 3D: gebaut (`js/render3d/lights3d.js`, Test `test/lights3d.test.js`, Prüfteil `smoke-3d.mjs --only tagnacht [--citymin 6]`, Fotos `.smoke/3d/tagnacht/`, Schalter `renderer.lights3dOn`, `mood3dOn`,
+  Werte `BALANCE.lights3d`). **Ausgangslage:** die Lichtstimmung ist je Partie fest (Startmenü „Licht“, `pickMood`), kein Tagesablauf; `drawMood` multipliziert das ganze Bild,
+  auch die Nachtfenster des Baukastens (gemessen nachts Faktor 0,59 / 0,66 / 0,87). **Entscheidungen:** (1) *Farbe und Himmelslicht bleiben bei `drawMood`* (wirkt gleich auf
+  Boden, Gebäude, Einheiten, Bäume, Billboards; die Alternative Licht in allen eigenen Shadern wäre viel Aufwand ohne sichtbaren Gewinn). (2) *Sonnenstand:* gleiche
+  Himmelsrichtung wie entschieden (`lightVec`, rechts oben), Höhe je Stimmung (`elev`: Morgen 0,42, Abend 0,38, Tag und Nacht 0,62) über `Renderer3D.lightVec`; Schatten morgens und
+  abends länger, Gelände plastischer. Iso unverändert. (3) *Lichter als eigener Durchlauf „Lichter“ nach „Wetter“* (in `ISO_PASSES` mit `run: null`, nur die Ansicht 3D füllt ihn),
+  additiv („lighter“) in die 2D-Leinwand, also über der Stimmung: (a) alle Gebäude des Baukastens noch einmal (Ebene `GLOW`, `setKitGlow`: nur leuchtende Fenster und Lampen in
+  warmer Farbe `windowColor`, sonst schwarz) mit Tiefentest gegen den stehen gebliebenen Tiefenpuffer aus „Objekte“ (gleiche Geometrie, gleiche Tiefe; Davorstehendes verdeckt);
+  (b) Lichtflecken am Boden statt echter Punktlichter: Laternen der Karte (`street_lamp`, Fleck unter dem Leuchtkopf plus Leuchtkopf) und Häuser mit Fenstern (Stadthäuser,
+  Häuser und Bahnhof der Kartenstadt; Schein über die Grundfläche hinaus), ein InstancedMesh, höchstens `max` 160 der Bildmitte nächste, Tiefentest ohne Schreiben;
+  (c) Kriegsnebel als Maske (Nebel-Shader mit Mischung Bild × (1 − Deckkraft)): im Unerkundeten leuchtet nichts, Gebäude des Gegners verraten sich nicht. (4) *Abend* mit
+  halber Stärke (`glow` 0,4, `night` 0,45: Laternen und Schaufenster an, mehr Fenster hell), Morgen und Mittag ohne Lichter. Die Sonne nimmt die Ebene `GLOW` mit, damit das
+  Baukasten-Programm gleich bleibt (Zahl der Lichter). **Prüfung** (Seed 3, 6 Spielminuten): Sonnenhöhe je Stimmung genau, Lichter an gegen aus nachts 1,9 % hellere Pixel
+  (Abend 1,2 %), keins dunkler, Morgen und Mittag 0 %; mit `fog=1` an der unerkundeten Kartenstadt 81 Lichtflecken gesetzt, 0,000 % heller. Prüfteil `vergleich` unverändert
+  (höchstens 2,0 %). **Messung** (Software-WebGL, Zoom 1, 8 Bilder, nachts an der Stadt): Durchlauf „Lichter“ 40 bis 90 ms (davon etwa 15 bis 25 ms die Kopie des three-Bildes,
+  der Rest zweites Zeichnen der Gebäude und Füllrate), Bild 360 → 450 ms; auf echter GPU klein, auf Handys messen; Hebel: Fenster nur einmal zeichnen (eigene Kopie im
+  Durchlauf „Objekte“ per zweitem Ziel), `max`. Offen: Scheinwerfer der Fahrzeuge, Leuchtkopf der Laterne als aufrechte Scheibe, Flutlichter und Lampen der Militärgebäude
+  und des Fliegerhorsts als Lichtflecken (Lage steckt in der Geometrie), Mündungsfeuer und Explosionen als Lichtquelle (Paket „Effekte 3D“, offen), Tagesablauf (Stimmung wechselt
+  im Spiel; wäre eine Spielregel, nur auf Wunsch Daniels), Messung auf echter GPU.
 
 ## Stufe 1 – MVP (Entscheidung danach)
 Ziel: echte Partie mit `?three=1` in Iso: Gelände mit Licht und Schatten, alle Einheiten als 3D-Modelle, Bäume in 3D, der Rest als

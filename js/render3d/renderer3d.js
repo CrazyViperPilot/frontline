@@ -16,7 +16,8 @@ import { Billboards } from './billboards.js';
 import { Units3D } from './units3d.js';
 import { Fog3D } from './fog3d.js';
 import { Weather3D, weatherShares } from './weather3d.js';
-import { setKitWet } from './kit3d.js';
+import { setKitWet, setKitGlow } from './kit3d.js';
+import { Lights3D, GLOW, glowOf, nightOf, elevOf, lightSources } from './lights3d.js';
 import { drawMood } from '../render/mood.js';
 import { Fx3D, effect3d, shell3d, smoke3d } from './fx3d.js';
 import { drawMine } from '../render/fx.js';
@@ -138,6 +139,15 @@ export class Renderer3D extends Renderer {
     this.weather3d = new Weather3D(this.ground3d.uniforms.uNoise.value);
     this.weatherRoot.add(this.weather3d.group);
     this.weather3dOn = true;
+    // Lichter: eigene Szene nach „Wetter“, additiv über der Lichtstimmung (lights3d.js); false: Fenster nur unter der Stimmung wie bisher
+    this.lightsScene = new THREE.Scene();
+    this.lightsRoot = makeWorldRoot();
+    this.lightsScene.add(this.lightsRoot);
+    this.lights3d = new Lights3D(this.fog3d);
+    this.sun.light.layers.enable(GLOW); // gleiche Lichter im Lichter-Durchlauf: Baukasten-Programm bleibt dasselbe
+    this.lightsRoot.add(this.lights3d.group);
+    this.lights3dOn = true;
+    this.mood3dOn = true; // false: Sonnenhöhe und Nachtfenster wie ohne Stimmung (Prüfskript: Vergleich Iso/3D)
     this.wet = 0; // Nässe des Bodens und der Dächer dieses Bildes (0 … 1), aus dem Wetter
     this.scratch = null; // 2D-Leinwand für alles, was im Durchlauf „Objekte“ nicht über blit läuft (liegt über den Billboards)
     this.cubes = !!opts.cubes;
@@ -149,8 +159,9 @@ export class Renderer3D extends Renderer {
       ['Effekte', (r, f) => r.fx3dPass(f)],
       ['Nebel', (r, f) => r.fog3dPass(f)],
       ['Wetter', (r, f) => r.weather3dPass(f)],
+      ['Lichter', (r, f) => r.lights3dPass(f)],
     ];
-    if (this.cubes) for (const n of ['Boden', 'Schatten', 'Objekte', 'Wetter']) sw.push([n, null]);
+    if (this.cubes) for (const n of ['Boden', 'Schatten', 'Objekte', 'Wetter', 'Lichter']) sw.push([n, null]);
     this.swaps = new Map(sw); // Iso-Durchlauf → Ersatz (null = auslassen)
     this.resize();
   }
@@ -190,6 +201,24 @@ export class Renderer3D extends Renderer {
     this.ways3dShown = false; // setzt terrain3d, wenn die Bodenschicht in diesem Bild aus three kommt
     super.render(view); // gleicht auch Relief und Größe ab
     if (on && this.cubes) this.markProbes();
+  }
+
+  /**
+   * Lichtrichtung: in der Ansicht 3D mit der Sonnenhöhe der Lichtstimmung (BALANCE.lights3d.elev: morgens und abends flacher, längere
+   * Schatten); sonst wie Renderer (relief.js). Gleiche Himmelsrichtung, also gleiche Seite hell wie gemalt.
+   */
+  lightVec() {
+    const v = super.lightVec();
+    const e = this.camera.three && this.camera.iso && this.mood3dOn && !this.cubes ? elevOf(this.mood) : null;
+    if (e === null || Math.abs(e - v[2]) < 1e-9) return v;
+    const k = Math.sqrt(1 - e * e) / Math.hypot(v[0], v[1]);
+    return [v[0] * k, v[1] * k, e];
+  }
+
+  /** Nachtanteil der Fenster dieses Bildes (0 … 1, kit3d uNight) aus der Lichtstimmung. */
+  get night3d() {
+    if (!this.mood3dOn) return this.mood === 'night' ? 1 : 0;
+    return nightOf(this.mood);
   }
 
   /** Altbau-Hof (render/maptown.js drawHouseYard): ohne gemalten Schlagschatten, wenn das Haus ein Mesh ist und seinen Schatten selbst wirft. */
@@ -261,7 +290,7 @@ export class Renderer3D extends Renderer {
     this.tree3d = !this.trees3dOn ? null : (t) => this.trees3d.add(treeLook3d(t, season), t.x, t.y, cam.pinned ?? (relief ? relief.displayAt(t.x, t.y) : 0));
     this.unit3d = (f, u, aim, lift) => this.units3d.show(u, cam.pinned ?? (relief ? relief.displayAt(u.x, u.y) : 0), lift, aim, f.now);
     // Stadthäuser: Sonne, Schnee, Nacht und Schattenstärke wie Boden und Schattenfänger; Höhe wie das Billboard (cam.pin)
-    this.towns3d.begin({ light, snow: season === 'winter' ? 1 : 0, night: this.mood === 'night' ? 1 : 0, shade: BALANCE.shadows3d.opacity[this.mood ?? 'none'] ?? BALANCE.shadows3d.opacity.none });
+    this.towns3d.begin({ light, snow: season === 'winter' ? 1 : 0, night: this.night3d, shade: BALANCE.shadows3d.opacity[this.mood ?? 'none'] ?? BALANCE.shadows3d.opacity.none });
     const lowest = (x, y, r) => (relief ? Math.min(relief.displayAt(x - r, y - r), relief.displayAt(x + r, y - r), relief.displayAt(x - r, y + r), relief.displayAt(x + r, y + r)) : 0); // tiefste Ecke wie baseHeight
     // Großbauten (bigbuild3d.js, gov3d.js): eine Anlage aus vielen Objekten der Tiefenliste steht einmal, auf der tiefsten Ecke ihres Quadrats
     this.house3d = (o) => {
@@ -430,6 +459,45 @@ export class Renderer3D extends Renderer {
   }
 
   /**
+   * Durchlauf „Lichter“ (nach „Wetter“, also über der Lichtstimmung): leuchtende Fenster und Lampen der Gebäude (Ebene GLOW, Baukasten
+   * mit setKitGlow, Tiefentest gegen „Objekte“), Lichtflecken der Laternen und Häuser, Maske aus dem Kriegsnebel; additiv („lighter“)
+   * in die 2D-Leinwand. Nur bei Stimmungen mit glow (Abend, Nacht) und mit Relief.
+   */
+  lights3dPass(f) {
+    const k = this.lights3dOn ? glowOf(this.mood) : 0;
+    if (!(k > 0) || !f.relief) return;
+    this.sync3d();
+    const relief = f.relief;
+    const cam = this.camera;
+    const c = cam.screenToWorldFlat(this.cssW / 2, this.cssH / 2); // Bildmitte (Lichtflecken nach Abstand gekürzt)
+    const has3d = (o) => (o.kind === 'town' ? this.towns3dOn : this.maptown3dOn && hasMapTown3d(o));
+    const list = lightSources(f.items, c.x, c.y, has3d);
+    this.lights3d.update(list, k, (x, y) => relief.displayAt(x, y), !f.reveal);
+    this.lightsRoot.updateMatrixWorld();
+    const gl = this.gl;
+    gl.setClearColor(0x000000, 0);
+    gl.autoClear = false;
+    gl.clear(true, false, false); // Tiefe aus „Objekte“ bleibt
+    try {
+      setKitGlow(BALANCE.lights3d.windows * k, BALANCE.lights3d.windowColor);
+      this.cam3.layers.set(GLOW);
+      gl.render(this.objScene, this.cam3); // Schattenkarte nicht neu (autoUpdate aus)
+      this.cam3.layers.set(0);
+      setKitGlow(0);
+      gl.render(this.lightsScene, this.cam3);
+    } finally {
+      setKitGlow(0);
+      this.cam3.layers.set(0);
+      gl.autoClear = true;
+    }
+    const ctx = f.ctx;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    this.copy3d(ctx);
+    ctx.restore();
+  }
+
+  /**
    * Durchlauf „Effekte“: Bodenteile gemalt (Zielringe, Feuerschein, Druckringe), dann Feuerbälle, Leuchtspuren, Granaten, Rauch und
    * Feuer als Teilchen in three (fx3d.js) über dem Bild, verdeckt von dem, was in „Objekte“ davor steht (Tiefenpuffer bleibt stehen);
    * danach Minen und Wegziel gemalt. Ohne Relief oder mit fx3dOn = false wie in Iso.
@@ -519,6 +587,7 @@ export class Renderer3D extends Renderer {
     this.ways3d.dispose();
     this.fog3d.dispose();
     this.weather3d.dispose();
+    this.lights3d.dispose();
     this.sun.dispose();
     this.gl.dispose();
     this.gl.forceContextLoss();

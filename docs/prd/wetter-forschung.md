@@ -7,7 +7,8 @@
 
 ### Wetter und Jahreszeiten
 - **Lichtstimmung (nur Optik):** Menü „Licht“ (Aus · Zufall · Morgen · Tag · Abend · Nacht, Standard Zufall) färbt die Karte mit Morgenrot, Mittagslicht, Abendglut oder Mondschein;
-  gilt in 2D und Iso, ändert weder Sicht noch Wetter noch KI.
+  gilt in 2D und Iso, ändert weder Sicht noch Wetter noch KI. In der Ansicht 3D (Test) steht die Sonne morgens und abends flacher (längere Schatten), abends
+  und nachts leuchten Fenster, Laternen und Glaskanzeln über der Stimmung, Laternen und Häuser werfen warmen Schein auf den Boden (nicht im Kriegsnebel).
   Regen, Nebel und Schnee liegen darunter und mischen sich mit der Stimmung.
 - Im Startmenü wählbar („Wetter“: Aus · Zufall · Sommer · Herbst · Winter, gemerkt, Standard Zufall; `Game({ weather })`, ohne Angabe aus). Zufall wählt die Jahreszeit aus dem Seed.
 - Die **Jahreszeit** gilt die ganze Partie, das **Wetter** wechselt: klar hält 180–360 s, Regen 100–200 s, Nebel 90–180 s, Schnee 100–200 s; nie zweimal dasselbe hintereinander.

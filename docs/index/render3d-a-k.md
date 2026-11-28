@@ -105,7 +105,7 @@ Erzeugt von `npm run index` (tools/index.mjs), nicht von Hand ändern. Ordner: `
   - waterStats() – Zählung fürs Prüfskript: Dreiecke des Wassers (0 = kein Wasser im Netz)
   - dispose()
 
-## kit3d.js (61 KB)
+## kit3d.js (62 KB)
 - KIT_MATS – Materialfotos der Gebäude in der Reihenfolge der Texturebenen (aInfo.x − 1)
 - TEAM_WIN – aInfo.y für Flächen in Teamfarbe (Werke): der Shader nimmt die Farbe der Instan…
 - NIGHT_MORE – nachts brennt Licht in so viel mehr Fenstern (Faktor auf den Anteil)

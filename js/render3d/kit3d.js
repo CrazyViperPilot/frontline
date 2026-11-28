@@ -1112,6 +1112,8 @@ uniform vec3 uSnowCol;
 uniform vec3 uWarm;
 uniform vec3 uNightGlow;
 uniform float uOpacity;
+uniform vec3 uGlowCol; // Farbe des Lichts im Lichter-Durchlauf
+uniform float uGlow; // Lichter-Durchlauf (setKitGlow): > 0 nur leuchtende Fenster und Lampen in dieser Stärke, sonst schwarz
 uniform float uWet; // Nässe 0 … 1 (Regen), eine gemeinsame Uniform für alle Kit-Materialien (setKitWet)
 varying vec3 vN;
 varying vec3 vCol;
@@ -1144,6 +1146,10 @@ void main() {
   }
   // beleuchtete Fenster: am Tag warm wie gemalt, nachts heller und mehr davon (Wert ≤ 1 + (NIGHT_MORE − 1) · uNight)
   float on = 1.0 - step(1.0 + ${(NIGHT_MORE - 1).toFixed(2)} * uNight, vInfo.y);
+  if (uGlow > 0.0) {
+    gl_FragColor = vec4(uGlowCol * uGlow * on, on); // vormultipliert, additiv über der Lichtstimmung (lights3d.js)
+    return;
+  }
   c = mix(c, mix(uWarm * (0.84 + 0.16 * d), uNightGlow, uNight), on);
   gl_FragColor = vec4(c, uOpacity);
 }`;
@@ -1209,6 +1215,17 @@ const kitWet = { value: 0 };
 /** Nässe aller Gebäude (0 … 1), vor dem Zeichnen setzen (renderer3d.js, aus dem Wetter). */
 export const setKitWet = (v) => (kitWet.value = v);
 
+const kitGlow = { value: 0 };
+const kitGlowCol = { value: new THREE.Vector3(1, 1, 1) };
+/**
+ * Lichter-Durchlauf (renderer3d.js lights3dPass): v > 0 zeichnen alle Gebäude nur ihre leuchtenden Fenster und Lampen in Stärke v und
+ * Farbe rgb (0 … 255), sonst 0.
+ */
+export const setKitGlow = (v, rgb = null) => {
+  kitGlow.value = v;
+  if (rgb) kitGlowCol.value.set(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255);
+};
+
 /**
  * Ein ShaderMaterial für alle Gebäude des Baukastens (Licht, Fotos, Schnee, Nachtfenster, Schatten der Sonne). opacity < 1: halb
  * durchsichtig (Dach der Überdachung, Röhre des Shelters; schreibt keine Tiefe), Standard 1.
@@ -1232,6 +1249,8 @@ export function makeKitMaterial({ opacity = 1 } = {}) {
         uNightGlow: { value: v3([255, 236, 170]) },
         uOpacity: { value: opacity },
         uWet: { value: 0 },
+        uGlow: { value: 0 },
+        uGlowCol: { value: new THREE.Vector3(1, 1, 1) },
       },
     ]),
     vertexShader: VS,
@@ -1242,6 +1261,8 @@ export function makeKitMaterial({ opacity = 1 } = {}) {
     depthWrite: opacity >= 1,
   });
   mat.uniforms.uWet = kitWet; // eine Uniform für alle (merge klont)
+  mat.uniforms.uGlow = kitGlow;
+  mat.uniforms.uGlowCol = kitGlowCol;
   mat.uniforms.uTex.value = textures();
   mat.uniforms.uTexOn.value = texReady ? 1 : 0;
   materials.add(mat);

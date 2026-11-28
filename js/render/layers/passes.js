@@ -56,6 +56,7 @@ export const ISO_PASSES = [
   { name: 'Effekte', run: (r, f) => r.isoEffects(f) },
   { name: 'Nebel', run: (r, f) => r.isoFog(f) },
   { name: 'Wetter', run: (r, f) => r.drawSky(f) },
+  { name: 'Lichter', run: null }, // nur Ansicht 3D (render3d/lights3d.js): Fenster und Laternen über der Lichtstimmung
   { name: 'Balken', run: (r, f) => r.isoBars(f) },
   { name: 'Anzeigen', run: (r, f) => r.isoScreen(f) },
 ];

@@ -28,6 +28,7 @@ three nur aus `../vendor/three/three.module.min.js` (Regel 5).
 - `bridge3d.js` – Brücken (Pfeiler, Fahrbahn, Geländer, zerstört, Wiederaufbau) und Furtstangen (`bridge3dOn`). `Bridge3D`, `bridgeSolids`
 - `ways3d.js` – Bodenschicht: Straßen, Wege, Gleise, Felder, Pflaster als Kacheltexturen auf dem Höhennetz, Schienen als Körper (`ways3dOn`). `Ways3D`, `tileIndex`, `railGeometry`
 - `weather3d.js` – Wetter in 3D: Regen mit Ringen, Schnee, Nebelbänke (Teilchen, Tiefentest), nasser Boden (`weather3dOn`). `Weather3D`, `weatherShares`, `wetGround`
+- `lights3d.js` – Tag und Nacht: Durchlauf „Lichter“ (Fenster, Laternen, Lichtflecken additiv über der Stimmung, Maske aus dem Nebel). `Lights3D`, `lightSources`, `GLOW`
 - `maptown3d.js` – Kartenstadt (Häuser, Hallen, Fabriken, Mauern, Zug, Turm, Mast), Leitung als Linien. `mapTownGeometry`, `Wires3D`
 
 ## Besonderheiten

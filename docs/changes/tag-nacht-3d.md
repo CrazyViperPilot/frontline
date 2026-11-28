@@ -1,1 +1,0 @@
-**Tag und Nacht in 3D** (§ Wetter, Lichtstimmung, nur Bild): Morgens und abends steht die Sonne flacher und wirft längere Schatten; abends und nachts leuchten Fenster, Laternen und Glaskanzeln warm über der Stimmung, Laternen und Häuser werfen einen Lichtschein auf den Boden, im Kriegsnebel bleibt es dunkel (Test, `?three=1`)

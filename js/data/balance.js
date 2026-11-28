@@ -10,7 +10,7 @@
 //   KI-Schwierigkeit difficulty (weitere KI-Werte: ai.js)
 //   Kampf, Gelände   height, slope, airFire, sightHeight, fogInterval, stealth, garrison, fortress, commander, formation, jets
 //   Wetter, Technik  weather, river (Forschung: js/data/research.js)
-//   Nur Optik        scars, animals, effects, shadows3d, lights3d
+//   Nur Optik        scars, animals, effects, shadows3d, lights3d, wrecks3d
 //   Bewegung, Sicht  move, path (Wegsuche), fog, formation, scanStagger, spawnRing, shellSpeed, combat, notify (Meldedauern)
 //   Startmenü        menuDefaults
 //   Texte, Farben    resNames, teamNames, teamColors
@@ -466,6 +466,17 @@ export const BALANCE = {
     max: 160,
     lamp: { r: 72, k: 0.42, color: [255, 210, 140], head: 5, z: 33.2 },
     house: { r: 40, k: 0.34, color: [255, 186, 105] },
+  },
+  // Fahrzeugwracks in 3D (rein optisch, render3d/wrecks3d.js): Turm deterministisch aus w.id verdreht und leicht verrutscht,
+  // ein Teil (blowShare) abgesprengt neben der Wanne am Boden; sinken in den letzten wreckFade Sekunden ein (sinkMin).
+  wrecks3d: {
+    blowShare: 0.3, // Anteil der Wracks mit Turm, bei denen der Turm abgesprengt neben der Wanne am Boden liegt
+    shiftMax: 2.5, // kleiner Versatz eines auf der Wanne verbliebenen Turms (Modell-px)
+    tiltMax: 0.14, // leichte Schräglage eines aufgesetzten Turms (rad)
+    blowDistMin: 8, // kleinster Abstand eines abgesprengten Turms von der Mitte (Modell-px)
+    blowDistMax: 14, // größter Abstand eines abgesprengten Turms von der Mitte (Modell-px)
+    blowTiltMax: 0.28, // Schräglage eines abgesprengten Turms am Boden (rad)
+    sinkMin: 0.35, // kleinste Höhenstreckung beim Einsinken und Verblassen am Lebensende
   },
   // Meldungen mit Drosselung (game.notify): Mindestabstand in s zwischen zwei gleichen Meldungen je Team (ohne Eintrag shortageWarn)
   notify: {

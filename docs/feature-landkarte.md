@@ -88,3 +88,4 @@ Neues Feature: hier eine Zeile ergänzen (höchstens 200 Zeichen: Name, PRD-Date
 | Freie Kamera in 3D (stufenlos drehen, Neigung 30° bis 60°, Klick per Sichtstrahl) | `steuerung-oberflaeche` | `render/camera.js` `turnBy`, `setTilt`, `rayToGround` | `render3d/camera3d.js`, `ui/input.js`, `ui/controller.js` | `freecam` |
 | Straßen, Wege, Gleise, Felder, Pflaster in 3D (Kacheltexturen auf dem Höhennetz, Schienen als Körper) | – | `render3d/ways3d.js` | `renderer3d.js` `terrain3d`, `render/ways.js` | `ways3d` |
 | 3D, Kartenstadt (Häuser, Hallen, Mauern, Turm, Masten, Leitung) | `zone-gelaende` | `render3d/maptown3d.js` | `town3d.js`, `render/maptown.js` | `maptown3d` |
+| Einheiten und Wracks in 3D (Instancing über Teams, Lackfoto, verkohlte Fahrzeugwracks mit Turm) | – | `render3d/units3d.js`, `wrecks3d.js` | `renderer3d.js` `unit3d`, `wreck3d`; `solids3d.js` | `wrecks3d` |

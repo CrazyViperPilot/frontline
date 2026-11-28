@@ -12,7 +12,7 @@ Licht und Schatten oder Achsen und Kamera der Ansicht 3D geht. Plan und Stand de
   malt (Rotoren, Flammen), kommt über eine 2D-Zwischenleinwand obenauf.
 - „Effekte“ (`fx3dPass`, `fx3d.js`, Schalter `fx3dOn`): Bodenteile gemalt (`isoFxGround`), Teilchen in eigener Szene ohne Löschen der Tiefe aus
   „Objekte“ (3D-Körper davor verdecken, Gelände nicht), Kopie nur des Teilchen-Rechtecks; Minen und Wegziel danach gemalt (`isoMoveMark`).
-- Einheiten (`unit3d`), Bäume (`tree3d`), Häuser, Werke und Großbauten (`house3d`), Regierungsgebäude (`hall3d`), Regierungsviertel (`quarter3d`) fragt
+- Einheiten (`unit3d`, `units3d.js`: je Modellteil ein `InstancedMesh` über alle Teams mit Team-Palette je Instanz und Lackfoto `armor`/`paint`), Fahrzeugwracks (`wreck3d`, `wrecks3d.js`, Schalter `wrecks3dOn`: verkohlte Wanne und deterministisch verdrehter/abgesprengter Turm als `InstancedMesh`, sinkend über die Höhe, werfen Schatten auf `CAST`), Bäume (`tree3d`), Häuser, Werke und Großbauten (`house3d`), Regierungsgebäude (`hall3d`), Regierungsviertel (`quarter3d`) fragt
   `isoObjects` nur in „Objekte“; `trees3dOn`, `towns3dOn`, `works3dOn`, `big3dOn` schalten auf gemalt (Dampf der Werke: `drawWorksSteam`).
 - Großbauten bestehen in `cityBuildings` aus vielen Objekten (`bigpart`, je Körper) mit gemeinsamem `plan`: `Town3D` zeigt die Anlage einmal je Bild
   (Familie mit `at`), Bäume und Ausstellungsstücke bleiben gemalte Billboards; das Viertel ein Mesh je Hauptstadt (Drehung und Maske der freien Gruppen). Einheit mit Mesh: gemalt nur Rotoren, Nachbrenner; Schatten wirft das Mesh.

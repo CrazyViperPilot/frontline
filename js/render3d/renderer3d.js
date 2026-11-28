@@ -14,6 +14,7 @@ import { makeWorldRoot, makeIsoCamera, syncIsoCamera, projectWorld, clipDepth } 
 import { Ground3D } from './ground3d.js';
 import { Billboards } from './billboards.js';
 import { Units3D } from './units3d.js';
+import { Wrecks3D } from './wrecks3d.js';
 import { Fog3D } from './fog3d.js';
 import { Weather3D, weatherShares } from './weather3d.js';
 import { setKitWet, setKitGlow } from './kit3d.js';
@@ -75,9 +76,13 @@ export class Renderer3D extends Renderer {
     this.setShadows(opts.shadows ?? 'off');
     this.billboards = new Billboards(gl);
     this.objScene.add(this.billboards.mesh);
-    this.units3d = new Units3D(); // Einheiten als Meshes (units3d.js), gezeigt über unit3d aus drawUnitIsoAt
+    this.units3d = new Units3D(); // Einheiten als InstancedMesh (units3d.js), gezeigt über unit3d aus drawUnitIsoAt
     this.objRoot.add(this.units3d.group);
     this.unit3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
+    this.wrecks3d = new Wrecks3D(); // Fahrzeugwracks als verkohlte Meshes (wrecks3d.js), gezeigt über wreck3d aus isoObjects
+    this.objRoot.add(this.wrecks3d.group);
+    this.wreck3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
+    this.wrecks3dOn = true; // false: Fahrzeugwracks wie in Iso als verkohltes Billboard (Prüfskript: Vergleich und Messung)
     this.trees3d = new Trees3D(); // Bäume als InstancedMesh je Form (trees3d.js), gezeigt über tree3d aus isoObjects
     this.objRoot.add(this.trees3d.group);
     this.tree3d = null; // nur während des Durchlaufs „Objekte“ gesetzt
@@ -283,12 +288,14 @@ export class Renderer3D extends Renderer {
     const relief = f.relief;
     const light = this.lightVec();
     this.units3d.begin(light);
+    this.wrecks3d.begin(light);
     const sun = this.sun.on && !this.cubes;
     this.shadow3d = sun;
     this.trees3d.begin(light, this.season, cam.zoom);
     const season = this.season;
     this.tree3d = !this.trees3dOn ? null : (t) => this.trees3d.add(treeLook3d(t, season), t.x, t.y, cam.pinned ?? (relief ? relief.displayAt(t.x, t.y) : 0));
     this.unit3d = (f, u, aim, lift) => this.units3d.show(u, cam.pinned ?? (relief ? relief.displayAt(u.x, u.y) : 0), lift, aim, f.now);
+    this.wreck3d = !this.wrecks3dOn ? null : (w, fade) => this.wrecks3d.show(w, cam.pinned ?? (relief ? relief.displayAt(w.x, w.y) : 0), fade);
     // Stadthäuser: Sonne, Schnee, Nacht und Schattenstärke wie Boden und Schattenfänger; Höhe wie das Billboard (cam.pin)
     this.towns3d.begin({ light, snow: season === 'winter' ? 1 : 0, night: this.night3d, shade: BALANCE.shadows3d.opacity[this.mood ?? 'none'] ?? BALANCE.shadows3d.opacity.none });
     const lowest = (x, y, r) => (relief ? Math.min(relief.displayAt(x - r, y - r), relief.displayAt(x + r, y - r), relief.displayAt(x - r, y + r), relief.displayAt(x + r, y + r)) : 0); // tiefste Ecke wie baseHeight
@@ -367,6 +374,7 @@ export class Renderer3D extends Renderer {
     } finally {
       setBlitSink(null);
       this.unit3d = null;
+      this.wreck3d = null;
       this.tree3d = null;
       this.house3d = this.hall3d = this.quarter3d = this.mil3d = this.fort3d = this.ruin3d = null;
       this.bush3d = this.rock3d = this.animal3d = null;
@@ -376,6 +384,7 @@ export class Renderer3D extends Renderer {
       f.ctx = ctx;
     }
     this.units3d.end();
+    this.wrecks3d.end();
     this.trees3d.end();
     this.towns3d.end();
     this.nature3d.end();
@@ -579,6 +588,7 @@ export class Renderer3D extends Renderer {
     this.fx3d.dispose();
     this.billboards.dispose();
     this.units3d.dispose();
+    this.wrecks3d.dispose();
     this.trees3d.dispose();
     this.towns3d.dispose();
     this.nature3d.dispose();

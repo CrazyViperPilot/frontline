@@ -119,6 +119,7 @@ npm run econ -- --seeds 3,7,11 --min 25   # Wirtschaft je Team alle 5 Spielminut
   `--only wetter`: Regen, Schnee, Nebel und Regen mit Kriegsnebel (`?fog=1`) gemalt neben 3D (Seed 3, Einheiten vor der Hauptstadt, Schatten Hoch; 4 Drehungen, Nacht, Zoom 0,5/1,6; `.smoke/3d/wetter/`);
   Prüfschritte: Teilchen und Nebellagen gezeichnet (Zähler > 0), Netze mit Tiefentest ohne Tiefenschreiben, Bild weicht vom Bild ohne Wetter ab (≥ 2 % der Pixel), Messung gemalt gegen 3D
   (Zeit „Wetter“, „Objekte“, Bild, Draw-Calls des Wetters; `renderer.weather3dOn`, Schatten Aus/Hoch). Node-Test: `test/weather3d.test.js`.
+- `node tools/smoke-3d.mjs --only balken` (Paket „Balken und Schilder“): Lebensbalken, Stern, Versorgung bei Neigung 30°/45°/60° in zwei Drehungen, Fotos `.smoke/3d/balken/` zum Ansehen.
 - `node tools/smoke-3d.mjs --only mvp` (Paket „MVP-Messung“, nur ausdrücklich, gut 10 min): Rundgang je Gerät desktop, tablet, phone
   (Ansicht umschalten, Drehungen, Zoom, Wald, Hang, Winter; Fotos alt/neu nebeneinander nach `.smoke/3d/mvp/`), Auswahl per Klick/Tippen
   und Befehl in 3D (Fehler, wenn nicht), Bildrate Iso und 3D Aus/Mittel/Hoch nach `--gametime` Spielminuten Zeitraffer; Zahlen auch in

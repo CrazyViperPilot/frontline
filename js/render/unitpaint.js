@@ -181,7 +181,7 @@ export function drawUnitIso(ctx, cam, u, p, aim = null, lift = 0, now = 0, body 
   const yaw = (k) => (k / n) * TAU;
   const e = !body || getSprite(make(sec), f * dpr, boundsOf(m, m.S, yaw(sec), true), (c, s) => paintSolids(c, m.S, yaw(sec), { iso: true, s }), nearKeys(make, sec, n));
   if (!e) return false;
-  const y = p.y - lift * z;
+  const y = p.y - cam.heightPx(lift);
   const burn = m.nozzle && !u.parked && (u.jet?.phase === 'roll' || jetAlt(u) > 0.05);
   const away = Math.cos(yaw(sec)) + Math.sin(yaw(sec)) > 0; // Düse zeigt vom Betrachter weg: Flamme liegt hinter dem Rumpf
   if (burn && away) drawFlameIso(ctx, m, p.x, y, f, yaw(sec), now);

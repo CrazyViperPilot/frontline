@@ -185,7 +185,7 @@ export const isoViewMethods = {
     const t = now / 1000;
     for (const q of this.isoSmokes(f)) {
       const p = cam.worldToScreen(q.x, q.y);
-      const y = p.y - q.lift * z;
+      const y = p.y - cam.heightPx(q.lift);
       if (q.mine) {
         drawMine(ctx, p.x, y, z * 0.6);
         continue;
@@ -232,7 +232,7 @@ export const isoViewMethods = {
     const PAD = ISO_PAD;
     const upright = (wx, wy, lift) => {
       const p = cam.worldToScreen(wx, wy);
-      setUprightAt(ctx, cam, dpr, p.x, p.y - lift * z, wx, wy);
+      setUprightAt(ctx, cam, dpr, p.x, p.y - cam.heightPx(lift), wx, wy);
     };
     for (const u of g.units) {
       if (!u.alive || u.house || !shown(u) || !inRect(u.x, u.y, PAD)) continue;
@@ -272,7 +272,7 @@ export const isoViewMethods = {
       cam.pin(b.deckH);
       const p = cam.worldToScreen(b.x, b.y);
       cam.unpin();
-      drawBridgeBar(ctx, p.x, p.y - 34 * Math.max(0.6, z), b);
+      drawBridgeBar(ctx, p.x, p.y - 34 * Math.max(0.6, z) * cam.heightK(), b);
     }
     for (const h of g.garrisoned ?? []) {
       if (!inRect(h.x, h.y, PAD) || !(h.team === team || f.reveal || g.sees(team, h))) continue;
@@ -280,7 +280,7 @@ export const isoViewMethods = {
       const p = cam.worldToScreen(h.x, h.y);
       if (h.team === team) this.drawWindows(ctx, h, cam); // Feuerbereich (seit v5.67), mit derselben Höhe wie das Haus
       cam.unpin();
-      this.drawGarrison(ctx, p.x, p.y - ((TOWN_H[h.type] || 40) + 20) * z, h);
+      this.drawGarrison(ctx, p.x, p.y - cam.heightPx((TOWN_H[h.type] || 40) + 20), h);
     }
 
     if (v.placement) {
